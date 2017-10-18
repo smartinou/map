@@ -1,0 +1,451 @@
+// *****************************************************************************
+//
+// Project: LwIP
+//
+// Module: LwIP manager QP Active Object.
+//
+// *****************************************************************************
+
+//! \file
+//! \brief MyClass device class.
+//! \ingroup module_group
+//!
+//! This is the main AO of the system.
+
+// *****************************************************************************
+//
+//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//
+// *****************************************************************************
+
+// *****************************************************************************
+//                              INCLUDE FILES
+// *****************************************************************************
+
+#define LWIP_ALLOWED
+
+// Standard Libraries.
+#include <string.h>
+#include <stdio.h>
+
+// QP-port.
+#include "qpcpp.h"
+
+// lwIP stack.
+// lwIP application.
+#ifdef __cplusplus
+extern "C" {
+#include "lwip.h"
+#include "httpd.h"
+} // extern "C"
+//#include "netif/eth_driver.h"
+#include "netif/EthDrv2.h"
+#endif // __cplusplus
+
+
+// TI Library.
+#ifdef __cplusplus
+extern "C" {
+#include "hw_types.h"
+#include "flash.h"
+} // extern "C"
+#endif // __cplusplus
+
+// This project.
+#include "BSP.h"
+#include "LWIPMgr.h"
+
+// *****************************************************************************
+//                      DEFINED CONSTANTS AND MACROS
+// *****************************************************************************
+
+Q_DEFINE_THIS_FILE
+
+#define LWIP_SLOW_TICK_MS TCP_TMR_INTERVAL
+
+// *****************************************************************************
+//                         TYPEDEFS AND STRUCTURES
+// *****************************************************************************
+
+// *****************************************************************************
+//                            FUNCTION PROTOTYPES
+// *****************************************************************************
+
+static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
+#if 0
+// UDP handler.
+static void udp_rx_handler(void           *aArgPtr,
+			   struct udp_pcb *aPCBPtr,
+                           struct pbuf    *aBufPtr,
+			   struct ip_addr *aIPAddr,
+			   u16_t           aUDPPort);
+#endif
+// *****************************************************************************
+//                             GLOBAL VARIABLES
+// *****************************************************************************
+
+// Application signals cannot overlap the device-driver signals.
+Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
+
+#if 1
+// Server-Side Include (SSI) demo.
+static char const * const sSSITags[] = {
+  "s_xmit",
+  "s_recv",
+  "s_fw",
+  "s_drop",
+  "s_chkerr",
+  "s_lenerr",
+  "s_memerr",
+  "s_rterr",
+  "s_proerr",
+  "s_opterr",
+  "s_err",
+};
+
+// Common Gateway Iinterface (CG) demo.
+static char const *CGIDisplay(int         aIx,
+			      int         aParamQty,
+			      char const *aParamPtr[],
+			      char const *aValPtr[]);
+
+static tCGI const CGIHandlers[] = {
+  { "/display.cgi", &CGIDisplay },
+};
+
+#endif
+
+// The single instance of LWIPMgr.
+LWIPMgr *LWIPMgr::mInstancePtr = static_cast<LWIPMgr *>(0);
+
+// *****************************************************************************
+//                            EXPORTED FUNCTIONS
+// *****************************************************************************
+
+LWIPMgr::LWIPMgr() :
+  QActive(Q_STATE_CAST(&LWIPMgr::Initial))
+  , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
+  , mEthDrvPtr(0)
+  , mNetIFPtr(static_cast<struct netif *>(0))
+  //  , mPCBPtr(static_cast<struct udp_pcb *>(0))
+  , mIPAddr(0x00000000)
+#if LWIP_TCP
+  , mTCPTimer(0)
+#endif
+#if LWIP_ARP
+  , mARPTimer(0)
+#endif
+#if LWIP_DHCP
+  , mDHCPFineTimer(0)
+  , mDHCPCoarseTimer(0)
+#endif
+#if LWIP_AUTOIP
+  , mAutoIPTimer(0)
+#endif
+{
+
+  // Singleton.
+  mInstancePtr = this;
+}
+
+
+LWIPMgr * const LWIPMgr::GetInstancePtr(void) const {
+  return mInstancePtr;
+}
+
+
+QP::QActive * const LWIPMgr::GetOpaqueAOInstancePtr(void) const {
+  return static_cast<QP::QActive * const>(mInstancePtr);
+}
+
+// *****************************************************************************
+//                              LOCAL FUNCTIONS
+// *****************************************************************************
+
+QP::QState LWIPMgr::Initial(LWIPMgr * const me, //aMePtr,
+			    QP::QEvt  const * const aEvtPtr) {
+
+  // Suppress the compiler warning about unused parameter.
+  (void)aEvtPtr;
+
+  // Configure the hardware MAC address for the Ethernet Controller
+  //
+  // For the Stellaris Eval Kits, the MAC address will be stored in the
+  // non-volatile USER0 and USER1 registers.  These registers can be read
+  // using the FlashUserGet function, as illustrated below.
+  unsigned long lUser0 = 0;
+  unsigned long lUser1 = 0;
+  FlashUserGet(&lUser0, &lUser1);
+
+  // The MAC address must have been programmed!
+  Q_ASSERT((lUser0 != 0xFFFFFFFF) && (lUser1 != 0xFFFFFFFF));
+
+#if 1
+  // Convert the 24/24 split MAC address from NV ram into a 32/16 split MAC
+  // address needed to program the hardware registers, then program the MAC
+  // address into the Ethernet Controller registers.
+  // Initialize the Ethernet Driver.
+  // Initialize IP address to impossible value.
+  uint8_t lMACAddr[NETIF_MAX_HWADDR_LEN];
+  lMACAddr[0] = (uint8_t)lUser0; lUser0 >>= 8;
+  lMACAddr[1] = (uint8_t)lUser0; lUser0 >>= 8;
+  lMACAddr[2] = (uint8_t)lUser0; lUser0 >>= 8;
+  lMACAddr[3] = (uint8_t)lUser1; lUser1 >>= 8;
+  lMACAddr[4] = (uint8_t)lUser1; lUser1 >>= 8;
+  lMACAddr[5] = (uint8_t)lUser1;
+#else
+  uint8_t const lMACAddr[NETIF_MAX_HWADDR_LEN] = {0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff};
+#endif
+  //me->mEthDrvPtr = EthDrv2::EthDrvInstance(8);
+  me->mEthDrvPtr = new EthDrv2(8);
+  me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
+  //me->mNetIFPtr = eth_driver_init((QP::QActive *)me, &lMACAddr[0]);
+  //me->mIPAddr = 0xFFFFFFFF;
+
+  // Initialize the lwIP applications...
+  // Initialize the simple HTTP-Deamon (web server).
+  httpd_init();
+  http_set_ssi_handler(&SSIHandler, sSSITags, Q_DIM(sSSITags));
+  http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
+
+  // Use port 777 for UDP.
+  //me->mPCBPtr = udp_new();
+  //udp_bind(me->mPCBPtr, IP_ADDR_ANY, 777);
+  //udp_recv(me->mPCBPtr, &udp_rx_handler, me);
+
+
+#if 0
+  QS_OBJ_DICTIONARY(&l_lwIPMgr);
+  QS_OBJ_DICTIONARY(&l_lwIPMgr.mSlowTickTimer);
+  QS_FUN_DICTIONARY(&QP::QHsm_top);
+  QS_FUN_DICTIONARY(&LWIPMgr::Initial);
+  QS_FUN_DICTIONARY(&LWIPMgr::Running);
+
+  QS_SIG_DICTIONARY(SEND_UDP_SIG,        static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(LWIP_SLOW_TICK_SIG,  static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(LWIP_RX_READY_SIG,   static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(LWIP_TX_READY_SIG,   static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(LWIP_RX_OVERRUN_SIG, static_cast<QP::QActive *>(me));
+#endif
+  return Q_TRAN(&LWIPMgr::Running);
+}
+
+
+QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
+
+  switch (e->sig) {
+  case Q_ENTRY_SIG: {
+    me->mSlowTickTimer.armX((LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000,
+			    (LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000);
+    return Q_HANDLED();
+  }
+
+  case Q_EXIT_SIG: {
+    me->mSlowTickTimer.disarm();
+    return Q_HANDLED();
+  }
+
+#if 0
+  case SEND_UDP_SIG: {
+    if (me->mPCBPtr->remote_port != static_cast<uint16_t>(0) {
+      struct pbuf *lBufPtr = pbuf_new((u8_t *)((TextEvt const *)e)->text,
+				strlen(((TextEvt const *)e)->text) + 1);
+      if (static_cast<struct pbuf *>(0) != lBufPtr) {
+	udp_send(me->mPCBPtr, lBufPtr);
+      }
+    }
+    return Q_HANDLED();
+  }
+#endif
+  case LWIP_RX_READY_SIG: {
+    //eth_driver_read();
+    me->mEthDrvPtr->Rd();
+    return Q_HANDLED();
+  }
+
+  case LWIP_TX_READY_SIG: {
+    //eth_driver_write();
+    me->mEthDrvPtr->Wr();
+    return Q_HANDLED();
+  }
+
+  case LWIP_SLOW_TICK_SIG: {
+    // Has IP address changed?
+    if (me->mIPAddr != me->mNetIFPtr->ip_addr.addr) {
+      // IP address in the network byte order.
+      // Save the IP addr.
+      me->mIPAddr = me->mNetIFPtr->ip_addr.addr;
+      uint32_t lIPAddrNet = ntohl(me->mIPAddr);
+      // Publish the text event to display the new IP address.
+#if 0
+      TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_IPADDR_SIG);
+      snprintf(te->text,
+	       Q_DIM(lTextEvtPtr->text),
+	       "%d.%d.%d.%d",
+	       ((lIPAddrNet) >> 24) & 0xFF,
+	       ((lIPAddrNet) >> 16) & 0xFF,
+	       ((lIPAddrNet) >>  8) & 0xFF,
+	       ((lIPAddrNet) >>  0) & 0xFF);
+      QP::QF::publish(static_cast<QP::QEvt *)>(TextEvtPtr));
+#endif
+    }
+
+#if LWIP_TCP
+    me->mTCPTimer += LWIP_SLOW_TICK_MS;
+    if (me->mTCPTimer >= TCP_TMR_INTERVAL) {
+      me->mTCPTimer = 0;
+      tcp_tmr();
+    }
+#endif
+#if LWIP_ARP
+    me->mARPTimer += LWIP_SLOW_TICK_MS;
+    if (me->mARPTimer >= ARP_TMR_INTERVAL) {
+      me->mARPTimer = 0;
+      etharp_tmr();
+    }
+#endif
+#if LWIP_DHCP
+    me->mDHCPFineTimer += LWIP_SLOW_TICK_MS;
+    if (me->mDHCPFineTimer >= DHCP_FINE_TIMER_MSECS) {
+      me->mDHCPFineTimer = 0;
+      dhcp_fine_tmr();
+    }
+    me->mDHCPCoarseTimer += LWIP_SLOW_TICK_MS;
+    if (me->mDHCPCoarseTimer >= DHCP_COARSE_TIMER_MSECS) {
+      me->mDHCPCoarseTimer = 0;
+      dhcp_coarse_tmr();
+    }
+#endif
+#if LWIP_AUTOIP
+    me->mAutoIPTimer += LWIP_SLOW_TICK_MS;
+    if (me->mAutoIPTimer >= AUTOIP_TMR_INTERVAL) {
+	me->mAutoIPTimer = 0;
+	autoip_tmr();
+      }
+#endif
+      return Q_HANDLED();
+    }
+
+    case LWIP_RX_OVERRUN_SIG: {
+      LINK_STATS_INC(link.err);
+      return Q_HANDLED();
+    }
+  }
+
+  return Q_SUPER(&QP::QHsm::top);
+}
+
+// HTTPD customizations.
+// Server-Side Include (SSI) handler.
+static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
+
+  struct stats_proto *lStatsPtr = &lwip_stats.link;
+  STAT_COUNTER lVal = 0;
+
+  switch (aIx) {
+  case 0:
+    // s_xmit
+    lVal = lStatsPtr->xmit;
+    break;
+
+  case 1:
+    // s_recv
+    lVal = lStatsPtr->recv;
+    break;
+
+  case 2:
+    // s_fw
+    lVal = lStatsPtr->fw;
+    break;
+
+  case 3:
+    // s_drop
+    lVal = lStatsPtr->drop;
+    break;
+
+  case 4:
+    // s_chkerr
+    lVal = lStatsPtr->chkerr;
+    break;
+
+  case 5:
+    // s_lenerr
+    lVal = lStatsPtr->lenerr;
+    break;
+
+  case 6:
+    // s_memerr
+    lVal = lStatsPtr->memerr;
+    break;
+
+  case 7:
+    // s_rterr
+    lVal = lStatsPtr->rterr;
+    break;
+
+  case 8:
+    // s_proerr
+    lVal = lStatsPtr->proterr;
+    break;
+
+  case 9:
+    // s_opterr
+    lVal = lStatsPtr->opterr;
+    break;
+
+  case 10:
+    // s_err
+    lVal = lStatsPtr->err;
+    break;
+  }
+
+  return snprintf(aInsertPtr, MAX_TAG_INSERT_LEN, "%d", lVal);
+}
+
+
+// Common Gateway Iinterface (CG) handler.
+static char const *CGIDisplay(int         aIx,
+			      int         aParamQty,
+			      char const *aParamPtr[],
+			      char const *aValPtr[]) {
+
+  for (int lIx = 0; lIx < aParamQty; ++lIx) {
+    if (strstr(aParamPtr[lIx], "text") != static_cast<char *>(0)) {
+      // Param text found?
+#if 0
+      TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_CGI_SIG);
+      strncpy(lTextEvtPtr->text,
+	      aValptr[lIx],
+	      Q_DIM(lTextEvtPtr->text));
+      QF_publish(static_cast<QP::QEvt *>(lTextEvtPtr));
+#endif
+      return "/thank_you.htm";
+    }
+  }
+
+  // No URI, HTTPD will send 404 error page to the browser.
+  return static_cast<char const *>(0);
+}
+
+#if 0
+ 
+// UDP receive handler.
+static void udp_rx_handler(void           *aArgPtr,
+			   struct udp_pcb *aPCBPtr,
+                           struct pbuf    *aBufPtr,
+			   struct ip_addr *aIPAddr,
+			   u16_t           aUDPPort) {
+#if 0
+  TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_UDP_SIG);
+  strncpy(lTextEvtPtr->text,
+	  (char *)aBufPtr->payload,
+	  Q_DIM(lTextEvtPtr->text));
+  QF_publish(static_cast<QP::QEvt *>(lTextEvtPtr));
+#endif
+
+  // Connect to the remote host.
+  // Don't leak the pbuf!
+  udp_connect(aPCBPtr, aIPAddr, aUDPPort);
+  pbuf_free(aBufPtr);
+}
+#endif
