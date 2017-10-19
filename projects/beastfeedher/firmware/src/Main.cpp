@@ -1,0 +1,126 @@
+// *****************************************************************************
+//
+// Project: Beast Feed'Her
+//
+// Module: Main entry point.
+//
+// *****************************************************************************
+
+//! \file
+//! \brief MyClass device class.
+//! \ingroup module_group
+
+// *****************************************************************************
+//
+//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//
+// *****************************************************************************
+
+// *****************************************************************************
+//                              INCLUDE FILES
+// *****************************************************************************
+
+// QP Library.
+#include "qpcpp.h"
+#include "qep.h"
+#include "qf.h"
+
+// CMSIS Library.
+//#include "core_cm3.h"
+
+// TI Library.
+#include "hw_types.h"
+#include "hw_ints.h"
+#include "hw_memmap.h"
+#include "systick.h"
+#include "uartstdio.h"
+
+#include "debug.h"
+#include "gpio.h"
+#include "interrupt.h"
+#include "sysctl.h"
+
+// Common Library.
+#include "Button.h"
+//#include "Calendar.h"
+
+#include "DS3234.h"
+#include "SSD1329.h"
+#include "SPI.h"
+
+// This application.
+#include "BeastFeedHerMgr.h"
+#include "BSP.h"
+#include "LM3S6965.h"
+
+Q_DEFINE_THIS_FILE
+
+// *****************************************************************************
+//                      DEFINED CONSTANTS AND MACROS
+// *****************************************************************************
+
+// *****************************************************************************
+//                         TYPEDEFS AND STRUCTURES
+// *****************************************************************************
+
+// *****************************************************************************
+//                         TYPEDEFS AND STRUCTURES
+// *****************************************************************************
+
+// *****************************************************************************
+//                             GLOBAL VARIABLES
+// *****************************************************************************
+
+// BeastFeedHer specific and opaque pointers.
+// [MG] DETERMINE IF OPAQUE POINTER IS REALLY REQUIRED.
+BeastFeedHerMgr *gMain_BeastFeedHerMgrPtr   = static_cast<BeastFeedHerMgr *>(0);
+QP::QActive     *gMain_BeastFeedHerMgrAOPtr = static_cast<QP::QActive *>(0);
+
+// *****************************************************************************
+//                            EXPORTED FUNCTIONS
+// *****************************************************************************
+
+int main(void) {
+
+  // Initialize the Board Support Package.
+  // Initialize the framework and the underlying RT kernel.
+  QP::QF::init();
+  CoreLink::SPIDev *lSPIDevPtr = BSPInit();
+  UARTprintf("QF version: %s", QP::QF::getVersion());
+
+  // Initialize event pool.
+  //static QF_MPOOL_EL(DPP::ButtonEvt) sSmallPoolSto[20];
+  // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
+  static QF_MPOOL_EL(ButtonEvt) sSmallPoolSto[20];
+  QP::QF::poolInit(sSmallPoolSto,
+                   sizeof(sSmallPoolSto),
+		   sizeof(sSmallPoolSto[0]));
+
+  // Init publish-subscribe.
+  static QP::QSubscrList lSubsribeSto[SIG_QTY];
+  QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
+
+  // Instantiate and start the active objects.
+  static GPIOInitEvt const sGPIOInitEvt = { SIG_DUMMY, GPIO_PORTA_BASE, GPIO_PIN_6 };
+  static QP::QEvt    const *sBeastMgrEvtQPtr[5];
+
+  gMain_BeastFeedHerMgrPtr = new BeastFeedHerMgr(*lSPIDevPtr);
+  gMain_BeastFeedHerMgrAOPtr = gMain_BeastFeedHerMgrPtr;
+  gMain_BeastFeedHerMgrPtr->start(1U,
+				  sBeastMgrEvtQPtr,
+				  Q_DIM(sBeastMgrEvtQPtr),
+				  static_cast<void *>(0),
+				  0U,
+				  &sGPIOInitEvt);
+
+  // Run the QF application.
+  return QP::QF::run();
+}
+
+// *****************************************************************************
+//                              LOCAL FUNCTIONS
+// *****************************************************************************
+
+// *****************************************************************************
+//                                END OF FILE
+// *****************************************************************************
