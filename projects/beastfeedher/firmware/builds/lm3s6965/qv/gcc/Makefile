@@ -1,0 +1,359 @@
+# ***************************************************************************************
+#
+# Makefile
+#
+# ***************************************************************************************
+#
+#     Copyright (c) 2017, Pleora Technologies Inc., All rights reserved.
+#
+# ***************************************************************************************
+#
+# File Name....: Makefile
+#
+# Description..: Makefile for generation of project's executable.
+#
+# ***************************************************************************************
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Makefile variables
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.PHONY: help
+help:
+	@echo Building configurations: Debug $(default), Release, and Spy
+	@echo 
+	@echo Targets:
+	@echo 'make          - Debug (default) configuration.'
+	@echo 'make CONF=rel - Release configuration.'
+	@echo 'make CONF=spy - Spy configuration.'
+	@echo
+	@echo Cleaning configurations: Debug $(default), Release, and Spy
+	@echo 
+	@echo Targets:
+	@echo 'make clean         - Debug (default) configuration.'
+	@echo 'make CONF=rel clean - Release configuration.'
+	@echo 'make CONF=spy clean - Spy configuration.'
+	@echo
+	@echo 'make *_clean - Cleans target and intermediate files.'
+
+
+# NOTE:
+# To use this Makefile on Windows, you will need the GNU make utility, which
+# is included in the Qtools collection for Windows, see:
+#    http://sourceforge.net/projects/qpc/files/Qtools/
+#
+
+# Project name
+PROJECT := beastfeedher
+
+# Directories/paths.
+REPO_ROOT_DIR := ../../../../../../..
+FIRMWARE_PATH := $(REPO_ROOT_DIR)/firmware
+PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
+
+# Location of the QP/C++ framework (if not provided in an environemnt var.)
+ifeq ($(QPCPP),)
+QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp
+endif
+
+# QP port used in this project
+QP_PORT_DIR := $(QPCPP)/ports/arm-cm/qv/gnu
+
+# Stellaris/TI driver library.
+ifeq ($(STELLARIS_LIB),)
+STELLARIS_LIB := $(FIRMWARE_PATH)/3rdparty/StellarisWare/
+endif
+
+# CMSIS library.
+CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
+
+# List of all source directories used by this project.
+VPATH = \
+	../../ \
+	$(PROJECT_ROOT_DIR)/firmware/src \
+	$(FIRMWARE_PATH)/corelink/src \
+	$(FIRMWARE_PATH)/drivers/src \
+	$(FIRMWARE_PATH)/qp_ao/src \
+	$(FIRMWARE_PATH)/utils/src \
+	$(STELLARIS_LIB)/inc \
+	$(STELLARIS_LIB)/driverlib \
+	$(QPCPP)/source \
+	$(QP_PORT_DIR) \
+	$(CMSIS_LIB)/lm3s \
+	$(CMSIS_LIB)/core
+
+#	$(STELLARIS_LIB)/src \
+#	$(STELLARIS_LIB)/utils \
+
+# List of all include directories needed by this project.
+INCLUDES  = \
+	-I. \
+	-I$(PROJECT_ROOT_DIR)/firmware/src \
+	-I$(FIRMWARE_PATH)/corelink/inc \
+	-I$(FIRMWARE_PATH)/drivers/inc \
+	-I$(FIRMWARE_PATH)/qp_ao/inc \
+	-I$(FIRMWARE_PATH)/utils/inc \
+	-I$(STELLARIS_LIB) \
+	-I$(STELLARIS_LIB)/inc \
+	-I$(STELLARIS_LIB)/driverlib \
+	-I$(QPCPP)/include \
+	-I$(QPCPP)/source \
+	-I$(QP_PORT_DIR) \
+	-I$(CMSIS_LIB)/examples/blinky \
+	-I$(CMSIS_LIB)/lm3s \
+	-I$(CMSIS_LIB)
+
+#	-I$(STELLARIS_LIB)/src \
+#	-I$(STELLARIS_LIB)/utils \
+
+# Files
+# Assembler source files.
+ASM_SRCS :=
+
+# C source files.
+C_SRCS :=
+
+#	uartstdio.c \
+#	core_cm3.c \
+#	system_lm3s.c \
+#	startup_LM3S6965.c
+
+
+# C++ source files.
+CPP_SRCS := \
+	Main.cpp \
+	BeastFeedHerMgr.cpp \
+	Button.cpp \
+	Calendar.cpp \
+	CoreLinkPeripheralDev.cpp \
+	Date.cpp \
+	DBRec.cpp \
+	DButton.cpp \
+	Debouncer.cpp \
+	DS3234.cpp \
+	Limit.cpp \
+	Month.cpp \
+	RTC.cpp \
+        SSD1329.cpp \
+        SPI.cpp \
+	Weekday.cpp
+
+#	BSP.cpp \
+
+QP_SRCS := \
+	qep_hsm.cpp \
+	qep_msm.cpp \
+	qf_act.cpp \
+	qf_actq.cpp \
+	qf_defer.cpp \
+	qf_dyn.cpp \
+	qf_mem.cpp \
+	qf_ps.cpp \
+	qf_qact.cpp \
+	qf_qeq.cpp \
+	qf_qmact.cpp \
+	qf_time.cpp \
+	qv.cpp
+
+QP_ASMS :=
+QS_SRCS := \
+	qs.cpp \
+	qs_rx.cpp \
+	qs_fp.cpp
+
+
+OUTPUT    := $(PROJECT)
+LD_SCRIPT := $(PROJECT).ld
+
+#LIB_DIRS  := -Lc:/apps/DriverLib3416/src/gcc
+LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3
+#LIBS      := -ldriver
+LIBS      := -ldriver-cm3
+
+# defines
+# [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
+DEFINES   := -DQ_NASSERT
+
+# ARM CPU, FPU, and Float-ABI types
+ARM_CPU   := -mcpu=cortex-m3
+ARM_FPU   :=
+FLOAT_ABI :=
+
+
+# GNU-ARM toolset (NOTE: You need to adjust to your machine)
+# see http://gnutoolchains.com/arm-eabi/
+ifeq ($(GNU_ARM),)
+#GNU_ARM = C:/tools/gnu_arm-eabi
+GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
+endif
+
+# make sure that the GNU-ARM toolset exists...
+ifeq ("$(wildcard $(GNU_ARM))","")
+$(error GNU_ARM toolset not found. Please adjust the Makefile)
+endif
+
+CC    := $(GNU_ARM)/bin/arm-none-eabi-gcc
+CPP   := $(GNU_ARM)/bin/arm-none-eabi-g++
+AS    := $(GNU_ARM)/bin/arm-none-eabi-as
+LINK  := $(GNU_ARM)/bin/arm-none-eabi-g++
+BIN   := $(GNU_ARM)/bin/arm-none-eabi-objcopy
+
+
+# Basic utilities (included in Qtools for Windows), see:
+MKDIR := mkdir
+RM    := rm
+
+
+# Build options for various configurations for ARM Cortex-M4F
+
+# Combine all the sources...
+#VPATH    += $(QPCPP)/3rd_party/gnu_cpp
+VPATH    += $(QPCPP)/3rd_party/gnu
+#CPP_SRCS += $(QP_SRCS) mini_cpp.cpp
+CPP_SRCS += $(QP_SRCS)
+ASM_SRCS += $(QP_ASMS)
+
+# Add the pre-defined symbol __FPU_PRESENT if needed...
+ifneq (,$(ARM_FPU))
+DEFINES += -D__FPU_PRESENT
+ASM_FPU += -defsym=__FPU_PRESENT=1
+endif
+
+
+# Release configuration.
+ifeq (rel, $(CONF))
+
+BIN_DIR := rel
+
+ASFLAGS = $(ARM_CPU) $(ASM_FPU)
+
+CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+	-ffunction-sections -fdata-sections \
+	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+
+CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+	-std=c++11 \
+	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG \
+	-DQ_EVT_CTOR
+
+else ifeq (spy, $(CONF))
+# Spy configuration.
+
+BIN_DIR := spy
+
+CPP_SRCS += $(QS_SRCS)
+
+ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
+
+CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+	-ffunction-sections -fdata-sections \
+	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+
+CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+	-std=c++11 \
+	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+
+else
+# Default Debug configuration.
+
+BIN_DIR := dbg
+
+ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
+
+CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+	-ffunction-sections -fdata-sections \
+	-O $(INCLUDES) $(DEFINES)
+
+CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+	-std=c++11 \
+	-O $(INCLUDES) $(DEFINES)
+
+endif
+
+
+LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+	-mthumb \
+	--specs=nosys.specs \
+	-lnosys \
+	-Wl,-Map,$(BIN_DIR)/$(OUTPUT).map,--cref,--gc-sections $(LIB_DIRS)
+
+
+ASM_OBJS     := $(patsubst %.s,%.o,  $(notdir $(ASM_SRCS)))
+C_OBJS       := $(patsubst %.c,%.o,  $(notdir $(C_SRCS)))
+CPP_OBJS     := $(patsubst %.cpp,%.o,$(notdir $(CPP_SRCS)))
+
+TARGET_BIN   := $(BIN_DIR)/$(OUTPUT).bin
+TARGET_ELF   := $(BIN_DIR)/$(OUTPUT).elf
+ASM_OBJS_EXT := $(addprefix $(BIN_DIR)/, $(ASM_OBJS))
+C_OBJS_EXT   := $(addprefix $(BIN_DIR)/, $(C_OBJS))
+C_DEPS_EXT   := $(patsubst %.o, %.d, $(C_OBJS_EXT))
+CPP_OBJS_EXT := $(addprefix $(BIN_DIR)/, $(CPP_OBJS))
+CPP_DEPS_EXT := $(patsubst %.o, %.d, $(CPP_OBJS_EXT))
+
+# create $(BIN_DIR) if it does not exist
+ifeq ("$(wildcard $(BIN_DIR))","")
+$(shell $(MKDIR) $(BIN_DIR))
+endif
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Targets.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+all: $(TARGET_BIN)
+#all: $(TARGET_ELF)
+
+$(TARGET_BIN): $(TARGET_ELF)
+	$(BIN) -O binary $< $@
+
+$(TARGET_ELF) : $(ASM_OBJS_EXT) $(C_OBJS_EXT) $(CPP_OBJS_EXT)
+	$(CPP) $(CPPFLAGS) -c $(QPCPP)/include/qstamp.cpp -o $(BIN_DIR)/qstamp.o
+	$(LINK) $(LINKFLAGS) -o $@ $^ $(BIN_DIR)/qstamp.o $(LIBS)
+
+$(BIN_DIR)/%.d : %.c
+	$(CC) -MM -MT $(@:.d=.o) $(CFLAGS) $< > $@
+
+$(BIN_DIR)/%.d : %.cpp
+	$(CPP) -MM -MT $(@:.d=.o) $(CPPFLAGS) $< > $@
+
+$(BIN_DIR)/%.o : %.s
+	$(AS) $(ASFLAGS) $< -o $@
+
+$(BIN_DIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BIN_DIR)/%.o : %.cpp
+	$(CPP) $(CPPFLAGS) -c $< -o $@
+
+# Include dependency files only if our goal depends on their existence
+ifneq ($(MAKECMDGOALS),clean)
+  ifneq ($(MAKECMDGOALS),show)
+-include $(C_DEPS_EXT) $(CPP_DEPS_EXT)
+  endif
+endif
+
+
+.PHONY: clean
+clean:
+	-$(RM) $(BIN_DIR)/*.o \
+	$(BIN_DIR)/*.d \
+	$(BIN_DIR)/*.bin \
+	$(BIN_DIR)/*.elf \
+	$(BIN_DIR)/*.map
+
+show:
+	@echo PROJECT = $(PROJECT)
+	@echo CONF = $(CONF)
+	@echo DEFINES = $(DEFINES)
+	@echo ASM_FPU = $(ASM_FPU)
+	@echo ASM_SRCS = $(ASM_SRCS)
+	@echo C_SRCS = $(C_SRCS)
+	@echo CPP_SRCS = $(CPP_SRCS)
+	@echo ASM_OBJS_EXT = $(ASM_OBJS_EXT)
+	@echo C_OBJS_EXT = $(C_OBJS_EXT)
+	@echo C_DEPS_EXT = $(C_DEPS_EXT)
+	@echo CPP_DEPS_EXT = $(CPP_DEPS_EXT)
+	@echo TARGET_ELF = $(TARGET_ELF)
