@@ -31,7 +31,6 @@
 // TI Library.
 #include "hw_types.h"
 #include "hw_ints.h"
-//#include "hw_memmap.h"
 #include "systick.h"
 #include "uartstdio.h"
 
