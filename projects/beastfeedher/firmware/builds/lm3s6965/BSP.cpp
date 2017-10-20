@@ -26,12 +26,12 @@
 #include "qf.h"
 
 // CMSIS Library.
-//#include "core_cm3.h"
+#include "lm3s_cmsis.h"
 
 // TI Library.
 #include "hw_types.h"
 #include "hw_ints.h"
-#include "hw_memmap.h"
+//#include "hw_memmap.h"
 #include "systick.h"
 #include "uartstdio.h"
 
@@ -50,7 +50,6 @@
 // This application.
 #include "BeastFeedHerMgr.h"
 #include "BSP.h"
-#include "LM3S6965.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -62,11 +61,11 @@ Q_DEFINE_THIS_FILE
 // Assign a priority to EVERY ISR explicitly by calling NVIC_SetPriority().
 // DO NOT LEAVE THE ISR PRIORITIES AT THE DEFAULT VALUE!
 //
-#define __NVIC_PRIO_BITS 3U
 enum KernelUnawareISRs { // see NOTE00
     // ...
     MAX_KERNEL_UNAWARE_CMSIS_PRI  // keep always last
 };
+
 // "kernel-unaware" interrupts can't overlap "kernel-aware" interrupts
 Q_ASSERT_COMPILE(MAX_KERNEL_UNAWARE_CMSIS_PRI <= QF_AWARE_ISR_CMSIS_PRI);
 #if 1

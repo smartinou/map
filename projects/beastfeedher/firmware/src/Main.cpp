@@ -26,12 +26,11 @@
 #include "qf.h"
 
 // CMSIS Library.
-//#include "core_cm3.h"
+#include "lm3s_cmsis.h"
 
 // TI Library.
 #include "hw_types.h"
 #include "hw_ints.h"
-#include "hw_memmap.h"
 #include "systick.h"
 #include "uartstdio.h"
 
@@ -51,7 +50,6 @@
 // This application.
 #include "BeastFeedHerMgr.h"
 #include "BSP.h"
-#include "LM3S6965.h"
 
 Q_DEFINE_THIS_FILE
 
