@@ -136,16 +136,6 @@ typedef enum IRQn {
 #include "core/core_cm3.h"          /* Cortex-M3 processor and core periphs  */
 #include "lm3s/system_lm3s.h"       /* LM3S Stellaris system init            */
 
-#if 0
-/**
- * @brief  Setup the initial configuration of the microcontroller
- * @param  none
- * @return none
- *
- * Initialize the system clocking according to the user configuration.
- */
-extern void SystemInit (void);
-#endif
 
 /* ========================================================================== */
 /* =============       Device Specific Peripheral Section       ============= */
