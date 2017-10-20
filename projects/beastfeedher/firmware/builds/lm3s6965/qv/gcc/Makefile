@@ -80,10 +80,9 @@ VPATH = \
 	$(QPCPP)/source \
 	$(QP_PORT_DIR) \
 	$(CMSIS_LIB)/lm3s \
+	$(CMSIS_LIB)/lm3s/GCC \
 	$(CMSIS_LIB)/core
 
-#	$(STELLARIS_LIB)/src \
-#	$(STELLARIS_LIB)/utils \
 
 # List of all include directories needed by this project.
 INCLUDES  = \
@@ -101,28 +100,26 @@ INCLUDES  = \
 	-I$(QP_PORT_DIR) \
 	-I$(CMSIS_LIB)/examples/blinky \
 	-I$(CMSIS_LIB)/lm3s \
+	-I$(CMSIS_LIB)/core \
 	-I$(CMSIS_LIB)
 
-#	-I$(STELLARIS_LIB)/src \
-#	-I$(STELLARIS_LIB)/utils \
 
 # Files
 # Assembler source files.
 ASM_SRCS :=
 
 # C source files.
-C_SRCS :=
-
-#	uartstdio.c \
-#	core_cm3.c \
-#	system_lm3s.c \
-#	startup_LM3S6965.c
+C_SRCS := \
+	startup_ARMCM3.c \
+	system_lm3s.c \
+	uartstdio.c
 
 
 # C++ source files.
 CPP_SRCS := \
 	Main.cpp \
 	BeastFeedHerMgr.cpp \
+	BSP.cpp \
 	Button.cpp \
 	Calendar.cpp \
 	CoreLinkPeripheralDev.cpp \
@@ -138,7 +135,6 @@ CPP_SRCS := \
         SPI.cpp \
 	Weekday.cpp
 
-#	BSP.cpp \
 
 QP_SRCS := \
 	qep_hsm.cpp \
@@ -163,7 +159,7 @@ QS_SRCS := \
 
 
 OUTPUT    := $(PROJECT)
-LD_SCRIPT := $(PROJECT).ld
+LD_SCRIPT := lm3s6965_gcc.ld
 
 #LIB_DIRS  := -Lc:/apps/DriverLib3416/src/gcc
 LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3
