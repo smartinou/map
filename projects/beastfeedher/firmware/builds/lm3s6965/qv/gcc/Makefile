@@ -69,39 +69,39 @@ CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 
 # List of all source directories used by this project.
 VPATH = \
-	../../ \
-	$(PROJECT_ROOT_DIR)/firmware/src \
-	$(FIRMWARE_PATH)/corelink/src \
-	$(FIRMWARE_PATH)/drivers/src \
-	$(FIRMWARE_PATH)/qp_ao/src \
-	$(FIRMWARE_PATH)/utils/src \
-	$(STELLARIS_LIB)/inc \
-	$(STELLARIS_LIB)/driverlib \
-	$(QPCPP)/source \
-	$(QP_PORT_DIR) \
-	$(CMSIS_LIB)/lm3s \
-	$(CMSIS_LIB)/lm3s/GCC \
-	$(CMSIS_LIB)/core
+        ../../ \
+        $(PROJECT_ROOT_DIR)/firmware/src \
+        $(FIRMWARE_PATH)/corelink/src \
+        $(FIRMWARE_PATH)/drivers/src \
+        $(FIRMWARE_PATH)/qp_ao/src \
+        $(FIRMWARE_PATH)/utils/src \
+        $(STELLARIS_LIB)/inc \
+        $(STELLARIS_LIB)/driverlib \
+        $(QPCPP)/source \
+        $(QP_PORT_DIR) \
+        $(CMSIS_LIB)/lm3s \
+        $(CMSIS_LIB)/lm3s/GCC \
+        $(CMSIS_LIB)/core
 
 
 # List of all include directories needed by this project.
 INCLUDES  = \
-	-I. \
-	-I$(PROJECT_ROOT_DIR)/firmware/src \
-	-I$(FIRMWARE_PATH)/corelink/inc \
-	-I$(FIRMWARE_PATH)/drivers/inc \
-	-I$(FIRMWARE_PATH)/qp_ao/inc \
-	-I$(FIRMWARE_PATH)/utils/inc \
-	-I$(STELLARIS_LIB) \
-	-I$(STELLARIS_LIB)/inc \
-	-I$(STELLARIS_LIB)/driverlib \
-	-I$(QPCPP)/include \
-	-I$(QPCPP)/source \
-	-I$(QP_PORT_DIR) \
-	-I$(CMSIS_LIB)/examples/blinky \
-	-I$(CMSIS_LIB)/lm3s \
-	-I$(CMSIS_LIB)/core \
-	-I$(CMSIS_LIB)
+        -I. \
+        -I$(PROJECT_ROOT_DIR)/firmware/src \
+        -I$(FIRMWARE_PATH)/corelink/inc \
+        -I$(FIRMWARE_PATH)/drivers/inc \
+        -I$(FIRMWARE_PATH)/qp_ao/inc \
+        -I$(FIRMWARE_PATH)/utils/inc \
+        -I$(STELLARIS_LIB) \
+        -I$(STELLARIS_LIB)/inc \
+        -I$(STELLARIS_LIB)/driverlib \
+        -I$(QPCPP)/include \
+        -I$(QPCPP)/source \
+        -I$(QP_PORT_DIR) \
+        -I$(CMSIS_LIB)/examples/blinky \
+        -I$(CMSIS_LIB)/lm3s \
+        -I$(CMSIS_LIB)/core \
+        -I$(CMSIS_LIB)
 
 
 # Files
@@ -117,45 +117,46 @@ C_SRCS := \
 
 # C++ source files.
 CPP_SRCS := \
-	Main.cpp \
-	BeastFeedHerMgr.cpp \
-	BSP.cpp \
-	Button.cpp \
-	Calendar.cpp \
-	CoreLinkPeripheralDev.cpp \
-	Date.cpp \
-	DBRec.cpp \
-	DButton.cpp \
-	Debouncer.cpp \
-	DS3234.cpp \
-	Limit.cpp \
-	Month.cpp \
-	RTC.cpp \
+        Main.cpp \
+        BeastFeedHerMgr.cpp \
+        BSP.cpp \
+        Button.cpp \
+        Calendar.cpp \
+        CoreLinkPeripheralDev.cpp \
+        Date.cpp \
+        DBRec.cpp \
+        DButton.cpp \
+        Debouncer.cpp \
+        DS3234.cpp \
+        Limit.cpp \
+        Month.cpp \
+        RTC.cpp \
+        RTCC_AO.cpp \
         SSD1329.cpp \
         SPI.cpp \
-	Weekday.cpp
+        Weekday.cpp
 
 
 QP_SRCS := \
-	qep_hsm.cpp \
-	qep_msm.cpp \
-	qf_act.cpp \
-	qf_actq.cpp \
-	qf_defer.cpp \
-	qf_dyn.cpp \
-	qf_mem.cpp \
-	qf_ps.cpp \
-	qf_qact.cpp \
-	qf_qeq.cpp \
-	qf_qmact.cpp \
-	qf_time.cpp \
-	qv.cpp
+        qep_hsm.cpp \
+        qep_msm.cpp \
+        qf_act.cpp \
+        qf_actq.cpp \
+        qf_defer.cpp \
+        qf_dyn.cpp \
+        qf_mem.cpp \
+        qf_ps.cpp \
+        qf_qact.cpp \
+        qf_qeq.cpp \
+        qf_qmact.cpp \
+        qf_time.cpp \
+        qv.cpp
 
 QP_ASMS :=
 QS_SRCS := \
-	qs.cpp \
-	qs_rx.cpp \
-	qs_fp.cpp
+        qs.cpp \
+        qs_rx.cpp \
+        qs_fp.cpp
 
 
 OUTPUT    := $(PROJECT)
