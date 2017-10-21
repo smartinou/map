@@ -49,6 +49,7 @@
 // This application.
 #include "BeastFeedHerMgr.h"
 #include "BSP.h"
+#include "RTCC_AO.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -140,9 +141,9 @@ CoreLink::SPIDev * BSPInit(void) {
   // [MG] Test if SystemCoreClockUpdate() if the same than SysCtlClockSet().
   //SystemCoreClockUpdate();
   SysCtlClockSet(SYSCTL_SYSDIV_1
-		 | SYSCTL_USE_OSC
-		 | SYSCTL_OSC_MAIN
-		 | SYSCTL_XTAL_8MHZ);
+                 | SYSCTL_USE_OSC
+                 | SYSCTL_OSC_MAIN
+                 | SYSCTL_XTAL_8MHZ);
 
 
   // Enable the clock to the peripherals used by the application.
@@ -176,24 +177,24 @@ CoreLink::SPIDev * BSPInit(void) {
   // Otherwise this will generate a HW fault exception.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
   SSD1329 *lSSD1329Ptr = new SSD1329(*lSPIDevPtr,
-				     *lOLEDSPISlaveCfgPtr,
-				     GPIO_PORTC_BASE,
-				     GPIO_PIN_7,
-				     GPIO_PORTC_BASE,
-				     GPIO_PIN_6,
-				     128,
-				     96);
+                                     *lOLEDSPISlaveCfgPtr,
+                                     GPIO_PORTC_BASE,
+                                     GPIO_PIN_7,
+                                     GPIO_PORTC_BASE,
+                                     GPIO_PIN_6,
+                                     128,
+                                     96);
   lSSD1329Ptr->Init();
   lSSD1329Ptr->DrawImg(&gcat_drawing_128x91_neg_ImgBuf[0][0],
-		       0,
-		       0,
-		       gcat_drawing_128x91_neg_Width,
-		       gcat_drawing_128x91_neg_Height);
+                       0,
+                       0,
+                       gcat_drawing_128x91_neg_Width,
+                       gcat_drawing_128x91_neg_Height);
 
   lSSD1329Ptr->DrawStr("Bonjour",
-		       0,
-		       0,
-		       0x8);
+                       0,
+                       0,
+                       0x8);
 #endif
 
   // Debug UART port.
@@ -229,12 +230,12 @@ void QP::QF::onStartup(void) {
   //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
   GPIOPadConfigSet(GPIO_PORTF_BASE,
-		   GPIO_PIN_0,
-		   GPIO_STRENGTH_2MA,
-		   GPIO_PIN_TYPE_STD);
+                   GPIO_PIN_0,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
   GPIOPinWrite(GPIO_PORTF_BASE,
-	       GPIO_PIN_0,
-	       GPIO_PIN_0);
+               GPIO_PIN_0,
+               GPIO_PIN_0);
 }
 
 //............................................................................
@@ -243,11 +244,11 @@ void QP::QV::onIdle(void) {  // called with interrupts disabled, see NOTE01
   // Toggle the user LED, ON then OFF.
   QF_INT_DISABLE();
   GPIOPinWrite(GPIO_PORTF_BASE,
-	       GPIO_PIN_0,
-	       GPIO_PIN_0);
+               GPIO_PIN_0,
+               GPIO_PIN_0);
   GPIOPinWrite(GPIO_PORTF_BASE,
-	       GPIO_PIN_0,
-	       0);
+               GPIO_PIN_0,
+               0);
   QF_INT_ENABLE();
 }
 
@@ -279,11 +280,11 @@ void LM3S6965SSIPinCfg::SetPins(void) const {
     // PA5: SSI0TX
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     GPIOPinTypeSSI(GPIO_PORTA_BASE,
-		   GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
+                   GPIO_PIN_2 | GPIO_PIN_4 | GPIO_PIN_5);
     GPIOPadConfigSet(GPIO_PORTA_BASE,
-		     GPIO_PIN_2 | GPIO_PIN_5,
-		     GPIO_STRENGTH_2MA,
-		     GPIO_PIN_TYPE_STD);
+                     GPIO_PIN_2 | GPIO_PIN_5,
+                     GPIO_STRENGTH_2MA,
+                     GPIO_PIN_TYPE_STD);
     break;
   default:
     // Do nothing.
@@ -314,7 +315,7 @@ void GPIOPortA_IRQHandler(void) {
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTA_BASE, lIsMasked);
   if (GPIO_PIN_6 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTA_BASE, GPIO_PIN_6);
-    gMain_BeastFeedHerMgrPtr->ISRCallback();
+    RTCC_AO::GetInstancePtr()->ISRCallback();
   }
 }
 
