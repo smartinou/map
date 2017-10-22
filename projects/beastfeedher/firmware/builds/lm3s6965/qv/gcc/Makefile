@@ -110,7 +110,7 @@ ASM_SRCS :=
 
 # C source files.
 C_SRCS := \
-	startup_ARMCM3.c \
+	startup_lm3s6965.c \
 	system_lm3s.c \
 	uartstdio.c
 
