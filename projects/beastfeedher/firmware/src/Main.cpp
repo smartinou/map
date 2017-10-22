@@ -43,13 +43,13 @@
 #include "Button.h"
 //#include "Calendar.h"
 
-#include "DS3234.h"
 #include "SSD1329.h"
 #include "SPI.h"
 
 // This application.
-#include "BeastFeedHerMgr.h"
+//#include "BeastFeedHerMgr.h"
 #include "BSP.h"
+#include "RTCC_AO.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -69,11 +69,6 @@ Q_DEFINE_THIS_FILE
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-// BeastFeedHer specific and opaque pointers.
-// [MG] DETERMINE IF OPAQUE POINTER IS REALLY REQUIRED.
-BeastFeedHerMgr *gMain_BeastFeedHerMgrPtr   = static_cast<BeastFeedHerMgr *>(0);
-QP::QActive     *gMain_BeastFeedHerMgrAOPtr = static_cast<QP::QActive *>(0);
-
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
@@ -92,12 +87,17 @@ int main(void) {
   static QF_MPOOL_EL(ButtonEvt) sSmallPoolSto[20];
   QP::QF::poolInit(sSmallPoolSto,
                    sizeof(sSmallPoolSto),
-		   sizeof(sSmallPoolSto[0]));
+                   sizeof(sSmallPoolSto[0]));
+
+  static QF_MPOOL_EL(RTCCEvt) sMediumPoolSto[10];
+  QP::QF::poolInit(sMediumPoolSto,
+                   sizeof(sMediumPoolSto),
+                   sizeof(sMediumPoolSto[0]));
 
   // Init publish-subscribe.
   static QP::QSubscrList lSubsribeSto[SIG_QTY];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
-
+#if 0
   // Instantiate and start the active objects.
   static GPIOInitEvt const sGPIOInitEvt = { SIG_DUMMY, GPIO_PORTA_BASE, GPIO_PIN_6 };
   static QP::QEvt    const *sBeastMgrEvtQPtr[5];
@@ -110,7 +110,24 @@ int main(void) {
 				  static_cast<void *>(0),
 				  0U,
 				  &sGPIOInitEvt);
+#else
 
+  // FIXME: find how to move into BSP file.
+  static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
+                                            *lSPIDevPtr,
+                                            GPIO_PORTA_BASE,
+                                            GPIO_PIN_7,
+                                            GPIO_PORTA_BASE,
+                                            GPIO_PIN_6 };
+  static QP::QEvt const *sRTCCEvtQPtr[5];
+  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
+  lRTCC_AOPtr->start(1U,
+                     sRTCCEvtQPtr,
+                     Q_DIM(sRTCCEvtQPtr),
+                     static_cast<void *>(0),
+                     0U,
+                     &sRTCCInitEvt);
+#endif
   // Run the QF application.
   return QP::QF::run();
 }

@@ -25,6 +25,12 @@
 
 //#include "BeastFeedHerMgr.h"
 
+#include "Date.h"
+#include "Time.h"
+#include "SPI.h"
+
+//using namespace CoreLink;
+
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -34,6 +40,11 @@ enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
   SIG_DUMMY = QP::Q_USER_SIG,
   SIG_TIME_TICK,
   SIG_RTC_IRQ,
+  SIG_RTCC_INTERRUPT = SIG_RTC_IRQ,
+  SIG_RTCC_TIME_TICK_ALARM,
+  SIG_RTCC_CALENDAR_EVENT_ALARM,
+  SIG_RTCC_ADD_CALENDAR_ENTRY,
+  SIG_RTCC_DEL_CALENDAR_ENTRY,
   SIG_BUTTON_EVT,
   SIG_FEED_CMD,
   SIG_DEBOUNCE_TIMEOUT,
@@ -56,22 +67,86 @@ enum BSP_NAV_BUTTON_ENUM_TAG {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
+// Forward declarations.
+//class Time;
+//class Date;
+
+
 // [MG] MOVE THIS TO "BEAST FEEDER" HEADER FILE.
 
 // Event to pass GPIO info to initial transition.
 // Avoids ctor with long argument list.
 class GPIOInitEvt : public QP::QEvt {
  public:
-  GPIOInitEvt(QP::QSignal aSig, unsigned long aGPIOPort, unsigned int aGPIOPin) {
-    sig       = aSig;
-    poolId_   = 0U;
+  GPIOInitEvt(QP::QSignal aSig,
+              unsigned long aGPIOPort,
+              unsigned int aGPIOPin) {
+    sig = aSig;
+    poolId_ = 0U;
     mGPIOPort = aGPIOPort;
-    mGPIOPin  = aGPIOPin;
+    mGPIOPin = aGPIOPin;
   }
 
  public:
   unsigned long mGPIOPort;
   unsigned int  mGPIOPin;
+};
+
+
+class RTCCInitEvt : public QP::QEvt {
+ public:
+  RTCCInitEvt(QP::QSignal       aSig,
+              CoreLink::SPIDev &aSPIDevRef,
+              unsigned long     aCSnGPIOPort,
+              unsigned int      aCSnGPIOPin,
+              unsigned long     aIRQGPIOPort,
+              unsigned int      aIRQGPIOPin):
+  mSPIDevRef(aSPIDevRef) {
+    sig = aSig;
+    poolId_ = 0U;
+    mSPIDevRef   = aSPIDevRef;
+    mCSnGPIOPort = aCSnGPIOPort;
+    mCSnGPIOPin  = aCSnGPIOPin;
+    mIRQGPIOPort = aIRQGPIOPort;
+    mIRQGPIOPin  = aIRQGPIOPin;
+  }
+
+ public:
+  CoreLink::SPIDev &mSPIDevRef;
+  unsigned long     mCSnGPIOPort;
+  unsigned int      mCSnGPIOPin;
+  unsigned long     mIRQGPIOPort;
+  unsigned int      mIRQGPIOPin;
+};
+
+
+class RTCCEvt : public QP::QEvt {
+ public:
+  RTCCEvt(QP::QSignal aSig, Time aTime, Date aDate) {
+    sig     = aSig;
+    poolId_ = 0U;
+    mTime   = aTime;
+    mDate   = aDate;
+  }
+
+ public:
+  Time mTime;
+  Date mDate;
+};
+
+
+class RTCCSetEvt : public QP::QEvt {
+ public:
+  RTCCSetEvt(QP::QSignal aSig, Weekday aWeekday, Time aTime) {
+    sig      = aSig;
+    poolId_  = 0U;
+    mWeekday = aWeekday;
+    mTime    = aTime;
+  }
+
+ public:
+  Weekday mWeekday;
+  Time    mTime;
 };
 
 
@@ -101,9 +176,9 @@ class FeedCmdEvt : public QP::QEvt {
 class ButtonEvt : public QP::QEvt {
  public:
   ButtonEvt(QP::QSignal  aSig,
-	    unsigned int aID,
-	    unsigned int aState,
-	    unsigned int aDebounceDelay = 0) {
+            unsigned int aID,
+            unsigned int aState,
+            unsigned int aDebounceDelay = 0) {
     sig     = aSig;
     poolId_ = 0U;
     mID     = aID;
