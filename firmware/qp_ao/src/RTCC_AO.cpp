@@ -7,8 +7,8 @@
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief RTCC QActive Object class.
+//! \ingroup qp_ao
 //!
 //! This is the RTCC AO of the system.
 //! It has control over the RTC and managed the feeding signals comming from
@@ -23,6 +23,9 @@
 // *****************************************************************************
 //                              INCLUDE FILES
 // *****************************************************************************
+#define RTCC_DBG
+//#undef RTCC_DBG
+
 
 // Standard Library.
 #include <stddef.h>
@@ -32,7 +35,9 @@
 #include "hw_ints.h"
 #include "gpio.h"
 #include "interrupt.h"
+#ifdef RTCC_DBG
 #include "uartstdio.h"
+#endif // RTCC_DBG
 
 // QP Library.
 #include "qpcpp.h"
@@ -54,8 +59,8 @@ Q_DEFINE_THIS_FILE
 //                      DEFINED CONSTANTS AND MACROS
 // *****************************************************************************
 
-#define DBG_CALENDAR
-//#undef  DBG_CALENDAR
+#define RTCC_CALENDAR_DBG
+//#undef  RTCC_CALENDAR_DBG
 
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -113,17 +118,17 @@ QP::QActive * const RTCC_AO::GetOpaqueAOInstancePtr(void) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-QP::QState RTCC_AO::Initial(RTCC_AO        * const me, //aMePtr,
-                            QP::QEvt const * const aEvtPtr) {
+QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
+                            QP::QEvt const * const e) { //aEvtPtr
 
   // FIXME: Determine what to return in case of failure of 'new'.
-  int lResult = InitRTCC(me, aEvtPtr);
+  int lResult = InitRTCC(me, e);
 
   // Subscribe to signals if any.
   //aMe->subscribe(<>_SIG);
 
-  lResult = InitCalendar(me, aEvtPtr);
-  lResult = InitInterrupt(me, aEvtPtr);
+  lResult = InitCalendar(me, e);
+  lResult = InitInterrupt(me, e);
 
   (void)lResult;
 
@@ -131,10 +136,10 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me, //aMePtr,
 }
 
 
-unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me, //aMePtr,
-                               QP::QEvt  const * const aEvtPtr) {
+unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
+                               QP::QEvt  const * const e) { //aEvtPtr
 
-  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(aEvtPtr);
+  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
 
   // Create an SPI slave configuration for the DS3234 RTCC.
   // TODO: Verify if this can be changed into local var.
@@ -161,8 +166,8 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me, //aMePtr,
 }
 
 
-unsigned int RTCC_AO::InitCalendar(RTCC_AO         * const me, //aMePtr,
-                                   QP::QEvt  const * const aEvtPtr) {
+unsigned int RTCC_AO::InitCalendar(RTCC_AO         * const me,  //aMePtr,
+                                   QP::QEvt  const * const e) { //aEvtPtr
 
   // -Get current time & date, temperature.
   // -Read config from RTCC sram.
@@ -170,24 +175,24 @@ unsigned int RTCC_AO::InitCalendar(RTCC_AO         * const me, //aMePtr,
   // -Set next alarm.
   me->mDS3234Ptr->RdTimeAndDate(me->mTime, me->mDate);
   me->mTemperature = me->mDS3234Ptr->GetTemperature();
-#ifdef DBG_CALENDAR
+#ifdef RTCC_CALENDAR_DBG
   me->mCalendar.ClrAllEntries();
 #else
   // Fill calendar from DB values:
   // Read whole DB from RTCC NV RAM.
   // Serialize Calendar record into Calendar member object.
-#endif // DBG_CALENDAR
+#endif // RTCC_CALENDAR_DBG
   SetNextCalendarEvt(me);
 
   return 0;
 }
 
 
-unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me, //aMePtr,
-                                    QP::QEvt  const * const aEvtPtr) {
+unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
+                                    QP::QEvt  const * const e) { //aEvtPtr
 
   // Set interrupt pin and periodic alarm.
-  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(aEvtPtr);
+  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
   me->mIntNbr = BSPGPIOPortToInt(lRTCCInitEvtPtr->mIRQGPIOPort);
   IntDisable(me->mIntNbr);
 
@@ -213,32 +218,42 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me, //aMePtr,
 }
 
 
-QP::QState RTCC_AO::Running(RTCC_AO        * const me, //aMePtr,
-                            QP::QEvt const * const aEvtPtr) {
+QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
+                            QP::QEvt const * const e) { //aEvtPtr
 
-  switch (aEvtPtr->sig) {
+  switch (e->sig) {
   case Q_ENTRY_SIG:
     IntEnable(me->mIntNbr);
     return Q_HANDLED();
-    
+
   case SIG_RTCC_INTERRUPT: {
-    // Read complete RTC, updating Time & Date at the same time.
+    // Read complete RTCC, updating Time & Date at the same time.
     me->mDS3234Ptr->GetTimeAndDate(me->mTime, me->mDate);
     me->mTemperature = me->mDS3234Ptr->GetTemperature();
     me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_1);
-    UARTprintf("*");
+#ifdef RTCC_DBG
+    if ((0 == me->mTime.GetMinutes()) && (0 == me->mTime.GetSeconds())) {
+      UARTprintf("\nH\n");
+    } else if (0 == me->mTime.GetSeconds()){
+      UARTprintf("\nM\n");
+    } else {
+      UARTprintf(".");
+    }
+#endif // RTCC_DBG
 
     // Publish Tick Alarm Event.
     RTCCEvt *lTickAlarmEvtPtr = Q_NEW(RTCCEvt, SIG_RTCC_TIME_TICK_ALARM);
     lTickAlarmEvtPtr->mTime = me->mTime;
     lTickAlarmEvtPtr->mDate = me->mDate;
     QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTickAlarmEvtPtr), me);
-    
+
     if ((DS3234::AF2  & me->mDS3234Ptr->GetStatus()) &&
         (DS3234::AEI2 & me->mDS3234Ptr->GetCtrl())) {
       // Got a calendar event alarm: create event.
       // Set next calendar alarm event.
+#ifdef RTCC_DBG
       UARTprintf("A");
+#endif // RTCC_DBG
       me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_2);
       RTCCEvt *lCalendarEvtPtr = Q_NEW(RTCCEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
       lCalendarEvtPtr->mTime = me->mTime;
@@ -251,14 +266,14 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me, //aMePtr,
   }
 
   case SIG_RTCC_ADD_CALENDAR_ENTRY: {
-    RTCCSetEvt const *lSetEvtPtr = static_cast<RTCCSetEvt const *>(aEvtPtr);
+    RTCCSetEvt const *lSetEvtPtr = static_cast<RTCCSetEvt const *>(e);
     me->mCalendar.SetEntry(lSetEvtPtr->mWeekday, lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }
 
   case SIG_RTCC_DEL_CALENDAR_ENTRY: {
-    RTCCSetEvt const *lSetEvtPtr = static_cast<RTCCSetEvt const *>(aEvtPtr);
+    RTCCSetEvt const *lSetEvtPtr = static_cast<RTCCSetEvt const *>(e);
     me->mCalendar.ClrEntry(lSetEvtPtr->mWeekday, lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
@@ -282,21 +297,21 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
   Time    lAlarmTime;
   Weekday lAlarmWeekday;
 
-#ifdef DBG_CALENDAR
+#ifdef RTCC_CALENDAR_DBG
   lAlarmTime = me->mTime;
-  unsigned int lMinutes = me->mTime.GetMinutes() + 2;
+  unsigned int lMinutes = me->mTime.GetMinutes() + 15;
   unsigned int lHours   = me->mTime.GetHours();
-  if (lMinutes > 59) {
+  if (lMinutes >= 60) {
     lMinutes %= 60;
     lHours++;
-    if (lHours > 23) {
+    if (lHours >= 24) {
       lHours = 0;
     }
   }
   lAlarmTime.SetMinutes(lMinutes);
   lAlarmTime.SetHours(lHours);
   me->mCalendar.SetEntry(lCurrentWeekday, lAlarmTime);
-#endif // DBG_CALENDAR
+#endif // RTCC_CALENDAR_DBG
 
   bool lIsNextEntry = me->mCalendar.GetNextEntry(lCurrentWeekday,
                                                  me->mTime,

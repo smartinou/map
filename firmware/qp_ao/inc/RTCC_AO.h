@@ -75,7 +75,7 @@ class RTCC_AO : public QP::QActive {
   Calendar mCalendar;
 
   unsigned long mIntNbr;
-  
+
   // The single instance of RTCC Active Object.
   static RTCC_AO *mInstancePtr;
 };
