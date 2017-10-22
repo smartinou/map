@@ -89,6 +89,11 @@ int main(void) {
                    sizeof(sSmallPoolSto),
                    sizeof(sSmallPoolSto[0]));
 
+  static QF_MPOOL_EL(RTCCEvt) sMediumPoolSto[10];
+  QP::QF::poolInit(sMediumPoolSto,
+                   sizeof(sMediumPoolSto),
+                   sizeof(sMediumPoolSto[0]));
+
   // Init publish-subscribe.
   static QP::QSubscrList lSubsribeSto[SIG_QTY];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));

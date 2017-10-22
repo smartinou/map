@@ -95,8 +95,7 @@ void RTCC_AO::ISRCallback(void) {
   static QP::QEvt const sRTCCAlarmIntEvt = { SIG_RTCC_INTERRUPT, 0U, 0U };
   mDS3234Ptr->ISRCallback();
 
-  // Signal that RTCC generated an interrupt.
-  // TODO: determine if can directly post to this instance of AO.
+  // Signal to AO that RTCC generated an interrupt.
   POST(&sRTCCAlarmIntEvt, 0);
 }
 
@@ -233,7 +232,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me, //aMePtr,
     RTCCEvt *lTickAlarmEvtPtr = Q_NEW(RTCCEvt, SIG_RTCC_TIME_TICK_ALARM);
     lTickAlarmEvtPtr->mTime = me->mTime;
     lTickAlarmEvtPtr->mDate = me->mDate;
-    QP::QF::publish(static_cast<QP::QEvt *>(lTickAlarmEvtPtr));
+    QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTickAlarmEvtPtr), me);
     
     if ((DS3234::AF2  & me->mDS3234Ptr->GetStatus()) &&
         (DS3234::AEI2 & me->mDS3234Ptr->GetCtrl())) {
@@ -244,7 +243,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me, //aMePtr,
       RTCCEvt *lCalendarEvtPtr = Q_NEW(RTCCEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
       lCalendarEvtPtr->mTime = me->mTime;
       lCalendarEvtPtr->mDate = me->mDate;
-      QP::QF::publish(static_cast<QP::QEvt *>(lCalendarEvtPtr));
+      QP::QF::PUBLISH(static_cast<QP::QEvt *>(lCalendarEvtPtr), me);
 
       SetNextCalendarEvt(me);
     }
