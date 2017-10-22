@@ -111,9 +111,9 @@ int main(void) {
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
                                             *lSPIDevPtr,
                                             GPIO_PORTA_BASE,
-                                            GPIO_PIN_6,
+                                            GPIO_PIN_7,
                                             GPIO_PORTA_BASE,
-                                            GPIO_PIN_7 };
+                                            GPIO_PIN_6 };
   static QP::QEvt const *sRTCCEvtQPtr[5];
   RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
   lRTCC_AOPtr->start(1U,

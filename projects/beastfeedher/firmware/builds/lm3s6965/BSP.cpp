@@ -361,7 +361,7 @@ void GPIOPortF_IRQHandler(void) {
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTF_BASE, lIsMasked);
   if (GPIO_PIN_1 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTF_BASE, GPIO_PIN_1);
-    sFeedButtonPtr->GenerateEvt(*gMain_BeastFeedHerMgrAOPtr);
+    //sFeedButtonPtr->GenerateEvt(*gMain_BeastFeedHerMgrAOPtr);
   }
 
   // Process state of other pins here if required.

@@ -100,11 +100,11 @@ class RTCCInitEvt : public QP::QEvt {
               unsigned long     aCSnGPIOPort,
               unsigned int      aCSnGPIOPin,
               unsigned long     aIRQGPIOPort,
-              unsigned int      aIRQGPIOPin) :
+              unsigned int      aIRQGPIOPin):
   mSPIDevRef(aSPIDevRef) {
     sig = aSig;
     poolId_ = 0U;
-    //mSPIDevRef   = aSPIDevRef;
+    mSPIDevRef   = aSPIDevRef;
     mCSnGPIOPort = aCSnGPIOPort;
     mCSnGPIOPin  = aCSnGPIOPin;
     mIRQGPIOPort = aIRQGPIOPort;
@@ -112,11 +112,11 @@ class RTCCInitEvt : public QP::QEvt {
   }
 
  public:
-  CoreLink::SPIDev       &mSPIDevRef;
-  unsigned long mCSnGPIOPort;
-  unsigned int  mCSnGPIOPin;
-  unsigned long mIRQGPIOPort;
-  unsigned int  mIRQGPIOPin;
+  CoreLink::SPIDev &mSPIDevRef;
+  unsigned long     mCSnGPIOPort;
+  unsigned int      mCSnGPIOPin;
+  unsigned long     mIRQGPIOPort;
+  unsigned int      mIRQGPIOPin;
 };
 
 
