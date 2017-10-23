@@ -47,7 +47,7 @@
 #include "SPI.h"
 
 // This application.
-#include "BeastFeedHerMgr.h"
+#include "BFH_Mgr_AO.h"
 #include "BSP.h"
 #include "RTCC_AO.h"
 
@@ -81,6 +81,8 @@ enum KernelAwareISRs {
 Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 #endif
 
+// FIXME: assign aliases to GPIO ports and pins.
+
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // *****************************************************************************
@@ -104,7 +106,7 @@ class LM3S6965SSIPinCfg : public SSIPinCfg {
 static CoreLink::SPIDev *sSPIDevPtr;
 
 // Extern declarations.
-extern BeastFeedHerMgr *gMain_BeastFeedHerMgrPtr;
+extern BFH_Mgr_AO *gMain_BeastFeedHerMgrPtr;
 extern QP::QActive     *gMain_BeastFeedHerMgrAOPtr;
 
 // Button objects.

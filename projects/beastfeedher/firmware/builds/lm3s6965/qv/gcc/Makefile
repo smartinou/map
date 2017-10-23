@@ -118,7 +118,7 @@ C_SRCS := \
 # C++ source files.
 CPP_SRCS := \
         Main.cpp \
-        BeastFeedHerMgr.cpp \
+        BFH_Mgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         Calendar.cpp \
