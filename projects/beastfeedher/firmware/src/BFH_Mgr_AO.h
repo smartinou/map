@@ -40,7 +40,8 @@
 //! ...here.
 class BFH_Mgr_AO : public QP::QActive {
  public:
-  static BFH_Mgr_AO &Instance(void);
+  static BFH_Mgr_AO  &Instance(void);
+  static QP::QActive &AOInstance(void);
 
   //void ISRCallback(void);
 
@@ -72,7 +73,7 @@ private:
   QP::QEvt const *mFeedEvtQueueSto[4];
   QP::QTimeEvt    mFeedTimerEvt;
 
-  //static BFH_Mgr_AO *mInstancePtr;
+  static BFH_Mgr_AO *mInstancePtr;
 };
 
 // ******************************************************************************

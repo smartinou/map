@@ -19,12 +19,6 @@
 //!   The choice was made to defer feeding signal is the source is from the
 //!   RTC alarm (because it's part of the feeding calendar).
 //!   Any other feeding signal incoming while in the feeding substate is ignored.
-//!
-//! 2. Othogonal region.
-//!   The AO uses composition to incorporate a button used for feeding.
-//!   Signals directed to the feeding button are dispatched to the instance.
-//!   Generated signals from the feeding button instance are sent to the
-//!   container object.
 
 // *****************************************************************************
 //
@@ -55,7 +49,6 @@
 #include "Button.h"
 #include "Date.h"
 //#include "DBRec.h"
-#include "SPI.h"
 #include "Time.h"
 
 // This project.
@@ -80,24 +73,29 @@ Q_DEFINE_THIS_FILE
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-//BFH_Mgr_AO *BFH_Mgr_AO::mInstancePtr = static_cast<BFH_Mgr_AO *>(0);
+BFH_Mgr_AO *BFH_Mgr_AO::mInstancePtr = static_cast<BFH_Mgr_AO *>(0);
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 BFH_Mgr_AO &BFH_Mgr_AO::Instance(void) {
-#if 0
-  // [MG] If an opaque pointer is required, this is the way to go.
+
   if (static_cast<BFH_Mgr_AO *>(0) == mInstancePtr) {
     mInstancePtr = new BFH_Mgr_AO();
   }
 
-  return mInstancePtr;
-#else
-  static BFH_Mgr_AO sBFH_Mgr_AO;
-  return sBFH_Mgr_AO;
-#endif
+  return *mInstancePtr;
+}
+
+
+QP::QActive &BFH_Mgr_AO::AOInstance(void) {
+
+  if (static_cast<BFH_Mgr_AO *>(0) == mInstancePtr) {
+    mInstancePtr = new BFH_Mgr_AO();
+  }
+
+  return static_cast<QP::QActive &>(*mInstancePtr);
 }
 
 #if 0
