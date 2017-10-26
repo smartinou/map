@@ -156,6 +156,20 @@ class RTCCSetEvt : public QP::QEvt {
 };
 
 
+class ManualFeedCmdEvt : public QP::QEvt {
+ public:
+  ManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
+    sig     = aSig;
+    poolId_ = 0U;
+    mIsOn   = aIsOn;
+  }
+
+ public:
+  bool mIsOn;
+};
+
+
+
 // in game.h, simple events are still defined as class.
 class FeedCmdEvt : public QP::QEvt {
  public:
@@ -167,7 +181,6 @@ class FeedCmdEvt : public QP::QEvt {
 
  public:
   enum L_SOURCE_ENUM_TAG {
-    RTC_INT,
     BUTTON,
     WEB,
     CLI
@@ -175,35 +188,6 @@ class FeedCmdEvt : public QP::QEvt {
 
  public:
   unsigned int mSrc;
-};
-
-
-// [MG] MOVE THIS TO "BEAST FEEDER" HEADER FILE.
-class ButtonEvt : public QP::QEvt {
- public:
-  ButtonEvt(QP::QSignal  aSig,
-            unsigned int aID,
-            unsigned int aState,
-            unsigned int aDebounceDelay = 0) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mID     = aID;
-    mState  = aState;
-    mDebounceDelay = aDebounceDelay;
-  }
-
- public:
-  enum L_STATE_ENUM_TAG {
-    UNKNOWN,
-    RELEASED,
-    PRESSED,
-    DEBOUNCED
-  };
-
- public:
-  unsigned int mID;
-  unsigned int mState;
-  unsigned int mDebounceDelay;
 };
 
 

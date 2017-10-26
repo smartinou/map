@@ -125,8 +125,6 @@ CPP_SRCS := \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
         DBRec.cpp \
-        DButton.cpp \
-        Debouncer.cpp \
         DS3234.cpp \
         Limit.cpp \
         Month.cpp \
@@ -136,6 +134,8 @@ CPP_SRCS := \
         SPI.cpp \
         Weekday.cpp
 
+#        DButton.cpp \
+#        Debouncer.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \

@@ -84,7 +84,7 @@ int main(void) {
   // Initialize event pool.
   //static QF_MPOOL_EL(DPP::ButtonEvt) sSmallPoolSto[20];
   // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(ButtonEvt) sSmallPoolSto[20];
+  static QF_MPOOL_EL(ManualFeedCmdEvt) sSmallPoolSto[20];
   QP::QF::poolInit(sSmallPoolSto,
                    sizeof(sSmallPoolSto),
                    sizeof(sSmallPoolSto[0]));
@@ -105,11 +105,11 @@ int main(void) {
   gMain_BeastFeedHerMgrPtr = new BeastFeedHerMgr(*lSPIDevPtr);
   gMain_BeastFeedHerMgrAOPtr = gMain_BeastFeedHerMgrPtr;
   gMain_BeastFeedHerMgrPtr->start(1U,
-				  sBeastMgrEvtQPtr,
-				  Q_DIM(sBeastMgrEvtQPtr),
-				  static_cast<void *>(0),
-				  0U,
-				  &sGPIOInitEvt);
+                                  sBeastMgrEvtQPtr,
+                                  Q_DIM(sBeastMgrEvtQPtr),
+                                  static_cast<void *>(0),
+                                  0U,
+                                  &sGPIOInitEvt);
 #else
 
   // FIXME: find how to move into BSP file.

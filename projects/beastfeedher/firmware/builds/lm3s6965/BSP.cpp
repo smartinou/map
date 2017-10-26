@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -106,11 +106,14 @@ class LM3S6965SSIPinCfg : public SSIPinCfg {
 static CoreLink::SPIDev *sSPIDevPtr;
 
 // Extern declarations.
-extern BFH_Mgr_AO *gMain_BeastFeedHerMgrPtr;
-extern QP::QActive     *gMain_BeastFeedHerMgrAOPtr;
+//extern BFH_Mgr_AO *gMain_BeastFeedHerMgrPtr;
+//extern QP::QActive     *gMain_BeastFeedHerMgrAOPtr;
 
 // Button objects.
-Button *sFeedButtonPtr                      =   static_cast<Button *>(0);
+//Button *sFeedButtonPtr                      =   static_cast<Button *>(0);
+Button *sManualFeedButtonPtr = static_cast<Button *>(0);
+Button *sTimedFeedButtonPtr  = static_cast<Button *>(0);
+
 Button *sNavButtonArray[BSP_NAV_BUTTON_QTY] = { static_cast<Button *>(0) };
 
 // *****************************************************************************
@@ -128,7 +131,7 @@ unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort) {
   case GPIO_PORTE_BASE: return INT_GPIOE;
   case GPIO_PORTF_BASE: return INT_GPIOF;
   case GPIO_PORTG_BASE: return INT_GPIOG;
-  case GPIO_PORTH_BASE: return INT_GPIOH;    
+  case GPIO_PORTH_BASE: return INT_GPIOH;
   }
 
   return 0;
@@ -136,35 +139,62 @@ unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort) {
 
 
 CoreLink::SPIDev * BSPInit(void) {
-
+#if 0
   // NOTE: SystemInit() already called from the startup code
   //  but SystemCoreClock needs to be updated
-  //
-  // [MG] Test if SystemCoreClockUpdate() if the same than SysCtlClockSet().
-  //SystemCoreClockUpdate();
   SysCtlClockSet(SYSCTL_SYSDIV_1
                  | SYSCTL_USE_OSC
                  | SYSCTL_OSC_MAIN
                  | SYSCTL_XTAL_8MHZ);
+  // [MG] Test if SystemCoreClockUpdate() if the same than SysCtlClockSet().
+  // [MG] No, it's not the same. SystemCoreClockUpdate() only updates
+  // the global variable of CMSIS system_<device>.c
+  //SystemCoreClockUpdate();
+#else
 
+#endif
 
   // Enable the clock to the peripherals used by the application.
+
+  // Enable all required GPIOs.
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+
   // Initialize SPI Master.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
   SSIPinCfg *lSPIMasterPinCfgPtr = new LM3S6965SSIPinCfg(0);
   sSPIDevPtr = new CoreLink::SPIDev(SSI0_BASE, *lSPIMasterPinCfgPtr);
 
-    // Create all required buttons.
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+
+  // Create all required buttons.
+#if 0
   sFeedButtonPtr = new Button(GPIO_PORTF_BASE, GPIO_PIN_1, 0U);
 
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
   sNavButtonArray[BSP_NAV_BUTTON_UP]     = new Button(GPIO_PORTE_BASE, GPIO_PIN_0, 0U);
   sNavButtonArray[BSP_NAV_BUTTON_DOWN]   = new Button(GPIO_PORTE_BASE, GPIO_PIN_1, 0U);
   sNavButtonArray[BSP_NAV_BUTTON_LEFT]   = new Button(GPIO_PORTE_BASE, GPIO_PIN_2, 0U);
   sNavButtonArray[BSP_NAV_BUTTON_RIGHT]  = new Button(GPIO_PORTE_BASE, GPIO_PIN_3, 0U);
   sNavButtonArray[BSP_NAV_BUTTON_SELECT] = new Button(GPIO_PORTF_BASE, GPIO_PIN_1, 0U);
+#else
 
+  // Manual and Timed Feed cap sensor.
+  // Those are debounced signals.
+  unsigned long lIntNbr = BSPGPIOPortToInt(GPIO_PORTC_BASE);
+  sManualFeedButtonPtr = new Button(GPIO_PORTC_BASE,
+                                    GPIO_PIN_4,
+                                    lIntNbr,
+                                    0U);
+  lIntNbr = BSPGPIOPortToInt(GPIO_PORTD_BASE);
+  sTimedFeedButtonPtr = new Button(GPIO_PORTD_BASE,
+                                   GPIO_PIN_4,
+                                   lIntNbr,
+                                   0U);
+
+
+#endif
 #if 0
   // Initialize the OLED display.
   // Create an SPI slave configuration for the OLED display.
@@ -177,7 +207,6 @@ CoreLink::SPIDev * BSPInit(void) {
 
   // The GPIO peripheral must be enabled before use.
   // Otherwise this will generate a HW fault exception.
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
   SSD1329 *lSSD1329Ptr = new SSD1329(*lSPIDevPtr,
                                      *lOLEDSPISlaveCfgPtr,
                                      GPIO_PORTC_BASE,
@@ -226,10 +255,13 @@ void QP::QF::onStartup(void) {
   //NVIC_SetPriorityGrouping(0U); from CMSIS
   IntPriorityGroupingSet(0U);
   IntPrioritySet(INT_GPIOA, 0x20); //GPIOPORTA_PRIO);
+  IntPrioritySet(INT_GPIOC, 0x60); //GPIOPORTA_PRIO);
+  IntPrioritySet(INT_GPIOD, 0x60); //GPIOPORTA_PRIO);
   IntPrioritySet(INT_GPIOE, 0x40); //GPIOPORTE_PRIO);
   IntPrioritySet(INT_GPIOF, 0x60); //GPIOPORTF_PRIO);
 
   //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+
   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
   GPIOPadConfigSet(GPIO_PORTF_BASE,
                    GPIO_PIN_0,
@@ -238,6 +270,12 @@ void QP::QF::onStartup(void) {
   GPIOPinWrite(GPIO_PORTF_BASE,
                GPIO_PIN_0,
                GPIO_PIN_0);
+
+  // Manual Feed cap sensor input.
+  sManualFeedButtonPtr->EnableInt();
+
+  // Timed Feed cap sensor input.
+  sTimedFeedButtonPtr->EnableInt();
 }
 
 //............................................................................
@@ -322,6 +360,39 @@ void GPIOPortA_IRQHandler(void) {
 }
 
 
+// GPIO port C interrupt handler.
+void GPIOPortC_IRQHandler(void);
+void GPIOPortC_IRQHandler(void) {
+
+  // Get the state of the GPIO and issue the corresponding event.
+  static const bool lIsMasked = true;
+  unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTC_BASE, lIsMasked);
+  if (GPIO_PIN_4 & lIntStatus) {
+    //GPIOPinIntClear(GPIO_PORTC_BASE, GPIO_PIN_4);
+    sManualFeedButtonPtr->ClrInt();
+    //sManualFeedButtonPtr->GenerateEvt();
+    static ManualFeedCmdEvt *lEvtPtr = Q_NEW(ManualFeedCmdEvt,
+                                             SIG_FEED_MGR_MANUAL_FEED_CMD);
+    lEvtPtr->mIsOn = sManualFeedButtonPtr->GetGPIOPinState();
+    BFH_Mgr_AO::AOInstance().POST(lEvtPtr, 0);
+  }
+}
+
+#if 0
+// GPIO port D interrupt handler.
+void GPIOPortD_IRQHandler(void);
+void GPIOPortD_IRQHandler(void) {
+
+  // Get the state of the GPIO and issue the corresponding event.
+  static const bool lIsMasked = true;
+  unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTD_BASE, lIsMasked);
+  if (GPIO_PIN_4 & lIntStatus) {
+    GPIOPinIntClear(GPIO_PORTD_BASE, GPIO_PIN_4);
+    //sTimedFeedButtonPtr->GenerateEvt();
+  }
+}
+
+
 // GPIO port E interrupt handler.
 void GPIOPortE_IRQHandler(void);
 void GPIOPortE_IRQHandler(void) {
@@ -331,22 +402,22 @@ void GPIOPortE_IRQHandler(void) {
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTE_BASE, lIsMasked);
   if (GPIO_PIN_0 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_0);
-    sNavButtonArray[BSP_NAV_BUTTON_UP]->GenerateEvt();
+    //sNavButtonArray[BSP_NAV_BUTTON_UP]->GenerateEvt();
   }
 
   if (GPIO_PIN_1 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_1);
-    sNavButtonArray[BSP_NAV_BUTTON_DOWN]->GenerateEvt();
+    //sNavButtonArray[BSP_NAV_BUTTON_DOWN]->GenerateEvt();
   }
 
   if (GPIO_PIN_2 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_2);
-    sNavButtonArray[BSP_NAV_BUTTON_LEFT]->GenerateEvt();
+    //sNavButtonArray[BSP_NAV_BUTTON_LEFT]->GenerateEvt();
   }
 
   if (GPIO_PIN_3 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_3);
-    sNavButtonArray[BSP_NAV_BUTTON_RIGHT]->GenerateEvt();
+    //sNavButtonArray[BSP_NAV_BUTTON_RIGHT]->GenerateEvt();
   }
 
   // Process state of other pins here if required.
@@ -368,7 +439,7 @@ void GPIOPortF_IRQHandler(void) {
 
   // Process state of other pins here if required.
 }
- 
+#endif
 } // extern C
 
 // *****************************************************************************
