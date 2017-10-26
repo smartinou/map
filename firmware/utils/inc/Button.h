@@ -14,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,23 +33,21 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-// [MG] CECI EST UN ESSAI POUR VOIR S'IL Y A UNE POSSIBILITE DE FAIRE UN OBJET
-// [MG] "BUTTON" COMPOSITE, AYANT UN OBJET "DEBOUNCER".
-// [MG] PAS SUR QUE CE SOIT MEILLEUR QUE DES OBJETS SEPARES.
-// [MG] EN FAIT, JE PENSE QUE NON!!!
 //! \brief Button component.
 class Button {
  public:
   Button(unsigned long aPort,
-	 unsigned int  aPin,
-	 unsigned int  aID);
+         unsigned int  aPin,
+         unsigned long aIntNbr,
+         unsigned int  aID);
 
   unsigned long GetGPIOPort(void) { return mGPIOPort; }
   unsigned int  GetGPIOPin(void)  { return mGPIOPin;  }
   unsigned int  GetGPIOPinState(void);
 
-  void GenerateEvt(void);
-  void GenerateEvt(QP::QActive &aAORef);
+  void DisableInt(void);
+  void EnableInt(void);
+  void ClrInt(void);
 
   enum State {
     RELEASED = 0,
@@ -59,6 +57,7 @@ class Button {
  private:
   unsigned long mGPIOPort;
   unsigned int  mGPIOPin;
+  unsigned long mIntNbr;
   unsigned int  mID;
 };
 
