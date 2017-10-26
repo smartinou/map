@@ -47,19 +47,19 @@ class BFH_Mgr_AO : public QP::QActive {
 
  protected:
   static QP::QState Initial(BFH_Mgr_AO     * const aMePtr,
-			    QP::QEvt const * const aEvtPtr);
+                            QP::QEvt const * const aEvtPtr);
   static QP::QState FeedingMgr(BFH_Mgr_AO     * const aMePtr,
-			       QP::QEvt const * const aEvtPtr);
+                               QP::QEvt const * const aEvtPtr);
   static QP::QState Waiting(BFH_Mgr_AO     * const aMePtr,
-			    QP::QEvt const * const aEvtPtr);
+                            QP::QEvt const * const aEvtPtr);
   static QP::QState TimedFeed(BFH_Mgr_AO     * const aMePtr,
-			      QP::QEvt const * const aEvtPtr);
+                              QP::QEvt const * const aEvtPtr);
   static QP::QState ManualFeed(BFH_Mgr_AO     * const aMePtr,
-			       QP::QEvt const * const aEvtPtr);
+                               QP::QEvt const * const aEvtPtr);
   static QP::QState WaitPeriod(BFH_Mgr_AO     * const aMePtr,
-			       QP::QEvt const * const aEvtPtr);
+                               QP::QEvt const * const aEvtPtr);
   static QP::QState TimeCappedFeed(BFH_Mgr_AO     * const aMePtr,
-			           QP::QEvt const * const aEvtPtr);
+                                   QP::QEvt const * const aEvtPtr);
 
 private:
   BFH_Mgr_AO();

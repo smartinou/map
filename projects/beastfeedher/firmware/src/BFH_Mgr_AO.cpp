@@ -36,17 +36,11 @@
 #include <stddef.h>
 
 // TI Library.
-#include "hw_types.h"
-#include "hw_ints.h"
-#include "gpio.h"
-#include "interrupt.h"
-#include "uartstdio.h"
 
 // QP Library.
 #include "qpcpp.h"
 
 // Common Library.
-#include "Button.h"
 #include "Date.h"
 //#include "DBRec.h"
 #include "Time.h"
@@ -123,35 +117,36 @@ BFH_Mgr_AO::BFH_Mgr_AO() :
 
 
 QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
-			       QP::QEvt const * const e) { //aEvtPtr
+                               QP::QEvt const * const e) { //aEvtPtr
 
   // Initialize the QF queue for deferred feed requests.
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
 
   // Subscribe to signals if any.
-  me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
-  //me->subscribe(SIG_FEED_MGR_TIMED_FEED_CMD);
-  //me->subscribe(SIG_FEED_MGR_MANUAL_FEED_CMD);
+  //me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
 
-  // Pass reference to a feeder unit, or a motor controller.
+  // Store reference to a feeder unit, or a motor controller.
 
   return Q_TRAN(&BFH_Mgr_AO::FeedingMgr);
 }
 
 
 QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
-				  QP::QEvt const * const e) { //aEvtPtr
+                                  QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
     // Init Feedeer.
     return Q_HANDLED();
 
-  case SIG_FEED_MGR_MANUAL_FEED_CMD:
+  case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    // On:
-    //return Q_TRAN(&BFH_Mgr_AO::ManualFeed);
-    // Off:
+    ManualFeedCmdEvt const *lEvtPtr = static_cast<ManualFeedCmdEvt const *>(e);
+    if (lEvtPtr->mIsOn) {
+      return Q_TRAN(&BFH_Mgr_AO::ManualFeed);
+    }
+    // Off: intentional fallthrough.
+  }
   case Q_INIT_SIG:
     // Go into default nested state.
   case SIG_FEED_MGR_TIMEOUT:
@@ -178,7 +173,7 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 
 
 QP::QState BFH_Mgr_AO::Waiting(BFH_Mgr_AO     * const me,  //aMePtr,
-			       QP::QEvt const * const e) { //aEvtPtr
+                               QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -191,7 +186,7 @@ QP::QState BFH_Mgr_AO::Waiting(BFH_Mgr_AO     * const me,  //aMePtr,
 
 
 QP::QState BFH_Mgr_AO::TimedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
-				 QP::QEvt const * const e) { //aEvtPtr
+                                 QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -219,7 +214,7 @@ QP::QState BFH_Mgr_AO::TimedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
 
 QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
-				  QP::QEvt const * const e) { //aEvtPtr
+                                  QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -234,10 +229,15 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
     me->defer(&me->mFeedEvtQueue, e);
     return Q_HANDLED();
 
-  case SIG_FEED_MGR_MANUAL_FEED_CMD:
-    // On:
-    // DoNothing();
-    return Q_HANDLED();
+  case SIG_FEED_MGR_MANUAL_FEED_CMD: {
+    // Cast event to know the state (on/off).
+    ManualFeedCmdEvt const *lEvtPtr = static_cast<ManualFeedCmdEvt const *>(e);
+    if (lEvtPtr->mIsOn) {
+      // On: DoNothing();
+      return Q_HANDLED();
+    }
+    break;
+  }
 
   case Q_EXIT_SIG:
     me->StopFeeding();
@@ -250,7 +250,7 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
 
 QP::QState BFH_Mgr_AO::WaitPeriod(BFH_Mgr_AO     * const me,  //aMePtr,
-				  QP::QEvt const * const e) { //aEvtPtr
+                                  QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -264,12 +264,12 @@ QP::QState BFH_Mgr_AO::WaitPeriod(BFH_Mgr_AO     * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::FeedingMgr);
+  return Q_SUPER(&BFH_Mgr_AO::ManualFeed);
 }
 
 
 QP::QState BFH_Mgr_AO::TimeCappedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
-				      QP::QEvt const * const e) { //aEvtPtr
+                                      QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -280,7 +280,7 @@ QP::QState BFH_Mgr_AO::TimeCappedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::FeedingMgr);
+  return Q_SUPER(&BFH_Mgr_AO::ManualFeed);
 }
 
 
