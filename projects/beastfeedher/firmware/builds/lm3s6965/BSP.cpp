@@ -262,6 +262,7 @@ void QP::QF::onStartup(void) {
 
   //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
 
+  // GPIO for user LED toggling during idle.
   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
   GPIOPadConfigSet(GPIO_PORTF_BASE,
                    GPIO_PIN_0,
@@ -368,13 +369,10 @@ void GPIOPortC_IRQHandler(void) {
   static const bool lIsMasked = true;
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTC_BASE, lIsMasked);
   if (GPIO_PIN_4 & lIntStatus) {
-    //GPIOPinIntClear(GPIO_PORTC_BASE, GPIO_PIN_4);
     sManualFeedButtonPtr->ClrInt();
-    //sManualFeedButtonPtr->GenerateEvt();
-    static ManualFeedCmdEvt *lEvtPtr = Q_NEW(ManualFeedCmdEvt,
-                                             SIG_FEED_MGR_MANUAL_FEED_CMD);
-    lEvtPtr->mIsOn = sManualFeedButtonPtr->GetGPIOPinState();
-    BFH_Mgr_AO::AOInstance().POST(lEvtPtr, 0);
+    static ManualFeedCmdEvt sEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, 0U };
+    sEvt.mIsOn = sManualFeedButtonPtr->GetGPIOPinState();
+    BFH_Mgr_AO::AOInstance().POST(&sEvt, 0);
   }
 }
 
