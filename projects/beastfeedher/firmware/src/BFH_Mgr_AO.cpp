@@ -123,7 +123,7 @@ QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
 
   // Subscribe to signals if any.
-  //me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
+  me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
 
   // Store reference to a feeder unit, or a motor controller.
 
