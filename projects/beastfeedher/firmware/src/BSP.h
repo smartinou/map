@@ -39,16 +39,22 @@
 enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
   SIG_DUMMY = QP::Q_USER_SIG,
   SIG_TIME_TICK,
-  SIG_RTC_IRQ,
-  SIG_RTCC_INTERRUPT = SIG_RTC_IRQ,
+
+  // RTCC signals.
+  SIG_RTCC_INTERRUPT,
   SIG_RTCC_TIME_TICK_ALARM,
   SIG_RTCC_CALENDAR_EVENT_ALARM,
   SIG_RTCC_ADD_CALENDAR_ENTRY,
   SIG_RTCC_DEL_CALENDAR_ENTRY,
+
+  // Feed manager signals.
+  SIG_FEED_MGR_TIMED_FEED_CMD,
+  SIG_FEED_MGR_MANUAL_FEED_CMD,
+  SIG_FEED_MGR_TIMEOUT,
+
   SIG_BUTTON_EVT,
-  SIG_FEED_CMD,
   SIG_DEBOUNCE_TIMEOUT,
-  SIG_FEED_DELAY_TIMEOUT,
+
   SIG_TERMINATE,
   SIG_QTY
 };
@@ -150,6 +156,20 @@ class RTCCSetEvt : public QP::QEvt {
 };
 
 
+class ManualFeedCmdEvt : public QP::QEvt {
+ public:
+  ManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
+    sig     = aSig;
+    poolId_ = 0U;
+    mIsOn   = aIsOn;
+  }
+
+ public:
+  bool mIsOn;
+};
+
+
+
 // in game.h, simple events are still defined as class.
 class FeedCmdEvt : public QP::QEvt {
  public:
@@ -161,7 +181,6 @@ class FeedCmdEvt : public QP::QEvt {
 
  public:
   enum L_SOURCE_ENUM_TAG {
-    RTC_INT,
     BUTTON,
     WEB,
     CLI
@@ -169,35 +188,6 @@ class FeedCmdEvt : public QP::QEvt {
 
  public:
   unsigned int mSrc;
-};
-
-
-// [MG] MOVE THIS TO "BEAST FEEDER" HEADER FILE.
-class ButtonEvt : public QP::QEvt {
- public:
-  ButtonEvt(QP::QSignal  aSig,
-            unsigned int aID,
-            unsigned int aState,
-            unsigned int aDebounceDelay = 0) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mID     = aID;
-    mState  = aState;
-    mDebounceDelay = aDebounceDelay;
-  }
-
- public:
-  enum L_STATE_ENUM_TAG {
-    UNKNOWN,
-    RELEASED,
-    PRESSED,
-    DEBOUNCED
-  };
-
- public:
-  unsigned int mID;
-  unsigned int mState;
-  unsigned int mDebounceDelay;
 };
 
 

@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -26,8 +26,6 @@
 // Common Library.
 
 // This project.
-#include "Calendar.h"
-#include "Debouncer.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -37,57 +35,45 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPIDev;
-class SPISlaveCfg;
-
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class BeastFeedHerMgr : public QP::QActive {
+class BFH_Mgr_AO : public QP::QActive {
  public:
-  BeastFeedHerMgr(CoreLink::SPIDev &aSPIDevRef);
+  static BFH_Mgr_AO  &Instance(void);
+  static QP::QActive &AOInstance(void);
 
-  void GetTime(Time const &aTimeRef) const;
-  void GetDate(Date const &aDateRef) const;
-
-  void SetTime(Time const &aTimeRef);
-  void SetDate(Date const &aDateRef);
-
-  void ISRCallback(void);
+  //void ISRCallback(void);
 
  protected:
-  static QP::QState Initial(BeastFeedHerMgr * const aMePtr,
-			    QP::QEvt  const * const aEvtPtr);
-  static QP::QState FeedingMgr(BeastFeedHerMgr * const aMePtr,
-			       QP::QEvt  const * const aEvtPtr);
-  static QP::QState Waiting(BeastFeedHerMgr * const aMePtr,
-			    QP::QEvt  const * const aEvtPtr);
-  static QP::QState FeedingTheBeast(BeastFeedHerMgr * const aMePtr,
-				    QP::QEvt  const * const aEvtPtr);
-  //static QP::QState Final(BeastFeedHerMgr * const aMePtr,
-  //			  QP::QEvt  const * const aEvtPtr);
+  static QP::QState Initial(BFH_Mgr_AO     * const aMePtr,
+                            QP::QEvt const * const aEvtPtr);
+  static QP::QState FeedingMgr(BFH_Mgr_AO     * const aMePtr,
+                               QP::QEvt const * const aEvtPtr);
+  static QP::QState Waiting(BFH_Mgr_AO     * const aMePtr,
+                            QP::QEvt const * const aEvtPtr);
+  static QP::QState TimedFeed(BFH_Mgr_AO     * const aMePtr,
+                              QP::QEvt const * const aEvtPtr);
+  static QP::QState ManualFeed(BFH_Mgr_AO     * const aMePtr,
+                               QP::QEvt const * const aEvtPtr);
+  static QP::QState WaitPeriod(BFH_Mgr_AO     * const aMePtr,
+                               QP::QEvt const * const aEvtPtr);
+  static QP::QState TimeCappedFeed(BFH_Mgr_AO     * const aMePtr,
+                                   QP::QEvt const * const aEvtPtr);
 
 private:
-  //void FeedTheBeast(QP::QEvt const * const aEvtPtr = 0);
+  BFH_Mgr_AO();
+  BFH_Mgr_AO(BFH_Mgr_AO const &);
+  void operator=(BFH_Mgr_AO const &) = delete;
+
   void StartFeeding(void) const;
   void StopFeeding(void)  const;
 
-  static void SetNextFeedingTime(BeastFeedHerMgr * const aMePtr);
-
-  Time  mTime;
-  Date  mDate;
-  float mTemperature;
-  
-  DS3234                *mDS3234Ptr;
-  CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
-
   QP::QEQueue     mFeedEvtQueue;
   QP::QEvt const *mFeedEvtQueueSto[4];
-  QP::QTimeEvt    mFeedDelayEvt;
+  QP::QTimeEvt    mFeedTimerEvt;
 
-  // Debouncer orthogonal component.
-  Debouncer mDebouncer;
-  Calendar  mCalendar;
+  static BFH_Mgr_AO *mInstancePtr;
 };
 
 // ******************************************************************************

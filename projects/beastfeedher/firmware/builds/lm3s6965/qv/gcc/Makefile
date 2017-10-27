@@ -118,15 +118,13 @@ C_SRCS := \
 # C++ source files.
 CPP_SRCS := \
         Main.cpp \
-        BeastFeedHerMgr.cpp \
+        BFH_Mgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         Calendar.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
         DBRec.cpp \
-        DButton.cpp \
-        Debouncer.cpp \
         DS3234.cpp \
         Limit.cpp \
         Month.cpp \
@@ -136,6 +134,8 @@ CPP_SRCS := \
         SPI.cpp \
         Weekday.cpp
 
+#        DButton.cpp \
+#        Debouncer.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \

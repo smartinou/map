@@ -25,18 +25,13 @@
 
 // TI Library.
 #include "hw_types.h"
-#include "hw_ints.h"
-#include "hw_memmap.h"
 #include "gpio.h"
 #include "interrupt.h"
 
 // QP Library.
 #include "qpcpp.h"
 
-// Common Library.
-
 // This project.
-#include "BSP.h"
 #include "Button.h"
 
 Q_DEFINE_THIS_FILE
@@ -64,28 +59,29 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 
 Button::Button(unsigned long aGPIOPort,
-	       unsigned int  aGPIOPin,
-	       unsigned int  aID) :
+               unsigned int  aGPIOPin,
+               unsigned long aIntNbr,
+               unsigned int  aID) :
   mGPIOPort(aGPIOPort),
   mGPIOPin(aGPIOPin),
+  mIntNbr(aIntNbr),
   mID(aID) {
 
-  unsigned long lInt = BSPGPIOPortToInt(mGPIOPort);
-  IntDisable(lInt);
+  DisableInt();
 
   // Set specified GPIO as edge triggered input.
   // Don't enable interrupt just yet.
   GPIOPinTypeGPIOInput(mGPIOPort, mGPIOPin);
   GPIOIntTypeSet(mGPIOPort, mGPIOPin, GPIO_BOTH_EDGES);
   GPIOPadConfigSet(mGPIOPort,
-		   mGPIOPin,
-		   GPIO_STRENGTH_2MA,
-		   GPIO_PIN_TYPE_STD_WPU);
+                   mGPIOPin,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD_WPU);
 
   // Enable the interrupt of the selected GPIO.
   GPIOPinIntEnable(mGPIOPort, mGPIOPin);
   GPIOPinIntClear(mGPIOPort, mGPIOPin);
-  IntEnable(lInt);
+  //IntEnable(lInt);
 }
 
 
@@ -101,27 +97,18 @@ unsigned int Button::GetGPIOPinState(void) {
 }
 
 
-void Button::GenerateEvt(void) {
-
-  // Determine state of the button.
-  // Generate a new ButtonEvt event.
-  // Publish event to the framework.
-  //ButtonEvt *lButtonEvtPtr = Q_NEW(ButtonEvt, SIG_BUTTON_EVT);
-  //lButtonEvtPtr->mState = GetGPIOPinState();
-
-  //QP::QF::PUBLISH(lButtonEvtPtr, 0);
+void Button::DisableInt(void) {
+  IntDisable(mIntNbr);
 }
 
 
-void Button::GenerateEvt(QP::QActive &aAORef) {
+void Button::EnableInt(void) {
+  IntEnable(mIntNbr);
+}
 
-  // Determine state of the button.
-  // Generate a new ButtonEvt event.
-  // Publish event to the specified Active Object.
-  ButtonEvt *lButtonEvtPtr = Q_NEW(ButtonEvt, SIG_BUTTON_EVT);
-  lButtonEvtPtr->mState = GetGPIOPinState();
 
-  aAORef.POST(lButtonEvtPtr, 0);
+void Button::ClrInt(void) {
+  GPIOPinIntClear(mGPIOPort, mGPIOPin);
 }
 
 // *****************************************************************************

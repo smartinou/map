@@ -47,7 +47,7 @@
 #include "SPI.h"
 
 // This application.
-//#include "BeastFeedHerMgr.h"
+#include "BFH_Mgr_AO.h"
 #include "BSP.h"
 #include "RTCC_AO.h"
 
@@ -82,9 +82,8 @@ int main(void) {
   UARTprintf("QF version: %s", QP::QF::getVersion());
 
   // Initialize event pool.
-  //static QF_MPOOL_EL(DPP::ButtonEvt) sSmallPoolSto[20];
   // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(ButtonEvt) sSmallPoolSto[20];
+  static QF_MPOOL_EL(ManualFeedCmdEvt) sSmallPoolSto[20];
   QP::QF::poolInit(sSmallPoolSto,
                    sizeof(sSmallPoolSto),
                    sizeof(sSmallPoolSto[0]));
@@ -97,20 +96,16 @@ int main(void) {
   // Init publish-subscribe.
   static QP::QSubscrList lSubsribeSto[SIG_QTY];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
-#if 0
-  // Instantiate and start the active objects.
-  static GPIOInitEvt const sGPIOInitEvt = { SIG_DUMMY, GPIO_PORTA_BASE, GPIO_PIN_6 };
-  static QP::QEvt    const *sBeastMgrEvtQPtr[5];
 
-  gMain_BeastFeedHerMgrPtr = new BeastFeedHerMgr(*lSPIDevPtr);
-  gMain_BeastFeedHerMgrAOPtr = gMain_BeastFeedHerMgrPtr;
-  gMain_BeastFeedHerMgrPtr->start(1U,
-				  sBeastMgrEvtQPtr,
-				  Q_DIM(sBeastMgrEvtQPtr),
-				  static_cast<void *>(0),
-				  0U,
-				  &sGPIOInitEvt);
-#else
+  // Instantiate and start the active objects.
+  static QP::QEvt const *sBeastMgrEvtQPtr[5];
+  BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
+  lBFH_Mgr_AO.start(2U,
+                    sBeastMgrEvtQPtr,
+                    Q_DIM(sBeastMgrEvtQPtr),
+                    static_cast<void *>(0),
+                    0U);
+
 
   // FIXME: find how to move into BSP file.
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
@@ -127,7 +122,7 @@ int main(void) {
                      static_cast<void *>(0),
                      0U,
                      &sRTCCInitEvt);
-#endif
+
   // Run the QF application.
   return QP::QF::run();
 }
