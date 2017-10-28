@@ -32,7 +32,6 @@
 
 // TI Library.
 #include "hw_types.h"
-#include "hw_ints.h"
 #include "gpio.h"
 #include "interrupt.h"
 #ifdef RTCC_DBG
@@ -51,6 +50,7 @@
 
 // This project.
 #include "RTCC_AO.h"
+#include "RTCC_Evt.h"
 #include "BSP.h"
 
 Q_DEFINE_THIS_FILE

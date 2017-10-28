@@ -48,6 +48,7 @@
 // This project.
 #include "BFH_Mgr_AO.h"
 #include "BSP.h"
+#include "RTCC_Evt.h"
 
 Q_DEFINE_THIS_FILE
 

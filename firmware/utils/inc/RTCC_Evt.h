@@ -1,10 +1,10 @@
-#ifndef BSP_H_
-#define BSP_H_
+#ifndef RTCC_EVT_H_
+#define RTCC_EVT_H_
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: Active Object Library
 //
-// Module: Board Support Package.
+// Module: RTCC QP Events.
 //
 // *******************************************************************************
 
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -27,114 +27,72 @@
 #include "Time.h"
 #include "SPI.h"
 
-//using namespace CoreLink;
-
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
-
-// [MG] MOVE THIS TO "BEAST FEEDER" HEADER FILE.
-enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
-  SIG_DUMMY = QP::Q_USER_SIG,
-  SIG_TIME_TICK,
-
-  // RTCC signals.
-  SIG_RTCC_INTERRUPT,
-  SIG_RTCC_TIME_TICK_ALARM,
-  SIG_RTCC_CALENDAR_EVENT_ALARM,
-  SIG_RTCC_ADD_CALENDAR_ENTRY,
-  SIG_RTCC_DEL_CALENDAR_ENTRY,
-
-  // Feed manager signals.
-  SIG_FEED_MGR_TIMED_FEED_CMD,
-  SIG_FEED_MGR_MANUAL_FEED_CMD,
-  SIG_FEED_MGR_TIMEOUT,
-
-  SIG_BUTTON_EVT,
-  SIG_DEBOUNCE_TIMEOUT,
-
-  SIG_TERMINATE,
-  SIG_QTY
-};
-
-
-enum BSP_NAV_BUTTON_ENUM_TAG {
-  BSP_NAV_BUTTON_UP     = 0,
-  BSP_NAV_BUTTON_DOWN   = 1,
-  BSP_NAV_BUTTON_LEFT   = 2,
-  BSP_NAV_BUTTON_RIGHT  = 3,
-  BSP_NAV_BUTTON_SELECT = 4,
-  BSP_NAV_BUTTON_QTY    = 5,
-};
 
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
 // Forward declarations.
-//class Time;
-//class Date;
 
-
-// [MG] MOVE THIS TO "BEAST FEEDER" HEADER FILE.
-
-// Event to pass GPIO info to initial transition.
-// Avoids ctor with long argument list.
-class GPIOInitEvt : public QP::QEvt {
+// Class definitions.
+class RTCCInitEvt : public QP::QEvt {
  public:
-  GPIOInitEvt(QP::QSignal aSig,
-              unsigned long aGPIOPort,
-              unsigned int aGPIOPin) {
-    sig = aSig;
-    poolId_ = 0U;
-    mGPIOPort = aGPIOPort;
-    mGPIOPin = aGPIOPin;
+  RTCCInitEvt(QP::QSignal       aSig,
+              CoreLink::SPIDev &aSPIDevRef,
+              unsigned long     aCSnGPIOPort,
+              unsigned int      aCSnGPIOPin,
+              unsigned long     aIRQGPIOPort,
+              unsigned int      aIRQGPIOPin):
+  mSPIDevRef(aSPIDevRef) {
+    sig          = aSig;
+    poolId_      = 0U;
+    mSPIDevRef   = aSPIDevRef;
+    mCSnGPIOPort = aCSnGPIOPort;
+    mCSnGPIOPin  = aCSnGPIOPin;
+    mIRQGPIOPort = aIRQGPIOPort;
+    mIRQGPIOPin  = aIRQGPIOPin;
   }
 
  public:
-  unsigned long mGPIOPort;
-  unsigned int  mGPIOPin;
+  CoreLink::SPIDev &mSPIDevRef;
+  unsigned long     mCSnGPIOPort;
+  unsigned int      mCSnGPIOPin;
+  unsigned long     mIRQGPIOPort;
+  unsigned int      mIRQGPIOPin;
 };
 
 
-class ManualFeedCmdEvt : public QP::QEvt {
+class RTCCEvt : public QP::QEvt {
  public:
-  ManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
+  RTCCEvt(QP::QSignal aSig, Time aTime, Date aDate) {
     sig     = aSig;
     poolId_ = 0U;
-    mIsOn   = aIsOn;
+    mTime   = aTime;
+    mDate   = aDate;
   }
 
  public:
-  bool mIsOn;
+  Time mTime;
+  Date mDate;
 };
 
 
-// in game.h, simple events are still defined as class.
-class FeedCmdEvt : public QP::QEvt {
+class RTCCSetEvt : public QP::QEvt {
  public:
-  FeedCmdEvt(QP::QSignal aSig, unsigned int aSrc) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mSrc    = aSrc;
+  RTCCSetEvt(QP::QSignal aSig, Weekday aWeekday, Time aTime) {
+    sig      = aSig;
+    poolId_  = 0U;
+    mWeekday = aWeekday;
+    mTime    = aTime;
   }
 
  public:
-  enum L_SOURCE_ENUM_TAG {
-    BUTTON,
-    WEB,
-    CLI
-  };
-
- public:
-  unsigned int mSrc;
+  Weekday mWeekday;
+  Time    mTime;
 };
-
-
-class CoreLinkPeripheral;
-namespace CoreLink {
-  class SPIDev;
-}
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -148,17 +106,7 @@ namespace CoreLink {
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-namespace {
-
-  //void BSP_Init(void);
-
-}
-
-CoreLink::SPIDev * BSPInit(void);
-
-unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort);
-
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // BSP_H_
+#endif // RTCC_EVT_H_
