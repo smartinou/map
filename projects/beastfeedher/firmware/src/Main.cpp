@@ -85,7 +85,7 @@ int main(void) {
 
   // Initialize event pool.
   // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(ManualFeedCmdEvt) sSmallPoolSto[20];
+  static QF_MPOOL_EL(BFHManualFeedCmdEvt) sSmallPoolSto[20];
   QP::QF::poolInit(sSmallPoolSto,
                    sizeof(sSmallPoolSto),
                    sizeof(sSmallPoolSto[0]));

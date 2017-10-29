@@ -23,10 +23,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "Date.h"
-#include "Time.h"
-#include "SPI.h"
-
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -38,9 +34,9 @@
 // Forward declarations.
 
 // Class definitions.
-class ManualFeedCmdEvt : public QP::QEvt {
+class BFHManualFeedCmdEvt : public QP::QEvt {
  public:
-  ManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
+  BFHManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
     sig     = aSig;
     poolId_ = 0U;
     mIsOn   = aIsOn;
@@ -48,27 +44,6 @@ class ManualFeedCmdEvt : public QP::QEvt {
 
  public:
   bool mIsOn;
-};
-
-
-// in game.h, simple events are still defined as class.
-class FeedCmdEvt : public QP::QEvt {
- public:
-  FeedCmdEvt(QP::QSignal aSig, unsigned int aSrc) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mSrc    = aSrc;
-  }
-
- public:
-  enum L_SOURCE_ENUM_TAG {
-    BUTTON,
-    WEB,
-    CLI
-  };
-
- public:
-  unsigned int mSrc;
 };
 
 // ******************************************************************************

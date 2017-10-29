@@ -131,7 +131,7 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    ManualFeedCmdEvt const *lEvtPtr = static_cast<ManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
       return Q_TRAN(&BFH_Mgr_AO::ManualFeed);
     }
@@ -221,7 +221,7 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    ManualFeedCmdEvt const *lEvtPtr = static_cast<ManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
       // On: DoNothing();
       return Q_HANDLED();
