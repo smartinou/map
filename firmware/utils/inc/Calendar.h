@@ -50,7 +50,9 @@ class Calendar : public DBRec {
 
   // Sets/clears the entry for the specified time, rounded to quarter hour.
   void SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef);
+  void SetEntry(unsigned int const aWeekday, Time const &aTimeRef);
   void ClrEntry(Weekday const &aWeekdayRef, Time const &aTimeRef);
+  void ClrEntry(unsigned int const aWeekday, Time const &aTimeRef);
   void SetTimeEntry(Time const &aTimeRef);
   void ClrAllEntries(void);
 

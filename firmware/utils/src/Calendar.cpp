@@ -73,8 +73,15 @@ void Calendar::ClrAllEntries(void) {
 
 void Calendar::SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
 
+  unsigned int lWeekdayUI = aWeekdayRef.Get();
+  SetEntry(lWeekdayUI, aTimeRef);
+}
+
+
+void Calendar::SetEntry(unsigned int const aWeekday, Time const &aTimeRef) {
+
   unsigned int lArrayIx        = GetArrayIx(aTimeRef);
-  unsigned int lWeekdayBitMask = WeekdayToBitMask(aWeekdayRef);
+  unsigned int lWeekdayBitMask = (1 << aWeekday);
 
   mCalendarArray.at(lArrayIx) |= lWeekdayBitMask;
 
@@ -94,8 +101,15 @@ void Calendar::SetTimeEntry(Time const &aTimeRef) {
 
 void Calendar::ClrEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
 
+  unsigned int lWeekdayUI = aWeekdayRef.Get();
+  ClrEntry(lWeekdayUI, aTimeRef);
+}
+
+
+void Calendar::ClrEntry(unsigned int aWeekday, Time const &aTimeRef) {
+
   unsigned int lArrayIx        = GetArrayIx(aTimeRef);
-  unsigned int lWeekdayBitMask = WeekdayToBitMask(aWeekdayRef);
+  unsigned int lWeekdayBitMask = (0x1 << aWeekday);
 
   mCalendarArray.at(lArrayIx) &= ~lWeekdayBitMask;
   mCalendarArray.at(lArrayIx) &= ~ALL_WEEK_BIT_MASK;
@@ -103,9 +117,9 @@ void Calendar::ClrEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
 
 
 bool Calendar::GetNextEntry(Weekday  const &aWeekdayRef,
-			    Time     const &aTimeRef,
-		            Weekday        &aNextWeekdayRef,
-			    Time           &aNextTimeRef) {
+                            Time     const &aTimeRef,
+                            Weekday        &aNextWeekdayRef,
+                            Time           &aNextTimeRef) {
 
   bool lIsEntryFound = false;
 
@@ -118,7 +132,7 @@ bool Calendar::GetNextEntry(Weekday  const &aWeekdayRef,
     uint8_t lWeekdayField = mCalendarArray.at(lHourIx);
 
     if ((lWeekdayField & lNextWeekdayMask) ||
-	(lWeekdayField & ALL_WEEK_BIT_MASK)) {
+        (lWeekdayField & ALL_WEEK_BIT_MASK)) {
       // Time is at lHourIx.
       // Date is at lWeekdayIx.
       lIsEntryFound = true;
@@ -132,7 +146,7 @@ bool Calendar::GetNextEntry(Weekday  const &aWeekdayRef,
       lHourIx = 0;
       lNextWeekdayMask <<= 1;
       if (lNextWeekdayMask > (0x1 << 7)) {
-	lNextWeekdayMask = 0;
+        lNextWeekdayMask = 0;
       }
     }
   }
@@ -192,7 +206,7 @@ unsigned int Calendar::BitMaskToWeekday(unsigned int aBitMask) {
 
   return lWeekdayUI;
 }
- 
+
 // *****************************************************************************
 //                                END OF FILE
 // *****************************************************************************
