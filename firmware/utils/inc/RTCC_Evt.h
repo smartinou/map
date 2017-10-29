@@ -65,9 +65,9 @@ class RTCCInitEvt : public QP::QEvt {
 };
 
 
-class RTCCEvt : public QP::QEvt {
+class RTCCTimeDateEvt : public QP::QEvt {
  public:
-  RTCCEvt(QP::QSignal aSig, Time aTime, Date aDate) {
+  RTCCTimeDateEvt(QP::QSignal aSig, Time aTime, Date aDate) {
     sig     = aSig;
     poolId_ = 0U;
     mTime   = aTime;
@@ -77,21 +77,6 @@ class RTCCEvt : public QP::QEvt {
  public:
   Time mTime;
   Date mDate;
-};
-
-
-class RTCCSetEvt : public QP::QEvt {
- public:
-  RTCCSetEvt(QP::QSignal aSig, Weekday aWeekday, Time aTime) {
-    sig      = aSig;
-    poolId_  = 0U;
-    mWeekday = aWeekday;
-    mTime    = aTime;
-  }
-
- public:
-  Weekday mWeekday;
-  Time    mTime;
 };
 
 // ******************************************************************************

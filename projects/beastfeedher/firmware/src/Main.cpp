@@ -89,7 +89,7 @@ int main(void) {
                    sizeof(sSmallPoolSto),
                    sizeof(sSmallPoolSto[0]));
 
-  static QF_MPOOL_EL(RTCCEvt) sMediumPoolSto[10];
+  static QF_MPOOL_EL(RTCCTimeDateEvt) sMediumPoolSto[10];
   QP::QF::poolInit(sMediumPoolSto,
                    sizeof(sMediumPoolSto),
                    sizeof(sMediumPoolSto[0]));
