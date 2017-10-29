@@ -47,7 +47,9 @@
 
 // This project.
 #include "BFH_Mgr_AO.h"
+#include "BFH_Mgr_Evt.h"
 #include "BSP.h"
+#include "RTCC_Evt.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -92,18 +94,6 @@ QP::QActive &BFH_Mgr_AO::AOInstance(void) {
   return static_cast<QP::QActive &>(*mInstancePtr);
 }
 
-#if 0
-void BFH_Mgr_AO::ISRCallback(void) {
-
-  // Static event.
-  static QP::QEvt const sRTCSQWIntEvt = { SIG_RTC_IRQ, 0U, 0U };
-  mDS3234Ptr->ISRCallback();
-
-  // Signal that RTC generated an interrupt.
-  POST(&sRTCSQWIntEvt, 0);
-
-}
-#endif
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -141,7 +131,7 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    ManualFeedCmdEvt const *lEvtPtr = static_cast<ManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
       return Q_TRAN(&BFH_Mgr_AO::ManualFeed);
     }
@@ -231,7 +221,7 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    ManualFeedCmdEvt const *lEvtPtr = static_cast<ManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
       // On: DoNothing();
       return Q_HANDLED();

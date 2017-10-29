@@ -48,8 +48,10 @@
 
 // This application.
 #include "BFH_Mgr_AO.h"
+#include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_AO.h"
+#include "RTCC_Evt.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -83,12 +85,12 @@ int main(void) {
 
   // Initialize event pool.
   // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(ManualFeedCmdEvt) sSmallPoolSto[20];
+  static QF_MPOOL_EL(BFHManualFeedCmdEvt) sSmallPoolSto[20];
   QP::QF::poolInit(sSmallPoolSto,
                    sizeof(sSmallPoolSto),
                    sizeof(sSmallPoolSto[0]));
 
-  static QF_MPOOL_EL(RTCCEvt) sMediumPoolSto[10];
+  static QF_MPOOL_EL(RTCCTimeDateEvt) sMediumPoolSto[10];
   QP::QF::poolInit(sMediumPoolSto,
                    sizeof(sMediumPoolSto),
                    sizeof(sMediumPoolSto[0]));

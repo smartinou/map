@@ -15,15 +15,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-//#include "BeastFeedHerMgr.h"
 
 #include "Date.h"
 #include "Time.h"
@@ -97,104 +95,6 @@ class GPIOInitEvt : public QP::QEvt {
   unsigned long mGPIOPort;
   unsigned int  mGPIOPin;
 };
-
-
-class RTCCInitEvt : public QP::QEvt {
- public:
-  RTCCInitEvt(QP::QSignal       aSig,
-              CoreLink::SPIDev &aSPIDevRef,
-              unsigned long     aCSnGPIOPort,
-              unsigned int      aCSnGPIOPin,
-              unsigned long     aIRQGPIOPort,
-              unsigned int      aIRQGPIOPin):
-  mSPIDevRef(aSPIDevRef) {
-    sig = aSig;
-    poolId_ = 0U;
-    mSPIDevRef   = aSPIDevRef;
-    mCSnGPIOPort = aCSnGPIOPort;
-    mCSnGPIOPin  = aCSnGPIOPin;
-    mIRQGPIOPort = aIRQGPIOPort;
-    mIRQGPIOPin  = aIRQGPIOPin;
-  }
-
- public:
-  CoreLink::SPIDev &mSPIDevRef;
-  unsigned long     mCSnGPIOPort;
-  unsigned int      mCSnGPIOPin;
-  unsigned long     mIRQGPIOPort;
-  unsigned int      mIRQGPIOPin;
-};
-
-
-class RTCCEvt : public QP::QEvt {
- public:
-  RTCCEvt(QP::QSignal aSig, Time aTime, Date aDate) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mTime   = aTime;
-    mDate   = aDate;
-  }
-
- public:
-  Time mTime;
-  Date mDate;
-};
-
-
-class RTCCSetEvt : public QP::QEvt {
- public:
-  RTCCSetEvt(QP::QSignal aSig, Weekday aWeekday, Time aTime) {
-    sig      = aSig;
-    poolId_  = 0U;
-    mWeekday = aWeekday;
-    mTime    = aTime;
-  }
-
- public:
-  Weekday mWeekday;
-  Time    mTime;
-};
-
-
-class ManualFeedCmdEvt : public QP::QEvt {
- public:
-  ManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mIsOn   = aIsOn;
-  }
-
- public:
-  bool mIsOn;
-};
-
-
-
-// in game.h, simple events are still defined as class.
-class FeedCmdEvt : public QP::QEvt {
- public:
-  FeedCmdEvt(QP::QSignal aSig, unsigned int aSrc) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mSrc    = aSrc;
-  }
-
- public:
-  enum L_SOURCE_ENUM_TAG {
-    BUTTON,
-    WEB,
-    CLI
-  };
-
- public:
-  unsigned int mSrc;
-};
-
-
-class CoreLinkPeripheral;
-namespace CoreLink {
-  class SPIDev;
-}
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES

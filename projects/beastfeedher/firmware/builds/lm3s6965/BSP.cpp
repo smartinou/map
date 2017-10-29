@@ -2,7 +2,7 @@
 //
 // Project: Beast Feed'Her
 //
-// Module: Main entry point.
+// Module: Board Support Package.
 //
 // *****************************************************************************
 
@@ -22,8 +22,6 @@
 
 // QP Library.
 #include "qpcpp.h"
-#include "qep.h"
-#include "qf.h"
 
 // CMSIS Library.
 #include "lm3s_cmsis.h"
@@ -48,6 +46,7 @@
 
 // This application.
 #include "BFH_Mgr_AO.h"
+#include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_AO.h"
 
@@ -105,12 +104,7 @@ class LM3S6965SSIPinCfg : public SSIPinCfg {
 
 static CoreLink::SPIDev *sSPIDevPtr;
 
-// Extern declarations.
-//extern BFH_Mgr_AO *gMain_BeastFeedHerMgrPtr;
-//extern QP::QActive     *gMain_BeastFeedHerMgrAOPtr;
-
 // Button objects.
-//Button *sFeedButtonPtr                      =   static_cast<Button *>(0);
 Button *sManualFeedButtonPtr = static_cast<Button *>(0);
 Button *sTimedFeedButtonPtr  = static_cast<Button *>(0);
 
@@ -370,7 +364,7 @@ void GPIOPortC_IRQHandler(void) {
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTC_BASE, lIsMasked);
   if (GPIO_PIN_4 & lIntStatus) {
     sManualFeedButtonPtr->ClrInt();
-    static ManualFeedCmdEvt sEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, 0U };
+    static BFHManualFeedCmdEvt sEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, 0U };
     sEvt.mIsOn = sManualFeedButtonPtr->GetGPIOPinState();
     BFH_Mgr_AO::AOInstance().POST(&sEvt, 0);
   }
