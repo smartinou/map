@@ -48,6 +48,7 @@
 
 // This application.
 #include "BFH_Mgr_AO.h"
+#include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"

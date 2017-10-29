@@ -48,6 +48,7 @@
 
 // This application.
 #include "BFH_Mgr_AO.h"
+#include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_AO.h"
 
@@ -105,12 +106,7 @@ class LM3S6965SSIPinCfg : public SSIPinCfg {
 
 static CoreLink::SPIDev *sSPIDevPtr;
 
-// Extern declarations.
-//extern BFH_Mgr_AO *gMain_BeastFeedHerMgrPtr;
-//extern QP::QActive     *gMain_BeastFeedHerMgrAOPtr;
-
 // Button objects.
-//Button *sFeedButtonPtr                      =   static_cast<Button *>(0);
 Button *sManualFeedButtonPtr = static_cast<Button *>(0);
 Button *sTimedFeedButtonPtr  = static_cast<Button *>(0);
 

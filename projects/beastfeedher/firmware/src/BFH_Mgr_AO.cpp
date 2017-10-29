@@ -47,6 +47,7 @@
 
 // This project.
 #include "BFH_Mgr_AO.h"
+#include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_Evt.h"
 
@@ -93,18 +94,6 @@ QP::QActive &BFH_Mgr_AO::AOInstance(void) {
   return static_cast<QP::QActive &>(*mInstancePtr);
 }
 
-#if 0
-void BFH_Mgr_AO::ISRCallback(void) {
-
-  // Static event.
-  static QP::QEvt const sRTCSQWIntEvt = { SIG_RTC_IRQ, 0U, 0U };
-  mDS3234Ptr->ISRCallback();
-
-  // Signal that RTC generated an interrupt.
-  POST(&sRTCSQWIntEvt, 0);
-
-}
-#endif
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************

@@ -43,8 +43,6 @@ class BFH_Mgr_AO : public QP::QActive {
   static BFH_Mgr_AO  &Instance(void);
   static QP::QActive &AOInstance(void);
 
-  //void ISRCallback(void);
-
  protected:
   static QP::QState Initial(BFH_Mgr_AO     * const aMePtr,
                             QP::QEvt const * const aEvtPtr);
