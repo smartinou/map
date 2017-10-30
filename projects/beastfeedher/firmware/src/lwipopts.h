@@ -69,8 +69,13 @@
 // ---------- Platform specific locking ----------
 //
 //****************************************************************************
+
 //#define SYS_LIGHTWEIGHT_PROT            0
 #define NO_SYS                          1           // default is 0
+#define SYS_ARCH_PROTECT(lev)
+#define SYS_ARCH_UNPROTECT(lev)
+#define SYS_ARCH_DECL_PROTECT(lev)
+
 //#define MEMCPY(dst,src,len)             memcpy(dst,src,len)
 //#define SMEMCPY(dst,src,len)            memcpy(dst,src,len)
 

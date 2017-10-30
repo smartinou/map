@@ -51,6 +51,11 @@ REPO_ROOT_DIR := ../../../../../../..
 FIRMWARE_PATH := $(REPO_ROOT_DIR)/firmware
 PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
 
+# LwIP library.
+LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.0.3/lwip-2.0.3/src
+include $(LWIPDIR)/Filelists.mk
+
+
 # Location of the QP/C++ framework (if not provided in an environemnt var.)
 ifeq ($(QPCPP),)
 QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp
@@ -71,23 +76,30 @@ CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 VPATH = \
         ../../ \
         $(PROJECT_ROOT_DIR)/firmware/src \
+        $(PROJECT_ROOT_DIR)/firmware/src/lwip_port/arch \
+        $(PROJECT_ROOT_DIR)/firmware/src/lwip_port/netif \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
         $(FIRMWARE_PATH)/utils/src \
         $(STELLARIS_LIB)/inc \
-        $(STELLARIS_LIB)/driverlib \
         $(QPCPP)/source \
         $(QP_PORT_DIR) \
         $(CMSIS_LIB)/lm3s \
         $(CMSIS_LIB)/lm3s/GCC \
-        $(CMSIS_LIB)/core
+        $(CMSIS_LIB)/core \
+        $(LWIPDIR)/core \
+        $(LWIPDIR)/core/ipv4 \
+        $(LWIPDIR)/api \
+        $(LWIPDIR)/netif \
+        $(LWIPDIR)/apps/httpd
 
 
 # List of all include directories needed by this project.
 INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
+        -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
@@ -101,7 +113,8 @@ INCLUDES  = \
         -I$(CMSIS_LIB)/examples/blinky \
         -I$(CMSIS_LIB)/lm3s \
         -I$(CMSIS_LIB)/core \
-        -I$(CMSIS_LIB)
+        -I$(CMSIS_LIB) \
+        -I$(LWIPDIR)/include
 
 
 # Files
@@ -112,7 +125,12 @@ ASM_SRCS :=
 C_SRCS := \
 	startup_lm3s6965.c \
 	system_lm3s.c \
-	uartstdio.c
+	uartstdio.c \
+	$(COREFILES) \
+	$(CORE4FILES) \
+	$(APIFILES) \
+	$(LWIPDIR)/netif/ethernet.c \
+	$(HTTPDFILES)
 
 
 # C++ source files.
@@ -127,6 +145,7 @@ CPP_SRCS := \
         DBRec.cpp \
         DS3234.cpp \
         Limit.cpp \
+        LWIPMgr.cpp \
         Month.cpp \
         RTC.cpp \
         RTCC_AO.cpp \
@@ -134,8 +153,6 @@ CPP_SRCS := \
         SPI.cpp \
         Weekday.cpp
 
-#        DButton.cpp \
-#        Debouncer.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \
