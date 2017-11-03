@@ -100,6 +100,7 @@ INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
+        -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
@@ -110,7 +111,6 @@ INCLUDES  = \
         -I$(QPCPP)/include \
         -I$(QPCPP)/source \
         -I$(QP_PORT_DIR) \
-        -I$(CMSIS_LIB)/examples/blinky \
         -I$(CMSIS_LIB)/lm3s \
         -I$(CMSIS_LIB)/core \
         -I$(CMSIS_LIB) \
