@@ -51,7 +51,7 @@ class LWIPMgr : public QP::QActive {
 private:
   QP::QTimeEvt    mSlowTickTimer;
 
-  EthDrv2         *mEthDrvPtr;
+  //EthDrv2         *mEthDrvPtr;
   struct netif   *mNetIFPtr;
   //struct udp_pcb *mPCBPtr;
   // IP address in the native host byte order.

@@ -31,15 +31,25 @@
 // QP-port.
 #include "qpcpp.h"
 
+using namespace QP;
+
 // lwIP stack.
+#include "lwip/autoip.h"
+#include "lwip/def.h"
+#include "lwip/dhcp.h"
+#include "lwip/mem.h"
+#include "lwip/pbuf.h"
+#include "lwip/stats.h"
+#include "lwip/snmp.h"
+#include "lwip/etharp.h"
+#include "lwip/priv/tcp_priv.h"
+
 // lwIP application.
 #ifdef __cplusplus
 extern "C" {
-#include "lwip.h"
-#include "httpd.h"
 } // extern "C"
-//#include "netif/eth_driver.h"
-#include "netif/EthDrv2.h"
+#include "netif/eth_driver.h"
+//#include "netif/EthDrv2.h"
 #endif // __cplusplus
 
 
@@ -70,9 +80,9 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 //                            FUNCTION PROTOTYPES
 // *****************************************************************************
-
-static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
 #if 0
+static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
+
 // UDP handler.
 static void udp_rx_handler(void           *aArgPtr,
 			   struct udp_pcb *aPCBPtr,
@@ -85,9 +95,9 @@ static void udp_rx_handler(void           *aArgPtr,
 // *****************************************************************************
 
 // Application signals cannot overlap the device-driver signals.
-Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
+//Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
 
-#if 1
+#if 0
 // Server-Side Include (SSI) demo.
 static char const * const sSSITags[] = {
   "s_xmit",
@@ -125,7 +135,7 @@ LWIPMgr *LWIPMgr::mInstancePtr = static_cast<LWIPMgr *>(0);
 LWIPMgr::LWIPMgr() :
   QActive(Q_STATE_CAST(&LWIPMgr::Initial))
   , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
-  , mEthDrvPtr(0)
+  //, mEthDrvPtr(0)
   , mNetIFPtr(static_cast<struct netif *>(0))
   //  , mPCBPtr(static_cast<struct udp_pcb *>(0))
   , mIPAddr(0x00000000)
@@ -162,11 +172,11 @@ QP::QActive * const LWIPMgr::GetOpaqueAOInstancePtr(void) const {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-QP::QState LWIPMgr::Initial(LWIPMgr * const me, //aMePtr,
-			    QP::QEvt  const * const aEvtPtr) {
+QP::QState LWIPMgr::Initial(LWIPMgr        * const me,  //aMePtr,
+			    QP::QEvt const * const e) { //aEvtPtr
 
   // Suppress the compiler warning about unused parameter.
-  (void)aEvtPtr;
+  (void)e;
 
   // Configure the hardware MAC address for the Ethernet Controller
   //
@@ -197,16 +207,16 @@ QP::QState LWIPMgr::Initial(LWIPMgr * const me, //aMePtr,
   uint8_t const lMACAddr[NETIF_MAX_HWADDR_LEN] = {0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff};
 #endif
   //me->mEthDrvPtr = EthDrv2::EthDrvInstance(8);
-  me->mEthDrvPtr = new EthDrv2(8);
-  me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
-  //me->mNetIFPtr = eth_driver_init((QP::QActive *)me, &lMACAddr[0]);
+  //me->mEthDrvPtr = new EthDrv2(8);
+  //me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
+  me->mNetIFPtr = eth_driver_init((QP::QActive *)me, &lMACAddr[0]);
   //me->mIPAddr = 0xFFFFFFFF;
 
   // Initialize the lwIP applications...
   // Initialize the simple HTTP-Deamon (web server).
-  httpd_init();
-  http_set_ssi_handler(&SSIHandler, sSSITags, Q_DIM(sSSITags));
-  http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
+  //httpd_init();
+  //http_set_ssi_handler(&SSIHandler, sSSITags, Q_DIM(sSSITags));
+  //http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
 
   // Use port 777 for UDP.
   //me->mPCBPtr = udp_new();
@@ -258,14 +268,14 @@ QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
   }
 #endif
   case LWIP_RX_READY_SIG: {
-    //eth_driver_read();
-    me->mEthDrvPtr->Rd();
+    eth_driver_read();
+    //me->mEthDrvPtr->Rd();
     return Q_HANDLED();
   }
 
   case LWIP_TX_READY_SIG: {
-    //eth_driver_write();
-    me->mEthDrvPtr->Wr();
+    eth_driver_write();
+    //me->mEthDrvPtr->Wr();
     return Q_HANDLED();
   }
 
@@ -276,6 +286,7 @@ QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
       // Save the IP addr.
       me->mIPAddr = me->mNetIFPtr->ip_addr.addr;
       uint32_t lIPAddrNet = ntohl(me->mIPAddr);
+      (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
 #if 0
       TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_IPADDR_SIG);
@@ -334,7 +345,7 @@ QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
 
   return Q_SUPER(&QP::QHsm::top);
 }
-
+#if 0
 // HTTPD customizations.
 // Server-Side Include (SSI) handler.
 static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
@@ -426,7 +437,7 @@ static char const *CGIDisplay(int         aIx,
   // No URI, HTTPD will send 404 error page to the browser.
   return static_cast<char const *>(0);
 }
-
+#endif
 #if 0
  
 // UDP receive handler.
