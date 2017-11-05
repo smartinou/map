@@ -71,7 +71,8 @@ extern "C" {
 
 Q_DEFINE_THIS_FILE
 
-#define LWIP_SLOW_TICK_MS TCP_TMR_INTERVAL
+// Has to be set to the fastest interval to be serviced in the stack.
+#define LWIP_SLOW_TICK_MS AUTOIP_TMR_INTERVAL
 
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -85,10 +86,10 @@ static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
 
 // UDP handler.
 static void udp_rx_handler(void           *aArgPtr,
-			   struct udp_pcb *aPCBPtr,
+                           struct udp_pcb *aPCBPtr,
                            struct pbuf    *aBufPtr,
-			   struct ip_addr *aIPAddr,
-			   u16_t           aUDPPort);
+                           struct ip_addr *aIPAddr,
+                           u16_t           aUDPPort);
 #endif
 // *****************************************************************************
 //                             GLOBAL VARIABLES
@@ -115,9 +116,9 @@ static char const * const sSSITags[] = {
 
 // Common Gateway Iinterface (CG) demo.
 static char const *CGIDisplay(int         aIx,
-			      int         aParamQty,
-			      char const *aParamPtr[],
-			      char const *aValPtr[]);
+                              int         aParamQty,
+                              char const *aParamPtr[],
+                              char const *aValPtr[]);
 
 static tCGI const CGIHandlers[] = {
   { "/display.cgi", &CGIDisplay },
@@ -173,7 +174,7 @@ QP::QActive * const LWIPMgr::GetOpaqueAOInstancePtr(void) const {
 // *****************************************************************************
 
 QP::QState LWIPMgr::Initial(LWIPMgr        * const me,  //aMePtr,
-			    QP::QEvt const * const e) { //aEvtPtr
+                            QP::QEvt const * const e) { //aEvtPtr
 
   // Suppress the compiler warning about unused parameter.
   (void)e;
@@ -246,7 +247,7 @@ QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
   switch (e->sig) {
   case Q_ENTRY_SIG: {
     me->mSlowTickTimer.armX((LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000,
-			    (LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000);
+                            (LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000);
     return Q_HANDLED();
   }
 
@@ -259,9 +260,9 @@ QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
   case SEND_UDP_SIG: {
     if (me->mPCBPtr->remote_port != static_cast<uint16_t>(0) {
       struct pbuf *lBufPtr = pbuf_new((u8_t *)((TextEvt const *)e)->text,
-				strlen(((TextEvt const *)e)->text) + 1);
+                                strlen(((TextEvt const *)e)->text) + 1);
       if (static_cast<struct pbuf *>(0) != lBufPtr) {
-	udp_send(me->mPCBPtr, lBufPtr);
+        udp_send(me->mPCBPtr, lBufPtr);
       }
     }
     return Q_HANDLED();
@@ -291,47 +292,47 @@ QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
 #if 0
       TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_IPADDR_SIG);
       snprintf(te->text,
-	       Q_DIM(lTextEvtPtr->text),
-	       "%d.%d.%d.%d",
-	       ((lIPAddrNet) >> 24) & 0xFF,
-	       ((lIPAddrNet) >> 16) & 0xFF,
-	       ((lIPAddrNet) >>  8) & 0xFF,
-	       ((lIPAddrNet) >>  0) & 0xFF);
+               Q_DIM(lTextEvtPtr->text),
+               "%d.%d.%d.%d",
+               ((lIPAddrNet) >> 24) & 0xFF,
+               ((lIPAddrNet) >> 16) & 0xFF,
+               ((lIPAddrNet) >>  8) & 0xFF,
+               ((lIPAddrNet) >>  0) & 0xFF);
       QP::QF::publish(static_cast<QP::QEvt *)>(TextEvtPtr));
 #endif
     }
 
 #if LWIP_TCP
-    me->mTCPTimer += LWIP_SLOW_TICK_MS;
-    if (me->mTCPTimer >= TCP_TMR_INTERVAL) {
-      me->mTCPTimer = 0;
-      tcp_tmr();
-    }
+      me->mTCPTimer += LWIP_SLOW_TICK_MS;
+      if (me->mTCPTimer >= TCP_TMR_INTERVAL) {
+        me->mTCPTimer = 0;
+        tcp_tmr();
+      }
 #endif
 #if LWIP_ARP
-    me->mARPTimer += LWIP_SLOW_TICK_MS;
-    if (me->mARPTimer >= ARP_TMR_INTERVAL) {
-      me->mARPTimer = 0;
-      etharp_tmr();
-    }
+      me->mARPTimer += LWIP_SLOW_TICK_MS;
+      if (me->mARPTimer >= ARP_TMR_INTERVAL) {
+        me->mARPTimer = 0;
+        etharp_tmr();
+      }
 #endif
 #if LWIP_DHCP
-    me->mDHCPFineTimer += LWIP_SLOW_TICK_MS;
-    if (me->mDHCPFineTimer >= DHCP_FINE_TIMER_MSECS) {
-      me->mDHCPFineTimer = 0;
-      dhcp_fine_tmr();
-    }
-    me->mDHCPCoarseTimer += LWIP_SLOW_TICK_MS;
-    if (me->mDHCPCoarseTimer >= DHCP_COARSE_TIMER_MSECS) {
-      me->mDHCPCoarseTimer = 0;
-      dhcp_coarse_tmr();
-    }
+      me->mDHCPFineTimer += LWIP_SLOW_TICK_MS;
+      if (me->mDHCPFineTimer >= DHCP_FINE_TIMER_MSECS) {
+        me->mDHCPFineTimer = 0;
+        dhcp_fine_tmr();
+      }
+      me->mDHCPCoarseTimer += LWIP_SLOW_TICK_MS;
+      if (me->mDHCPCoarseTimer >= DHCP_COARSE_TIMER_MSECS) {
+        me->mDHCPCoarseTimer = 0;
+        dhcp_coarse_tmr();
+      }
 #endif
 #if LWIP_AUTOIP
-    me->mAutoIPTimer += LWIP_SLOW_TICK_MS;
-    if (me->mAutoIPTimer >= AUTOIP_TMR_INTERVAL) {
-	me->mAutoIPTimer = 0;
-	autoip_tmr();
+      me->mAutoIPTimer += LWIP_SLOW_TICK_MS;
+      if (me->mAutoIPTimer >= AUTOIP_TMR_INTERVAL) {
+        me->mAutoIPTimer = 0;
+        autoip_tmr();
       }
 #endif
       return Q_HANDLED();
@@ -416,9 +417,9 @@ static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
 
 // Common Gateway Iinterface (CG) handler.
 static char const *CGIDisplay(int         aIx,
-			      int         aParamQty,
-			      char const *aParamPtr[],
-			      char const *aValPtr[]) {
+                              int         aParamQty,
+                              char const *aParamPtr[],
+                              char const *aValPtr[]) {
 
   for (int lIx = 0; lIx < aParamQty; ++lIx) {
     if (strstr(aParamPtr[lIx], "text") != static_cast<char *>(0)) {
@@ -426,8 +427,8 @@ static char const *CGIDisplay(int         aIx,
 #if 0
       TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_CGI_SIG);
       strncpy(lTextEvtPtr->text,
-	      aValptr[lIx],
-	      Q_DIM(lTextEvtPtr->text));
+              aValptr[lIx],
+              Q_DIM(lTextEvtPtr->text));
       QF_publish(static_cast<QP::QEvt *>(lTextEvtPtr));
 #endif
       return "/thank_you.htm";
@@ -439,18 +440,18 @@ static char const *CGIDisplay(int         aIx,
 }
 #endif
 #if 0
- 
+
 // UDP receive handler.
 static void udp_rx_handler(void           *aArgPtr,
-			   struct udp_pcb *aPCBPtr,
+                           struct udp_pcb *aPCBPtr,
                            struct pbuf    *aBufPtr,
-			   struct ip_addr *aIPAddr,
-			   u16_t           aUDPPort) {
+                           struct ip_addr *aIPAddr,
+                           u16_t           aUDPPort) {
 #if 0
   TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_UDP_SIG);
   strncpy(lTextEvtPtr->text,
-	  (char *)aBufPtr->payload,
-	  Q_DIM(lTextEvtPtr->text));
+          (char *)aBufPtr->payload,
+          Q_DIM(lTextEvtPtr->text));
   QF_publish(static_cast<QP::QEvt *>(lTextEvtPtr));
 #endif
 
