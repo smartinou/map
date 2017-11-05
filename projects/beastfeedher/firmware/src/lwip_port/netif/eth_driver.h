@@ -28,16 +28,19 @@
 #ifndef eth_driver_h
 #define eth_driver_h
 
+using namespace QP;
+
 struct netif *eth_driver_init(QActive *active,
                               u8_t macaddr[NETIF_MAX_HWADDR_LEN]);
 void eth_driver_read(void);
 void eth_driver_write(void);
 
+#if 0
 enum EthDriverSignals {
     LWIP_SLOW_TICK_SIG = DEV_DRIVER_SIG,
     LWIP_RX_READY_SIG,
     LWIP_TX_READY_SIG,
     LWIP_RX_OVERRUN_SIG
 };
-
+#endif
 #endif                                                      /* eth_driver_h */

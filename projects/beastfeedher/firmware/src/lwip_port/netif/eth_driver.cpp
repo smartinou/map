@@ -41,10 +41,11 @@
  * interface driver for lwIP.
  */
 
-#include "qp_port.h"
+#include "qpcpp.h"
 
 #include "lwip/opt.h"
 #include "lwip/init.h"
+#include "lwip/ip.h"
 #include "lwip/def.h"
 #include "lwip/mem.h"
 #include "lwip/pbuf.h"
@@ -66,6 +67,17 @@
 #include "driverlib/sysctl.h"
 
 #include <string.h>                                         /* for memcpy() */
+
+#if 0
+enum EthDriverSignals {
+  LWIP_SLOW_TICK_SIG,
+    LWIP_RX_READY_SIG,
+    LWIP_TX_READY_SIG,
+    LWIP_RX_OVERRUN_SIG
+};
+#else
+#include "BSP.h"
+#endif
 
 /**
  * Sanity Check:  This interface driver will NOT work if the following defines
@@ -122,18 +134,21 @@ void ISR_Ethernet(void) {
 
     if ((eth_stat & ETH_INT_RX) != 0) {
         static QEvent const evt_eth_rx = { LWIP_RX_READY_SIG, 0 };
-        QActive_postFIFO(l_active, &evt_eth_rx);          /* send to the AO */
+        //QActive_postFIFO(l_active, &evt_eth_rx);          /* send to the AO */
+        l_active->POST(&evt_eth_rx, 0);          /* send to the AO */
 
         HWREG(ETH_BASE + MAC_O_IM) &= ~ETH_INT_RX;    /* disable further RX */
     }
     if ((eth_stat & ETH_INT_TX) != 0) {
         static QEvent const evt_eth_tx = { LWIP_TX_READY_SIG, 0 };
-        QActive_postFIFO(l_active, &evt_eth_tx);          /* send to the AO */
+        //QActive_postFIFO(l_active, &evt_eth_tx);          /* send to the AO */
+        l_active->POST(&evt_eth_tx, 0);          /* send to the AO */
     }
 #if LINK_STATS
     if ((eth_stat & ETH_INT_RXOF) != 0) {
         static QEvent const evt_eth_er = { LWIP_RX_OVERRUN_SIG, 0 };
-        QActive_postFIFO(l_active, &evt_eth_er);          /* send to the AO */
+        //QActive_postFIFO(l_active, &evt_eth_er);          /* send to the AO */
+        l_active->POST(&evt_eth_er, 0);          /* send to the AO */
     }
 #endif
 }
@@ -142,9 +157,9 @@ void ISR_Ethernet(void) {
 struct netif *eth_driver_init(QActive *active,
                               u8_t macaddr[NETIF_MAX_HWADDR_LEN])
 {
-    struct ip_addr ipaddr;
-    struct ip_addr netmask;
-    struct ip_addr gw;
+    ip_addr_t ipaddr;
+    ip_addr_t netmask;
+    ip_addr_t gwaddr;
 
     lwip_init();                                /* nitialize the lwIP stack */
 
@@ -189,11 +204,11 @@ struct netif *eth_driver_init(QActive *active,
      /* either DHCP or AUTOIP are configured, start with zero IP addresses: */
     IP4_ADDR(&ipaddr,  0, 0, 0, 0);
     IP4_ADDR(&netmask, 0, 0, 0, 0);
-    IP4_ADDR(&gw,      0, 0, 0, 0);
+    IP4_ADDR(&gwaddr,  0, 0, 0, 0);
 #endif
           /* add and configure the Ethernet interface with default settings */
     netif_add(&l_netif,
-              &ipaddr, &netmask, &gw,            /* configured IP addresses */
+              &ipaddr, &netmask, &gwaddr,            /* configured IP addresses */
               active,                /* use this active object as the state */
               &ethernetif_init,        /* Ethernet interface initialization */
               &ip_input);                   /* standard IP input processing */
@@ -561,6 +576,9 @@ static uint8_t PbufQueue_put(PbufQueue *me, struct pbuf *p) {
     }
 }
 
+extern "C" u32_t sys_now() {
+  return 0;
+}
 /*..........................................................................*/
 #if NETIF_DEBUG
 /* Print an IP header by using LWIP_DEBUGF

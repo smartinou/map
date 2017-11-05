@@ -144,6 +144,7 @@ CPP_SRCS := \
         Date.cpp \
         DBRec.cpp \
         DS3234.cpp \
+        eth_driver.cpp \
         Limit.cpp \
         LWIPMgr.cpp \
         Month.cpp \
