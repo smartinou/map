@@ -95,8 +95,11 @@ class LM3S6965SSIPinCfg : public SSIPinCfg {
 };
 
 // *****************************************************************************
-//                         TYPEDEFS AND STRUCTURES
+//                            FUNCTION PROTOTYPES
 // *****************************************************************************
+
+extern void ISR_Ethernet(void);
+
 
 // *****************************************************************************
 //                             GLOBAL VARIABLES
@@ -133,19 +136,15 @@ unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort) {
 
 
 CoreLink::SPIDev * BSPInit(void) {
+  // NOTE: SystemInit() already called from the startup code,
+  // where clock already set (CLOCK_SETUP in lm3s_config.h)
+  // SystemCoreClockUpdate() also called from there.
+  // Settings done for 50MHz system clock.
 #if 0
-  // NOTE: SystemInit() already called from the startup code
-  //  but SystemCoreClock needs to be updated
   SysCtlClockSet(SYSCTL_SYSDIV_1
                  | SYSCTL_USE_OSC
                  | SYSCTL_OSC_MAIN
                  | SYSCTL_XTAL_8MHZ);
-  // [MG] Test if SystemCoreClockUpdate() if the same than SysCtlClockSet().
-  // [MG] No, it's not the same. SystemCoreClockUpdate() only updates
-  // the global variable of CMSIS system_<device>.c
-  //SystemCoreClockUpdate();
-#else
-
 #endif
 
   // Enable the clock to the peripherals used by the application.
@@ -238,9 +237,8 @@ CoreLink::SPIDev * BSPInit(void) {
 // QF callbacks ==============================================================
 void QP::QF::onStartup(void) {
 
-  // set up the SysTick timer to fire at BSP_TICKS_PER_SEC rate
-  //SysTick_Config(SystemCoreClock / GAME::BSP_TICKS_PER_SEC);
-  SysTickPeriodSet(800000);
+  // Set up the SysTick timer to fire at BSP_TICKS_PER_SEC rate
+  SysTickPeriodSet(SysCtlClockGet() / BSP_TICKS_PER_SEC);
   IntPrioritySet(FAULT_SYSTICK, 0x80); //SYSTICK_PRIO
   SysTickIntEnable();
   SysTickEnable();
@@ -253,6 +251,7 @@ void QP::QF::onStartup(void) {
   IntPrioritySet(INT_GPIOD, 0x60); //GPIOPORTA_PRIO);
   IntPrioritySet(INT_GPIOE, 0x40); //GPIOPORTE_PRIO);
   IntPrioritySet(INT_GPIOF, 0x60); //GPIOPORTF_PRIO);
+  IntPrioritySet(INT_ETH, 0x60);
 
   //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
 
@@ -271,6 +270,25 @@ void QP::QF::onStartup(void) {
 
   // Timed Feed cap sensor input.
   sTimedFeedButtonPtr->EnableInt();
+
+
+  // GPIO for Ethernet LEDs.
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
+  GPIOPadConfigSet(GPIO_PORTF_BASE,
+                   GPIO_PIN_2,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
+  GPIOPinTypeEthernetLED(GPIO_PORTF_BASE,
+                         GPIO_PIN_2);
+
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3);
+  GPIOPadConfigSet(GPIO_PORTF_BASE,
+                   GPIO_PIN_3,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
+  GPIOPinTypeEthernetLED(GPIO_PORTF_BASE,
+                         GPIO_PIN_3);
+  IntEnable(INT_ETH);
 }
 
 //............................................................................
@@ -432,6 +450,13 @@ void GPIOPortF_IRQHandler(void) {
   // Process state of other pins here if required.
 }
 #endif
+
+
+void Ethernet_IRQHandler(void);
+void Ethernet_IRQHandler(void) {
+  ISR_Ethernet();
+}
+
 } // extern C
 
 // *****************************************************************************

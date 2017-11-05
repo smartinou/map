@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -22,27 +22,18 @@
 
 // QP Library.
 #include "qpcpp.h"
-#include "qep.h"
-#include "qf.h"
 
 // CMSIS Library.
 #include "lm3s_cmsis.h"
 
 // TI Library.
 #include "hw_types.h"
-#include "hw_ints.h"
-#include "systick.h"
 #include "uartstdio.h"
 
-#include "debug.h"
 #include "gpio.h"
 #include "interrupt.h"
-#include "sysctl.h"
 
 // Common Library.
-#include "Button.h"
-//#include "Calendar.h"
-
 #include "SSD1329.h"
 #include "SPI.h"
 
@@ -50,6 +41,7 @@
 #include "BFH_Mgr_AO.h"
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
+#include "LWIPMgr.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"
 
@@ -100,6 +92,23 @@ int main(void) {
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
   // Instantiate and start the active objects.
+  // FIXME: find how to move into BSP file.
+  static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
+                                            *lSPIDevPtr,
+                                            GPIO_PORTA_BASE,
+                                            GPIO_PIN_7,
+                                            GPIO_PORTA_BASE,
+                                            GPIO_PIN_6 };
+  static QP::QEvt const *sRTCCEvtQPtr[10];
+  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
+  lRTCC_AOPtr->start(1U,
+                     sRTCCEvtQPtr,
+                     Q_DIM(sRTCCEvtQPtr),
+                     static_cast<void *>(0),
+                     0U,
+                     &sRTCCInitEvt);
+
+
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
   BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
   lBFH_Mgr_AO.start(2U,
@@ -109,21 +118,13 @@ int main(void) {
                     0U);
 
 
-  // FIXME: find how to move into BSP file.
-  static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
-                                            *lSPIDevPtr,
-                                            GPIO_PORTA_BASE,
-                                            GPIO_PIN_7,
-                                            GPIO_PORTA_BASE,
-                                            GPIO_PIN_6 };
-  static QP::QEvt const *sRTCCEvtQPtr[5];
-  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
-  lRTCC_AOPtr->start(1U,
-                     sRTCCEvtQPtr,
-                     Q_DIM(sRTCCEvtQPtr),
-                     static_cast<void *>(0),
-                     0U,
-                     &sRTCCInitEvt);
+  static QP::QEvt const *sLwIPEvtQPtr[10];
+  LWIPMgr *lLwIPMgr_AOPtr = new LWIPMgr();
+  lLwIPMgr_AOPtr->start(3U,
+                        sLwIPEvtQPtr,
+                        Q_DIM(sLwIPEvtQPtr),
+                        static_cast<void *>(0),
+                        0U);
 
   // Run the QF application.
   return QP::QF::run();

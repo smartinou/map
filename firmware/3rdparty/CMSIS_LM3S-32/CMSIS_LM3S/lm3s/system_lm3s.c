@@ -30,7 +30,6 @@
 /*----------------------------------------------------------------------------
   Local functions
  *---------------------------------------------------------------------------*/
-__INLINE static uint32_t getOscClk (uint32_t xtal, uint32_t oscSrc);
 
 //
 // The following macros are used to distinguish among various Stellaris
