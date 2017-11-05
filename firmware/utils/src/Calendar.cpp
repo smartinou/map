@@ -125,6 +125,7 @@ bool Calendar::GetNextEntry(Weekday  const &aWeekdayRef,
 
   // Select time slot next to current time.
   unsigned int lHourIx = GetArrayIx(aTimeRef) + 1;
+  lHourIx %= TIME_ENTRY_QTY;
   unsigned int lNextWeekdayMask = WeekdayToBitMask(aWeekdayRef);
   for (unsigned int lTotArrayIx = 0; lTotArrayIx < (TIME_ENTRY_QTY * 7); lTotArrayIx++) {
     // Get weekday bit field of current time.
@@ -179,11 +180,13 @@ void Calendar::Deserialize(uint8_t const *aDataPtr) {
 
 unsigned int Calendar::GetArrayIx(Time const &aTimeRef) {
 
+  // Find minute bin index: from 0 to (SLOTS_PER_HOUR - 1).
   static const unsigned int lMinuteBinRange = 60 / SLOTS_PER_HOUR;
   unsigned int lHour  = aTimeRef.GetHours();
   unsigned int lBinIx = aTimeRef.GetMinutes() / lMinuteBinRange;
 
   // Manage pm vs am? Or is time in 24H format always?
+  // Index is between 0 to (TIME_ENTRY_QTY - 1).
   return (lHour * SLOTS_PER_HOUR + lBinIx);
 }
 
