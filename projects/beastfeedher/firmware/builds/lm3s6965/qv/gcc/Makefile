@@ -147,6 +147,7 @@ CPP_SRCS := \
         eth_driver.cpp \
         Limit.cpp \
         LWIPMgr.cpp \
+        LwIPDrv.cpp \
         Month.cpp \
         RTC.cpp \
         RTCC_AO.cpp \
@@ -188,6 +189,7 @@ LIBS      := -ldriver-cm3
 # defines
 # [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
 DEFINES   := -DQ_NASSERT
+DEFINES   += -D__STARTUP_CLEAR_BSS
 
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3
@@ -199,7 +201,8 @@ FLOAT_ABI :=
 # see http://gnutoolchains.com/arm-eabi/
 ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
+GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -292,7 +295,6 @@ endif
 LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 	-mthumb \
 	--specs=nosys.specs \
-	-lnosys \
 	-Wl,-Map,$(BIN_DIR)/$(OUTPUT).map,--cref,--gc-sections $(LIB_DIRS)
 
 
