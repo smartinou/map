@@ -2,7 +2,7 @@
 #define LWIP_DRV_H_
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Active Object Library
 //
 // Module: Module in the larger project scope.
 //

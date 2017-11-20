@@ -1,6 +1,6 @@
 // *****************************************************************************
 //
-// Project: LwIP
+// Project: Active Object Library
 //
 // Module: LwIP manager QP Active Object.
 //
@@ -14,7 +14,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -63,7 +63,7 @@ extern "C" {
 
 // This project.
 #include "BSP.h"
-#include "LWIPMgr.h"
+#include "LwIPMgr_AO.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -126,15 +126,15 @@ static tCGI const CGIHandlers[] = {
 
 #endif
 
-// The single instance of LWIPMgr.
-LWIPMgr *LWIPMgr::mInstancePtr = static_cast<LWIPMgr *>(0);
+// The single instance of LwIPMgr_AO.
+LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = static_cast<LwIPMgr_AO *>(0);
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-LWIPMgr::LWIPMgr() :
-  QActive(Q_STATE_CAST(&LWIPMgr::Initial))
+LwIPMgr_AO::LwIPMgr_AO() :
+  QActive(Q_STATE_CAST(&LwIPMgr_AO::Initial))
   , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
   //, mEthDrvPtr(0)
   , mNetIFPtr(static_cast<struct netif *>(0))
@@ -160,12 +160,12 @@ LWIPMgr::LWIPMgr() :
 }
 
 
-LWIPMgr * const LWIPMgr::GetInstancePtr(void) const {
+LwIPMgr_AO * const LwIPMgr_AO::GetInstancePtr(void) const {
   return mInstancePtr;
 }
 
 
-QP::QActive * const LWIPMgr::GetOpaqueAOInstancePtr(void) const {
+QP::QActive * const LwIPMgr_AO::GetOpaqueAOInstancePtr(void) const {
   return static_cast<QP::QActive * const>(mInstancePtr);
 }
 
@@ -173,8 +173,8 @@ QP::QActive * const LWIPMgr::GetOpaqueAOInstancePtr(void) const {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-QP::QState LWIPMgr::Initial(LWIPMgr        * const me,  //aMePtr,
-                            QP::QEvt const * const e) { //aEvtPtr
+QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
+                               QP::QEvt const * const e) { //aEvtPtr
 
   // Suppress the compiler warning about unused parameter.
   (void)e;
@@ -229,8 +229,8 @@ QP::QState LWIPMgr::Initial(LWIPMgr        * const me,  //aMePtr,
   QS_OBJ_DICTIONARY(&l_lwIPMgr);
   QS_OBJ_DICTIONARY(&l_lwIPMgr.mSlowTickTimer);
   QS_FUN_DICTIONARY(&QP::QHsm_top);
-  QS_FUN_DICTIONARY(&LWIPMgr::Initial);
-  QS_FUN_DICTIONARY(&LWIPMgr::Running);
+  QS_FUN_DICTIONARY(&LwIPMgr_AO::Initial);
+  QS_FUN_DICTIONARY(&LwIPMgr_AO::Running);
 
   QS_SIG_DICTIONARY(SEND_UDP_SIG,        static_cast<QP::QActive *>(me));
   QS_SIG_DICTIONARY(LWIP_SLOW_TICK_SIG,  static_cast<QP::QActive *>(me));
@@ -238,11 +238,12 @@ QP::QState LWIPMgr::Initial(LWIPMgr        * const me,  //aMePtr,
   QS_SIG_DICTIONARY(LWIP_TX_READY_SIG,   static_cast<QP::QActive *>(me));
   QS_SIG_DICTIONARY(LWIP_RX_OVERRUN_SIG, static_cast<QP::QActive *>(me));
 #endif
-  return Q_TRAN(&LWIPMgr::Running);
+  return Q_TRAN(&LwIPMgr_AO::Running);
 }
 
 
-QP::QState LWIPMgr::Running(LWIPMgr * const me, QP::QEvent const * const e) {
+QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
+                               QP::QEvent const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG: {

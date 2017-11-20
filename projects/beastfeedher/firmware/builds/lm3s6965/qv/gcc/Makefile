@@ -146,7 +146,7 @@ CPP_SRCS := \
         DS3234.cpp \
         eth_driver.cpp \
         Limit.cpp \
-        LWIPMgr.cpp \
+        LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
         Month.cpp \
         RTC.cpp \

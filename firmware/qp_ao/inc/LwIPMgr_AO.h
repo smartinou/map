@@ -1,8 +1,8 @@
-#ifndef LWIP_MGR_H_
-#define LWIP_MGR_H_
+#ifndef LWIP_MGR_AO_H_
+#define LWIP_MGR_AO_H_
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: Active Object Library
 //
 // Module: LWIP manager QP Active Object.
 //
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -37,16 +37,16 @@ class EthDrv2;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class LWIPMgr : public QP::QActive {
+class LwIPMgr_AO : public QP::QActive {
  public:
-  LWIPMgr();
-  LWIPMgr * const GetInstancePtr(void) const;
+  LwIPMgr_AO();
+  LwIPMgr_AO  * const GetInstancePtr(void) const;
   QP::QActive * const GetOpaqueAOInstancePtr(void) const;
 
  protected:
-  static QP::QState Initial(LWIPMgr         * const aMePtr,
+  static QP::QState Initial(LwIPMgr_AO         * const aMePtr,
 			    QP::QEvt  const * const aEvtPtr);
-  static QP::QState Running(LWIPMgr         * const aMePtr,
+  static QP::QState Running(LwIPMgr_AO         * const aMePtr,
 			    QP::QEvt  const * const aEvtPtr);
 private:
   QP::QTimeEvt    mSlowTickTimer;
@@ -71,8 +71,8 @@ private:
   uint32_t mAutoIPTimer;
 #endif
 
-  // The single instance of LWIPMgr Active Object.
-  static LWIPMgr *mInstancePtr;
+  // The single instance of LwIPMgr_AO Active Object.
+  static LwIPMgr_AO *mInstancePtr;
 };
 
 // ******************************************************************************
@@ -90,4 +90,4 @@ private:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // LWIP_MGR_H_
+#endif // LWIP_MGR_AO_H_

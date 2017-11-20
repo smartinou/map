@@ -41,7 +41,7 @@
 #include "BFH_Mgr_AO.h"
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
-#include "LWIPMgr.h"
+#include "LwIPMgr_AO.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"
 
@@ -119,7 +119,7 @@ int main(void) {
 
 
   static QP::QEvt const *sLwIPEvtQPtr[10];
-  LWIPMgr *lLwIPMgr_AOPtr = new LWIPMgr();
+  LwIPMgr_AO *lLwIPMgr_AOPtr = new LwIPMgr_AO();
   lLwIPMgr_AOPtr->start(3U,
                         sLwIPEvtQPtr,
                         Q_DIM(sLwIPEvtQPtr),
