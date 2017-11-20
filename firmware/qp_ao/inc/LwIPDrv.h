@@ -1,10 +1,10 @@
-#ifndef LWIP_MGR_H_
-#define LWIP_MGR_H_
+#ifndef LWIP_DRV_H_
+#define LWIP_DRV_H_
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: Active Object Library
 //
-// Module: LWIP manager QP Active Object.
+// Module: Module in the larger project scope.
 //
 // *******************************************************************************
 
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2017, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -31,48 +31,54 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class EthDrv2;
+// Forward declarations.
 
 
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class LWIPMgr : public QP::QActive {
+class LwIPDrv {
  public:
-  LWIPMgr();
-  LWIPMgr * const GetInstancePtr(void) const;
-  QP::QActive * const GetOpaqueAOInstancePtr(void) const;
+  LwIPDrv();
 
- protected:
-  static QP::QState Initial(LWIPMgr         * const aMePtr,
-			    QP::QEvt  const * const aEvtPtr);
-  static QP::QState Running(LWIPMgr         * const aMePtr,
-			    QP::QEvt  const * const aEvtPtr);
-private:
-  QP::QTimeEvt    mSlowTickTimer;
+  struct netif *Init(u8_t          const aMACAddr[NETIF_MAX_HWADDR_LEN],
+		     unsigned int  const aQSize);
+  void Rd(void);
+  void Wr(void);
 
-  //EthDrv2         *mEthDrvPtr;
-  struct netif   *mNetIFPtr;
-  //struct udp_pcb *mPCBPtr;
-  // IP address in the native host byte order.
-  uint32_t        mIPAddr;
+  void ISR(QP::QActive &aAO,
+	   QP::QEvent const &aRxIntEvt,
+	   QP::QEvent const &aTxIntEvt);
 
-#if LWIP_TCP
-  uint32_t mTCPTimer;
-#endif
-#if LWIP_ARP
-  uint32_t mARPTimer;
-#endif
-#if LWIP_DHCP
-  uint32_t mDHCPFineTimer;
-  uint32_t mDHCPCoarseTimer;
-#endif
-#if LWIP_AUTOIP
-  uint32_t mAutoIPTimer;
-#endif
+ private:
+  // Static functions for assigning to netif.
+  static err_t EtherIFInit(struct netif *aNetIFPtr);
+  static err_t EtherIFLinkOut(struct netif *aNetIFPtr,
+			      struct pbuf  *aPBufPtr);
 
-  // The single instance of LWIPMgr Active Object.
-  static LWIPMgr *mInstancePtr;
+  // Low-level driver methods.
+  void         LowLevelTx(struct pbuf * const aPBufPtr);
+  struct pbuf *LowLevelRx(void);
+
+  // Internal PBuf Q-ring class.
+  class PBufQ {
+  public:
+    PBufQ(unsigned int aQSize);
+    bool         IsEmpty(void);
+    bool         Put(struct pbuf *aPBufPtr);
+    struct pbuf *Get(void);
+  private:
+    struct pbuf **mRingPtr;
+    unsigned int mRingSize;
+    unsigned int mQWrIx;
+    unsigned int mQRdIx;
+    unsigned int mQOverflow;
+  };
+
+ private:
+  // Queue of pbufs for transmission.
+  PBufQ       *mPBufQPtr;
+  struct netif mNetIF;
 };
 
 // ******************************************************************************
@@ -90,4 +96,4 @@ private:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // LWIP_MGR_H_
+#endif // LWIP_DRV_H_
