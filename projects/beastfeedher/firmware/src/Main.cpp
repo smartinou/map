@@ -42,6 +42,7 @@
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "LwIPMgr_AO.h"
+#include "MasterRec.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"
 
@@ -91,16 +92,27 @@ int main(void) {
   static QP::QSubscrList lSubsribeSto[SIG_QTY];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
+  // Create Master record.
+  // Create sub-records and assign them to master record.
+  // Deserialize NV memory into it.
+  // Check state and reset if required.
+  MasterRec *lMasterRecPtr = new MasterRec(1);
+  Calendar  *lCalendarPtr  = new Calendar();
+  unsigned int lCalendarRecIx = lMasterRecPtr->AddRec(lCalendarPtr);
+
   // Instantiate and start the active objects.
+  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
+  lRTCC_AOPtr->RdDBRec(lMasterRecPtr);
+
   // FIXME: find how to move into BSP file.
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
                                             *lSPIDevPtr,
                                             GPIO_PORTA_BASE,
                                             GPIO_PIN_7,
                                             GPIO_PORTA_BASE,
-                                            GPIO_PIN_6 };
+                                            GPIO_PIN_6,
+                                            lCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
-  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
   lRTCC_AOPtr->start(1U,
                      sRTCCEvtQPtr,
                      Q_DIM(sRTCCEvtQPtr),
