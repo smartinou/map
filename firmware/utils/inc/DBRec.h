@@ -24,9 +24,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-//#include "hw_types.h"
-//#include "qpcpp.h"
-
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -46,11 +43,20 @@ class DBRec {
   DBRec();
   virtual ~DBRec() {}
 
-  virtual unsigned int GetRecSize(void) = 0;
-  virtual void         Serialize(uint8_t * const aDataPtr) = 0;
+  unsigned int GetMyIx(void);
+
+  virtual bool IsSane(void) const = 0;
+  virtual bool IsDirty(void) const;
+  virtual void ResetDflt(void) = 0;
+
+  virtual unsigned int GetRecSize(void) const = 0;
+  virtual void         Serialize(uint8_t * const aDataPtr) const = 0;
   virtual void         Deserialize(uint8_t const * const aDataPtr) = 0;
 
-private:
+ protected:
+  bool mIsDirty;
+
+ private:
   static unsigned int mDBObjCnt;
 
   unsigned int mDBObjIx;
