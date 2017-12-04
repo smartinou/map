@@ -2,9 +2,9 @@
 #define DS3234_H_
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Component drivers.
 //
-// Module: Module in the larger project scope.
+// Module: DS3234 RTCC.
 //
 // *******************************************************************************
 
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -79,7 +79,7 @@ struct L_ADDR_MAP_STRUCT_TAG {
   rtc_reg_t   mDisableTemp;
   rtc_reg_t   mReserved[4];
   rtc_reg_t   mSRAMAddr;
-  rtc_reg_t   mSRAMDData;
+  rtc_reg_t   mSRAMData;
 };
 
 typedef struct L_ADDR_MAP_STRUCT_TAG rtc_reg_map_t;
@@ -130,7 +130,7 @@ class DS3234 : public RTC {
 
 
   DS3234(SPIDev      &aSPIDevRef,
-	 SPISlaveCfg &aSPICfgRef);
+         SPISlaveCfg &aSPICfgRef);
   ~DS3234();
 
   void Init(uint8_t aCtrlRef);
@@ -139,27 +139,28 @@ class DS3234 : public RTC {
   void RdTime(Time &aTimeRef);
   void RdDate(Date &aDateRef);
   void RdTimeAndDate(Time &aTimeRef, Date &aDateRef);
-  void RdFromRAM(uint8_t     *aDataPtr,
-		 unsigned int aOffset,
-		 unsigned int aSize);
 
   void WrTime(Time const &aTimeRef);
   void WrDate(Date const &aDateRef);
   void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef);
   void WrAlarm(enum ALARM_ID   aAlarmID,
-	       Time const     &aTimeRef,
-	       Date const     &aDateRef,
-	       enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH);
+               Time const     &aTimeRef,
+               Date const     &aDateRef,
+               enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH);
   void WrAlarm(enum ALARM_ID   aAlarmID,
-	       Time    const  &aTimeRef,
-	       Weekday const  &aWeekdayRef,
-	       enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH);
+               Time    const  &aTimeRef,
+               Weekday const  &aWeekdayRef,
+               enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH);
   void DisableAlarm(enum ALARM_ID aAlarmID);
   void ClrAlarmFlag(enum ALARM_ID aAlarmID);
 
+  bool HasNVMem(void) const;
+  void RdFromRAM(uint8_t     *aDataPtr,
+                 unsigned int aOffset,
+                 unsigned int aSize);
   void WrToRAM(uint8_t const *aDataPtr,
-	       unsigned int   aOffset,
-	       unsigned int   aSize);
+               unsigned int   aOffset,
+               unsigned int   aSize);
 
   // Interrupt-based/cached API.
   void    GetTimeAndDate(Time &aTimeRef, Date &aDateRef);
@@ -245,15 +246,15 @@ class DS3234 : public RTC {
   void FillTimeStruct(Time const &aTimeRef);
   void FillDateStruct(Date const &aDateRef);
   void FillAlarmStruct(rtc_alarm_t &aAlarmRef,
-		       Time const  &aTimeRef,
-		       Date const  &aDateRef);
+                       Time const  &aTimeRef,
+                       Date const  &aDateRef);
   void FillAlarmStruct(rtc_alarm_t   &aAlarmRef,
-		       Time    const &aTimeRef,
-		       Weekday const &aWeekdayRef);
+                       Time    const &aTimeRef,
+                       Weekday const &aWeekdayRef);
   void FillAlarmTimeStruct(rtc_alarm_t &aAlarmRef,
-			   Time const  &aTimeRef);
+                           Time const  &aTimeRef);
   void FillAlarmModeStruct(rtc_alarm_t    &aAlarmRef,
-			   enum ALARM_MODE aAlarmMode);
+                           enum ALARM_MODE aAlarmMode);
   void TxAlarmStruct(enum ALARM_ID aAlarmID);
 
   void SetAlarm(enum ALARM_ID aAlarmID);
