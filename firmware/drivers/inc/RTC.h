@@ -60,6 +60,14 @@ class RTC {
   virtual uint8_t GetStatus(void) = 0;
   void ISRCallback(void) { mIsImpure = true; }
 
+  virtual bool HasNVMem(void) const = 0;
+  virtual void RdFromRAM(uint8_t     *aDataPtr,
+		         unsigned int aOffset,
+		         unsigned int aSize) = 0;
+  virtual void WrToRAM(uint8_t const *aDataPtr,
+	               unsigned int   aOffset,
+	               unsigned int   aSize) = 0;
+
  protected:
   bool IsImpure(void) { return mIsImpure; }
   virtual void UpdateCachedVal(void) = 0;
