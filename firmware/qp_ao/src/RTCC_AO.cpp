@@ -87,11 +87,31 @@ RTCC_AO::RTCC_AO() :
   mTemperature(0.0),
   mRTCSPISlaveCfgPtr(static_cast<CoreLink::SPISlaveCfg *>(0)),
   mDS3234Ptr(static_cast<DS3234 *>(0)),
-  mCalendar(),
+  mCalendarPtr(nullptr),
   mIntNbr(0) {
 
   // Ctor body.
   mInstancePtr = this;
+}
+
+
+void RTCC_AO::RdDBRec(DBRec * const aDBRecPtr) {
+
+  if (mDS3234Ptr->HasNVMem()) {
+    uint8_t      lSRAMData[256];
+    unsigned int lRecSize = aDBRecPtr->GetRecSize();
+
+    mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lRecSize);
+    aDBRecPtr->Deserialize(&lSRAMData[0]);
+    if (!aDBRecPtr->IsSane()) {
+      // Reset defaults and write back to NV mem.
+      aDBRecPtr->ResetDflt();
+      aDBRecPtr->Serialize(&lSRAMData[0]);
+      mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lRecSize);
+    }
+  } else {
+    aDBRecPtr->ResetDflt();
+  }
 }
 
 
@@ -175,15 +195,26 @@ unsigned int RTCC_AO::InitCalendar(RTCC_AO         * const me,  //aMePtr,
   // -Set next alarm.
   me->mDS3234Ptr->RdTimeAndDate(me->mTime, me->mDate);
   me->mTemperature = me->mDS3234Ptr->GetTemperature();
-#ifdef RTCC_CALENDAR_DBG
-  me->mCalendar.ClrAllEntries();
-#else
-  // Fill calendar from DB values:
-  // Read whole DB from RTCC NV RAM.
-  // Serialize Calendar record into Calendar member object.
-#endif // RTCC_CALENDAR_DBG
-  SetNextCalendarEvt(me);
 
+  RTCCInitEvt const * const lInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
+  if (nullptr == lInitEvtPtr->mCalendarPtr) {
+    me->mCalendarPtr = new Calendar();
+  } else {
+    me->mCalendarPtr = lInitEvtPtr->mCalendarPtr;
+  }
+
+  // Set some defaults if required.
+  if (!me->mCalendarPtr->IsSane()) {
+    me->mCalendarPtr->ResetDflt();
+  }
+
+  // Check if a Calendar object was passed.
+  // If not, create one locally,
+#ifdef RTCC_CALENDAR_DBG
+  me->mCalendarPtr->ClrAllEntries();
+#endif // RTCC_CALENDAR_DBG
+
+  SetNextCalendarEvt(me);
   return 0;
 }
 
@@ -267,16 +298,16 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
 
   case SIG_RTCC_ADD_CALENDAR_ENTRY: {
     RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
-    me->mCalendar.SetEntry(lSetEvtPtr->mDate.GetWeekday(),
-                           lSetEvtPtr->mTime);
+    me->mCalendarPtr->SetEntry(lSetEvtPtr->mDate.GetWeekday(),
+                               lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }
 
   case SIG_RTCC_DEL_CALENDAR_ENTRY: {
     RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
-    me->mCalendar.ClrEntry(lSetEvtPtr->mDate.GetWeekday(),
-                           lSetEvtPtr->mTime);
+    me->mCalendarPtr->ClrEntry(lSetEvtPtr->mDate.GetWeekday(),
+                               lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }
@@ -312,13 +343,13 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
   }
   lAlarmTime.SetMinutes(lMinutes);
   lAlarmTime.SetHours(lHours);
-  me->mCalendar.SetEntry(lCurrentWeekday, lAlarmTime);
+  me->mCalendarPtr->SetEntry(lCurrentWeekday, lAlarmTime);
 #endif // RTCC_CALENDAR_DBG
 
-  bool lIsNextEntry = me->mCalendar.GetNextEntry(lCurrentWeekday,
-                                                 me->mTime,
-                                                 lAlarmWeekday,
-                                                 lAlarmTime);
+  bool lIsNextEntry = me->mCalendarPtr->GetNextEntry(lCurrentWeekday,
+                                                     me->mTime,
+                                                     lAlarmWeekday,
+                                                     lAlarmTime);
   lIsNextEntry = true;
   if (lIsNextEntry) {
     // Entry found: use alarm 2 for feeding alarm.

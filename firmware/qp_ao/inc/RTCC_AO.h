@@ -23,6 +23,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include "DBRec.h"
 #include "Calendar.h"
 
 // ******************************************************************************
@@ -45,9 +46,10 @@ class RTCC_AO : public QP::QActive {
  public:
   RTCC_AO();
 
-  static RTCC_AO * const GetInstancePtr(void);
+  static RTCC_AO     * const GetInstancePtr(void);
   static QP::QActive * const GetOpaqueAOInstancePtr(void);
 
+  void RdDBRec(DBRec * const aDBRecPtr);
   void ISRCallback(void);
 
  protected:
@@ -72,7 +74,7 @@ class RTCC_AO : public QP::QActive {
   CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
   DS3234 *mDS3234Ptr;
 
-  Calendar mCalendar;
+  Calendar *mCalendarPtr;
 
   unsigned long mIntNbr;
 
