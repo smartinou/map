@@ -148,6 +148,7 @@ CPP_SRCS := \
         Limit.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
+        MasterRec.cpp \
         Month.cpp \
         RTC.cpp \
         RTCC_AO.cpp \
