@@ -198,7 +198,7 @@ unsigned int RTCC_AO::InitCalendar(RTCC_AO         * const me,  //aMePtr,
 
   RTCCInitEvt const * const lInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
   if (nullptr == lInitEvtPtr->mCalendarPtr) {
-    me->mCalendarPtr = new Calendar();
+    me->mCalendarPtr = new CalendarRec();
   } else {
     me->mCalendarPtr = lInitEvtPtr->mCalendarPtr;
   }

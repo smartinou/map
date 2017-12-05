@@ -1,5 +1,5 @@
-#ifndef CALENDAR_H_
-#define CALENDAR_H_
+#ifndef CALENDAR_REC_H_
+#define CALENDAR_REC_H_
 // *******************************************************************************
 //
 // Project: Beast Feed'Her.
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -43,10 +43,10 @@ class Weekday;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class Calendar : public DBRec {
+class CalendarRec : public DBRec {
  public:
-  Calendar();
-  ~Calendar() {}
+  CalendarRec();
+  ~CalendarRec() {}
 
   // Sets/clears the entry for the specified time, rounded to quarter hour.
   void SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef);
@@ -108,4 +108,4 @@ class Calendar : public DBRec {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // CALENDAR_H_
+#endif // CALENDAR_REC_H_

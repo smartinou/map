@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -29,7 +29,7 @@
 #include "Time.h"
 
 // This project.
-#include "Calendar.h"
+#include "CalendarRec.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -51,27 +51,27 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Calendar::Calendar() :
+CalendarRec::CalendarRec() :
   DBRec() {
 
   // Ctor body left intentionally empty.
 }
 
 
-void Calendar::ClrAllEntries(void) {
+void CalendarRec::ClrAllEntries(void) {
 
   mRec.mCalendarArray.fill(0);
 }
 
 
-void Calendar::SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
+void CalendarRec::SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
 
   unsigned int lWeekdayUI = aWeekdayRef.Get();
   SetEntry(lWeekdayUI, aTimeRef);
 }
 
 
-void Calendar::SetEntry(unsigned int const aWeekday, Time const &aTimeRef) {
+void CalendarRec::SetEntry(unsigned int const aWeekday, Time const &aTimeRef) {
 
   unsigned int lArrayIx        = GetArrayIx(aTimeRef);
   unsigned int lWeekdayBitMask = (1 << aWeekday);
@@ -87,7 +87,7 @@ void Calendar::SetEntry(unsigned int const aWeekday, Time const &aTimeRef) {
 }
 
 
-void Calendar::SetTimeEntry(Time const &aTimeRef) {
+void CalendarRec::SetTimeEntry(Time const &aTimeRef) {
 
   unsigned int lArrayIx = GetArrayIx(aTimeRef);
   mRec.mCalendarArray.at(lArrayIx) |= ALL_WEEK_BIT_MASK;
@@ -95,14 +95,14 @@ void Calendar::SetTimeEntry(Time const &aTimeRef) {
 }
 
 
-void Calendar::ClrEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
+void CalendarRec::ClrEntry(Weekday const &aWeekdayRef, Time const &aTimeRef) {
 
   unsigned int lWeekdayUI = aWeekdayRef.Get();
   ClrEntry(lWeekdayUI, aTimeRef);
 }
 
 
-void Calendar::ClrEntry(unsigned int aWeekday, Time const &aTimeRef) {
+void CalendarRec::ClrEntry(unsigned int aWeekday, Time const &aTimeRef) {
 
   unsigned int lArrayIx        = GetArrayIx(aTimeRef);
   unsigned int lWeekdayBitMask = (0x1 << aWeekday);
@@ -113,7 +113,7 @@ void Calendar::ClrEntry(unsigned int aWeekday, Time const &aTimeRef) {
 }
 
 
-bool Calendar::GetNextEntry(Weekday  const &aWeekdayRef,
+bool CalendarRec::GetNextEntry(Weekday  const &aWeekdayRef,
                             Time     const &aTimeRef,
                             Weekday        &aNextWeekdayRef,
                             Time           &aNextTimeRef) {
@@ -158,12 +158,12 @@ bool Calendar::GetNextEntry(Weekday  const &aWeekdayRef,
 }
 
 
-bool Calendar::IsDirty(void) const {
+bool CalendarRec::IsDirty(void) const {
   return mIsDirty;
 }
 
 
-bool Calendar::IsSane(void) const {
+bool CalendarRec::IsSane(void) const {
 
   // Check magic value.
   if (('C' != mRec.mMagic[0])
@@ -177,7 +177,7 @@ bool Calendar::IsSane(void) const {
 }
 
 
-void Calendar::ResetDflt(void) {
+void CalendarRec::ResetDflt(void) {
 
   // Set time entries in whole week.
   // 8:00 and 17:00.
@@ -194,20 +194,20 @@ void Calendar::ResetDflt(void) {
 }
 
 
-unsigned int Calendar::GetRecSize(void) const {
+unsigned int CalendarRec::GetRecSize(void) const {
   return mRec.mCalendarArray.size();
 }
 
 
 // Trivial serialization function.
-void Calendar::Serialize(uint8_t * const aDataPtr) const {
+void CalendarRec::Serialize(uint8_t * const aDataPtr) const {
 
   memcpy(aDataPtr, mRec.mCalendarArray.data(), mRec.mCalendarArray.size());
 }
 
 
 // Trivial serialization function.
-void Calendar::Deserialize(uint8_t const *aDataPtr) {
+void CalendarRec::Deserialize(uint8_t const *aDataPtr) {
 
   memcpy(mRec.mCalendarArray.data(), aDataPtr, mRec.mCalendarArray.size());
 }
@@ -216,7 +216,7 @@ void Calendar::Deserialize(uint8_t const *aDataPtr) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-unsigned int Calendar::GetArrayIx(Time const &aTimeRef) {
+unsigned int CalendarRec::GetArrayIx(Time const &aTimeRef) {
 
   // Find minute bin index: from 0 to (SLOTS_PER_HOUR - 1).
   static const unsigned int lMinuteBinRange = 60 / SLOTS_PER_HOUR;
@@ -229,7 +229,7 @@ unsigned int Calendar::GetArrayIx(Time const &aTimeRef) {
 }
 
 
-unsigned int Calendar::WeekdayToBitMask(Weekday const &aWeekdayRef) {
+unsigned int CalendarRec::WeekdayToBitMask(Weekday const &aWeekdayRef) {
 
   unsigned int lWeekdayUI = aWeekdayRef.Get();
   unsigned int lBitMask   = (1 << lWeekdayUI);
@@ -237,7 +237,7 @@ unsigned int Calendar::WeekdayToBitMask(Weekday const &aWeekdayRef) {
 }
 
 
-unsigned int Calendar::BitMaskToWeekday(unsigned int aBitMask) {
+unsigned int CalendarRec::BitMaskToWeekday(unsigned int aBitMask) {
 
   unsigned int lWeekdayUI = 0;
   while (0 == (aBitMask & 0x1)) {

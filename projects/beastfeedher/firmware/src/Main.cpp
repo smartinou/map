@@ -41,6 +41,7 @@
 #include "BFH_Mgr_AO.h"
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
+#include "CalendarRec.h"
 #include "LwIPMgr_AO.h"
 #include "MasterRec.h"
 #include "RTCC_AO.h"
@@ -96,8 +97,8 @@ int main(void) {
   // Create sub-records and assign them to master record.
   // Deserialize NV memory into it.
   // Check state and reset if required.
-  MasterRec *lMasterRecPtr = new MasterRec(1);
-  Calendar  *lCalendarPtr  = new Calendar();
+  MasterRec   *lMasterRecPtr = new MasterRec(1);
+  CalendarRec *lCalendarPtr  = new CalendarRec();
   unsigned int lCalendarRecIx = lMasterRecPtr->AddRec(lCalendarPtr);
 
   // Instantiate and start the active objects.

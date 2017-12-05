@@ -139,7 +139,7 @@ CPP_SRCS := \
         BFH_Mgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
-        Calendar.cpp \
+        CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
         DBRec.cpp \

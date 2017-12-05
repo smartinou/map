@@ -24,7 +24,7 @@
 // ******************************************************************************
 
 #include "DBRec.h"
-#include "Calendar.h"
+#include "CalendarRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -74,7 +74,7 @@ class RTCC_AO : public QP::QActive {
   CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
   DS3234 *mDS3234Ptr;
 
-  Calendar *mCalendarPtr;
+  CalendarRec *mCalendarPtr;
 
   unsigned long mIntNbr;
 
