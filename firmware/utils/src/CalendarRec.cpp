@@ -179,6 +179,12 @@ bool CalendarRec::IsSane(void) const {
 
 void CalendarRec::ResetDflt(void) {
 
+  // Set magic.
+  mRec.mMagic[0] = 'C';
+  mRec.mMagic[1] = 'A';
+  mRec.mMagic[2] = 'L';
+  mRec.mMagic[3] = 'R';
+
   // Set time entries in whole week.
   // 8:00 and 17:00.
   ClrAllEntries();
