@@ -1,5 +1,5 @@
-#ifndef RTC_H_
-#define RTC_H_
+#ifndef RTCC_H_
+#define RTCC_H_
 // *******************************************************************************
 //
 // Project: Larger project scope.
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -40,11 +40,11 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class RTC {
+class RTCC {
 
  public:
-  RTC();
-  ~RTC();
+  RTCC();
+  ~RTCC();
 
   virtual void RdTime(Time &aTimeRef) = 0;
   virtual void RdDate(Date &aDateRef) = 0;
@@ -103,4 +103,4 @@ class RTC {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // RTC_H_
+#endif // RTCC_H_

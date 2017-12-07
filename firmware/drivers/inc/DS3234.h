@@ -23,7 +23,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "RTC.h"
+#include "RTCC.h"
 #include "SPI.h"
 
 using namespace CoreLink;
@@ -90,7 +90,7 @@ typedef struct L_ADDR_MAP_STRUCT_TAG rtc_reg_map_t;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class DS3234 : public RTC {
+class DS3234 : public RTCC {
 
  public:
   enum class ALARM_ID {

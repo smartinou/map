@@ -131,7 +131,7 @@ typedef struct L_ADDR_MAP_STRUCT_TAG rtc_reg_map_t;
 // Ctor.
 DS3234::DS3234(SPIDev      &aSPIDevRef,
                SPISlaveCfg &aSPICfgRef) :
-  RTC(),
+  RTCC(),
   mSPIDevRef(aSPIDevRef),
   mSPICfgRef(aSPICfgRef) {
 
