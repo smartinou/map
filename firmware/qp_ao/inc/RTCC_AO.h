@@ -49,7 +49,6 @@ class RTCC_AO : public QP::QActive {
   static RTCC_AO     * const GetInstancePtr(void);
   static QP::QActive * const GetOpaqueAOInstancePtr(void);
 
-  void RdDBRec(DBRec * const aDBRecPtr);
   void ISRCallback(void);
 
  protected:
@@ -66,6 +65,8 @@ class RTCC_AO : public QP::QActive {
                                     QP::QEvt  const * const aEvtPtr);
 
   static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
+
+  void RdDBRec(DBRec * const aDBRecPtr);
 
   Time  mTime;
   Date  mDate;

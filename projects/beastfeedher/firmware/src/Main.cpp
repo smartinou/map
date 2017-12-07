@@ -102,8 +102,6 @@ int main(void) {
   unsigned int lCalendarRecIx = lMasterRecPtr->AddRec(lCalendarPtr);
 
   // Instantiate and start the active objects.
-  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
-  lRTCC_AOPtr->RdDBRec(lMasterRecPtr);
 
   // FIXME: find how to move into BSP file.
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
@@ -112,8 +110,10 @@ int main(void) {
                                             GPIO_PIN_7,
                                             GPIO_PORTA_BASE,
                                             GPIO_PIN_6,
+					    lMasterRecPtr,
                                             lCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
+  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
   lRTCC_AOPtr->start(1U,
                      sRTCCEvtQPtr,
                      Q_DIM(sRTCCEvtQPtr),

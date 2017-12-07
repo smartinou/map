@@ -95,26 +95,6 @@ RTCC_AO::RTCC_AO() :
 }
 
 
-void RTCC_AO::RdDBRec(DBRec * const aDBRecPtr) {
-
-  if (mDS3234Ptr->HasNVMem()) {
-    uint8_t      lSRAMData[256];
-    unsigned int lRecSize = aDBRecPtr->GetRecSize();
-
-    mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lRecSize);
-    aDBRecPtr->Deserialize(&lSRAMData[0]);
-    if (!aDBRecPtr->IsSane()) {
-      // Reset defaults and write back to NV mem.
-      aDBRecPtr->ResetDflt();
-      aDBRecPtr->Serialize(&lSRAMData[0]);
-      mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lRecSize);
-    }
-  } else {
-    aDBRecPtr->ResetDflt();
-  }
-}
-
-
 void RTCC_AO::ISRCallback(void) {
   // Static event.
   static QP::QEvt const sRTCCAlarmIntEvt = { SIG_RTCC_INTERRUPT, 0U, 0U };
@@ -147,6 +127,9 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
   // Subscribe to signals if any.
   //aMe->subscribe(<>_SIG);
 
+  // Init MasterRec.
+  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
+  me->RdDBRec(lRTCCInitEvtPtr->mMasterDBRecPtr);
   lResult = InitCalendar(me, e);
   lResult = InitInterrupt(me, e);
 
@@ -360,6 +343,26 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
     // No next entry found:
     // clear alarm so it does not generate an interrupt.
     me->mDS3234Ptr->DisableAlarm(DS3234::ALARM_ID::ALARM_ID_2);
+  }
+}
+
+
+void RTCC_AO::RdDBRec(DBRec * const aDBRecPtr) {
+
+  if (mDS3234Ptr->HasNVMem()) {
+    uint8_t      lSRAMData[256];
+    unsigned int lRecSize = aDBRecPtr->GetRecSize();
+
+    mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lRecSize);
+    aDBRecPtr->Deserialize(&lSRAMData[0]);
+    if (!aDBRecPtr->IsSane()) {
+      // Reset defaults and write back to NV mem.
+      aDBRecPtr->ResetDflt();
+      aDBRecPtr->Serialize(&lSRAMData[0]);
+      mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lRecSize);
+    }
+  } else {
+    aDBRecPtr->ResetDflt();
   }
 }
 
