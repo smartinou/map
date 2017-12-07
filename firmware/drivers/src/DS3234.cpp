@@ -437,14 +437,10 @@ void DS3234::RdFromRAM(uint8_t     *aDataPtr,
     aSize = lMaxSize;
   }
 
-  while (aSize > 0) {
-    mSPIDevRef.RdData(static_cast<uint8_t>(offsetof(rtc_reg_map_t, mSRAMData) + WR_BASE_ADDR),
-                      reinterpret_cast<uint8_t *>(aDataPtr),
-                      aSize * sizeof(rtc_reg_t),
-                      mSPICfgRef);
-    aDataPtr++;
-    aSize--;
-  }
+  mSPIDevRef.RdData(static_cast<uint8_t>(offsetof(rtc_reg_map_t, mSRAMData)),
+                    reinterpret_cast<uint8_t *>(aDataPtr),
+                    aSize * sizeof(rtc_reg_t),
+                    mSPICfgRef);
 }
 
 
@@ -465,15 +461,10 @@ void DS3234::WrToRAM(uint8_t const *aDataPtr,
     aSize = lMaxSize;
   }
 
-  while (aSize > 0) {
-    mSPIDevRef.WrData(static_cast<uint8_t>(offsetof(rtc_reg_map_t, mSRAMData)),
-                      reinterpret_cast<uint8_t const *>(aDataPtr),
-                      aSize * sizeof(rtc_reg_t),
-                      mSPICfgRef);
-
-    aDataPtr++;
-    aSize--;
-  }
+  mSPIDevRef.WrData(static_cast<uint8_t>(offsetof(rtc_reg_map_t, mSRAMData)+ WR_BASE_ADDR),
+                    reinterpret_cast<uint8_t const *>(aDataPtr),
+                    aSize * sizeof(rtc_reg_t),
+                    mSPICfgRef);
 }
 
 
