@@ -30,10 +30,10 @@
 // *****************************************************************************
 
 #define L_RD_ADDR(m) \
-  static_cast<uint8_t>(offsetof(rtc_reg_map_t, m))
+  static_cast<uint8_t>(offsetof(rtcc_reg_map_t, m))
 
 #define L_WR_ADDR(m) \
-  static_cast<uint8_t>(offsetof(rtc_reg_map_t, m) + WR_BASE_ADDR)
+  static_cast<uint8_t>(offsetof(rtcc_reg_map_t, m) + WR_BASE_ADDR)
 
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -65,57 +65,6 @@ enum L_LIMITS {
   YEARS_DEFAULT    = YEARS_MIN
 };
 
-// [MG] CONSIDER TO PUT HERE SO IT CAN USE FORWARD DECLARATION.
-// [MG] THIS COULD SIMPLIFY THE CLASS DECLARATION.
-#if 0
-typedef uint8_t volatile rtc_reg_t;
-
-struct L_TIME_STRUCT_TAG {
-  rtc_reg_t mSeconds;
-  rtc_reg_t mMinutes;
-  rtc_reg_t mHours;
-};
-
-
-struct L_DATE_STRUCT_TAG {
-  rtc_reg_t mWeekday;
-  rtc_reg_t mDate;
-  rtc_reg_t mMonth;
-  rtc_reg_t mYear;
-};
-
-typedef struct L_TIME_STRUCT_TAG time_t;
-typedef struct L_DATE_STRUCT_TAG date_t;
-
-struct L_ALARM_STRUCT_TAG {
-  rtc_reg_t mMinutes;
-  rtc_reg_t mHours;
-  rtc_reg_t mDayDate;
-};
-
-typedef struct L_ALARM_STRUCT_TAG rtc_alarm_t;
-
-
-struct L_ADDR_MAP_STRUCT_TAG {
-  time_t      mTime;
-  date_t      mDate;
-  rtc_reg_t   mAlarm1Seconds;
-  rtc_alarm_t mAlarm1;
-  rtc_alarm_t mAlarm2;
-  rtc_reg_t   mCtrl;
-  rtc_reg_t   mStatus;
-  rtc_reg_t   mAgingOffset;
-  rtc_reg_t   mTempMSB;
-  rtc_reg_t   mTempLSB;
-  rtc_reg_t   mDisableTemp;
-  rtc_reg_t   mReserved[4];
-  rtc_reg_t   mSRAMAddr;
-  rtc_reg_t   mSRAMDData;
-};
-
-typedef struct L_ADDR_MAP_STRUCT_TAG rtc_reg_map_t;
-#endif
-
 // *****************************************************************************
 //                            FUNCTION PROTOTYPES
 // *****************************************************************************
@@ -137,7 +86,7 @@ DS3234::DS3234(SPIDev      &aSPIDevRef,
 
   // Clear register map array.
   uint8_t *lBytePtr = reinterpret_cast<uint8_t *>(&mRegMap);
-  for (unsigned int lByteIx = 0; lByteIx < sizeof(rtc_reg_map_t); lByteIx++) {
+  for (unsigned int lByteIx = 0; lByteIx < sizeof(rtcc_reg_map_t); lByteIx++) {
     *lBytePtr = 0x00;
     lBytePtr++;
   }
@@ -159,11 +108,11 @@ void DS3234::Init(uint8_t aCtrlReg) {
   mRegMap.mStatus = 0x00;
   mSPIDevRef.WrData(L_WR_ADDR(mCtrl),
                     const_cast<uint8_t *>(&mRegMap.mCtrl),
-                    2 * sizeof(rtc_reg_t),
+                    2 * sizeof(rtcc_reg_t),
                     mSPICfgRef);
 }
 
-// [MG] CONSIDER REMOVING.
+// TODO: CONSIDER REMOVING.
 #if 0
 void DS3234::IsValid(void) {
 
@@ -243,7 +192,7 @@ void DS3234::UpdateCachedVal(void) {
     // Read the whole RTC.
     mSPIDevRef.RdData(0,
                       reinterpret_cast<uint8_t *>(&mRegMap),
-                      sizeof(rtc_reg_map_t),
+                      sizeof(rtcc_reg_map_t),
                       mSPICfgRef);
     mIsImpure = false;
   }
@@ -399,7 +348,7 @@ void DS3234::DisableAlarm(enum ALARM_ID aAlarmID) {
 
   mSPIDevRef.WrData(L_WR_ADDR(mCtrl),
                     const_cast<uint8_t const *>(&mRegMap.mCtrl),
-                    sizeof(rtc_reg_t),
+                    sizeof(rtcc_reg_t),
                     mSPICfgRef);
 }
 
@@ -416,7 +365,7 @@ void DS3234::ClrAlarmFlag(enum ALARM_ID aAlarmID) {
 
   mSPIDevRef.WrData(L_WR_ADDR(mStatus),
                     const_cast<uint8_t const *>(&mRegMap.mStatus),
-                    sizeof(rtc_reg_t),
+                    sizeof(rtcc_reg_t),
                     mSPICfgRef);
 }
 
@@ -426,16 +375,16 @@ bool DS3234::HasNVMem(void) const {
 }
 
 
-void DS3234::RdFromRAM(uint8_t     *aDataPtr,
-                       unsigned int aOffset,
-                       unsigned int aSize) {
+void DS3234::RdFromRAM(uint8_t * const aDataPtr,
+                       unsigned int    aOffset,
+                       unsigned int    aSize) {
 
   // Write SRAM address register.
   // Cap size.
   // Loop into data register.
   mSPIDevRef.WrData(L_WR_ADDR(mSRAMAddr),
                     reinterpret_cast<uint8_t *>(aOffset),
-                    sizeof(rtc_reg_t),
+                    sizeof(rtcc_reg_t),
                     mSPICfgRef);
 
   unsigned int lMaxSize = 256 - aOffset;
@@ -445,21 +394,21 @@ void DS3234::RdFromRAM(uint8_t     *aDataPtr,
 
   mSPIDevRef.RdData(L_RD_ADDR(mSRAMData),
                     reinterpret_cast<uint8_t *>(aDataPtr),
-                    aSize * sizeof(rtc_reg_t),
+                    aSize * sizeof(rtcc_reg_t),
                     mSPICfgRef);
 }
 
 
-void DS3234::WrToRAM(uint8_t const *aDataPtr,
-                     unsigned int   aOffset,
-                     unsigned int   aSize) {
+void DS3234::WrToRAM(uint8_t const * const aDataPtr,
+                     unsigned int          aOffset,
+                     unsigned int          aSize) {
 
   // Write SRAM address register.
   // Cap size.
   // Loop into data register.
   mSPIDevRef.WrData(L_WR_ADDR(mSRAMAddr),
                     reinterpret_cast<uint8_t *>(aOffset),
-                    sizeof(rtc_reg_t),
+                    sizeof(rtcc_reg_t),
                     mSPICfgRef);
 
   unsigned int lMaxSize = 256 - aOffset;
@@ -469,7 +418,7 @@ void DS3234::WrToRAM(uint8_t const *aDataPtr,
 
   mSPIDevRef.WrData(L_WR_ADDR(mSRAMData),
                     reinterpret_cast<uint8_t const *>(aDataPtr),
-                    aSize * sizeof(rtc_reg_t),
+                    aSize * sizeof(rtcc_reg_t),
                     mSPICfgRef);
 }
 
@@ -588,26 +537,26 @@ void DS3234::FillDateStruct(Date const &aDateRef) {
 }
 
 
-void DS3234::FillAlarmStruct(rtc_alarm_t &aAlarmRef,
-                             Time const  &aTimeRef,
-                             Date const  &aDateRef) {
+void DS3234::FillAlarmStruct(rtcc_alarm_t &aAlarmRef,
+                             Time const   &aTimeRef,
+                             Date const   &aDateRef) {
 
   FillAlarmTimeStruct(aAlarmRef, aTimeRef);
   aAlarmRef.mDayDate = BinaryToBCD(aDateRef.GetDate());
 }
 
 
-void DS3234::FillAlarmStruct(rtc_alarm_t   &aAlarmRef,
-                             Time    const &aTimeRef,
-                             Weekday const &aWeekdayRef) {
+void DS3234::FillAlarmStruct(rtcc_alarm_t   &aAlarmRef,
+                             Time    const  &aTimeRef,
+                             Weekday const  &aWeekdayRef) {
 
   FillAlarmTimeStruct(aAlarmRef, aTimeRef);
   aAlarmRef.mDayDate = Weekday::NameToUI(aWeekdayRef.GetName());
 }
 
 
-void DS3234::FillAlarmTimeStruct(rtc_alarm_t &aAlarmRef,
-                                 Time const  &aTimeRef) {
+void DS3234::FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef,
+                                 Time const   &aTimeRef) {
 
   unsigned int lMinutes = BinaryToBCD(aTimeRef.GetMinutes());
   unsigned int lHours   = BinaryToBCD(aTimeRef.GetHours());
@@ -623,34 +572,8 @@ void DS3234::FillAlarmTimeStruct(rtc_alarm_t &aAlarmRef,
 }
 
 
-void DS3234::FillAlarmModeStruct(rtc_alarm_t    &aAlarmRef,
-                                 enum ALARM_MODE aAlarmMode) {
-#if 0
-  if (aAlarmMode & ALARM_MODE::DY) {
-    // All other flags to 0: return.
-    aAlarmRef.mDayDate |= DAY_DATE_n;
-  } else {
-    aAlarmRef.mDayDate &= ~DAY_DATE_n;
-  }
-
-  if (aAlarmMode & ALARM_MODE::A1M4) {
-    aAlarmRef.mDayDate |= AnMx;
-  }
-
-  if (aAlarmMode & ALARM_MODE::A1M3) {
-    aAlarmRef.mHours |= AnMx;
-  }
-
-  if (aAlarmMode & ALARM_MODE::A1M2) {
-    aAlarmRef.mMinutes |= AnMx;
-  }
-
-  // This is not optimal, but is only relevant to alarm1.
-  if (aAlarmMode & ALARM_MODE::A1M1) {
-    mRegMap.mAlarm1Seconds |= AnMx;
-  }
-
-#else
+void DS3234::FillAlarmModeStruct(rtcc_alarm_t    &aAlarmRef,
+                                 enum ALARM_MODE  aAlarmMode) {
 
   // Assumes the AxMy bit was clear on previous operation.
   // This should be performed by BinaryToBCD().
@@ -681,8 +604,6 @@ void DS3234::FillAlarmModeStruct(rtc_alarm_t    &aAlarmRef,
     // Nothing to set.
     break;
   }
-
-#endif
 }
 
 
@@ -692,13 +613,13 @@ void DS3234::TxAlarmStruct(enum ALARM_ID aAlarmID) {
   case ALARM_ID::ALARM_ID_1:
     mSPIDevRef.WrData(L_WR_ADDR(mAlarm1Seconds),
                       const_cast<uint8_t const *>(&mRegMap.mAlarm1Seconds),
-                      sizeof(rtc_reg_t) + sizeof(rtc_alarm_t),
+                      sizeof(rtcc_reg_t) + sizeof(rtcc_alarm_t),
                       mSPICfgRef);
 
     // Control register needs to be written after alarm 1 registers.
     mSPIDevRef.WrData(L_WR_ADDR(mCtrl),
                       const_cast<uint8_t const *>(&mRegMap.mCtrl),
-                      sizeof(rtc_reg_t),
+                      sizeof(rtcc_reg_t),
                       mSPICfgRef);
     break;
 
@@ -706,7 +627,7 @@ void DS3234::TxAlarmStruct(enum ALARM_ID aAlarmID) {
     // Control register follows alarm 2 registers.
     mSPIDevRef.WrData(L_WR_ADDR(mAlarm2),
                       reinterpret_cast<uint8_t const *>(&mRegMap.mAlarm2),
-                      sizeof(rtc_alarm_t) + sizeof(rtc_reg_t),
+                      sizeof(rtcc_alarm_t) + sizeof(rtcc_reg_t),
                       mSPICfgRef);
     break;
   }

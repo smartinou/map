@@ -35,55 +35,6 @@ using namespace CoreLink;
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
-
-// [MG] CONSIDER MOVING THIS INTO THE CLASS ITSELF.
-typedef uint8_t volatile rtc_reg_t;
-
-struct L_TIME_STRUCT_TAG {
-  rtc_reg_t mSeconds;
-  rtc_reg_t mMinutes;
-  rtc_reg_t mHours;
-};
-
-
-struct L_DATE_STRUCT_TAG {
-  rtc_reg_t mWeekday;
-  rtc_reg_t mDate;
-  rtc_reg_t mMonth;
-  rtc_reg_t mYear;
-};
-
-typedef struct L_TIME_STRUCT_TAG time2_t;
-typedef struct L_DATE_STRUCT_TAG date_t;
-
-struct L_ALARM_STRUCT_TAG {
-  rtc_reg_t mMinutes;
-  rtc_reg_t mHours;
-  rtc_reg_t mDayDate;
-};
-
-typedef struct L_ALARM_STRUCT_TAG rtc_alarm_t;
-
-
-struct L_ADDR_MAP_STRUCT_TAG {
-  time2_t      mTime;
-  date_t      mDate;
-  rtc_reg_t   mAlarm1Seconds;
-  rtc_alarm_t mAlarm1;
-  rtc_alarm_t mAlarm2;
-  rtc_reg_t   mCtrl;
-  rtc_reg_t   mStatus;
-  rtc_reg_t   mAgingOffset;
-  rtc_reg_t   mTempMSB;
-  rtc_reg_t   mTempLSB;
-  rtc_reg_t   mDisableTemp;
-  rtc_reg_t   mReserved[4];
-  rtc_reg_t   mSRAMAddr;
-  rtc_reg_t   mSRAMData;
-};
-
-typedef struct L_ADDR_MAP_STRUCT_TAG rtc_reg_map_t;
-
 //class SPI;
 
 
@@ -91,7 +42,6 @@ typedef struct L_ADDR_MAP_STRUCT_TAG rtc_reg_map_t;
 //! Details follow...
 //! ...here.
 class DS3234 : public RTCC {
-
  public:
   enum class ALARM_ID {
     ALARM_ID_1 = 0,
@@ -99,36 +49,70 @@ class DS3234 : public RTCC {
   };
 
   enum class ALARM_MODE {
-#if 0
-    DY   = (0x1 << 4),
-    A1M4 = (0x1 << 3),
-    A1M3 = (0x1 << 2),
-    A1M2 = (0x1 << 1),
-    A1M1 = (0x1 << 0),
-    ONCE_PER_SEC = (A1M4 | A1M3 | A1M2 | A1M1),
-    WHEN_SECS_MATCH = (A1M4 | A1M3 | A1M2),
-    WHEN_MINS_SECS_MATCH = (A1M4 | A1M3),
-    WHEN_HOURS_MINS_SECS_MATCH = (A1M4),
-    WHEN_DAY_HOURS_MINS_SECS_MATCH  = (DY),
-    WHEN_DATE_HOURS_MINS_SECS_MATCH = (0x0),
-#else
-
-      ONCE_PER_SEC = 0,
-      WHEN_SECS_MATCH,
-      ONCE_PER_MINUTE = WHEN_SECS_MATCH,
-      WHEN_MINS_SECS_MATCH,
-      WHEN_MINS_MATCH = WHEN_MINS_SECS_MATCH,
-      WHEN_HOURS_MINS_SECS_MATCH,
-      WHEN_HOURS_MINS_MATCH = WHEN_HOURS_MINS_SECS_MATCH,
-      WHEN_DAY_HOURS_MINS_SECS_MATCH,
-      WHEN_DAY_HOURS_MINS_MATCH = WHEN_DAY_HOURS_MINS_SECS_MATCH,
-      WHEN_DATE_HOURS_MINS_SECS_MATCH,
-      WHEN_DATE_HOURS_MINS_MATCH = WHEN_DATE_HOURS_MINS_SECS_MATCH
-
-#endif
+    ONCE_PER_SEC = 0,
+    WHEN_SECS_MATCH,
+    ONCE_PER_MINUTE = WHEN_SECS_MATCH,
+    WHEN_MINS_SECS_MATCH,
+    WHEN_MINS_MATCH = WHEN_MINS_SECS_MATCH,
+    WHEN_HOURS_MINS_SECS_MATCH,
+    WHEN_HOURS_MINS_MATCH = WHEN_HOURS_MINS_SECS_MATCH,
+    WHEN_DAY_HOURS_MINS_SECS_MATCH,
+    WHEN_DAY_HOURS_MINS_MATCH = WHEN_DAY_HOURS_MINS_SECS_MATCH,
+    WHEN_DATE_HOURS_MINS_SECS_MATCH,
+    WHEN_DATE_HOURS_MINS_MATCH = WHEN_DATE_HOURS_MINS_SECS_MATCH
   };
 
 
+ private:
+
+  typedef uint8_t volatile rtcc_reg_t;
+
+  struct L_TIME_STRUCT_TAG {
+    rtcc_reg_t mSeconds;
+    rtcc_reg_t mMinutes;
+    rtcc_reg_t mHours;
+  };
+
+
+  struct L_DATE_STRUCT_TAG {
+    rtcc_reg_t mWeekday;
+    rtcc_reg_t mDate;
+    rtcc_reg_t mMonth;
+    rtcc_reg_t mYear;
+  };
+
+  typedef struct L_TIME_STRUCT_TAG time2_t;
+  typedef struct L_DATE_STRUCT_TAG date_t;
+
+  struct L_ALARM_STRUCT_TAG {
+    rtcc_reg_t mMinutes;
+    rtcc_reg_t mHours;
+    rtcc_reg_t mDayDate;
+  };
+
+  typedef struct L_ALARM_STRUCT_TAG rtcc_alarm_t;
+
+
+  struct L_ADDR_MAP_STRUCT_TAG {
+    time2_t      mTime;
+    date_t      mDate;
+    rtcc_reg_t   mAlarm1Seconds;
+    rtcc_alarm_t mAlarm1;
+    rtcc_alarm_t mAlarm2;
+    rtcc_reg_t   mCtrl;
+    rtcc_reg_t   mStatus;
+    rtcc_reg_t   mAgingOffset;
+    rtcc_reg_t   mTempMSB;
+    rtcc_reg_t   mTempLSB;
+    rtcc_reg_t   mDisableTemp;
+    rtcc_reg_t   mReserved[4];
+    rtcc_reg_t   mSRAMAddr;
+    rtcc_reg_t   mSRAMData;
+  };
+
+  typedef struct L_ADDR_MAP_STRUCT_TAG rtcc_reg_map_t;
+
+ public:
   DS3234(SPIDev      &aSPIDevRef,
          SPISlaveCfg &aSPICfgRef);
   ~DS3234();
@@ -155,12 +139,12 @@ class DS3234 : public RTCC {
   void ClrAlarmFlag(enum ALARM_ID aAlarmID);
 
   bool HasNVMem(void) const;
-  void RdFromRAM(uint8_t     *aDataPtr,
-                 unsigned int aOffset,
-                 unsigned int aSize);
-  void WrToRAM(uint8_t const *aDataPtr,
-               unsigned int   aOffset,
-               unsigned int   aSize);
+  void RdFromRAM(uint8_t * const aDataPtr,
+                 unsigned int    aOffset,
+                 unsigned int    aSize);
+  void WrToRAM(uint8_t const * const aDataPtr,
+               unsigned int          aOffset,
+               unsigned int          aSize);
 
   // Interrupt-based/cached API.
   void    GetTimeAndDate(Time &aTimeRef, Date &aDateRef);
@@ -245,16 +229,16 @@ class DS3234 : public RTCC {
 
   void FillTimeStruct(Time const &aTimeRef);
   void FillDateStruct(Date const &aDateRef);
-  void FillAlarmStruct(rtc_alarm_t &aAlarmRef,
-                       Time const  &aTimeRef,
-                       Date const  &aDateRef);
-  void FillAlarmStruct(rtc_alarm_t   &aAlarmRef,
-                       Time    const &aTimeRef,
-                       Weekday const &aWeekdayRef);
-  void FillAlarmTimeStruct(rtc_alarm_t &aAlarmRef,
-                           Time const  &aTimeRef);
-  void FillAlarmModeStruct(rtc_alarm_t    &aAlarmRef,
-                           enum ALARM_MODE aAlarmMode);
+  void FillAlarmStruct(rtcc_alarm_t &aAlarmRef,
+                       Time const   &aTimeRef,
+                       Date const   &aDateRef);
+  void FillAlarmStruct(rtcc_alarm_t   &aAlarmRef,
+                       Time    const  &aTimeRef,
+                       Weekday const  &aWeekdayRef);
+  void FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef,
+                           Time const   &aTimeRef);
+  void FillAlarmModeStruct(rtcc_alarm_t    &aAlarmRef,
+                           enum ALARM_MODE  aAlarmMode);
   void TxAlarmStruct(enum ALARM_ID aAlarmID);
 
   void SetAlarm(enum ALARM_ID aAlarmID);
@@ -262,7 +246,7 @@ class DS3234 : public RTCC {
   CoreLink::SPIDev      &mSPIDevRef;
   CoreLink::SPISlaveCfg &mSPICfgRef;
 
-  rtc_reg_map_t mRegMap;
+  rtcc_reg_map_t mRegMap;
 };
 
 // ******************************************************************************

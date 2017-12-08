@@ -75,15 +75,6 @@ class RTCC {
   unsigned int BinaryToBCD(unsigned int aBinVal);
   unsigned int BCDToBinary(unsigned int aBCDVal);
 
-#if 0
-  // [MG] ESSAYER DE ME FIER SUR L'API DE DATE ET MONTH SIMPLEMENT.
-  static unsigned int WeekdayToUI(Weekday aWeekday);
-  static Weekday      UIToWeekday(unsigned int aWeekday);
-
-  static unsigned int MonthToUI(Month aMonth);
-  static Month        UIToMonth(unsigned int aMonth);
-#endif
-
   unsigned int mCentury;
   bool         mIsImpure;
 };
