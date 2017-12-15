@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
-// Project: <Larger project scope.>
+// Project: Component drivers.
 //
-// Module: <Module in the larger project scope.>
+// Module: RTCC base class.
 //
 // *****************************************************************************
 
@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include "RTC.h"
+#include "RTCC.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -43,7 +43,7 @@
 // *****************************************************************************
 
 // Ctor.
-RTC::RTC() :
+RTCC::RTCC() :
   mCentury(),
   mIsImpure(true) {
 
@@ -54,7 +54,7 @@ RTC::RTC() :
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-unsigned int RTC::BinaryToBCD(unsigned int aBinVal) {
+unsigned int RTCC::BinaryToBCD(unsigned int aBinVal) {
 
   unsigned int lBCDVal = 0;
 
@@ -70,7 +70,7 @@ unsigned int RTC::BinaryToBCD(unsigned int aBinVal) {
 }
 
 
-unsigned int RTC::BCDToBinary(unsigned int aBCDVal) {
+unsigned int RTCC::BCDToBinary(unsigned int aBCDVal) {
 
   unsigned int lBinVal = aBCDVal & 0x0F;
   aBCDVal >>= 4;
@@ -82,7 +82,7 @@ unsigned int RTC::BCDToBinary(unsigned int aBCDVal) {
 }
 
 #if 0
-unsigned int RTC::WeekdayToUI(Weekday aWeekday) {
+unsigned int RTCC::WeekdayToUI(Weekday aWeekday) {
 
   switch (aWeekday) {
   case Weekday::sunday:    return 1; break;
@@ -96,7 +96,7 @@ unsigned int RTC::WeekdayToUI(Weekday aWeekday) {
 }
 
 
-Weekday RTC::UIToWeekday(unsigned int aWeekday) {
+Weekday RTCC::UIToWeekday(unsigned int aWeekday) {
 
   switch (aWeekday) {
   case 1:  return Weekday::sunday;    break;
@@ -111,7 +111,7 @@ Weekday RTC::UIToWeekday(unsigned int aWeekday) {
 }
 
 
-Month RTC::UIToMonth(unsigned int aMonth) {
+Month RTCC::UIToMonth(unsigned int aMonth) {
 
   switch (aMonth) {
   case  1: // Intentional fallthrough.

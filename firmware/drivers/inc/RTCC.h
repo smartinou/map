@@ -1,5 +1,5 @@
-#ifndef RTC_H_
-#define RTC_H_
+#ifndef RTCC_H_
+#define RTCC_H_
 // *******************************************************************************
 //
 // Project: Larger project scope.
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -40,11 +40,11 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class RTC {
+class RTCC {
 
  public:
-  RTC();
-  ~RTC();
+  RTCC();
+  ~RTCC();
 
   virtual void RdTime(Time &aTimeRef) = 0;
   virtual void RdDate(Date &aDateRef) = 0;
@@ -60,21 +60,20 @@ class RTC {
   virtual uint8_t GetStatus(void) = 0;
   void ISRCallback(void) { mIsImpure = true; }
 
+  virtual bool HasNVMem(void) const = 0;
+  virtual void RdFromRAM(uint8_t     *aDataPtr,
+		         unsigned int aOffset,
+		         unsigned int aSize) = 0;
+  virtual void WrToRAM(uint8_t const *aDataPtr,
+	               unsigned int   aOffset,
+	               unsigned int   aSize) = 0;
+
  protected:
   bool IsImpure(void) { return mIsImpure; }
   virtual void UpdateCachedVal(void) = 0;
 
   unsigned int BinaryToBCD(unsigned int aBinVal);
   unsigned int BCDToBinary(unsigned int aBCDVal);
-
-#if 0
-  // [MG] ESSAYER DE ME FIER SUR L'API DE DATE ET MONTH SIMPLEMENT.
-  static unsigned int WeekdayToUI(Weekday aWeekday);
-  static Weekday      UIToWeekday(unsigned int aWeekday);
-
-  static unsigned int MonthToUI(Month aMonth);
-  static Month        UIToMonth(unsigned int aMonth);
-#endif
 
   unsigned int mCentury;
   bool         mIsImpure;
@@ -95,4 +94,4 @@ class RTC {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // RTC_H_
+#endif // RTCC_H_

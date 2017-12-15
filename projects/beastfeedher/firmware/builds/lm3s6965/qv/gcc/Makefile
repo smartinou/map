@@ -139,7 +139,7 @@ CPP_SRCS := \
         BFH_Mgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
-        Calendar.cpp \
+        CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
         DBRec.cpp \
@@ -148,8 +148,9 @@ CPP_SRCS := \
         Limit.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
+        MasterRec.cpp \
         Month.cpp \
-        RTC.cpp \
+        RTCC.cpp \
         RTCC_AO.cpp \
         SSD1329.cpp \
         SPI.cpp \

@@ -1,5 +1,5 @@
-#ifndef CALENDAR_H_
-#define CALENDAR_H_
+#ifndef CALENDAR_REC_H_
+#define CALENDAR_REC_H_
 // *******************************************************************************
 //
 // Project: Beast Feed'Her.
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -43,10 +43,10 @@ class Weekday;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class Calendar : public DBRec {
+class CalendarRec : public DBRec {
  public:
-  Calendar();
-  ~Calendar() {}
+  CalendarRec();
+  ~CalendarRec() {}
 
   // Sets/clears the entry for the specified time, rounded to quarter hour.
   void SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef);
@@ -58,13 +58,17 @@ class Calendar : public DBRec {
 
   // Gets the next set entry from current time.
   bool GetNextEntry(Weekday const &aWeekdayRef,
-		    Time    const &aTimeRef,
-		    Weekday       &aNextWeekdayRef,
-		    Time          &aNextTimeRef);
+                    Time    const &aTimeRef,
+                    Weekday       &aNextWeekdayRef,
+                    Time          &aNextTimeRef);
+
+  bool IsSane(void) const;
+  bool IsDirty(void) const;
+  void ResetDflt(void);
 
   // Simple Serialize/Deserialize methods.
-  unsigned int GetRecSize(void) { return mCalendarArray.size(); }
-  void Serialize(  uint8_t       * const aDataPtr);
+  unsigned int GetRecSize(void) const;
+  void Serialize(  uint8_t       * const aDataPtr) const;
   void Deserialize(uint8_t const * const aDataPtr);
 
  private:
@@ -81,7 +85,12 @@ class Calendar : public DBRec {
   unsigned int WeekdayToBitMask(Weekday const &aWeekdayRef);
   unsigned int BitMaskToWeekday(unsigned int aBitMask);
 
-  std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
+  struct RecStructTag {
+    char mMagic[4];
+    std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
+  };
+
+  struct RecStructTag mRec;
 };
 
 // ******************************************************************************
@@ -99,4 +108,4 @@ class Calendar : public DBRec {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // CALENDAR_H_
+#endif // CALENDAR_REC_H_

@@ -23,7 +23,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "Calendar.h"
+#include "DBRec.h"
+#include "CalendarRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -45,7 +46,7 @@ class RTCC_AO : public QP::QActive {
  public:
   RTCC_AO();
 
-  static RTCC_AO * const GetInstancePtr(void);
+  static RTCC_AO     * const GetInstancePtr(void);
   static QP::QActive * const GetOpaqueAOInstancePtr(void);
 
   void ISRCallback(void);
@@ -65,6 +66,8 @@ class RTCC_AO : public QP::QActive {
 
   static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
 
+  void RdDBRec(DBRec * const aDBRecPtr);
+
   Time  mTime;
   Date  mDate;
   float mTemperature;
@@ -72,7 +75,7 @@ class RTCC_AO : public QP::QActive {
   CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
   DS3234 *mDS3234Ptr;
 
-  Calendar mCalendar;
+  CalendarRec *mCalendarPtr;
 
   unsigned long mIntNbr;
 

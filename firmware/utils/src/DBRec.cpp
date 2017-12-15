@@ -58,11 +58,22 @@ unsigned int DBRec::mDBObjCnt = 0;
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-DBRec::DBRec() :
-  mDBObjIx(0) {
+DBRec::DBRec()
+  : mIsDirty(false)
+  , mDBObjIx(0) {
 
   mDBObjIx = mDBObjCnt;
   mDBObjCnt++;
+}
+
+
+unsigned int DBRec::GetMyIx(void) {
+  return mDBObjIx;
+}
+
+
+bool DBRec::IsDirty(void) const {
+  return mIsDirty;
 }
 
 // *****************************************************************************
