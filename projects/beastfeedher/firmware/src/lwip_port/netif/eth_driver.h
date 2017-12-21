@@ -31,7 +31,10 @@
 using namespace QP;
 
 struct netif *eth_driver_init(QActive *active,
-                              u8_t macaddr[NETIF_MAX_HWADDR_LEN]);
+			      uint32_t aIPAddr,
+			      uint32_t aSubnetMask,
+			      uint32_t aGWAddr,
+                              u8_t     macaddr[NETIF_MAX_HWADDR_LEN]);
 void eth_driver_read(void);
 void eth_driver_write(void);
 

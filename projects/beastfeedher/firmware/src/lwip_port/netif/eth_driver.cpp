@@ -155,7 +155,10 @@ void ISR_Ethernet(void) {
 
 /*..........................................................................*/
 struct netif *eth_driver_init(QActive *active,
-                              u8_t macaddr[NETIF_MAX_HWADDR_LEN])
+			      uint32_t aIPAddr,
+			      uint32_t aSubnetMask,
+			      uint32_t aGWAddr,
+                              u8_t     macaddr[NETIF_MAX_HWADDR_LEN])
 {
     ip_addr_t ipaddr;
     ip_addr_t netmask;
@@ -192,6 +195,12 @@ struct netif *eth_driver_init(QActive *active,
 
     PbufQueue_ctor(&l_txq);                 /* initialize the TX pbuf queue */
 
+    if (IPADDR_ANY != (aIPAddr & aSubnetMask)) {
+      // IP Address from persistence.
+      ipaddr.addr  = htonl(aIPAddr);
+      netmask.addr = htonl(aSubnetMask);
+      gwaddr.addr  = htonl(aGWAddr);
+    } else {
 #if (LWIP_DHCP == 0) && (LWIP_AUTOIP == 0)
           /* No mechanism of obtaining IP address specified, use static IP: */
     IP4_ADDR(&ipaddr,  STATIC_IPADDR0,    STATIC_IPADDR1,
@@ -206,6 +215,8 @@ struct netif *eth_driver_init(QActive *active,
     IP4_ADDR(&netmask, 0, 0, 0, 0);
     IP4_ADDR(&gwaddr,  0, 0, 0, 0);
 #endif
+    }
+
           /* add and configure the Ethernet interface with default settings */
     netif_add(&l_netif,
               &ipaddr, &netmask, &gwaddr,            /* configured IP addresses */
@@ -217,6 +228,8 @@ struct netif *eth_driver_init(QActive *active,
 
     netif_set_up(&l_netif);                       /* bring the interface up */
 
+    if (IPADDR_ANY == (aIPAddr & aSubnetMask)) {
+      // No static IP address already set.
 #if (LWIP_DHCP != 0)
     dhcp_start(&l_netif);         /* start DHCP if configured in lwipopts.h */
     /* NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
@@ -226,6 +239,7 @@ struct netif *eth_driver_init(QActive *active,
 #elif (LWIP_AUTOIP != 0)
     autoip_start(&l_netif);     /* start AutoIP if configured in lwipopts.h */
 #endif
+    }
 
     /* Enable Ethernet TX and RX Packet Interrupts. */
     HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX);

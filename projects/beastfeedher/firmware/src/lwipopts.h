@@ -42,7 +42,7 @@
                                       // the default IP address of the host...
 #define STATIC_IPADDR0                  192
 #define STATIC_IPADDR1                  168
-#define STATIC_IPADDR2                  0
+#define STATIC_IPADDR2                  1
 #define STATIC_IPADDR3                  100
                                                 // the default network mask...
 #define STATIC_NET_MASK0                255
@@ -50,10 +50,10 @@
 #define STATIC_NET_MASK2                255
 #define STATIC_NET_MASK3                0
                                           // the default gateway IP address...
-#define STATIC_GW_IPADDR0               0
-#define STATIC_GW_IPADDR1               0
-#define STATIC_GW_IPADDR2               0
-#define STATIC_GW_IPADDR3               0
+#define STATIC_GW_IPADDR0               192
+#define STATIC_GW_IPADDR1               168
+#define STATIC_GW_IPADDR2               1
+#define STATIC_GW_IPADDR3               1
 
 //****************************************************************************
 //
@@ -61,7 +61,6 @@
 //
 //****************************************************************************
 //#define HOST_TMR_INTERVAL
-//#define DHCP_EXPIRE_TIMER_MSECS         (60 * 1000)
 //#define TX_PBUF_QUEUE_LEN               8
 
 //****************************************************************************
@@ -169,8 +168,9 @@
 // ---------- DHCP options ----------
 //
 //****************************************************************************
-//#define LWIP_DHCP                       0           // default is 0
-//#define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
+#define LWIP_DHCP                       1           // default is 0
+#define DHCP_DOES_ARP_CHECK             ((LWIP_DHCP) && (LWIP_ARP))
+#define LWIP_DHCP_CHECK_LINK_UP         0
 
 //****************************************************************************
 //
@@ -193,6 +193,7 @@
 //****************************************************************************
 #define LWIP_AUTOIP                     1            // default is 0
 #define LWIP_DHCP_AUTOIP_COOP           ((LWIP_DHCP) && (LWIP_AUTOIP))
+#define LWIP_DHCP_AUTOIP_COOP_TRIES     5
 
 //****************************************************************************
 //
