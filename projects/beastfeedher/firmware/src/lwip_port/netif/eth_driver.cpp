@@ -155,6 +155,7 @@ void ISR_Ethernet(void) {
 
 /*..........................................................................*/
 struct netif *eth_driver_init(QActive *active,
+			      bool     aUseDHCP,
 			      uint32_t aIPAddr,
 			      uint32_t aSubnetMask,
 			      uint32_t aGWAddr,
@@ -195,7 +196,11 @@ struct netif *eth_driver_init(QActive *active,
 
     PbufQueue_ctor(&l_txq);                 /* initialize the TX pbuf queue */
 
-    if (IPADDR_ANY != (aIPAddr & aSubnetMask)) {
+    if (aUseDHCP) {
+      IP4_ADDR(&ipaddr,  0, 0, 0, 0);
+      IP4_ADDR(&netmask, 0, 0, 0, 0);
+      IP4_ADDR(&gwaddr,  0, 0, 0, 0);
+    } else if (IPADDR_ANY != (aIPAddr & aSubnetMask)) {
       // IP Address from persistence.
       ipaddr.addr  = htonl(aIPAddr);
       netmask.addr = htonl(aSubnetMask);
@@ -228,15 +233,15 @@ struct netif *eth_driver_init(QActive *active,
 
     netif_set_up(&l_netif);                       /* bring the interface up */
 
-    if (IPADDR_ANY == (aIPAddr & aSubnetMask)) {
-      // No static IP address already set.
+    if (aUseDHCP) {
 #if (LWIP_DHCP != 0)
-    dhcp_start(&l_netif);         /* start DHCP if configured in lwipopts.h */
-    /* NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
-    * LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
-    * AutoIP after DHCP fails for 59 seconds.
-    */
-#elif (LWIP_AUTOIP != 0)
+      dhcp_start(&l_netif);
+#else // LWIP_DHCP
+#error "Requires LWIP_DHCP set to '1'"
+#endif
+    } else if (IPADDR_ANY == (aIPAddr & aSubnetMask)) {
+      // No static IP address already set.
+#if (LWIP_AUTOIP != 0)
     autoip_start(&l_netif);     /* start AutoIP if configured in lwipopts.h */
 #endif
     }

@@ -37,16 +37,19 @@
 class LwIPInitEvt : public QP::QEvt {
  public:
   LwIPInitEvt(QP::QSignal aSig,
+              bool        aUseDHCP,
               uint32_t    aIPAddr,
               uint32_t    aSubnetMask,
               uint32_t    aGWAddr) {
     sig         = aSig;
+    mUseDHCP    = aUseDHCP;
     mIPAddr     = aIPAddr;
     mSubnetMask = aSubnetMask;
     mGWAddr     = aGWAddr;
   }
 
  public:
+  bool     mUseDHCP;
   uint32_t mIPAddr;
   uint32_t mSubnetMask;
   uint32_t mGWAddr;

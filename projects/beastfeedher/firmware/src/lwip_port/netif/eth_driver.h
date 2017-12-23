@@ -31,6 +31,7 @@
 using namespace QP;
 
 struct netif *eth_driver_init(QActive *active,
+			      bool     aUseDHCP,
 			      uint32_t aIPAddr,
 			      uint32_t aSubnetMask,
 			      uint32_t aGWAddr,

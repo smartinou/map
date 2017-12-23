@@ -178,14 +178,16 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
                                QP::QEvt const * const e) { //aEvtPtr
 
   // Suppress the compiler warning about unused parameter.
-  uint32_t lIPAddr = 0x00000000;
+  bool     lUseDHCP    = false;
+  uint32_t lIPAddr     = 0x00000000;
   uint32_t lSubnetMask = 0x00000000;
-  uint32_t lGWAddr = 0x00000000;
+  uint32_t lGWAddr     = 0x00000000;
   if (nullptr != e) {
     LwIPInitEvt const *lLwIPInitEvtPtr = static_cast<LwIPInitEvt const *>(e);
-    lIPAddr = lLwIPInitEvtPtr->mIPAddr;
+    lUseDHCP    = lLwIPInitEvtPtr->mUseDHCP;
+    lIPAddr     = lLwIPInitEvtPtr->mIPAddr;
     lSubnetMask = lLwIPInitEvtPtr->mSubnetMask;
-    lGWAddr = lLwIPInitEvtPtr->mGWAddr;
+    lGWAddr     = lLwIPInitEvtPtr->mGWAddr;
   }
   // Configure the hardware MAC address for the Ethernet Controller
   //
@@ -219,6 +221,7 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   //me->mEthDrvPtr = new EthDrv2(8);
   //me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
   me->mNetIFPtr = eth_driver_init((QP::QActive *)me,
+                                  lUseDHCP,
                                   lIPAddr,
                                   lSubnetMask,
                                   lGWAddr,
