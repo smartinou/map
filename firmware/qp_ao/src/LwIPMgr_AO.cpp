@@ -42,6 +42,7 @@ using namespace QP;
 #include "lwip/stats.h"
 #include "lwip/snmp.h"
 #include "lwip/etharp.h"
+#include "lwip/apps/httpd.h"
 #include "lwip/priv/tcp_priv.h"
 
 // lwIP application.
@@ -82,16 +83,19 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 //                            FUNCTION PROTOTYPES
 // *****************************************************************************
-#if 0
-static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
 
-// UDP handler.
-static void udp_rx_handler(void           *aArgPtr,
-                           struct udp_pcb *aPCBPtr,
-                           struct pbuf    *aBufPtr,
-                           struct ip_addr *aIPAddr,
-                           u16_t           aUDPPort);
-#endif
+#if LWIP_HTTPD_SSI
+static uint16_t SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
+#endif //LWIP_HTTPD_SSI
+
+#if LWIP_HTTPD_CGI
+// Common Gateway Iinterface (CG) demo.
+static char const *CGIDisplay(int   aIx,
+                              int   aParamQty,
+                              char *aParamPtr[],
+                              char *aValPtr[]);
+#endif //LWIP_HTTPD_CGI
+
 // *****************************************************************************
 //                             GLOBAL VARIABLES
 // *****************************************************************************
@@ -99,9 +103,9 @@ static void udp_rx_handler(void           *aArgPtr,
 // Application signals cannot overlap the device-driver signals.
 //Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
 
-#if 0
+#if LWIP_HTTPD_SSI
 // Server-Side Include (SSI) demo.
-static char const * const sSSITags[] = {
+static char const *sSSITags[] = {
   "s_xmit",
   "s_recv",
   "s_fw",
@@ -114,18 +118,13 @@ static char const * const sSSITags[] = {
   "s_opterr",
   "s_err",
 };
+#endif //LWIP_HTTPD_SSI
 
-// Common Gateway Iinterface (CG) demo.
-static char const *CGIDisplay(int         aIx,
-                              int         aParamQty,
-                              char const *aParamPtr[],
-                              char const *aValPtr[]);
-
+#if LWIP_HTTPD_CGI
 static tCGI const CGIHandlers[] = {
   { "/display.cgi", &CGIDisplay },
 };
-
-#endif
+#endif //LWIP_HTTPD_CGI
 
 // The single instance of LwIPMgr_AO.
 LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = static_cast<LwIPMgr_AO *>(0);
@@ -229,15 +228,13 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
 
   // Initialize the lwIP applications...
   // Initialize the simple HTTP-Deamon (web server).
-  //httpd_init();
-  //http_set_ssi_handler(&SSIHandler, sSSITags, Q_DIM(sSSITags));
-  //http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
-
-  // Use port 777 for UDP.
-  //me->mPCBPtr = udp_new();
-  //udp_bind(me->mPCBPtr, IP_ADDR_ANY, 777);
-  //udp_recv(me->mPCBPtr, &udp_rx_handler, me);
-
+  httpd_init();
+#if LWIP_HTTPD_SSI
+  http_set_ssi_handler(SSIHandler, sSSITags, Q_DIM(sSSITags));
+#endif //LWIP_HTTPD_SSI
+#if LWIP_HTTPD_CGI
+  http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
+#endif //LWIP_HTTPD_CGI
 
 #if 0
   QS_OBJ_DICTIONARY(&l_lwIPMgr);
@@ -271,18 +268,6 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-#if 0
-  case SEND_UDP_SIG: {
-    if (me->mPCBPtr->remote_port != static_cast<uint16_t>(0) {
-      struct pbuf *lBufPtr = pbuf_new((u8_t *)((TextEvt const *)e)->text,
-                                strlen(((TextEvt const *)e)->text) + 1);
-      if (static_cast<struct pbuf *>(0) != lBufPtr) {
-        udp_send(me->mPCBPtr, lBufPtr);
-      }
-    }
-    return Q_HANDLED();
-  }
-#endif
   case LWIP_RX_READY_SIG: {
     eth_driver_read();
     //me->mEthDrvPtr->Rd();
@@ -362,10 +347,12 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
 
   return Q_SUPER(&QP::QHsm::top);
 }
-#if 0
+
+
+#if LWIP_HTTPD_SSI
 // HTTPD customizations.
 // Server-Side Include (SSI) handler.
-static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
+static uint16_t SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
 
   struct stats_proto *lStatsPtr = &lwip_stats.link;
   STAT_COUNTER lVal = 0;
@@ -427,15 +414,17 @@ static int SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
     break;
   }
 
-  return snprintf(aInsertPtr, MAX_TAG_INSERT_LEN, "%d", lVal);
+  return snprintf(aInsertPtr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", lVal);
 }
+#endif //LWIP_HTTPD_SSI
 
 
+#if LWIP_HTTPD_CGI
 // Common Gateway Iinterface (CG) handler.
-static char const *CGIDisplay(int         aIx,
-                              int         aParamQty,
-                              char const *aParamPtr[],
-                              char const *aValPtr[]) {
+static char const *CGIDisplay(int   aIx,
+                              int   aParamQty,
+                              char *aParamPtr[],
+                              char *aValPtr[]) {
 
   for (int lIx = 0; lIx < aParamQty; ++lIx) {
     if (strstr(aParamPtr[lIx], "text") != static_cast<char *>(0)) {
@@ -454,26 +443,8 @@ static char const *CGIDisplay(int         aIx,
   // No URI, HTTPD will send 404 error page to the browser.
   return static_cast<char const *>(0);
 }
-#endif
-#if 0
+#endif //LWIP_HTTPD_CGI
 
-// UDP receive handler.
-static void udp_rx_handler(void           *aArgPtr,
-                           struct udp_pcb *aPCBPtr,
-                           struct pbuf    *aBufPtr,
-                           struct ip_addr *aIPAddr,
-                           u16_t           aUDPPort) {
-#if 0
-  TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_UDP_SIG);
-  strncpy(lTextEvtPtr->text,
-          (char *)aBufPtr->payload,
-          Q_DIM(lTextEvtPtr->text));
-  QF_publish(static_cast<QP::QEvt *>(lTextEvtPtr));
-#endif
-
-  // Connect to the remote host.
-  // Don't leak the pbuf!
-  udp_connect(aPCBPtr, aIPAddr, aUDPPort);
-  pbuf_free(aBufPtr);
-}
-#endif
+// *****************************************************************************
+//                                END OF FILE
+// *****************************************************************************
