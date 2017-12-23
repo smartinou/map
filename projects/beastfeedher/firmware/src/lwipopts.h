@@ -83,8 +83,9 @@
 // ----------------  HTTPD Options ----------
 //
 //****************************************************************************
-#define INCLUDE_HTTPD_SSI
-#define INCLUDE_HTTPD_CGI
+
+#define LWIP_HTTPD_SSI                  1
+#define LWIP_HTTPD_CGI                  1
 //#define DYNAMIC_HTTP_HEADERS
 //#define INCLUDE_HTTPD_DEBUG
 
