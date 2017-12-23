@@ -64,6 +64,7 @@ extern "C" {
 // This project.
 #include "BSP.h"
 #include "LwIPMgr_AO.h"
+#include "LwIPMgr_Evt.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -139,7 +140,7 @@ LwIPMgr_AO::LwIPMgr_AO() :
   //, mEthDrvPtr(0)
   , mNetIFPtr(static_cast<struct netif *>(0))
   //  , mPCBPtr(static_cast<struct udp_pcb *>(0))
-  , mIPAddr(0x00000000)
+  , mIPAddr(IPADDR_ANY)
 #if LWIP_TCP
   , mTCPTimer(0)
 #endif
@@ -177,8 +178,17 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
                                QP::QEvt const * const e) { //aEvtPtr
 
   // Suppress the compiler warning about unused parameter.
-  (void)e;
-
+  bool     lUseDHCP    = false;
+  uint32_t lIPAddr     = 0x00000000;
+  uint32_t lSubnetMask = 0x00000000;
+  uint32_t lGWAddr     = 0x00000000;
+  if (nullptr != e) {
+    LwIPInitEvt const *lLwIPInitEvtPtr = static_cast<LwIPInitEvt const *>(e);
+    lUseDHCP    = lLwIPInitEvtPtr->mUseDHCP;
+    lIPAddr     = lLwIPInitEvtPtr->mIPAddr;
+    lSubnetMask = lLwIPInitEvtPtr->mSubnetMask;
+    lGWAddr     = lLwIPInitEvtPtr->mGWAddr;
+  }
   // Configure the hardware MAC address for the Ethernet Controller
   //
   // For the Stellaris Eval Kits, the MAC address will be stored in the
@@ -210,8 +220,12 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   //me->mEthDrvPtr = EthDrv2::EthDrvInstance(8);
   //me->mEthDrvPtr = new EthDrv2(8);
   //me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
-  me->mNetIFPtr = eth_driver_init((QP::QActive *)me, &lMACAddr[0]);
-  //me->mIPAddr = 0xFFFFFFFF;
+  me->mNetIFPtr = eth_driver_init((QP::QActive *)me,
+                                  lUseDHCP,
+                                  lIPAddr,
+                                  lSubnetMask,
+                                  lGWAddr,
+                                  &lMACAddr[0]);
 
   // Initialize the lwIP applications...
   // Initialize the simple HTTP-Deamon (web server).
@@ -304,45 +318,46 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
     }
 
 #if LWIP_TCP
-      me->mTCPTimer += LWIP_SLOW_TICK_MS;
-      if (me->mTCPTimer >= TCP_TMR_INTERVAL) {
-        me->mTCPTimer = 0;
-        tcp_tmr();
-      }
+    me->mTCPTimer += LWIP_SLOW_TICK_MS;
+    if (me->mTCPTimer >= TCP_TMR_INTERVAL) {
+      me->mTCPTimer = 0;
+      tcp_tmr();
+    }
 #endif
 #if LWIP_ARP
-      me->mARPTimer += LWIP_SLOW_TICK_MS;
-      if (me->mARPTimer >= ARP_TMR_INTERVAL) {
-        me->mARPTimer = 0;
-        etharp_tmr();
-      }
+    me->mARPTimer += LWIP_SLOW_TICK_MS;
+    if (me->mARPTimer >= ARP_TMR_INTERVAL) {
+      me->mARPTimer = 0;
+      etharp_tmr();
+    }
 #endif
 #if LWIP_DHCP
-      me->mDHCPFineTimer += LWIP_SLOW_TICK_MS;
-      if (me->mDHCPFineTimer >= DHCP_FINE_TIMER_MSECS) {
-        me->mDHCPFineTimer = 0;
-        dhcp_fine_tmr();
-      }
-      me->mDHCPCoarseTimer += LWIP_SLOW_TICK_MS;
-      if (me->mDHCPCoarseTimer >= DHCP_COARSE_TIMER_MSECS) {
-        me->mDHCPCoarseTimer = 0;
-        dhcp_coarse_tmr();
-      }
+    me->mDHCPFineTimer += LWIP_SLOW_TICK_MS;
+    if (me->mDHCPFineTimer >= DHCP_FINE_TIMER_MSECS) {
+      me->mDHCPFineTimer = 0;
+      dhcp_fine_tmr();
+    }
+    me->mDHCPCoarseTimer += LWIP_SLOW_TICK_MS;
+    if (me->mDHCPCoarseTimer >= DHCP_COARSE_TIMER_MSECS) {
+      me->mDHCPCoarseTimer = 0;
+      dhcp_coarse_tmr();
+    }
 #endif
 #if LWIP_AUTOIP
-      me->mAutoIPTimer += LWIP_SLOW_TICK_MS;
-      if (me->mAutoIPTimer >= AUTOIP_TMR_INTERVAL) {
-        me->mAutoIPTimer = 0;
-        autoip_tmr();
-      }
+    me->mAutoIPTimer += LWIP_SLOW_TICK_MS;
+    if (me->mAutoIPTimer >= AUTOIP_TMR_INTERVAL) {
+      me->mAutoIPTimer = 0;
+      autoip_tmr();
+    }
 #endif
-      return Q_HANDLED();
-    }
+    return Q_HANDLED();
+  }
 
-    case LWIP_RX_OVERRUN_SIG: {
-      LINK_STATS_INC(link.err);
-      return Q_HANDLED();
-    }
+  case LWIP_RX_OVERRUN_SIG: {
+    LINK_STATS_INC(link.err);
+    return Q_HANDLED();
+  }
+
   }
 
   return Q_SUPER(&QP::QHsm::top);
