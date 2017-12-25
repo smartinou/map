@@ -100,40 +100,22 @@ class LM3S6965SSIPinCfg : public SSIPinCfg {
 
 extern void ISR_Ethernet(void);
 
+static void UserLEDInit(void);
+static void EtherLEDInit(void);
 
 // *****************************************************************************
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-static CoreLink::SPIDev *sSPIDevPtr;
-
 // Button objects.
-Button *sManualFeedButtonPtr = static_cast<Button *>(0);
-Button *sTimedFeedButtonPtr  = static_cast<Button *>(0);
+Button *sManualFeedButtonPtr = nullptr; // static_cast<Button *>(0);
+Button *sTimedFeedButtonPtr  = nullptr; // static_cast<Button *>(0);
 
-Button *sNavButtonArray[BSP_NAV_BUTTON_QTY] = { static_cast<Button *>(0) };
+Button *sNavButtonArray[BSP_NAV_BUTTON_QTY] = { nullptr };
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
-
-unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort) {
-
-  switch (aGPIOPort) {
-  default:
-  case GPIO_PORTA_BASE: return INT_GPIOA;
-  case GPIO_PORTB_BASE: return INT_GPIOB;
-  case GPIO_PORTC_BASE: return INT_GPIOC;
-  case GPIO_PORTD_BASE: return INT_GPIOD;
-  case GPIO_PORTE_BASE: return INT_GPIOE;
-  case GPIO_PORTF_BASE: return INT_GPIOF;
-  case GPIO_PORTG_BASE: return INT_GPIOG;
-  case GPIO_PORTH_BASE: return INT_GPIOH;
-  }
-
-  return 0;
-}
-
 
 CoreLink::SPIDev * BSPInit(void) {
   // NOTE: SystemInit() already called from the startup code,
@@ -159,7 +141,8 @@ CoreLink::SPIDev * BSPInit(void) {
   // Initialize SPI Master.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
   SSIPinCfg *lSPIMasterPinCfgPtr = new LM3S6965SSIPinCfg(0);
-  sSPIDevPtr = new CoreLink::SPIDev(SSI0_BASE, *lSPIMasterPinCfgPtr);
+  CoreLink::SPIDev *lSPIDevPtr = new CoreLink::SPIDev(SSI0_BASE,
+						      *lSPIMasterPinCfgPtr);
 
 
   // Create all required buttons.
@@ -227,9 +210,47 @@ CoreLink::SPIDev * BSPInit(void) {
   UARTStdioInit(0);
   UARTprintf("Hello!\n");
 
-  return sSPIDevPtr;
+  return lSPIDevPtr;
 }
 
+
+unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort) {
+
+  switch (aGPIOPort) {
+  default:
+  case GPIO_PORTA_BASE: return INT_GPIOA;
+  case GPIO_PORTB_BASE: return INT_GPIOB;
+  case GPIO_PORTC_BASE: return INT_GPIOC;
+  case GPIO_PORTD_BASE: return INT_GPIOD;
+  case GPIO_PORTE_BASE: return INT_GPIOE;
+  case GPIO_PORTF_BASE: return INT_GPIOF;
+  case GPIO_PORTG_BASE: return INT_GPIOG;
+  case GPIO_PORTH_BASE: return INT_GPIOH;
+  }
+
+  return 0;
+}
+
+
+unsigned long CSnGPIOPortGet(void) {
+  return GPIO_PORTA_BASE;
+}
+
+
+unsigned int CSnGPIOPinGet(void) {
+  return GPIO_PIN_7;
+}
+
+
+unsigned long IRQGPIOPortGet(void) {
+  return GPIO_PORTA_BASE;
+}
+
+
+unsigned int IRQGPIOPinGet(void) {
+  return GPIO_PIN_6;
+}
+  
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -255,23 +276,34 @@ void QP::QF::onStartup(void) {
 
   //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
 
-  // GPIO for user LED toggling during idle.
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
-  GPIOPadConfigSet(GPIO_PORTF_BASE,
-                   GPIO_PIN_0,
-                   GPIO_STRENGTH_2MA,
-                   GPIO_PIN_TYPE_STD);
-  GPIOPinWrite(GPIO_PORTF_BASE,
-               GPIO_PIN_0,
-               GPIO_PIN_0);
+  // Init user LED.
+  // Init Ethernet LEDs.
+  UserLEDInit();
+  EtherLEDInit();
 
   // Manual Feed cap sensor input.
   sManualFeedButtonPtr->EnableInt();
 
   // Timed Feed cap sensor input.
   sTimedFeedButtonPtr->EnableInt();
+}
+
+//............................................................................
+void QP::QV::onIdle(void) {  // called with interrupts disabled, see NOTE01
+
+  // Toggle the user LED, ON then OFF.
+  QF_INT_DISABLE();
+  GPIOPinWrite(GPIO_PORTF_BASE,
+               GPIO_PIN_0,
+               GPIO_PIN_0);
+  GPIOPinWrite(GPIO_PORTF_BASE,
+               GPIO_PIN_0,
+               0);
+  QF_INT_ENABLE();
+}
 
 
+static void EtherLEDInit(void) {
   // GPIO for Ethernet LEDs.
   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
   GPIOPadConfigSet(GPIO_PORTF_BASE,
@@ -291,20 +323,18 @@ void QP::QF::onStartup(void) {
   IntEnable(INT_ETH);
 }
 
-//............................................................................
-void QP::QV::onIdle(void) {  // called with interrupts disabled, see NOTE01
 
-  // Toggle the user LED, ON then OFF.
-  QF_INT_DISABLE();
+static void UserLEDInit(void) {
+  // GPIO for user LED toggling during idle.
+  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
+  GPIOPadConfigSet(GPIO_PORTF_BASE,
+                   GPIO_PIN_0,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
   GPIOPinWrite(GPIO_PORTF_BASE,
                GPIO_PIN_0,
                GPIO_PIN_0);
-  GPIOPinWrite(GPIO_PORTF_BASE,
-               GPIO_PIN_0,
-               0);
-  QF_INT_ENABLE();
 }
-
 
 //............................................................................
 void QP::QF::onCleanup(void) {
