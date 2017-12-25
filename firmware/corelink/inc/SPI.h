@@ -101,22 +101,26 @@ class SPIDev : public PeripheralDev {
   ~SPIDev();
 
   void RdData(uint8_t      aAddr,
-	      uint8_t     *aDataPtr,
-	      unsigned int aLen,
-	      SPISlaveCfg &aSPICfgRef);
+              uint8_t     *aDataPtr,
+              unsigned int aLen,
+              SPISlaveCfg &aSPICfgRef);
 
   void RdData(uint8_t     *aDataPtr,
-	      unsigned int aLen,
-	      SPISlaveCfg &aSPICfgRef);
+              unsigned int aLen,
+              SPISlaveCfg &aSPICfgRef);
 
   void WrData(uint8_t        aAddr,
-	      uint8_t const *aDataPtr,
-	      unsigned int   aLen,
-	      SPISlaveCfg   &aSPICfgRef);
+              uint8_t const *aDataPtr,
+              unsigned int   aLen,
+              SPISlaveCfg   &aSPICfgRef);
 
   void WrData(uint8_t const *aDataPtr,
-	      unsigned int   aLen,
-	      SPISlaveCfg   &aSPICfgRef);
+              unsigned int   aLen,
+              SPISlaveCfg   &aSPICfgRef);
+
+  uint8_t PushPullByte(uint8_t const aByte);
+  uint8_t PushPullByte(uint8_t const aByte,
+                       SPISlaveCfg  &aSPICfgRef);
 
  private:
   void SetCfg(SPISlaveCfg &aSPISlaveCfgRef);
