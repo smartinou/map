@@ -23,30 +23,16 @@
 // QP Library.
 #include "qpcpp.h"
 
-// CMSIS Library.
-#include "lm3s_cmsis.h"
-
 // TI Library.
-#include "hw_types.h"
 #include "uartstdio.h"
 
-#include "gpio.h"
-#include "interrupt.h"
-
 // Common Library.
-#include "SSD1329.h"
 #include "SPI.h"
 
 // This application.
-#include "BFH_Mgr_AO.h"
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
-#include "CalendarRec.h"
-#include "LwIPMgr_AO.h"
-#include "LwIPMgr_Evt.h"
 #include "MasterRec.h"
-#include "NetIFRec.h"
-#include "RTCC_AO.h"
 #include "RTCC_Evt.h"
 
 Q_DEFINE_THIS_FILE
@@ -73,11 +59,8 @@ Q_DEFINE_THIS_FILE
 
 int main(void) {
 
-  // Initialize the Board Support Package.
   // Initialize the framework and the underlying RT kernel.
   QP::QF::init();
-  CoreLink::SPIDev *lSPIDevPtr = BSPInit();
-  UARTprintf("QF version: %s", QP::QF::getVersion());
 
   // Initialize event pool.
   // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
@@ -95,59 +78,20 @@ int main(void) {
   static QP::QSubscrList lSubsribeSto[SIG_QTY];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
-  // Create Master record.
-  // Create sub-records and assign them to master record.
-  // Deserialize NV memory into it.
-  // Check state and reset if required.
-  MasterRec   *lMasterRecPtr = new MasterRec(2);
-  CalendarRec *lCalendarPtr  = new CalendarRec();
-  lMasterRecPtr->AddRec(lCalendarPtr);
-  NetIFRec    *lNetIFRecPtr = new NetIFRec();
-  lMasterRecPtr->AddRec(lNetIFRecPtr);
 
-  // Instantiate and start the active objects.
-
-  // FIXME: find how to move into BSP file.
-  static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
-                                            *lSPIDevPtr,
-                                            GPIO_PORTA_BASE,
-                                            GPIO_PIN_7,
-                                            GPIO_PORTA_BASE,
-                                            GPIO_PIN_6,
-                                            lMasterRecPtr,
-                                            lCalendarPtr };
-  static QP::QEvt const *sRTCCEvtQPtr[10];
-  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
-  lRTCC_AOPtr->start(1U,
-                     sRTCCEvtQPtr,
-                     Q_DIM(sRTCCEvtQPtr),
-                     static_cast<void *>(0),
-                     0U,
-                     &sRTCCInitEvt);
-
-
-  static QP::QEvt const *sBeastMgrEvtQPtr[5];
-  BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
-  lBFH_Mgr_AO.start(2U,
-                    sBeastMgrEvtQPtr,
-                    Q_DIM(sBeastMgrEvtQPtr),
-                    static_cast<void *>(0),
-                    0U);
-
-
-  static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY, lNetIFRecPtr };
-
-  static QP::QEvt const *sLwIPEvtQPtr[10];
-  LwIPMgr_AO *lLwIPMgr_AOPtr = new LwIPMgr_AO();
-  lLwIPMgr_AOPtr->start(3U,
-                        sLwIPEvtQPtr,
-                        Q_DIM(sLwIPEvtQPtr),
-                        static_cast<void *>(0),
-                        0U,
-                        &sLwIPInitEvt);
+  // Start master record.
+  // Contains all AOs.
+  MasterRec *lMasterRecPtr = new MasterRec();
+  bool lInitGood = lMasterRecPtr->Init();
 
   // Run the QF application.
-  return QP::QF::run();
+  if (lInitGood) {
+    UARTprintf("QF version: %s", QP::QF::getVersion());
+    return QP::QF::run();
+  }
+
+  while (1);
+  return 1;
 }
 
 // *****************************************************************************
