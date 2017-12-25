@@ -150,6 +150,7 @@ CPP_SRCS := \
         LwIPDrv.cpp \
         MasterRec.cpp \
         Month.cpp \
+        NetIFRec.cpp \
         RTCC.cpp \
         RTCC_AO.cpp \
         SSD1329.cpp \
