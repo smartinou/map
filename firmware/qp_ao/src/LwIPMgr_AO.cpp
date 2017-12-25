@@ -64,8 +64,10 @@ extern "C" {
 
 // This project.
 #include "BSP.h"
+#include "DBRec.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
+#include "NetIFRec.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -183,10 +185,10 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   uint32_t lGWAddr     = 0x00000000;
   if (nullptr != e) {
     LwIPInitEvt const *lLwIPInitEvtPtr = static_cast<LwIPInitEvt const *>(e);
-    lUseDHCP    = lLwIPInitEvtPtr->mUseDHCP;
-    lIPAddr     = lLwIPInitEvtPtr->mIPAddr;
-    lSubnetMask = lLwIPInitEvtPtr->mSubnetMask;
-    lGWAddr     = lLwIPInitEvtPtr->mGWAddr;
+    lUseDHCP    = lLwIPInitEvtPtr->mNetIFRecPtr->UseDHCP();
+    lIPAddr     = lLwIPInitEvtPtr->mNetIFRecPtr->GetIPAddr();
+    lSubnetMask = lLwIPInitEvtPtr->mNetIFRecPtr->GetSubnetMask();
+    lGWAddr     = lLwIPInitEvtPtr->mNetIFRecPtr->GetGWAddr();
   }
   // Configure the hardware MAC address for the Ethernet Controller
   //
