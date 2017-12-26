@@ -34,20 +34,16 @@
 // ******************************************************************************
 
 // Forward declaration.
-//class DBRec;
-//class Calendar;
-//class NetIFRec;
-//class BFHMgrRec;
 
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
 class MasterRec : public DBRec {
  public:
-  MasterRec(unsigned int aRecQty);
+  MasterRec();
   ~MasterRec();
 
-  //Calendar &GetCalendar(void);
+  bool Init(void);
 
   unsigned int AddRec(DBRec * const aDBRecPtr);
 

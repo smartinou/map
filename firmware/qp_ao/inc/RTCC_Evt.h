@@ -49,6 +49,7 @@ class RTCCInitEvt : public QP::QEvt {
               unsigned int      aCSnGPIOPin,
               unsigned long     aIRQGPIOPort,
               unsigned int      aIRQGPIOPin,
+	      unsigned long     aIntNbr,
               DBRec            *aMasterDBRecPtr,
               CalendarRec      *aCalendarPtr):
   mSPIDevRef(aSPIDevRef) {
@@ -59,6 +60,7 @@ class RTCCInitEvt : public QP::QEvt {
     mCSnGPIOPin  = aCSnGPIOPin;
     mIRQGPIOPort = aIRQGPIOPort;
     mIRQGPIOPin  = aIRQGPIOPin;
+    mIntNbr      = aIntNbr;
     mMasterDBRecPtr = aMasterDBRecPtr;
     mCalendarPtr = aCalendarPtr;
   }
@@ -69,6 +71,7 @@ class RTCCInitEvt : public QP::QEvt {
   unsigned int      mCSnGPIOPin;
   unsigned long     mIRQGPIOPort;
   unsigned int      mIRQGPIOPin;
+  unsigned long     mIntNbr;
   DBRec            *mMasterDBRecPtr;
   CalendarRec      *mCalendarPtr;
 };

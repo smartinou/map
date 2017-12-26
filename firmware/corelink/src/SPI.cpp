@@ -63,7 +63,7 @@ CoreLink::SPISlaveCfg::SPISlaveCfg() :
 
 
 void CoreLink::SPISlaveCfg::SetCSnGPIO(unsigned long aPort,
-				       unsigned int  aPin) {
+                                       unsigned int  aPin) {
 
   mCSnGPIOPort = aPort;
   mCSnGPIOPin  = aPin;
@@ -75,9 +75,9 @@ void CoreLink::SPISlaveCfg::SetCSnGPIO(unsigned long aPort,
   // [MG] COULD CALL SysCtlPeripheralEnable() BASED ON PORT.
   GPIOPinTypeGPIOOutput(mCSnGPIOPort, mCSnGPIOPin);
   GPIOPadConfigSet(mCSnGPIOPort,
-		   mCSnGPIOPin,
-		   GPIO_STRENGTH_2MA,
-		   GPIO_PIN_TYPE_STD);
+                   mCSnGPIOPin,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
 
   // Put the CSn pin in deasserted state.
   //GPIOPinWrite(mCSnGPIOPort, mCSnGPIOPin, mCSnGPIOPin);
@@ -112,7 +112,7 @@ unsigned int CoreLink::SPISlaveCfg::ToNativeProtocol(void) const {
 
 
 CoreLink::SPIDev::SPIDev(uint32_t   aBaseAddr,
-			 SSIPinCfg &aSPIMasterPinCfgRef) :
+                         SSIPinCfg &aSPIMasterPinCfgRef) :
   PeripheralDev(aBaseAddr),
   mLastSPICfgPtr(0) {
 
@@ -128,9 +128,9 @@ CoreLink::SPIDev::~SPIDev() {
 
 
 void CoreLink::SPIDev::RdData(uint8_t                aAddr,
-			      uint8_t               *aDataPtr,
-			      unsigned int           aLen,
-			      CoreLink::SPISlaveCfg &aSPICfgRef) {
+                              uint8_t               *aDataPtr,
+                              unsigned int           aLen,
+                              CoreLink::SPISlaveCfg &aSPICfgRef) {
 
   SetCfg(aSPICfgRef);
 
@@ -139,14 +139,9 @@ void CoreLink::SPIDev::RdData(uint8_t                aAddr,
 
   // -Send address.
   // -Push dummy data (0s) as many as requested to read.
-  unsigned long lRxData = 0;
-  SSIDataPut(GetBaseAddr(), aAddr);
-  SSIDataGet(GetBaseAddr(), &lRxData);
-
+  PushPullByte(aAddr);
   while (aLen > 0) {
-    SSIDataPut(GetBaseAddr(), 0);
-    SSIDataGet(GetBaseAddr(), &lRxData);
-    *aDataPtr = static_cast<uint8_t>(lRxData);
+    *aDataPtr = PushPullByte(0);
     aDataPtr++;
     aLen--;
   }
@@ -157,8 +152,8 @@ void CoreLink::SPIDev::RdData(uint8_t                aAddr,
 
 
 void CoreLink::SPIDev::RdData(uint8_t               *aDataPtr,
-			      unsigned int           aLen,
-			      CoreLink::SPISlaveCfg &aSPICfgRef) {
+                              unsigned int           aLen,
+                              CoreLink::SPISlaveCfg &aSPICfgRef) {
 
   SetCfg(aSPICfgRef);
 
@@ -166,11 +161,9 @@ void CoreLink::SPIDev::RdData(uint8_t               *aDataPtr,
   aSPICfgRef.AssertCSn();
 
   // -Push dummy data (0s) as many as requested to read.
-  unsigned long lRxData = 0;
+  //unsigned long lRxData = 0;
   while (aLen > 0) {
-    SSIDataPut(GetBaseAddr(), 0);
-    SSIDataGet(GetBaseAddr(), &lRxData);
-    *aDataPtr = static_cast<uint8_t>(lRxData);
+    *aDataPtr = PushPullByte(0);
     aDataPtr++;
     aLen--;
   }
@@ -181,9 +174,9 @@ void CoreLink::SPIDev::RdData(uint8_t               *aDataPtr,
 
 
 void CoreLink::SPIDev::WrData(uint8_t                aAddr,
-			      uint8_t const         *aDataPtr,
-			      unsigned int           aLen,
-			      CoreLink::SPISlaveCfg &aSPICfgRef) {
+                              uint8_t const         *aDataPtr,
+                              unsigned int           aLen,
+                              CoreLink::SPISlaveCfg &aSPICfgRef) {
 
   SetCfg(aSPICfgRef);
 
@@ -194,14 +187,10 @@ void CoreLink::SPIDev::WrData(uint8_t                aAddr,
   // -Push data as many as requested to write.
   // -Read dummy data to empty receive register.
   // -Wait for all bytes to transmit.
-  unsigned int lBaseAddr = GetBaseAddr();
-  unsigned long lRxData = 0;
-  SSIDataPut(lBaseAddr, aAddr);
-  SSIDataGet(lBaseAddr, &lRxData);
+  PushPullByte(aAddr);
 
   while (aLen > 0) {
-    SSIDataPut(lBaseAddr, *aDataPtr);
-    SSIDataGet(lBaseAddr, &lRxData);
+    PushPullByte(*aDataPtr);
     aDataPtr++;
     aLen--;
   }
@@ -212,8 +201,8 @@ void CoreLink::SPIDev::WrData(uint8_t                aAddr,
 
 
 void CoreLink::SPIDev::WrData(uint8_t const         *aDataPtr,
-			      unsigned int           aLen,
-			      CoreLink::SPISlaveCfg &aSPICfgRef) {
+                              unsigned int           aLen,
+                              CoreLink::SPISlaveCfg &aSPICfgRef) {
 
   SetCfg(aSPICfgRef);
 
@@ -223,11 +212,10 @@ void CoreLink::SPIDev::WrData(uint8_t const         *aDataPtr,
   // -Push data as many as requested to write.
   // -Read dummy data to empty receive register.
   // -Wait for all bytes to transmit.
-  unsigned int lBaseAddr = GetBaseAddr();
-  unsigned long lRxData = 0;
+  //unsigned int lBaseAddr = GetBaseAddr();
+  //unsigned long lRxData = 0;
   while (aLen > 0) {
-    SSIDataPut(lBaseAddr, *aDataPtr);
-    SSIDataGet(lBaseAddr, &lRxData);
+    PushPullByte(*aDataPtr);
     aDataPtr++;
     aLen--;
   }
@@ -235,6 +223,26 @@ void CoreLink::SPIDev::WrData(uint8_t const         *aDataPtr,
   // Deassert the assigned CSn pin.
   aSPICfgRef.DeassertCSn();
 }
+
+
+uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const          aByte,
+                                       CoreLink::SPISlaveCfg &aSPICfgRef) {
+
+  SetCfg(aSPICfgRef);
+  return PushPullByte(aByte);
+}
+
+
+uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte) {
+
+  unsigned int const lBaseAddr = GetBaseAddr();
+  unsigned long lRxData = 0UL;
+  SSIDataPut(lBaseAddr, aByte);
+  SSIDataGet(lBaseAddr, &lRxData);
+
+  return static_cast<uint8_t>(lRxData);
+}
+
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
@@ -251,11 +259,11 @@ void CoreLink::SPIDev::SetCfg(SPISlaveCfg &aSPISlaveCfgRef) {
 
     // Could check that data wiDth is in range [4, 16].
     SSIConfigSetExpClk(lBaseAddr,
-		       SysCtlClockGet(),
-		       aSPISlaveCfgRef.GetProtocol(), //ToNativeProtocol(),
-		       SSI_MODE_MASTER,
-		       aSPISlaveCfgRef.GetBitRate(),
-		       aSPISlaveCfgRef.GetDataWidth());
+                       SysCtlClockGet(),
+                       aSPISlaveCfgRef.GetProtocol(), //ToNativeProtocol(),
+                       SSI_MODE_MASTER,
+                       aSPISlaveCfgRef.GetBitRate(),
+                       aSPISlaveCfgRef.GetDataWidth());
 
     // Make this the "new" slave configuration and
     // enable SPI operations.

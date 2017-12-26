@@ -126,6 +126,11 @@ CoreLink::SPIDev * BSPInit(void);
 
 unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort);
 
+unsigned long CSnGPIOPortGet(void);
+unsigned int  CSnGPIOPinGet(void);
+unsigned long IRQGPIOPortGet(void);
+unsigned int  IRQGPIOPinGet(void);
+
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************

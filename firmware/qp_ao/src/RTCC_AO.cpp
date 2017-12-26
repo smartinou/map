@@ -43,7 +43,6 @@
 
 // Common Library.
 #include "Date.h"
-//#include "DBRec.h"
 #include "DS3234.h"
 #include "SPI.h"
 #include "Time.h"
@@ -207,7 +206,7 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
 
   // Set interrupt pin and periodic alarm.
   RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
-  me->mIntNbr = BSPGPIOPortToInt(lRTCCInitEvtPtr->mIRQGPIOPort);
+  me->mIntNbr = lRTCCInitEvtPtr->mIntNbr;
   IntDisable(me->mIntNbr);
 
   GPIOPinTypeGPIOInput(lRTCCInitEvtPtr->mIRQGPIOPort,
