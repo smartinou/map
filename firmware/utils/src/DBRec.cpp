@@ -80,6 +80,32 @@ bool DBRec::IsDirty(void) const {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
+uint8_t DBRec::ComputeCRC(uint8_t const *aDataPtr, unsigned int aSize) {
+  uint8_t lCRC = 0;
+  for (unsigned int lIx = 1; lIx < aSize; lIx++) {
+    lCRC += aDataPtr[lIx];
+  }
+
+  return ~lCRC;
+}
+
+
+bool DBRec::IsCRCGood(uint8_t const *aDataPtr, unsigned int aSize) {
+  uint8_t lCRC = 0;
+  for (unsigned int lIx = 0; lIx < aSize; lIx++) {
+    lCRC += aDataPtr[lIx];
+  }
+
+  lCRC++;
+
+  // Total CRC (data + CRC) should yield 0.
+  if (lCRC) {
+    return false;
+  }
+
+  return true;
+}
+
 // *****************************************************************************
 //                                END OF FILE
 // *****************************************************************************

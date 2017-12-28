@@ -48,7 +48,7 @@ class NetIFRec : public DBRec {
   void SetSubnetMask(uint32_t aSubnetMask);
   void SetGWAddr(uint32_t aGWAddr);
 
-  bool IsSane(void) const;
+  bool IsSane(void);
   bool IsDirty(void) const;
   void ResetDflt(void);
 
@@ -59,7 +59,8 @@ class NetIFRec : public DBRec {
 
  private:
   struct RecStructTag {
-    char     mMagic[4];
+    uint8_t  mCRC;
+    char     mMagic[3];
     uint8_t  mUseDHCP;
     uint8_t  mUseIPv6;
     uint32_t mIPAddr;

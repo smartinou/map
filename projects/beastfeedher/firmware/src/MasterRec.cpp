@@ -102,8 +102,8 @@ bool MasterRec::Init(void) {
                                             CSnGPIOPinGet(),
                                             lIRQGPIOPort,
                                             IRQGPIOPinGet(),
-					    lIntNbr,
-					    this,
+                                            lIntNbr,
+                                            this,
                                             lCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
   RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
@@ -149,13 +149,15 @@ bool MasterRec::IsDirty(void) const {
 }
 
 
-bool MasterRec::IsSane(void) const {
+bool MasterRec::IsSane(void) {
+  if (!DBRec::IsCRCGood(reinterpret_cast<uint8_t *>(&mMasterRec), sizeof(mMasterRec))) {
+    return false;
+  }
 
   // Check magic value.
   if (('M' != mMasterRec.mMagic[0])
       || ('S' != mMasterRec.mMagic[1])
-      || ('T' != mMasterRec.mMagic[2])
-      || ('R' != mMasterRec.mMagic[3])) {
+      || ('T' != mMasterRec.mMagic[2])) {
     return false;
   }
 
@@ -180,7 +182,6 @@ void MasterRec::ResetDflt(void) {
   mMasterRec.mMagic[0] = 'M';
   mMasterRec.mMagic[1] = 'S';
   mMasterRec.mMagic[2] = 'T';
-  mMasterRec.mMagic[3] = 'R';
 
   mMasterRec.mVerMajor = VER_MAJOR;
   mMasterRec.mVerMinor = VER_MINOR;
@@ -202,6 +203,8 @@ void MasterRec::ResetDflt(void) {
   for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
     mDBRec[lRecIx]->ResetDflt();
   }
+
+  mMasterRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mMasterRec), sizeof(mMasterRec));
 
   mIsDirty = true;
 }

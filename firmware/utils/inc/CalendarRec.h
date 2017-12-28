@@ -62,7 +62,7 @@ class CalendarRec : public DBRec {
                     Weekday       &aNextWeekdayRef,
                     Time          &aNextTimeRef);
 
-  bool IsSane(void) const;
+  bool IsSane(void);
   bool IsDirty(void) const;
   void ResetDflt(void);
 
@@ -86,7 +86,8 @@ class CalendarRec : public DBRec {
   unsigned int BitMaskToWeekday(unsigned int aBitMask);
 
   struct RecStructTag {
-    char mMagic[4];
+    uint8_t mCRC;
+    char    mMagic[3];
     std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
   };
 

@@ -47,7 +47,7 @@ class MasterRec : public DBRec {
 
   unsigned int AddRec(DBRec * const aDBRecPtr);
 
-  bool IsSane(void) const;
+  bool IsSane(void);
   bool IsDirty(void) const;
   void ResetDflt(void);
 
@@ -72,7 +72,8 @@ class MasterRec : public DBRec {
   typedef struct RecInfoStructTag REC_INFO;
 
   struct RecStructTag {
-    char     mMagic[4];
+    uint8_t  mCRC;
+    char     mMagic[3];
     uint8_t  mVerMajor;
     uint8_t  mVerMinor;
     uint8_t  mVerRev;
