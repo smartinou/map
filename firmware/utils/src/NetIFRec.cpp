@@ -97,13 +97,15 @@ void NetIFRec::SetGWAddr(uint32_t aGWAddr) {
 }
 
 
-bool NetIFRec::IsSane(void) const {
+bool NetIFRec::IsSane(void) {
+  if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+    return false;
+  }
 
   // Check magic value.
   if (('N' != mRec.mMagic[0])
       || ('E' != mRec.mMagic[1])
-      || ('T' != mRec.mMagic[2])
-      || ('X' != mRec.mMagic[3])) {
+      || ('T' != mRec.mMagic[2])) {
     return false;
   }
 
@@ -122,7 +124,6 @@ void NetIFRec::ResetDflt(void) {
   mRec.mMagic[0] = 'N';
   mRec.mMagic[1] = 'E';
   mRec.mMagic[2] = 'T';
-  mRec.mMagic[3] = 'X';
 
   mRec.mUseDHCP = 1;
   mRec.mUseIPv6 = 0;
@@ -130,6 +131,7 @@ void NetIFRec::ResetDflt(void) {
   mRec.mSubnetMask = 0x00000000;
   mRec.mGWAddr = 0x00000000;
 
+  mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
   mIsDirty = true;
 }
 

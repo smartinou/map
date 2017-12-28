@@ -163,13 +163,15 @@ bool CalendarRec::IsDirty(void) const {
 }
 
 
-bool CalendarRec::IsSane(void) const {
+bool CalendarRec::IsSane(void) {
+  if (!DBRec::IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+    return false;
+  }
 
   // Check magic value.
   if (('C' != mRec.mMagic[0])
       || ('A' != mRec.mMagic[1])
-      || ('L' != mRec.mMagic[2])
-      || ('R' != mRec.mMagic[3])) {
+      || ('L' != mRec.mMagic[2])) {
     return false;
   }
 
@@ -183,7 +185,6 @@ void CalendarRec::ResetDflt(void) {
   mRec.mMagic[0] = 'C';
   mRec.mMagic[1] = 'A';
   mRec.mMagic[2] = 'L';
-  mRec.mMagic[3] = 'R';
 
   // Set time entries in whole week.
   // 8:00 and 17:00.
@@ -195,6 +196,8 @@ void CalendarRec::ResetDflt(void) {
   SetTimeEntry(lTime);
   lTime.SetHours(17);
   SetTimeEntry(lTime);
+
+  mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
 
   mIsDirty = true;
 }
