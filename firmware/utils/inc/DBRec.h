@@ -45,7 +45,7 @@ class DBRec {
 
   unsigned int GetMyIx(void);
 
-  virtual bool IsSane(void) const = 0;
+  virtual bool IsSane(void) = 0;
   virtual bool IsDirty(void) const;
   virtual void ResetDflt(void) = 0;
 
@@ -54,6 +54,9 @@ class DBRec {
   virtual void         Deserialize(uint8_t const * const aDataPtr) = 0;
 
  protected:
+  uint8_t ComputeCRC(uint8_t const *aDataPtr, unsigned int aSize);
+  bool    IsCRCGood(uint8_t const *aDataPtr, unsigned int aSize);
+
   bool mIsDirty;
 
  private:
