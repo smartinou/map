@@ -322,8 +322,13 @@ endif
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: $(TARGET_BIN)
+all: version $(TARGET_BIN)
 #all: $(TARGET_ELF)
+
+.PHONY: version
+version:
+	./make_version.sh
+
 
 $(TARGET_BIN): $(TARGET_ELF)
 	$(BIN) -O binary $< $@

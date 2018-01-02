@@ -34,6 +34,7 @@
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "CalendarRec.h"
+#include "FWVersionGenerated.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "MasterRec.h"
