@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Network</title>
+    <link href="Styles.css" rel="stylesheet">
+  </head>
+  <body onload="_UpdateFormFields()">
+    <header>
+      <table width="100%">
+	<tbody><tr>
+	  <td>
+	    <big><b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b></big>
+	  </td>
+	  <td>
+	    <a href="/html/index.shtml" style="color:powderblue;"><b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b></a>
+	  </td>
+	  <td>
+	    <a href="/html/config.shtml" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
+	  </td>
+	  <td>
+	    <big><b>&nbsp;&nbsp;Network&nbsp;&nbsp;</b></big>
+	  </td>
+	  <td>
+	    <a href="/html/stats.shtml" style="color:powderblue;">&nbsp;&nbsp;Statistics&nbsp;&nbsp;</a>
+	  </td>
+	  <td width="30%"></td>
+	  <td nowrap="" text-align="right">
+	    <big><b>Smart Monkeys</b></big><br>
+	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a><br>
+	    <a href="file:///C:/repos/map/projects/beastfeedher/firmware/src/html/www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
+	  </td>
+	</tr>
+      </tbody></table>
+    </header>
+
+      
+    <div class="content">
+      <h1>Network Info</h1>
+
+      <table>
+	<tbody><tr>
+	  <td>
+	    MAC address:
+	  </td>
+	  <td text-align="right" width="100px">
+	    <!--#s_dummy-->0
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    IPv4:
+	  </td>
+	  <td>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    IPv4 Address:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Subnet Mask:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Gateway:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+      </tbody></table>
+    <img src="./network_files/Logo.gif" alt="Smart Monkey logo" class="logo">  
+
+    <hr>
+
+    <h1>IP Configuration</h1>
+    <form name="IPConfig" action="" method="POST">
+
+    <table>
+        <tr>
+            <td><B>Configuration:</B></td><td>
+            <input onchange="_UpdateFormFields()" type="RADIO" NAME="AssignIPType" VALUE="1"><B>Automatic (DHCP)</B>
+            </td></tr><tr><td>  </td><td>
+            <input onchange="_UpdateFormFields()" type="RADIO" NAME="AssignIPType" VALUE="0"><B>Manual</B>
+            </td>
+          </tr>
+          <tr>
+            <td COLSPAN="2">
+              <table>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td><B>IP address:</B></td>
+            <td>
+              <INPUT name="IPAddr_0" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPAddr_1" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPAddr_2" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPAddr_3" TYPE="text" SIZE="2" MAXLENGTH="3" value="">
+            </td>
+          </tr>    
+          <tr>
+            <td><B>Subnet mask:</B></td>
+            <td>
+              <INPUT name="IPMask_0" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPMask_1" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPMask_2" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPMask_3" TYPE="text" SIZE="2" MAXLENGTH="3" value="">
+            </td>
+          </tr>
+          <tr>
+            <td><B>Gateway:</B></td>
+            <td>
+              <INPUT name="IPGateway_0" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPGateway_1" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPGateway_2" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
+              <INPUT name="IPGateway_3" TYPE="text" SIZE="2" MAXLENGTH="3" value="">
+            </td>
+          </tr>
+          <tr>
+            <td COLSPAN="2">
+              <table>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <input type="submit" value="Apply" name = "SetIP">
+
+    </form>
+    </div>
+
+
+
+    <footer>
+       <p valign="middle" align="right">Copyright © 2017, <big>Smart Monkeys Inc.</big> All rights reserved.&nbsp;&nbsp;</p>
+    </footer>
+  
+
+</body></html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Device Info</title>
+    <link href="Styles.css" rel="stylesheet">
+  </head>
+  <body onload="_UpdateFormFields()">
+    <header>
+      <table width="100%">
+	<tr>
+	  <td>
+	    <big><b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b></big>
+	  </td>
+	  <td>
+	    <big><b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b></big>
+	  </td>
+	  <td>
+	    <a href="config.shtml" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
+	  </td>
+	  <td>
+	    <a href="network.shtml" style="color:powderblue;">&nbsp;&nbsp;Network&nbsp;&nbsp;</a>
+	  </td>
+	  <td>
+	    <a href="stats.shtml" style="color:powderblue;">&nbsp;&nbsp;Statistics&nbsp;&nbsp;</a>
+	  </td>
+	  <td width="30%"></td>
+	  <td nowrap text-align="right">
+	    <big><b>Smart Monkeys</b></big></br>
+	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a></br>
+	    <a href="www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
+	  </td>
+	</tr>
+      </table>
+    </header>
+
+      
+    <div class="content">
+      <h1> Device Info </h1>
+
+      <table>
+	<tr>
+	  <td>
+	    Firmware version:
+	  </td>
+	  <td text-align="right" width="100px">
+	    <!--#s_dummy-->0
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Build date:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Git hash:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Database status:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+      </table>
+    </div>
+
+
+
+    <footer>
+       <p valign="middle" align="right">Copyright &copy 2017, <big>Smart Monkeys Inc.</big> All rights reserved.&nbsp;&nbsp;</p>
+    </footer>
+  </body>
+</html>

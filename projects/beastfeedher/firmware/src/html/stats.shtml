@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Network</title>
+    <link href="Styles.css" rel="stylesheet">
+  </head>
+  <body onload="_UpdateFormFields()">
+    <header>
+      <table width="100%">
+	<tbody><tr>
+	  <td>
+	    <big><b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b></big>
+	  </td>
+	  <td>
+	    <a href="/html/index.html" style="color:powderblue;"><b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b></a>
+	  </td>
+	  <td>
+	    <a href="/html/config.html" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
+	  </td>
+	  <td>
+	    <a href="/html/network.html" style="color:powderblue;">&nbsp;&nbsp;Network&nbsp;&nbsp;</a>
+	  </td>
+	  <td>
+	    <big><b>&nbsp;&nbsp;Statistics&nbsp;&nbsp;</b></big>
+	  </td>
+	  <td width="30%"></td>
+	  <td nowrap="" text-align="right">
+	    <big><b>Smart Monkeys</b></big><br>
+	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a><br>
+	    <a href="file:///C:/repos/map/projects/beastfeedher/firmware/src/html/www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
+	  </td>
+	</tr>
+      </tbody></table>
+    </header>
+
+      
+    <div class="content">
+      <h1>Network Statistics</h1>
+
+      <table>
+	<tbody><tr>
+	  <td>
+	    Packets sent:
+	  </td>
+	  <td text-align="right" width="100px">
+	    <!--#s_dummy-->0
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Packets received:
+	  </td>
+	  <td>
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Packets forwared:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Packets dropped:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Checksum errors:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Packets with invalid length:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Memory errors:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Routing errors:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Protocol errors:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Option errors:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Miscallaneous errors:
+	  </td>
+	  <td>
+	    <!--#s_dummy-->
+	  </td>
+	</tr>
+
+      </tbody></table>
+    <img src="./network_files/Logo.gif" alt="Smart Monkey logo" class="logo">  
+
+
+    </div>
+
+
+
+    <footer>
+       <p valign="middle" align="right">Copyright © 2017, <big>Smart Monkeys Inc.</big> All rights reserved.&nbsp;&nbsp;</p>
+    </footer>
+  
+
+</body></html>
