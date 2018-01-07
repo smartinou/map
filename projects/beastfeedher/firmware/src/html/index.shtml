@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>Device Info</title>
     <link href="Styles.css" rel="stylesheet">
+    <style>
+        table { border: 0; }
+        th { border: 0; }
+        td { border: 0; text-align: left; }
+    </style>
   </head>
-  <body onload="_UpdateFormFields()">
+  <body>
     <header>
-      <table width="100%">
+      <table style="width:100%;">
 	<tr>
-	  <td>
-	    <big><b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b></big>
+	  <td style="font-size:larger;">
+	    <b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b>
 	  </td>
-	  <td>
-	    <big><b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b></big>
+	  <td style="font-size:larger;">
+	    <b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b>
 	  </td>
 	  <td>
 	    <a href="config.shtml" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
@@ -23,11 +29,11 @@
 	  <td>
 	    <a href="stats.shtml" style="color:powderblue;">&nbsp;&nbsp;Statistics&nbsp;&nbsp;</a>
 	  </td>
-	  <td width="30%"></td>
-	  <td nowrap text-align="right">
-	    <big><b>Smart Monkeys</b></big></br>
-	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a></br>
-	    <a href="www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
+	  <td style="width:30%;"></td>
+	  <td style="text-align:right;white-space:nowrap;">
+	    <b style="font-size:larger;color:navy;">Smart Monkeys</b><br>
+	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a><br>
+	    <a href="http://www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
 	  </td>
 	</tr>
       </table>
@@ -39,11 +45,11 @@
 
       <table>
 	<tr>
-	  <td>
+	  <td style="text-align:left;width:200px">
 	    Firmware version:
 	  </td>
-	  <td text-align="right" width="100px">
-	    <!--#s_dummy-->0
+	  <td style="text-align:right;width:100px">
+	    <!--#s_dummy-->
 	  </td>
 	</tr>
 	<tr>
@@ -73,10 +79,8 @@
       </table>
     </div>
 
-
-
     <footer>
-       <p valign="middle" align="right">Copyright &copy 2017, <big>Smart Monkeys Inc.</big> All rights reserved.&nbsp;&nbsp;</p>
+       <p>Copyright &copy; 2017-2018, <strong><b>Smart Monkeys Inc.</b></strong> All rights reserved.&nbsp;&nbsp;</p>
     </footer>
   </body>
 </html>

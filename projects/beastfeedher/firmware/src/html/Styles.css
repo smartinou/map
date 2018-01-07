@@ -16,7 +16,9 @@ div { background: white; }
 .PointerDown { background: url(RedRDown.gif) no-repeat center; }
 .PointerUp { background: url(GreenRUp.gif) no-repeat center; }
 .PointerRight { background: url(WhiteR.gif) no-repeat center; }
-footer { box: 8px 8px 10px 1px #000000; border-radius: 3px; background: white; margin: 30px 10px; height: 40px; text-align: center; border: thin solid #000000; }
+footer { box: 8px 8px 10px 1px #000000; border-radius: 3px; background: white; margin: 30px 10px; height: 40px; text-align: center; vertical-align: center; border: thin solid #000000; }
+footer p { text-align: right; }
+
 .hint { font-size: x-small; font-style: italic; }
 table { border: thin solid #000000; border-spacing: 0px; }
 th { border:thin solid #000000; padding: 2px; font-weight: bold; font-size:12px; text-align: left; }

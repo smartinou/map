@@ -1,36 +1,37 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <title>Network</title>
     <link href="Styles.css" rel="stylesheet">
   </head>
-  <body onload="_UpdateFormFields()">
+  <body>
     <header>
-      <table width="100%">
-	<tbody><tr>
-	  <td>
-	    <big><b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b></big>
+      <table style="width:100%;">
+	<tr>
+	  <td style="font-size:larger;">
+	    <b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b>
 	  </td>
 	  <td>
-	    <a href="/html/index.html" style="color:powderblue;"><b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b></a>
+	    <a href="index.shtml" style="color:powderblue;"><b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b></a>
 	  </td>
 	  <td>
-	    <a href="/html/config.html" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
+	    <a href="config.shtml" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
 	  </td>
 	  <td>
-	    <a href="/html/network.html" style="color:powderblue;">&nbsp;&nbsp;Network&nbsp;&nbsp;</a>
+	    <a href="network.shtml" style="color:powderblue;">&nbsp;&nbsp;Network&nbsp;&nbsp;</a>
 	  </td>
-	  <td>
-	    <big><b>&nbsp;&nbsp;Statistics&nbsp;&nbsp;</b></big>
+	  <td style="font-size:larger;">
+	    <b>&nbsp;&nbsp;Statistics&nbsp;&nbsp;</b>
 	  </td>
-	  <td width="30%"></td>
-	  <td nowrap="" text-align="right">
-	    <big><b>Smart Monkeys</b></big><br>
+	  <td style="width:30%;"></td>
+	  <td style="text-align:right;white-space:nowrap;">
+	    <b style="font-size:larger;">Smart Monkeys</b><br>
 	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a><br>
-	    <a href="file:///C:/repos/map/projects/beastfeedher/firmware/src/html/www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
+	    <a href="http://www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
 	  </td>
 	</tr>
-      </tbody></table>
+      </table>
     </header>
 
       
@@ -38,12 +39,12 @@
       <h1>Network Statistics</h1>
 
       <table>
-	<tbody><tr>
+	<tr>
 	  <td>
 	    Packets sent:
 	  </td>
-	  <td text-align="right" width="100px">
-	    <!--#s_dummy-->0
+	  <td style="text-align:right;width:100px">
+	    <!--#s_dummy-->
 	  </td>
 	</tr>
 	<tr>
@@ -51,6 +52,7 @@
 	    Packets received:
 	  </td>
 	  <td>
+	    <!--#s_dummy-->
 	  </td>
 	</tr>
 	<tr>
@@ -119,24 +121,18 @@
 	</tr>
 	<tr>
 	  <td>
-	    Miscallaneous errors:
+	    Miscellaneous errors:
 	  </td>
 	  <td>
 	    <!--#s_dummy-->
 	  </td>
 	</tr>
-
-      </tbody></table>
-    <img src="./network_files/Logo.gif" alt="Smart Monkey logo" class="logo">  
-
+      </table>
 
     </div>
 
-
-
     <footer>
-       <p valign="middle" align="right">Copyright © 2017, <big>Smart Monkeys Inc.</big> All rights reserved.&nbsp;&nbsp;</p>
+       <p>Copyright &copy; 2017-2018, <strong><b>Smart Monkeys Inc.</b></strong> All rights reserved.&nbsp;&nbsp;</p>
     </footer>
-  
-
-</body></html>
+  </body>
+</html>
