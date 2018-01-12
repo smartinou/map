@@ -50,6 +50,7 @@ PROJECT := beastfeedher
 REPO_ROOT_DIR := ../../../../../../..
 FIRMWARE_PATH := $(REPO_ROOT_DIR)/firmware
 PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
+PROJECT_FW_DIR   := $(PROJECT_ROOT_DIR)/firmware
 
 # LwIP library.
 LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.0.3/lwip-2.0.3/src
@@ -75,9 +76,9 @@ CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 # List of all source directories used by this project.
 VPATH = \
         ../../ \
-        $(PROJECT_ROOT_DIR)/firmware/src \
-        $(PROJECT_ROOT_DIR)/firmware/src/lwip_port/arch \
-        $(PROJECT_ROOT_DIR)/firmware/src/lwip_port/netif \
+        $(PROJECT_FW_DIR)/src \
+        $(PROJECT_FW_DIR)/src/lwip_port/arch \
+        $(PROJECT_FW_DIR)/src/lwip_port/netif \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
@@ -93,7 +94,6 @@ VPATH = \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
         $(LWIPDIR)/apps/httpd
-
 
 # List of all include directories needed by this project.
 INCLUDES  = \
@@ -115,7 +115,6 @@ INCLUDES  = \
         -I$(CMSIS_LIB)/core \
         -I$(CMSIS_LIB) \
         -I$(LWIPDIR)/include
-
 
 # Files
 # Assembler source files.
@@ -217,7 +216,7 @@ CPP   := $(GNU_ARM)/bin/arm-none-eabi-g++
 AS    := $(GNU_ARM)/bin/arm-none-eabi-as
 LINK  := $(GNU_ARM)/bin/arm-none-eabi-g++
 BIN   := $(GNU_ARM)/bin/arm-none-eabi-objcopy
-
+SIZE  := $(GNU_ARM)/bin/arm-none-eabi-size
 
 # Basic utilities (included in Qtools for Windows), see:
 MKDIR := mkdir
@@ -317,16 +316,58 @@ ifeq ("$(wildcard $(BIN_DIR))","")
 $(shell $(MKDIR) $(BIN_DIR))
 endif
 
+# Web & HTML variables.
+WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
+WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
+MAKE_FSDATA_DIR := $(LWIPDIR)/apps/httpd/makefsdata
+
+WEB_HTML_FILES := \
+  index.shtml \
+  network.shtml \
+  stats.shtml \
+  Styles.css
+
+WEB_BIN_FILES := \
+  BGround.png
+
+HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
+
+BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: $(TARGET_BIN)
+all: version generate_fsdata $(TARGET_BIN)
 #all: $(TARGET_ELF)
+
+.PHONY: version
+version:
+	./make_version.sh
+
+
+remove_white_space: $(HTML_OUTPUT_FILES)
+
+copy_binary_files: $(BIN_OUTPUT_FILES)
+
+generate_fsdata: remove_white_space copy_binary_files
+	cd $(PROJECT_ROOT_DIR)/firmware/src/html && \
+  $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
+  mv fsdata.c ../fsdata_custom.c
+
+# Remove leading white spaces and tabs from files.
+$(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
+	mkdir -p $(WEB_OUTPUT_DIR)
+	cat $(WEB_INPUT_DIR)/$(notdir $@) | sed 's/^[ \t]*//;s/[ \t]*$$//' > $@
+
+$(BIN_OUTPUT_FILES):
+	cp $(WEB_INPUT_DIR)/$(notdir $@) $@
+
+
 
 $(TARGET_BIN): $(TARGET_ELF)
 	$(BIN) -O binary $< $@
+	$(SIZE) $<
 
 $(TARGET_ELF) : $(ASM_OBJS_EXT) $(C_OBJS_EXT) $(CPP_OBJS_EXT)
 	$(CPP) $(CPPFLAGS) -c $(QPCPP)/include/qstamp.cpp -o $(BIN_DIR)/qstamp.o
@@ -358,10 +399,11 @@ endif
 .PHONY: clean
 clean:
 	-$(RM) $(BIN_DIR)/*.o \
-	$(BIN_DIR)/*.d \
-	$(BIN_DIR)/*.bin \
-	$(BIN_DIR)/*.elf \
-	$(BIN_DIR)/*.map
+  $(BIN_DIR)/*.d \
+  $(BIN_DIR)/*.bin \
+  $(BIN_DIR)/*.elf \
+  $(BIN_DIR)/*.map
+	-$(RM) -rf $(WEB_OUTPUT_DIR)
 
 show:
 	@echo PROJECT = $(PROJECT)
