@@ -77,6 +77,32 @@
 	  </td>
 	</tr>
       </table>
+
+      <hr>
+
+
+      <form>
+      <h1> Feed the Beast </h1>
+        <table>
+	  <tbody>
+            <tr>
+              <td>
+	        Timed Feed:
+	      </td>
+	      <td>
+	        <input type="button" name="button_timed_feed" value="2s Feed"><br>
+	      </td>
+	      <td>
+	        <input type="button" name="button_timed_feed" value="5s Feed"><br>
+	      </td>
+	      <td>
+	        <input type="button" name="button_timed_feed" value="10s Feed"><br>
+	      </td>
+	    </tr>
+	  </tbody>
+        </table>
+      </form>
+
     </div>
 
     <footer>
