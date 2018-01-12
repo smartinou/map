@@ -134,7 +134,7 @@
             </td>
           </tr>
         </table>
-        <input type="submit" value="Apply" name = "SetIP">
+        <input type="submit" value="Apply" name="SetIP">
 
     </form>
     </div>
