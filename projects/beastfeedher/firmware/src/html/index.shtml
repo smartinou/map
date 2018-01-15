@@ -48,8 +48,8 @@
 	  <td style="text-align:left;width:200px">
 	    Firmware version:
 	  </td>
-	  <td style="text-align:right;width:100px">
-	    <!--#s_dummy-->
+	  <td>
+	    <!--#i_ver-->
 	  </td>
 	</tr>
 	<tr>
@@ -57,7 +57,15 @@
 	    Build date:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#i_date-->
+	  </td>
+	</tr>
+	<tr>
+	  <td>
+	    Build Time:
+	  </td>
+	  <td>
+	    <!--#i_time-->
 	  </td>
 	</tr>
 	<tr>
@@ -65,7 +73,7 @@
 	    Git hash:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#i_hash-->
 	  </td>
 	</tr>
 	<tr>
@@ -73,7 +81,7 @@
 	    Database status:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#i_db_status-->
 	  </td>
 	</tr>
       </table>
