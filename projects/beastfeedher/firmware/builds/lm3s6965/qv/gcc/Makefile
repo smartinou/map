@@ -322,6 +322,7 @@ WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
 MAKE_FSDATA_DIR := $(LWIPDIR)/apps/httpd/makefsdata
 
 WEB_HTML_FILES := \
+  config.shtml \
   index.shtml \
   network.shtml \
   stats.shtml \
