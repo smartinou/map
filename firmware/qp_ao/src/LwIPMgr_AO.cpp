@@ -33,7 +33,7 @@
 
 using namespace QP;
 
-// lwIP stack.
+// LwIP stack.
 #include "lwip/autoip.h"
 #include "lwip/def.h"
 #include "lwip/dhcp.h"
@@ -86,10 +86,6 @@ Q_DEFINE_THIS_FILE
 //                            FUNCTION PROTOTYPES
 // *****************************************************************************
 
-#if LWIP_HTTPD_SSI
-static uint16_t SSIHandler(int aIx, char *aInsertPtr, int aInsertLen);
-#endif //LWIP_HTTPD_SSI
-
 #if LWIP_HTTPD_CGI
 // Common Gateway Iinterface (CG) demo.
 static char const *CGIDisplay(int   aIx,
@@ -104,23 +100,6 @@ static char const *CGIDisplay(int   aIx,
 
 // Application signals cannot overlap the device-driver signals.
 //Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
-
-#if LWIP_HTTPD_SSI
-// Server-Side Include (SSI) demo.
-static char const *sSSITags[] = {
-  "s_xmit",
-  "s_recv",
-  "s_fw",
-  "s_drop",
-  "s_chkerr",
-  "s_lenerr",
-  "s_memerr",
-  "s_rterr",
-  "s_proerr",
-  "s_opterr",
-  "s_err",
-};
-#endif //LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
 static tCGI const CGIHandlers[] = {
@@ -183,12 +162,15 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   uint32_t lIPAddr     = 0x00000000;
   uint32_t lSubnetMask = 0x00000000;
   uint32_t lGWAddr     = 0x00000000;
+  void   (*lCallbackInit)(void) = nullptr;
   if (nullptr != e) {
     LwIPInitEvt const *lLwIPInitEvtPtr = static_cast<LwIPInitEvt const *>(e);
     lUseDHCP    = lLwIPInitEvtPtr->mNetIFRecPtr->UseDHCP();
     lIPAddr     = lLwIPInitEvtPtr->mNetIFRecPtr->GetIPAddr();
     lSubnetMask = lLwIPInitEvtPtr->mNetIFRecPtr->GetSubnetMask();
     lGWAddr     = lLwIPInitEvtPtr->mNetIFRecPtr->GetGWAddr();
+
+    lCallbackInit = lLwIPInitEvtPtr->mCallbackInit;
   }
   // Configure the hardware MAC address for the Ethernet Controller
   //
@@ -231,9 +213,10 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   // Initialize the lwIP applications...
   // Initialize the simple HTTP-Deamon (web server).
   httpd_init();
-#if LWIP_HTTPD_SSI
-  http_set_ssi_handler(SSIHandler, sSSITags, Q_DIM(sSSITags));
-#endif //LWIP_HTTPD_SSI
+  if (nullptr != lCallbackInit) {
+    lCallbackInit();
+  }
+
 #if LWIP_HTTPD_CGI
   http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
 #endif //LWIP_HTTPD_CGI
@@ -349,76 +332,6 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
 
   return Q_SUPER(&QP::QHsm::top);
 }
-
-
-#if LWIP_HTTPD_SSI
-// HTTPD customizations.
-// Server-Side Include (SSI) handler.
-static uint16_t SSIHandler(int aIx, char *aInsertPtr, int aInsertLen) {
-
-  struct stats_proto *lStatsPtr = &lwip_stats.link;
-  STAT_COUNTER lVal = 0;
-
-  switch (aIx) {
-  case 0:
-    // s_xmit
-    lVal = lStatsPtr->xmit;
-    break;
-
-  case 1:
-    // s_recv
-    lVal = lStatsPtr->recv;
-    break;
-
-  case 2:
-    // s_fw
-    lVal = lStatsPtr->fw;
-    break;
-
-  case 3:
-    // s_drop
-    lVal = lStatsPtr->drop;
-    break;
-
-  case 4:
-    // s_chkerr
-    lVal = lStatsPtr->chkerr;
-    break;
-
-  case 5:
-    // s_lenerr
-    lVal = lStatsPtr->lenerr;
-    break;
-
-  case 6:
-    // s_memerr
-    lVal = lStatsPtr->memerr;
-    break;
-
-  case 7:
-    // s_rterr
-    lVal = lStatsPtr->rterr;
-    break;
-
-  case 8:
-    // s_proerr
-    lVal = lStatsPtr->proterr;
-    break;
-
-  case 9:
-    // s_opterr
-    lVal = lStatsPtr->opterr;
-    break;
-
-  case 10:
-    // s_err
-    lVal = lStatsPtr->err;
-    break;
-  }
-
-  return snprintf(aInsertPtr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", lVal);
-}
-#endif //LWIP_HTTPD_SSI
 
 
 #if LWIP_HTTPD_CGI

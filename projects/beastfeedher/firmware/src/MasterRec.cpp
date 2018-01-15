@@ -29,6 +29,9 @@
 // Common Library.
 #include "DBRec.h"
 
+// LwIP stack.
+#include "lwip/apps/httpd.h"
+
 // This project.
 #include "BFH_Mgr_AO.h"
 #include "BFH_Mgr_Evt.h"
@@ -46,6 +49,35 @@
 //                      DEFINED CONSTANTS AND MACROS
 // *****************************************************************************
 
+enum {
+  SSI_TAG_IX_ZERO = 0,
+  SSI_TAG_IX_EMPTY,
+
+  // Info.
+  SSI_TAG_IX_INFO_FW_VERSION,
+  SSI_TAG_IX_INFO_BUILD_DATE,
+  SSI_TAG_IX_INFO_BUILD_TIME,
+  SSI_TAG_IX_INFO_GIT_HASH,
+  SSI_TAG_IX_INFO_DB_STATUS,
+
+  // Network statistics.
+  SSI_TAG_IX_STATS_TX,
+  SSI_TAG_IX_STATS_RX,
+  SSI_TAG_IX_STATS_FW,
+  SSI_TAG_IX_STATS_DROP,
+  SSI_TAG_IX_STATS_CHK_ERR,
+  SSI_TAG_IX_STATS_LEN_ERR,
+  SSI_TAG_IX_STATS_MEM_ERR,
+  SSI_TAG_IX_STATS_RT_ERR,
+  SSI_TAG_IX_STATS_PRO_ERR,
+  SSI_TAG_IX_STATS_OPT_ERR,
+  SSI_TAG_IX_STATS_ERR,
+
+  // Network interface.
+  SSI_TAG_IX_LAST = SSI_TAG_IX_STATS_ERR,
+  SSI_TAG_IX_STATS_QTY
+};
+
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // *****************************************************************************
@@ -57,6 +89,35 @@
 // *****************************************************************************
 //                             GLOBAL VARIABLES
 // *****************************************************************************
+
+#if LWIP_HTTPD_SSI
+// Server-Side Include (SSI) demo.
+char const *MasterRec::sSSITags[] = {
+  // Common/misc. tags.
+  "_zero",    // 0
+  "_empty",   // 1
+
+  // Info.
+  "i_ver",
+  "i_date",
+  "i_time",
+  "i_hash",
+  "i_db_status",
+
+  // Network statistics.
+  "s_xmit",
+  "s_recv",
+  "s_fw",
+  "s_drop",
+  "s_chkerr",
+  "s_lenerr",
+  "s_memerr",
+  "s_rterr",
+  "s_proerr",
+  "s_opterr",
+  "s_err",
+};
+#endif //LWIP_HTTPD_SSI
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -125,7 +186,7 @@ bool MasterRec::Init(void) {
                     nullptr,
                     0U);
 
-  static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY, lNetIFRecPtr };
+  static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY, lNetIFRecPtr, MasterRec::NetCallbackInit };
   static QP::QEvt const *sLwIPEvtQPtr[10];
   LwIPMgr_AO *lLwIPMgr_AOPtr = new LwIPMgr_AO();
   lLwIPMgr_AOPtr->start(3U,
@@ -255,6 +316,79 @@ void MasterRec::Deserialize(uint8_t const *aDataPtr) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+void MasterRec::NetCallbackInit(void) {
+  http_set_ssi_handler(MasterRec::SSIHandler, MasterRec::sSSITags, Q_DIM(MasterRec::sSSITags));
+}
+
+
+#if LWIP_HTTPD_SSI
+// HTTPD customizations.
+// Server-Side Include (SSI) handler.
+uint16_t MasterRec::SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) {
+
+  switch (aTagIx) {
+  case SSI_TAG_IX_ZERO:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%d", 0);
+  default:
+  case SSI_TAG_IX_EMPTY:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", "");
+
+  // Info.
+  case SSI_TAG_IX_INFO_FW_VERSION:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::VerStr);
+  case SSI_TAG_IX_INFO_BUILD_DATE:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::BuildDate);
+  case SSI_TAG_IX_INFO_BUILD_TIME:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::BuildTime);
+  case SSI_TAG_IX_INFO_GIT_HASH:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::GitHash);
+  case SSI_TAG_IX_INFO_DB_STATUS:
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", "Passed");
+
+  case SSI_TAG_IX_STATS_TX:
+  case SSI_TAG_IX_STATS_RX:
+  case SSI_TAG_IX_STATS_FW:
+  case SSI_TAG_IX_STATS_DROP:
+  case SSI_TAG_IX_STATS_CHK_ERR:
+  case SSI_TAG_IX_STATS_LEN_ERR:
+  case SSI_TAG_IX_STATS_MEM_ERR:
+  case SSI_TAG_IX_STATS_RT_ERR:
+  case SSI_TAG_IX_STATS_PRO_ERR:
+  case SSI_TAG_IX_STATS_OPT_ERR:
+  case SSI_TAG_IX_STATS_ERR:
+    // Sub-handler for network stats.
+    return 0; //SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
+  }
+
+  return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", 0);
+}
+
+#if 0
+int MasterRec::SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) {
+  struct stats_proto *lStatsPtr = &lwip_stats.link;
+  STAT_COUNTER lVal = 0;
+
+  switch (aTagIx) {
+  case SSI_TAG_IX_STATS_TX:      return stats->xmit;
+  case SSI_TAG_IX_STATS_RX:      return stats->recv;
+  case SSI_TAG_IX_STATS_FW:      return stats->fw;
+  case SSI_TAG_IX_STATS_DROP:    return stats->drop;
+  case SSI_TAG_IX_STATS_CHK_ERR: return stats->chkerr;
+  case SSI_TAG_IX_STATS_LEN_ERR: return stats->lenerr;
+  case SSI_TAG_IX_STATS_MEM_ERR: return stats->memerr;
+  case SSI_TAG_IX_STATS_RT_ERR:  return stats->rterr;
+  case SSI_TAG_IX_STATS_PRO_ERR: return stats->proterr;
+  case SSI_TAG_IX_STATS_OPT_ERR: return stats->opterr;
+  case SSI_TAG_IX_STATS_ERR:     return stats->err;
+  default: return 0;
+  }
+
+  return 0; //snprintf(aInsertStr, MAX_TAG_INSERT_LEN, "%d", lVal);
+}
+#endif
+
+#endif //LWIP_HTTPD_SSI
 
 // *****************************************************************************
 //                                END OF FILE

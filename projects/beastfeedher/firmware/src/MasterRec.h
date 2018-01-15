@@ -82,12 +82,23 @@ class MasterRec : public DBRec {
     uint8_t  mRsvd[12];
   };
 
+  static void NetCallbackInit(void);
+
+#if LWIP_HTTPD_SSI
+  static uint16_t SSIHandler(int aTagIx, char *aInsertPtr, int aInsertStrLen);
+  //static int SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen);
+#endif // LWIP_HTTPD_SSI
+
+
   // The actual record storage.
   struct RecStructTag mMasterRec;
 
   unsigned int mRecQty;
   unsigned int mRecIx;
   DBRec **mDBRec;
+
+
+  static char const *sSSITags[];
 };
 
 // ******************************************************************************
