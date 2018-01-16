@@ -86,7 +86,7 @@ class MasterRec : public DBRec {
 
 #if LWIP_HTTPD_SSI
   static uint16_t SSIHandler(int aTagIx, char *aInsertPtr, int aInsertStrLen);
-  //static int SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen);
+  static int SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen);
 #endif // LWIP_HTTPD_SSI
 
 

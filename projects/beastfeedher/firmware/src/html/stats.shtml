@@ -40,11 +40,11 @@
 
       <table>
 	<tr>
-	  <td>
+	  <td style="text-align:left;width:200px">
 	    Packets sent:
 	  </td>
-	  <td style="text-align:right;width:100px">
-	    <!--#s_dummy-->
+	  <td style="width:200px">
+	    <!--#s_xmit-->
 	  </td>
 	</tr>
 	<tr>
@@ -52,7 +52,7 @@
 	    Packets received:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_recv-->
 	  </td>
 	</tr>
 	<tr>
@@ -60,7 +60,7 @@
 	    Packets forwared:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_fw-->
 	  </td>
 	</tr>
 	<tr>
@@ -68,7 +68,7 @@
 	    Packets dropped:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_drop-->
 	  </td>
 	</tr>
 	<tr>
@@ -76,7 +76,7 @@
 	    Checksum errors:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_chkerr-->
 	  </td>
 	</tr>
 	<tr>
@@ -84,7 +84,7 @@
 	    Packets with invalid length:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_lenerr-->
 	  </td>
 	</tr>
 	<tr>
@@ -92,7 +92,7 @@
 	    Memory errors:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_memerr-->
 	  </td>
 	</tr>
 	<tr>
@@ -100,7 +100,7 @@
 	    Routing errors:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_rterr-->
 	  </td>
 	</tr>
 	<tr>
@@ -108,7 +108,7 @@
 	    Protocol errors:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_proerr-->
 	  </td>
 	</tr>
 	<tr>
@@ -116,7 +116,7 @@
 	    Option errors:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_opterr-->
 	  </td>
 	</tr>
 	<tr>
@@ -124,7 +124,7 @@
 	    Miscellaneous errors:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#s_err-->
 	  </td>
 	</tr>
       </table>

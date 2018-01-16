@@ -46,7 +46,7 @@
       <table>
 	<tr>
 	  <td style="text-align:left;width:200px">
-	    Firmware version:
+	    Firmware Version:
 	  </td>
 	  <td>
 	    <!--#i_ver-->
@@ -54,7 +54,7 @@
 	</tr>
 	<tr>
 	  <td>
-	    Build date:
+	    Build Date:
 	  </td>
 	  <td>
 	    <!--#i_date-->
@@ -70,7 +70,7 @@
 	</tr>
 	<tr>
 	  <td>
-	    Git hash:
+	    Git Hash:
 	  </td>
 	  <td>
 	    <!--#i_hash-->
@@ -78,10 +78,10 @@
 	</tr>
 	<tr>
 	  <td>
-	    Database status:
+	    Database Status:
 	  </td>
 	  <td>
-	    <!--#i_db_status-->
+	    <!--#i_status-->
 	  </td>
 	</tr>
       </table>

@@ -31,6 +31,7 @@
 
 // LwIP stack.
 #include "lwip/apps/httpd.h"
+#include "lwip/stats.h"
 
 // This project.
 #include "BFH_Mgr_AO.h"
@@ -102,7 +103,7 @@ char const *MasterRec::sSSITags[] = {
   "i_date",
   "i_time",
   "i_hash",
-  "i_db_status",
+  "i_status",
 
   // Network statistics.
   "s_xmit",
@@ -356,37 +357,37 @@ uint16_t MasterRec::SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) 
   case SSI_TAG_IX_STATS_RT_ERR:
   case SSI_TAG_IX_STATS_PRO_ERR:
   case SSI_TAG_IX_STATS_OPT_ERR:
-  case SSI_TAG_IX_STATS_ERR:
+  case SSI_TAG_IX_STATS_ERR: {
     // Sub-handler for network stats.
-    return 0; //SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
+    STAT_COUNTER lVal = SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", lVal);
+  }
   }
 
   return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", 0);
 }
 
-#if 0
+
 int MasterRec::SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) {
   struct stats_proto *lStatsPtr = &lwip_stats.link;
-  STAT_COUNTER lVal = 0;
 
   switch (aTagIx) {
-  case SSI_TAG_IX_STATS_TX:      return stats->xmit;
-  case SSI_TAG_IX_STATS_RX:      return stats->recv;
-  case SSI_TAG_IX_STATS_FW:      return stats->fw;
-  case SSI_TAG_IX_STATS_DROP:    return stats->drop;
-  case SSI_TAG_IX_STATS_CHK_ERR: return stats->chkerr;
-  case SSI_TAG_IX_STATS_LEN_ERR: return stats->lenerr;
-  case SSI_TAG_IX_STATS_MEM_ERR: return stats->memerr;
-  case SSI_TAG_IX_STATS_RT_ERR:  return stats->rterr;
-  case SSI_TAG_IX_STATS_PRO_ERR: return stats->proterr;
-  case SSI_TAG_IX_STATS_OPT_ERR: return stats->opterr;
-  case SSI_TAG_IX_STATS_ERR:     return stats->err;
-  default: return 0;
+  case SSI_TAG_IX_STATS_TX:      return lStatsPtr->xmit;
+  case SSI_TAG_IX_STATS_RX:      return lStatsPtr->recv;
+  case SSI_TAG_IX_STATS_FW:      return lStatsPtr->fw;
+  case SSI_TAG_IX_STATS_DROP:    return lStatsPtr->drop;
+  case SSI_TAG_IX_STATS_CHK_ERR: return lStatsPtr->chkerr;
+  case SSI_TAG_IX_STATS_LEN_ERR: return lStatsPtr->lenerr;
+  case SSI_TAG_IX_STATS_MEM_ERR: return lStatsPtr->memerr;
+  case SSI_TAG_IX_STATS_RT_ERR:  return lStatsPtr->rterr;
+  case SSI_TAG_IX_STATS_PRO_ERR: return lStatsPtr->proterr;
+  case SSI_TAG_IX_STATS_OPT_ERR: return lStatsPtr->opterr;
+  case SSI_TAG_IX_STATS_ERR:     return lStatsPtr->err;
+  default:                       return 0;
   }
 
-  return 0; //snprintf(aInsertStr, MAX_TAG_INSERT_LEN, "%d", lVal);
+  return 0;
 }
-#endif
 
 #endif //LWIP_HTTPD_SSI
 
