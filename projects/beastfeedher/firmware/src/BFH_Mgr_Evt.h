@@ -46,6 +46,19 @@ class BFHManualFeedCmdEvt : public QP::QEvt {
   bool mIsOn;
 };
 
+
+class BFHTimedFeedCmdEvt : public QP::QEvt {
+ public:
+  BFHTimedFeedCmdEvt(QP::QSignal aSig, unsigned int aTime) {
+    sig     = aSig;
+    poolId_ = 0U;
+    mTime   = aTime;
+  }
+
+ public:
+  unsigned int mTime;
+};
+
 // ******************************************************************************
 //                            EXPORTED VARIABLES
 // ******************************************************************************

@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -119,6 +119,13 @@ char const *MasterRec::sSSITags[] = {
   "s_err",
 };
 #endif //LWIP_HTTPD_SSI
+
+
+#if LWIP_HTTPD_CGI
+tCGI const MasterRec::sCGIEntries[] = {
+  {"/index.cgi",  DispIndex}
+};
+#endif // LWIP_HTTPD_CGI
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -319,7 +326,17 @@ void MasterRec::Deserialize(uint8_t const *aDataPtr) {
 // *****************************************************************************
 
 void MasterRec::NetCallbackInit(void) {
-  http_set_ssi_handler(MasterRec::SSIHandler, MasterRec::sSSITags, Q_DIM(MasterRec::sSSITags));
+
+#if LWIP_HTTPD_SSI
+  http_set_ssi_handler(MasterRec::SSIHandler,
+                       MasterRec::sSSITags,
+                       Q_DIM(MasterRec::sSSITags));
+#endif // #if LWIP_HTTPD_SSI
+
+#if LWIP_HTTPD_CGI
+  http_set_cgi_handlers(MasterRec::sCGIEntries,
+                        Q_DIM(MasterRec::sCGIEntries));
+#endif //LWIP_HTTPD_CGI
 }
 
 
@@ -390,6 +407,41 @@ int MasterRec::SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) 
 }
 
 #endif //LWIP_HTTPD_SSI
+
+
+#if LWIP_HTTPD_CGI
+// HTTPD customizations.
+// CGI handlers.
+char const *MasterRec::DispIndex(int   aIx,
+                                 int   aParamsQty,
+                                 char *aParamsPtr[],
+                                 char *aValsPtr[]) {
+
+  for (int lIx = 0; lIx < aParamsQty; ++lIx) {
+    if (strstr(aParamsPtr[lIx], "timed_feed") != nullptr) {
+      // Param found.
+      // Send event with value as parameter.
+      BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt, SIG_FEED_MGR_TIMED_FEED_CMD);
+      if (0 == strcmp(aValsPtr[aIx], "2s")) {
+        lEvtPtr->mTime = 2;
+      } else if (0 == strcmp(aValsPtr[aIx], "5s")) {
+        lEvtPtr->mTime = 5;
+      } else if (0 == strcmp(aValsPtr[aIx], "10s")) {
+        lEvtPtr->mTime = 10;
+      }
+
+      // Could use QF_Publish() to decouple from active object.
+      // Here, there's only this well-known recipient.
+      BFH_Mgr_AO::AOInstance().POST(lEvtPtr, 0);
+
+      // Return where we're coming from.
+      return "/index.shtml";
+    }
+  }
+
+  return nullptr;
+}
+#endif // LWIP_HTTPD_CGI
 
 // *****************************************************************************
 //                                END OF FILE

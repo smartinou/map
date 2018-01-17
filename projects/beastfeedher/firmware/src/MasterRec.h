@@ -89,6 +89,13 @@ class MasterRec : public DBRec {
   static int SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen);
 #endif // LWIP_HTTPD_SSI
 
+#if LWIP_HTTPD_CGI
+static char const *DispIndex(int   aIx,
+                             int   aParamsQty,
+                             char *aParamsVec[],
+                             char *aValsVec[]);
+#endif // LWIP_HTTPD_CGI
+
 
   // The actual record storage.
   struct RecStructTag mMasterRec;
@@ -98,7 +105,13 @@ class MasterRec : public DBRec {
   DBRec **mDBRec;
 
 
+#if LWIP_HTTPD_SSI
   static char const *sSSITags[];
+#endif // LWIP_HTTPD_SSI
+
+#if LWIP_HTTPD_CGI
+  static tCGI const sCGIEntries[];
+#endif // LWIP_HTTPD_CGI
 };
 
 // ******************************************************************************

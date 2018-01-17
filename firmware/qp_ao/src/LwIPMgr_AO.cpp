@@ -86,26 +86,12 @@ Q_DEFINE_THIS_FILE
 //                            FUNCTION PROTOTYPES
 // *****************************************************************************
 
-#if LWIP_HTTPD_CGI
-// Common Gateway Iinterface (CG) demo.
-static char const *CGIDisplay(int   aIx,
-                              int   aParamQty,
-                              char *aParamPtr[],
-                              char *aValPtr[]);
-#endif //LWIP_HTTPD_CGI
-
 // *****************************************************************************
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
 // Application signals cannot overlap the device-driver signals.
 //Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
-
-#if LWIP_HTTPD_CGI
-static tCGI const CGIHandlers[] = {
-  { "/display.cgi", &CGIDisplay },
-};
-#endif //LWIP_HTTPD_CGI
 
 // The single instance of LwIPMgr_AO.
 LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = static_cast<LwIPMgr_AO *>(0);
@@ -216,10 +202,6 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   if (nullptr != lCallbackInit) {
     lCallbackInit();
   }
-
-#if LWIP_HTTPD_CGI
-  http_set_cgi_handlers(CGIHandlers, Q_DIM(CGIHandlers));
-#endif //LWIP_HTTPD_CGI
 
 #if 0
   QS_OBJ_DICTIONARY(&l_lwIPMgr);
@@ -332,33 +314,6 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
 
   return Q_SUPER(&QP::QHsm::top);
 }
-
-
-#if LWIP_HTTPD_CGI
-// Common Gateway Iinterface (CG) handler.
-static char const *CGIDisplay(int   aIx,
-                              int   aParamQty,
-                              char *aParamPtr[],
-                              char *aValPtr[]) {
-
-  for (int lIx = 0; lIx < aParamQty; ++lIx) {
-    if (strstr(aParamPtr[lIx], "text") != static_cast<char *>(0)) {
-      // Param text found?
-#if 0
-      TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_CGI_SIG);
-      strncpy(lTextEvtPtr->text,
-              aValptr[lIx],
-              Q_DIM(lTextEvtPtr->text));
-      QF_publish(static_cast<QP::QEvt *>(lTextEvtPtr));
-#endif
-      return "/thank_you.htm";
-    }
-  }
-
-  // No URI, HTTPD will send 404 error page to the browser.
-  return static_cast<char const *>(0);
-}
-#endif //LWIP_HTTPD_CGI
 
 // *****************************************************************************
 //                                END OF FILE

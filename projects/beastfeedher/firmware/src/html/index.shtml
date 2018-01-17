@@ -89,7 +89,7 @@
       <hr>
 
 
-      <form>
+      <form method="get" action="index.cgi">
       <h1> Feed the Beast </h1>
         <table>
 	  <tbody>
@@ -98,13 +98,13 @@
 	        Timed Feed:
 	      </td>
 	      <td>
-	        <input type="button" name="button_timed_feed" value="2s Feed"><br>
+	        <input type="submit" name="timed_feed" value="2s"><br>
 	      </td>
 	      <td>
-	        <input type="button" name="button_timed_feed" value="5s Feed"><br>
+	        <input type="submit" name="timed_feed" value="5s"><br>
 	      </td>
 	      <td>
-	        <input type="button" name="button_timed_feed" value="10s Feed"><br>
+	        <input type="submit" name="timed_feed" value="10s"><br>
 	      </td>
 	    </tr>
 	  </tbody>
