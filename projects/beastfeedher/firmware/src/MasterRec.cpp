@@ -38,6 +38,7 @@
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "CalendarRec.h"
+#include "FeedCfgRec.h"
 #include "FWVersionGenerated.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
@@ -164,6 +165,9 @@ bool MasterRec::Init(void) {
   NetIFRec *lNetIFRecPtr = new NetIFRec();
   AddRec(lNetIFRecPtr);
 
+  FeedCfgRec *lFeedCfgRecPtr = new FeedCfgRec();
+  AddRec(lFeedCfgRecPtr);
+
   unsigned long lIRQGPIOPort = IRQGPIOPortGet();
   unsigned long lIntNbr = BSPGPIOPortToInt(lIRQGPIOPort);
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
@@ -186,13 +190,15 @@ bool MasterRec::Init(void) {
 
   // DB records are now deserialized, and fixed if required.
   // Create all other AOs.
+  static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY, lFeedCfgRecPtr };
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
   BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
   lBFH_Mgr_AO.start(2U,
                     sBeastMgrEvtQPtr,
                     Q_DIM(sBeastMgrEvtQPtr),
                     nullptr,
-                    0U);
+                    0U,
+		    &sBFHInitEvt);
 
   static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY, lNetIFRecPtr, MasterRec::NetCallbackInit };
   static QP::QEvt const *sLwIPEvtQPtr[10];

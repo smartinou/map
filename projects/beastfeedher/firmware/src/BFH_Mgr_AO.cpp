@@ -22,7 +22,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,7 +42,8 @@
 
 // Common Library.
 #include "Date.h"
-//#include "DBRec.h"
+#include "DBRec.h"
+#include "FeedCfgRec.h"
 #include "Time.h"
 
 // This project.
@@ -100,7 +101,11 @@ QP::QActive &BFH_Mgr_AO::AOInstance(void) {
 
 BFH_Mgr_AO::BFH_Mgr_AO() :
   QActive(Q_STATE_CAST(&BFH_Mgr_AO::Initial)),
-  mFeedTimerEvt(this, SIG_FEED_MGR_TIMEOUT, 0U) {
+  mFeedEvtQueue(),
+  mFeedEvtQueueSto{nullptr},
+  mFeedTimerEvt(this, SIG_FEED_MGR_TIMEOUT, 0U),
+  mFeedCfgRecPtr(nullptr),
+  mFeedTime(0) {
 
   // Ctor body intentionally left empty.
 }
@@ -108,6 +113,8 @@ BFH_Mgr_AO::BFH_Mgr_AO() :
 
 QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
                                QP::QEvt const * const e) { //aEvtPtr
+
+  me->mFeedCfgRecPtr = reinterpret_cast<FeedCfgRec const *>(e);
 
   // Initialize the QF queue for deferred feed requests.
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
@@ -137,6 +144,7 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
     }
     // Off: intentional fallthrough.
   }
+
   case Q_INIT_SIG:
     // Go into default nested state.
   case SIG_FEED_MGR_TIMEOUT:
@@ -145,8 +153,15 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
   case SIG_RTCC_CALENDAR_EVENT_ALARM:
     //RTCCEvt const *lEvtPtr = static_cast<RTCCEvt const *>(e);
     //Log(Time, Date);
-  case SIG_FEED_MGR_TIMED_FEED_CMD:
+    me->mFeedTime = me->mFeedCfgRecPtr->GetTimedFeedPeriod();
     return Q_TRAN(&BFH_Mgr_AO::TimedFeed);
+
+  case SIG_FEED_MGR_TIMED_FEED_CMD: {
+    // FIXME: perform boundary check on value.
+    BFHTimedFeedCmdEvt const *lEvtPtr = reinterpret_cast<BFHTimedFeedCmdEvt const *>(e);
+    me->mFeedTime = lEvtPtr->mTime;
+    return Q_TRAN(&BFH_Mgr_AO::TimedFeed);
+  }
 
   case Q_EXIT_SIG:
     return Q_HANDLED();
@@ -180,7 +195,7 @@ QP::QState BFH_Mgr_AO::TimedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(30);
+    me->mFeedTimerEvt.armX(me->mFeedTime * BSP_TICKS_PER_SEC);
     me->StartFeeding();
     return Q_HANDLED();
 

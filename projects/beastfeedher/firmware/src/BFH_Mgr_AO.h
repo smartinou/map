@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -34,6 +34,10 @@
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
+
+// Forward declaration.
+class FeedCfgRec;
+
 
 //! \brief Brief description.
 //! Details follow...
@@ -70,6 +74,9 @@ private:
   QP::QEQueue     mFeedEvtQueue;
   QP::QEvt const *mFeedEvtQueueSto[4];
   QP::QTimeEvt    mFeedTimerEvt;
+
+  FeedCfgRec const *mFeedCfgRecPtr;
+  unsigned int      mFeedTime;
 
   static BFH_Mgr_AO *mInstancePtr;
 };

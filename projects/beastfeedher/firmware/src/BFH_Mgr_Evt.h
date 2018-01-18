@@ -32,8 +32,24 @@
 // ******************************************************************************
 
 // Forward declarations.
+class DBRec;
+class FeedCfgRec;
+
 
 // Class definitions.
+class BFHInitEvt : public QP::QEvt {
+ public:
+  BFHInitEvt(QP::QSignal  aSig,
+             FeedCfgRec  *aFeedCfgRecPtr) {
+    sig            = aSig;
+    mFeedCfgRecPtr = aFeedCfgRecPtr;
+  }
+
+ public:
+  FeedCfgRec *mFeedCfgRecPtr;
+};
+
+
 class BFHManualFeedCmdEvt : public QP::QEvt {
  public:
   BFHManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
