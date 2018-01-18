@@ -143,6 +143,7 @@ CPP_SRCS := \
         Date.cpp \
         DBRec.cpp \
         DS3234.cpp \
+        FeedCfgRec.cpp \
         eth_driver.cpp \
         Limit.cpp \
         LwIPMgr_AO.cpp \
