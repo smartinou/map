@@ -61,6 +61,7 @@ enum {
   SSI_TAG_IX_INFO_BUILD_TIME,
   SSI_TAG_IX_INFO_GIT_HASH,
   SSI_TAG_IX_INFO_DB_STATUS,
+  SSI_TAG_IX_INFO_RTCC_TEMP,
 
   // Network statistics.
   SSI_TAG_IX_STATS_TX,
@@ -105,6 +106,7 @@ char const *MasterRec::sSSITags[] = {
   "i_time",
   "i_hash",
   "i_status",
+  "i_temp",
 
   // Network statistics.
   "s_xmit",
@@ -198,7 +200,7 @@ bool MasterRec::Init(void) {
                     Q_DIM(sBeastMgrEvtQPtr),
                     nullptr,
                     0U,
-		    &sBFHInitEvt);
+                    &sBFHInitEvt);
 
   static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY, lNetIFRecPtr, MasterRec::NetCallbackInit };
   static QP::QEvt const *sLwIPEvtQPtr[10];
@@ -369,6 +371,11 @@ uint16_t MasterRec::SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) 
     return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::GitHash);
   case SSI_TAG_IX_INFO_DB_STATUS:
     return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", "Passed");
+  case SSI_TAG_IX_INFO_RTCC_TEMP:
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%2.2f",
+                    RTCC_AO::GetInstancePtr()->GetTemperature());
 
   case SSI_TAG_IX_STATS_TX:
   case SSI_TAG_IX_STATS_RX:
@@ -427,14 +434,9 @@ char const *MasterRec::DispIndex(int   aIx,
     if (strstr(aParamsPtr[lIx], "timed_feed") != nullptr) {
       // Param found.
       // Send event with value as parameter.
-      BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt, SIG_FEED_MGR_TIMED_FEED_CMD);
-      if (0 == strcmp(aValsPtr[aIx], "2s")) {
-        lEvtPtr->mTime = 2;
-      } else if (0 == strcmp(aValsPtr[aIx], "5s")) {
-        lEvtPtr->mTime = 5;
-      } else if (0 == strcmp(aValsPtr[aIx], "10s")) {
-        lEvtPtr->mTime = 10;
-      }
+      BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt,
+                                          SIG_FEED_MGR_TIMED_FEED_CMD);
+      sscanf(aValsPtr[aIx], "%d", &lEvtPtr->mTime);
 
       // Could use QF_Publish() to decouple from active object.
       // Here, there's only this well-known recipient.
