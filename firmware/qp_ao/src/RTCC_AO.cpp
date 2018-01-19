@@ -104,6 +104,11 @@ void RTCC_AO::ISRCallback(void) {
 }
 
 
+float RTCC_AO::GetTemperature(void) const {
+  return mTemperature;
+}
+
+
 RTCC_AO * const RTCC_AO::GetInstancePtr(void) {
   return mInstancePtr;
 }

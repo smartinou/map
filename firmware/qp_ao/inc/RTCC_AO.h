@@ -51,6 +51,8 @@ class RTCC_AO : public QP::QActive {
 
   void ISRCallback(void);
 
+  float GetTemperature(void) const;
+
  protected:
   static QP::QState Initial(RTCC_AO         * const aMePtr,
                             QP::QEvt  const * const aEvtPtr);
