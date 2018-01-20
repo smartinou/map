@@ -63,6 +63,35 @@ enum {
   SSI_TAG_IX_INFO_DB_STATUS,
   SSI_TAG_IX_INFO_RTCC_TEMP,
 
+  // Global: Time and Date.
+  SSI_TAG_IX_GLOBAL_DATE,
+  SSI_TAG_IX_GLOBAL_TIME,
+
+  // Configuration.
+  SSI_TAG_IX_CFG_PAD_ENABLE,
+  SSI_TAG_IX_CFG_PAD_DISABLE,
+  SSI_TAG_IX_CFG_MANUAL_ENABLE,
+  SSI_TAG_IX_CFG_MANUAL_DISABLE,
+  SSI_TAG_IX_CFG_FEED_TIME,
+
+  // Calendar.
+  SSI_TAG_IX_CFG_CALENDAR_06_00,
+  SSI_TAG_IX_CFG_CALENDAR_07_00,
+  SSI_TAG_IX_CFG_CALENDAR_08_00,
+  SSI_TAG_IX_CFG_CALENDAR_09_00,
+  SSI_TAG_IX_CFG_CALENDAR_10_00,
+  SSI_TAG_IX_CFG_CALENDAR_11_00,
+  SSI_TAG_IX_CFG_CALENDAR_12_00,
+  SSI_TAG_IX_CFG_CALENDAR_13_00,
+  SSI_TAG_IX_CFG_CALENDAR_14_00,
+  SSI_TAG_IX_CFG_CALENDAR_15_00,
+  SSI_TAG_IX_CFG_CALENDAR_16_00,
+  SSI_TAG_IX_CFG_CALENDAR_17_00,
+  SSI_TAG_IX_CFG_CALENDAR_18_00,
+  SSI_TAG_IX_CFG_CALENDAR_19_00,
+  SSI_TAG_IX_CFG_CALENDAR_20_00,
+  SSI_TAG_IX_CFG_CALENDAR_21_00,
+
   // Network statistics.
   SSI_TAG_IX_STATS_TX,
   SSI_TAG_IX_STATS_RX,
@@ -107,6 +136,33 @@ char const *MasterRec::sSSITags[] = {
   "i_hash",
   "i_status",
   "i_temp",
+
+  // Global: Time and Date.
+  "g_date",
+  "g_time",
+
+  // Configuration.
+  "c_pad_en",
+  "c_pad_di",
+  "c_but_en",
+  "c_but_di",
+  "c_time",
+  "c_cal_06",
+  "c_cal_07",
+  "c_cal_08",
+  "c_cal_09",
+  "c_cal_10",
+  "c_cal_11",
+  "c_cal_12",
+  "c_cal_13",
+  "c_cal_14",
+  "c_cal_15",
+  "c_cal_16",
+  "c_cal_17",
+  "c_cal_18",
+  "c_cal_19",
+  "c_cal_20",
+  "c_cal_21",
 
   // Network statistics.
   "s_xmit",
@@ -202,7 +258,9 @@ bool MasterRec::Init(void) {
                     0U,
                     &sBFHInitEvt);
 
-  static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY, lNetIFRecPtr, MasterRec::NetCallbackInit };
+  static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY,
+                                            lNetIFRecPtr,
+                                            MasterRec::NetCallbackInit };
   static QP::QEvt const *sLwIPEvtQPtr[10];
   LwIPMgr_AO *lLwIPMgr_AOPtr = new LwIPMgr_AO();
   lLwIPMgr_AOPtr->start(3U,
@@ -351,7 +409,9 @@ void MasterRec::NetCallbackInit(void) {
 #if LWIP_HTTPD_SSI
 // HTTPD customizations.
 // Server-Side Include (SSI) handler.
-uint16_t MasterRec::SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) {
+uint16_t MasterRec::SSIHandler(int   aTagIx,
+                               char *aInsertStr,
+                               int   aInsertStrLen) {
 
   switch (aTagIx) {
   case SSI_TAG_IX_ZERO:
@@ -362,20 +422,145 @@ uint16_t MasterRec::SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) 
 
   // Info.
   case SSI_TAG_IX_INFO_FW_VERSION:
-    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::VerStr);
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s",
+                    FWVersionGenerated::VerStr);
   case SSI_TAG_IX_INFO_BUILD_DATE:
-    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::BuildDate);
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s",
+                    FWVersionGenerated::BuildDate);
   case SSI_TAG_IX_INFO_BUILD_TIME:
-    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::BuildTime);
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s",
+                    FWVersionGenerated::BuildTime);
   case SSI_TAG_IX_INFO_GIT_HASH:
-    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", FWVersionGenerated::GitHash);
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s",
+                    FWVersionGenerated::GitHash);
   case SSI_TAG_IX_INFO_DB_STATUS:
-    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", "Passed");
+    if (1) {
+      return snprintf(aInsertStr,
+                      LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                      "%s",
+                      "Passed");
+    } else {
+      return snprintf(aInsertStr,
+                      LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                      "%s",
+                      "Failed");
+    }
   case SSI_TAG_IX_INFO_RTCC_TEMP:
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
                     "%2.2f",
                     RTCC_AO::GetInstancePtr()->GetTemperature());
+
+  // Global.
+  case SSI_TAG_IX_GLOBAL_DATE: {
+    static char const * const lDateInputStr =
+      "<input type=\"date\" name=\"date\" min=\"2018-01-01\" "
+      "value=\"2018-01-20\">";
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s",
+                    lDateInputStr);
+  }
+
+  case SSI_TAG_IX_GLOBAL_TIME: {
+    static char const * const lTimeInputStr =
+      "<input type=\"time\" name=\"time\" value=\"11:11\">";
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s",
+                    lTimeInputStr);
+  }
+
+  // Configuration.
+  case SSI_TAG_IX_CFG_PAD_ENABLE: {
+    static char const * const sFeedingPadEnabledStr =
+      "<input type=\"radio\" name=\"feeding_pad\" value=\"enabled\"";
+    return SSIRadioButtonHandler(aTagIx,
+                                 aInsertStr,
+                                 aInsertStrLen,
+                                 sFeedingPadEnabledStr,
+                                 true);
+  }
+  case SSI_TAG_IX_CFG_PAD_DISABLE: {
+    static char const * const sFeedingPadDisabledStr =
+      "<input type=\"radio\" name=\"feeding_pad\" value=\"disabled\"";
+    return SSIRadioButtonHandler(aTagIx,
+                                 aInsertStr,
+                                 aInsertStrLen,
+                                 sFeedingPadDisabledStr,
+                                 false);
+  }
+  case SSI_TAG_IX_CFG_MANUAL_ENABLE: {
+    static char const * const sFeedingButtonEnabledStr =
+      "<input type=\"radio\" name=\"feeding_button\" value=\"y\"";
+    return SSIRadioButtonHandler(aTagIx,
+                                 aInsertStr,
+                                 aInsertStrLen,
+                                 sFeedingButtonEnabledStr,
+                                 true);
+  }
+  case SSI_TAG_IX_CFG_MANUAL_DISABLE: {
+    static char const * const sFeedingButtonDisabledStr =
+      "<input type=\"radio\" name=\"feeding_button\" value=\"n\"";
+    return SSIRadioButtonHandler(aTagIx,
+                                 aInsertStr,
+                                 aInsertStrLen,
+                                 sFeedingButtonDisabledStr,
+                                 false);
+  }
+  case SSI_TAG_IX_CFG_FEED_TIME: {
+    static char const * const sFeedingTimeStr =
+      "<input type=\"number\" name=\"feeding_time_sec\" "
+      "min=\"1\" max=\"10\" value=\"";
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s%d%s",
+                    sFeedingTimeStr,
+                    5,
+                    "\">");
+  }
+
+  // Calendar.
+  case SSI_TAG_IX_CFG_CALENDAR_06_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 6);
+  case SSI_TAG_IX_CFG_CALENDAR_07_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 7);
+  case SSI_TAG_IX_CFG_CALENDAR_08_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 8);
+  case SSI_TAG_IX_CFG_CALENDAR_09_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 9);
+  case SSI_TAG_IX_CFG_CALENDAR_10_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 10);
+  case SSI_TAG_IX_CFG_CALENDAR_11_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 11);
+  case SSI_TAG_IX_CFG_CALENDAR_12_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 12);
+  case SSI_TAG_IX_CFG_CALENDAR_13_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 13);
+  case SSI_TAG_IX_CFG_CALENDAR_14_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 14);
+  case SSI_TAG_IX_CFG_CALENDAR_15_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 15);
+  case SSI_TAG_IX_CFG_CALENDAR_16_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 16);
+  case SSI_TAG_IX_CFG_CALENDAR_17_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 17);
+  case SSI_TAG_IX_CFG_CALENDAR_18_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 18);
+  case SSI_TAG_IX_CFG_CALENDAR_19_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 19);
+  case SSI_TAG_IX_CFG_CALENDAR_20_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 20);
+  case SSI_TAG_IX_CFG_CALENDAR_21_00:
+    return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 21);
 
   case SSI_TAG_IX_STATS_TX:
   case SSI_TAG_IX_STATS_RX:
@@ -392,13 +577,57 @@ uint16_t MasterRec::SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) 
     STAT_COUNTER lVal = SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
     return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", lVal);
   }
+
   }
 
   return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", 0);
 }
 
 
-int MasterRec::SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) {
+int MasterRec::SSIRadioButtonHandler(int                aTagIx,
+                                     char              *aInsertStr,
+                                     int                aInsertStrLen,
+                                     char const * const aHTMLStr,
+                                     bool               aIsChecked) {
+
+  if (aIsChecked) {
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s%s",
+                    aHTMLStr,
+                    " checked>");
+  } else {
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s%s",
+                    aHTMLStr,
+                    ">");
+  }
+}
+
+
+int MasterRec::SSICalendarHandler(int          aTagIx,
+                                  char        *aInsertStr,
+                                  int          aInsertStrLen,
+                                  unsigned int aHour) {
+
+  static char const *sFeedingCalStr = "<input type=\"checkbox\" name=\"feed_time\" value=\"";
+
+  return snprintf(aInsertStr,
+                  LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                  "%s%02d%s%02d%s",
+                  sFeedingCalStr,
+                  aHour,
+                  "_00\">",
+                  aHour,
+                  ":00");
+}
+
+
+int MasterRec::SSIStatsHandler(int   aTagIx,
+                               char *aInsertStr,
+                               int   aInsertStrLen) {
+
   struct stats_proto *lStatsPtr = &lwip_stats.link;
 
   switch (aTagIx) {
@@ -427,16 +656,16 @@ int MasterRec::SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen) 
 // CGI handlers.
 char const *MasterRec::DispIndex(int   aIx,
                                  int   aParamsQty,
-                                 char *aParamsPtr[],
-                                 char *aValsPtr[]) {
+                                 char *aParamsVec[],
+                                 char *aValsVec[]) {
 
   for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-    if (strstr(aParamsPtr[lIx], "timed_feed") != nullptr) {
+    if (strstr(aParamsVec[lIx], "timed_feed") != nullptr) {
       // Param found.
       // Send event with value as parameter.
       BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt,
                                           SIG_FEED_MGR_TIMED_FEED_CMD);
-      sscanf(aValsPtr[aIx], "%d", &lEvtPtr->mTime);
+      sscanf(aValsVec[aIx], "%d", &lEvtPtr->mTime);
 
       // Could use QF_Publish() to decouple from active object.
       // Here, there's only this well-known recipient.

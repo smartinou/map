@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -85,8 +85,21 @@ class MasterRec : public DBRec {
   static void NetCallbackInit(void);
 
 #if LWIP_HTTPD_SSI
-  static uint16_t SSIHandler(int aTagIx, char *aInsertPtr, int aInsertStrLen);
-  static int SSIStatsHandler(int aTagIx, char *aInsertStr, int aInsertStrLen);
+  static uint16_t SSIHandler(int   aTagIx,
+                             char *aInsertPtr,
+                             int   aInsertStrLen);
+  static int SSIRadioButtonHandler(int                aTagIx,
+                                   char              *aInsertStr,
+                                   int                aInsertStrLen,
+                                   char const * const aHTMLStr,
+                                   bool               aIsChecked);
+  static int SSICalendarHandler(int          aTagIx,
+                                char        *aInsertStr,
+                                int          aInsertStrLen,
+                                unsigned int aHour);
+  static int SSIStatsHandler(int   aTagIx,
+                             char *aInsertStr,
+                             int   aInsertStrLen);
 #endif // LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
@@ -102,7 +115,7 @@ static char const *DispIndex(int   aIx,
 
   unsigned int mRecQty;
   unsigned int mRecIx;
-  DBRec **mDBRec;
+  DBRec      **mDBRec;
 
 
 #if LWIP_HTTPD_SSI

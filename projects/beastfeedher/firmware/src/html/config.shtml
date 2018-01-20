@@ -40,21 +40,25 @@
     </header>
 
     <div class="content">
-      <form name="IPConfig" method="POST">
+      <form  method="get" action="config.cgi">
         <h1>Time &amp; Date</h1>
         <table>
 	  <tbody>
 	    <tr>
 	      <td>
-		Date:<input type="date" name="date">
+		Date:<!--#g_date-->
 	      </td>
 	      <td>
-		Time:<input type="time" name="time">
+		Time:<!--#g_time-->
+	      </td>
+	      <td>
+                <input type="submit" name="GetCfg" value="Apply">
 	      </td>
 	    </tr>
 	  </tbody>
         </table>
 
+	<br>
         <hr>
 
         <h1> General Feeding Settings </h1>
@@ -65,33 +69,29 @@
 	        Enable feeding pad
 	      </td>
 	      <td>
-		  <input type="radio" name="feeding_pad" <!--#s_dummy-->>Yes
-		  <input type="radio" name="feeding_pad" <!--#s_dummy-->>No
+		<!--#c_pad_en-->Yes
+		<!--#c_pad_di-->No
 	        </td>
-	      </tr>
-	      <tr>
-	        <td>
-		  Enable manual feeding
-	        </td>
-	        <td>
-		  <input type="radio" name="feeding_button" <!--#s_dummy-->>Yes
-		  <input type="radio" name="feeding_button" <!--#s_dummy-->>No
-	        </td>
-	      </tr>
-	      <tr>
-	        <td>
-		  Feeding time
-	        </td>
-	        <td>
-		  <input type="text" name="feeding_time_sec" maxlength="2" size="1">.
-		  <input type="text" name="feeding_time_tens" maxlength="1" size="1">sec
-	        </td>
-	      </tr>
-	    </tbody>
-	  </table>
-
-        <input type="submit" name="SetCfg" value="Apply">
-        <hr>
+	    </tr>
+	    <tr>
+	      <td>
+		Enable manual feeding
+	      </td>
+	      <td>
+		<!--#c_but_en-->Yes
+		<!--#c_but_di-->No
+	      </td>
+	    </tr>
+	    <tr>
+	      <td>
+		Feeding time
+	      </td>
+	      <td>
+		<!--#c_time-->sec
+	      </td>
+	    </tr>
+	  </tbody>
+	</table>
 
         <h1> Feeding Calendar </h1>
         <table class='table'>
@@ -112,62 +112,63 @@
 	  <tbody>
 	    <tr>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="06_00">06:00
+	        <!--#c_cal_06-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="10_00">10:00
+	        <!--#c_cal_10-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="14_00">14:00
+	        <!--#c_cal_14-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="18_00">18:00
-	      </td>
-	    </tr>
-	    <tr>
-	      <td>
-	        <input type="checkbox" name="feed_time" value="07_00">07:00
-	      </td>
-	      <td>
-	        <input type="checkbox" name="feed_time" value="11_00">11:00
-	      </td>
-	      <td>
-	        <input type="checkbox" name="feed_time" value="15_00">15:00
-	      </td>
-	      <td>
-	        <input type="checkbox" name="feed_time" value="19_00">19:00
+	        <!--#c_cal_18-->
 	      </td>
 	    </tr>
 	    <tr>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="08_00">08:00
+	        <!--#c_cal_07-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="12_00">12:00
+	        <!--#c_cal_11-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="16_00">16:00
+	        <!--#c_cal_15-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="20_00">20:00
+	        <!--#c_cal_19-->
 	      </td>
 	    </tr>
 	    <tr>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="09_00">09:00
+	        <!--#c_cal_08-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="13_00">13:00
+	        <!--#c_cal_12-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="17_00">17:00
+	        <!--#c_cal_16-->
 	      </td>
 	      <td>
-	        <input type="checkbox" name="feed_time" value="21_00">21:00
+	        <!--#c_cal_20-->
+	      </td>
+	    </tr>
+	    <tr>
+	      <td>
+	        <!--#c_cal_09-->
+	      </td>
+	      <td>
+	        <!--#c_cal_13-->
+	      </td>
+	      <td>
+	        <!--#c_cal_17-->
+	      </td>
+	      <td>
+	        <!--#c_cal_21-->
 	      </td>
 	    </tr>
 	  </tbody>
         </table>
+	<br>
         <input type="submit" name="SetFeed" value="Apply">
 
       </form>
