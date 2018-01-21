@@ -82,7 +82,7 @@ namespace TimeHelper {
 
 char const *ToStr(Time &aTime, char * const aInStr);
 
-}
+} // namespace TimeHelper
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES

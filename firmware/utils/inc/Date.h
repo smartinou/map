@@ -2,9 +2,9 @@
 #define DATE_H_
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utilities.
 //
-// Module: Module in the larger project scope.
+// Module: Date class.
 //
 // *******************************************************************************
 
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -23,7 +23,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "Limit.h"
 #include "Day.h"
 #include "Month.h"
 #include "Year.h"
@@ -43,29 +42,25 @@
 class Date {
  public:
   explicit Date(unsigned int  aYear    = 2000,
-		Month::Name   aMonth   = Month::Name::January,
-		unsigned int  aDate    = 1,
-		Weekday::Name aWeekday = Weekday::Name::Saturday)
-    : mYear(aYear),
-    mMonth(aMonth),
-    mDate(aDate),
-    mWeekday(aWeekday) {}
-  ~Date() {}
+                Month::Name   aMonth   = Month::Name::January,
+                unsigned int  aDate    = 1,
+                Weekday::Name aWeekday = Weekday::Name::Saturday);
+  ~Date();
 
-  unsigned int GetYear(void)    const { return mYear.Get();    }
-  unsigned int GetMonth(void)   const { return mMonth.Get();   }
-  unsigned int GetDate(void)    const { return mDate.Get();    }
-  unsigned int GetWeekday(void) const { return mWeekday.Get(); }
+  unsigned int GetYear(void)    const;
+  unsigned int GetMonth(void)   const;
+  unsigned int GetDate(void)    const;
+  unsigned int GetWeekday(void) const;
 
-  Month::Name   GetMonthName(void)   const { return mMonth.GetName();   }
-  Weekday::Name GetWeekdayName(void) const { return mWeekday.GetName(); }
+  Month::Name   GetMonthName(void)   const;
+  Weekday::Name GetWeekdayName(void) const;
 
-  void SetYear( unsigned int aYear)      { mYear.Set(aYear);       }
-  void SetMonth(unsigned int aMonth)     { mMonth.Set(aMonth);     }
-  void SetDate( unsigned int aDate)      { mDate.Set(aDate);       }
-  void SetWeekday(unsigned int aWeekday) { mWeekday.Set(aWeekday); }
+  void SetYear( unsigned int aYear);
+  void SetMonth(unsigned int aMonth);
+  void SetDate( unsigned int aDate);
+  void SetWeekday(unsigned int aWeekday);
 
-  void SetMonth(Month::Name     aMonth);
+  void SetMonth(Month::Name     aMonthName);
   void SetWeekday(Weekday::Name aWeekday);
 
  private:
@@ -74,6 +69,14 @@ class Date {
   Day     mDate;
   Weekday mWeekday;
 };
+
+
+// Helper functions.
+namespace DateHelper {
+
+char const *ToStr(Date &aDate, char * const aInStr);
+
+} // namespace DateHelper
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
