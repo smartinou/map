@@ -16,7 +16,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -106,6 +106,16 @@ void RTCC_AO::ISRCallback(void) {
 
 float RTCC_AO::GetTemperature(void) const {
   return mTemperature;
+}
+
+
+Time &RTCC_AO::GetTime(void) {
+  return mTime;
+}
+
+
+Date &RTCC_AO::GetDate(void) {
+  return mDate;
 }
 
 

@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -52,6 +52,8 @@ class RTCC_AO : public QP::QActive {
   void ISRCallback(void);
 
   float GetTemperature(void) const;
+  Time &GetTime(void);
+  Date &GetDate(void);
 
  protected:
   static QP::QState Initial(RTCC_AO         * const aMePtr,
