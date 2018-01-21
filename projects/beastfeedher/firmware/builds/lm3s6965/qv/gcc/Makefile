@@ -155,6 +155,7 @@ CPP_SRCS := \
         RTCC_AO.cpp \
         SSD1329.cpp \
         SPI.cpp \
+        Time.cpp \
         Weekday.cpp
 
 

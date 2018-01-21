@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
-// Project: <Larger project scope.>
+// Project: Utilities.
 //
-// Module: <Module in the larger project scope.>
+// Module: Time class.
 //
 // *****************************************************************************
 
@@ -12,13 +12,15 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
 // *****************************************************************************
 //                              INCLUDE FILES
 // *****************************************************************************
+
+#include "stdio.h"
 
 #include "Time.h"
 
@@ -43,22 +45,41 @@
 // *****************************************************************************
 
 Time::Time()
-  : mHours(0),
-    mMinutes(0),
-    mSeconds(0),
-    mIs24H(true),
-    mIsPM(false) {
+  : mHours(0)
+  , mMinutes(0)
+  , mSeconds(0)
+  , mIs24H(true)
+  , mIsPM(false) {
 
   // Ctor intentionally empty.
 }
 
 
-Time::Time(Hour aHours, Minute aMinutes, Second aSeconds, bool aIs24H = true, bool aIsPM = false)
-  : mHours(aHours),
-    mMinutes(aMinutes),
-    mSeconds(aSeconds),
-    mIs24H(aIs24H),
-    mIsPM(aIsPM) {
+Time::Time(Hour   aHours,
+           Minute aMinutes,
+           Second aSeconds,
+           bool   aIs24H,
+           bool   aIsPM)
+  : mHours(aHours)
+  , mMinutes(aMinutes)
+  , mSeconds(aSeconds)
+  , mIs24H(aIs24H)
+  , mIsPM(aIsPM) {
+
+  // Ctor intentionally empty.
+}
+
+
+Time::Time(unsigned int aHours,
+           unsigned int aMinutes,
+           unsigned int aSeconds,
+           bool         aIs24H,
+           bool         aIsPM)
+    : mHours(aHours)
+    , mMinutes(aMinutes)
+    , mSeconds(aSeconds)
+    , mIs24H(aIs24H)
+    , mIsPM(aIsPM) {
 
   // Ctor intentionally empty.
 }
@@ -69,7 +90,7 @@ Time::~Time() {
   // Dtor intentionally empty.
 }
 
-#if 0
+
 unsigned int Time::GetHours(void) const {
   return mHours.Get();
 }
@@ -117,6 +138,21 @@ void Time::SetIs24H(bool aIs24H) {
 
 void Time::SetIsPM(bool aIsPM) {
   mIsPM = aIsPM;
+}
+
+
+// TimeHelper functions.
+char const *TimeHelper::ToStr(Time &aTime, char * const aInStr) {
+
+  if (aTime.Is24H()) {
+    snprintf(aInStr, 5 + 1, "%02d:%02d", aTime.GetHours(), aTime.GetMinutes());
+  } else if (aTime.IsPM()) {
+    snprintf(aInStr, 8 + 1, "%02d:%02d PM", aTime.GetHours(), aTime.GetMinutes());
+  } else {
+    snprintf(aInStr, 8 + 1, "%02d:%02d AM", aTime.GetHours(), aTime.GetMinutes());
+  }
+
+  return aInStr;
 }
 
 // *****************************************************************************
