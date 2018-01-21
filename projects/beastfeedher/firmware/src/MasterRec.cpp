@@ -122,6 +122,14 @@ enum {
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
+CalendarRec *MasterRec::sCalendarPtr   = nullptr;
+NetIFRec    *MasterRec::sNetIFRecPtr   = nullptr;
+FeedCfgRec  *MasterRec::sFeedCfgRecPtr = nullptr;
+
+RTCC_AO     *MasterRec::sRTCC_AOPtr    = nullptr;
+LwIPMgr_AO  *MasterRec::sLwIPMgr_AOPtr = nullptr;
+
+
 #if LWIP_HTTPD_SSI
 // Server-Side Include (SSI) demo.
 char const *MasterRec::sSSITags[] = {
@@ -215,16 +223,16 @@ bool MasterRec::Init(void) {
   // Create sub-records and assign them to master record.
   // Deserialize NV memory into it.
   // Sanity of records is checked once deserialized.
-  mRecQty = 2;
+  mRecQty = 3;
   mDBRec = new DBRec *[mRecQty];
-  CalendarRec *lCalendarPtr = new CalendarRec();
-  AddRec(lCalendarPtr);
+  sCalendarPtr = new CalendarRec();
+  AddRec(sCalendarPtr);
 
-  NetIFRec *lNetIFRecPtr = new NetIFRec();
-  AddRec(lNetIFRecPtr);
+  sNetIFRecPtr = new NetIFRec();
+  AddRec(sNetIFRecPtr);
 
-  FeedCfgRec *lFeedCfgRecPtr = new FeedCfgRec();
-  AddRec(lFeedCfgRecPtr);
+  sFeedCfgRecPtr = new FeedCfgRec();
+  AddRec(sFeedCfgRecPtr);
 
   unsigned long lIRQGPIOPort = IRQGPIOPortGet();
   unsigned long lIntNbr = BSPGPIOPortToInt(lIRQGPIOPort);
@@ -236,19 +244,20 @@ bool MasterRec::Init(void) {
                                             IRQGPIOPinGet(),
                                             lIntNbr,
                                             this,
-                                            lCalendarPtr };
+                                            MasterRec::sCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
-  RTCC_AO *lRTCC_AOPtr = new RTCC_AO();
-  lRTCC_AOPtr->start(1U,
-                     sRTCCEvtQPtr,
-                     Q_DIM(sRTCCEvtQPtr),
-                     nullptr,
-                     0U,
-                     &sRTCCInitEvt);
+  MasterRec::sRTCC_AOPtr = new RTCC_AO();
+  MasterRec::sRTCC_AOPtr->start(1U,
+                                sRTCCEvtQPtr,
+                                Q_DIM(sRTCCEvtQPtr),
+                                nullptr,
+                                0U,
+                                &sRTCCInitEvt);
 
   // DB records are now deserialized, and fixed if required.
   // Create all other AOs.
-  static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY, lFeedCfgRecPtr };
+  static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY,
+                                          MasterRec::sFeedCfgRecPtr };
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
   BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
   lBFH_Mgr_AO.start(2U,
@@ -259,16 +268,16 @@ bool MasterRec::Init(void) {
                     &sBFHInitEvt);
 
   static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY,
-                                            lNetIFRecPtr,
+                                            MasterRec::sNetIFRecPtr,
                                             MasterRec::NetCallbackInit };
   static QP::QEvt const *sLwIPEvtQPtr[10];
-  LwIPMgr_AO *lLwIPMgr_AOPtr = new LwIPMgr_AO();
-  lLwIPMgr_AOPtr->start(3U,
-                        sLwIPEvtQPtr,
-                        Q_DIM(sLwIPEvtQPtr),
-                        nullptr,
-                        0U,
-                        &sLwIPInitEvt);
+  MasterRec::sLwIPMgr_AOPtr = new LwIPMgr_AO();
+  MasterRec::sLwIPMgr_AOPtr->start(3U,
+                                   sLwIPEvtQPtr,
+                                   Q_DIM(sLwIPEvtQPtr),
+                                   nullptr,
+                                   0U,
+                                   &sLwIPInitEvt);
 
   return true;
 }
@@ -397,12 +406,12 @@ void MasterRec::NetCallbackInit(void) {
   http_set_ssi_handler(MasterRec::SSIHandler,
                        MasterRec::sSSITags,
                        Q_DIM(MasterRec::sSSITags));
-#endif // #if LWIP_HTTPD_SSI
+#endif // LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
   http_set_cgi_handlers(MasterRec::sCGIEntries,
                         Q_DIM(MasterRec::sCGIEntries));
-#endif //LWIP_HTTPD_CGI
+#endif // LWIP_HTTPD_CGI
 }
 
 
@@ -445,12 +454,10 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
     if (1) {
       return snprintf(aInsertStr,
                       LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                      "%s",
                       "Passed");
     } else {
       return snprintf(aInsertStr,
                       LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                      "%s",
                       "Failed");
     }
   case SSI_TAG_IX_INFO_RTCC_TEMP:
@@ -462,41 +469,48 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
   // Global.
   case SSI_TAG_IX_GLOBAL_DATE: {
     static char const * const lDateInputStr =
-      "<input type=\"date\" name=\"date\" min=\"2018-01-01\" "
-      "value=\"2018-01-20\">";
+      "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
+    char        lDateBuf[16] = {0};
+    Date       &lDate    = MasterRec::sRTCC_AOPtr->GetDate();
+    char const *lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s",
-                    lDateInputStr);
+                    "%s%s\">",
+                    lDateInputStr,
+                    lDateStr);
   }
 
   case SSI_TAG_IX_GLOBAL_TIME: {
     static char const * const lTimeInputStr =
-      "<input type=\"time\" name=\"time\" value=\"11:11\">";
+      "<input type=\"time\" name=\"time\" value=\"";
+    char        lTimeBuf[16] = {0};
+    Time       &lTime    = MasterRec::sRTCC_AOPtr->GetTime();
+    char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s",
-                    lTimeInputStr);
+                    "%s%s\">",
+                    lTimeInputStr,
+                    lTimeStr);
   }
 
   // Configuration.
   case SSI_TAG_IX_CFG_PAD_ENABLE: {
     static char const * const sFeedingPadEnabledStr =
-      "<input type=\"radio\" name=\"feeding_pad\" value=\"enabled\"";
+      "<input type=\"radio\" name=\"feeding_pad\" value=\"y\"";
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  sFeedingPadEnabledStr,
-                                 true);
+                                 MasterRec::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
   }
   case SSI_TAG_IX_CFG_PAD_DISABLE: {
     static char const * const sFeedingPadDisabledStr =
-      "<input type=\"radio\" name=\"feeding_pad\" value=\"disabled\"";
+      "<input type=\"radio\" name=\"feeding_pad\" value=\"n\"";
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  sFeedingPadDisabledStr,
-                                 false);
+                                 !MasterRec::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
   }
   case SSI_TAG_IX_CFG_MANUAL_ENABLE: {
     static char const * const sFeedingButtonEnabledStr =
@@ -505,7 +519,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  sFeedingButtonEnabledStr,
-                                 true);
+                                 MasterRec::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_MANUAL_DISABLE: {
     static char const * const sFeedingButtonDisabledStr =
@@ -514,7 +528,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  sFeedingButtonDisabledStr,
-                                 false);
+                                 !MasterRec::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_FEED_TIME: {
     static char const * const sFeedingTimeStr =
@@ -522,10 +536,9 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
       "min=\"1\" max=\"10\" value=\"";
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s%d%s",
+                    "%s%d\">",
                     sFeedingTimeStr,
-                    5,
-                    "\">");
+                    MasterRec::sFeedCfgRecPtr->GetTimedFeedPeriod());
   }
 
   // Calendar.
@@ -593,15 +606,13 @@ int MasterRec::SSIRadioButtonHandler(int                aTagIx,
   if (aIsChecked) {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s%s",
-                    aHTMLStr,
-                    " checked>");
+                    "%s checked>",
+                    aHTMLStr);
   } else {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s%s",
-                    aHTMLStr,
-                    ">");
+                    "%s>",
+                    aHTMLStr);
   }
 }
 
@@ -611,16 +622,25 @@ int MasterRec::SSICalendarHandler(int          aTagIx,
                                   int          aInsertStrLen,
                                   unsigned int aHour) {
 
-  static char const *sFeedingCalStr = "<input type=\"checkbox\" name=\"feed_time\" value=\"";
+  static char const *sFeedingCalStr =
+    "<input type=\"checkbox\" name=\"feed_time\" value=\"";
 
-  return snprintf(aInsertStr,
-                  LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                  "%s%02d%s%02d%s",
-                  sFeedingCalStr,
-                  aHour,
-                  "_00\">",
-                  aHour,
-                  ":00");
+  Time lTime(aHour, 0, 0, true, false);
+  if (MasterRec::sCalendarPtr->IsEntrySet(lTime)) {
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s%02d_00\">%02d:00 checked",
+                    sFeedingCalStr,
+                    aHour,
+                    aHour);
+  } else {
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s%02d_00\">%02d:00",
+                    sFeedingCalStr,
+                    aHour,
+                    aHour);
+  }
 }
 
 
@@ -648,7 +668,7 @@ int MasterRec::SSIStatsHandler(int   aTagIx,
   return 0;
 }
 
-#endif //LWIP_HTTPD_SSI
+#endif // LWIP_HTTPD_SSI
 
 
 #if LWIP_HTTPD_CGI

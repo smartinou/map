@@ -34,6 +34,12 @@
 // ******************************************************************************
 
 // Forward declaration.
+class CalendarRec;
+class NetIFRec;
+class FeedCfgRec;
+class RTCC_AO;
+class LwIPMgr_AO;
+
 
 //! \brief Brief description.
 //! Details follow...
@@ -117,6 +123,12 @@ static char const *DispIndex(int   aIx,
   unsigned int mRecIx;
   DBRec      **mDBRec;
 
+  static CalendarRec *sCalendarPtr;
+  static NetIFRec    *sNetIFRecPtr;
+  static FeedCfgRec  *sFeedCfgRecPtr;
+
+  static RTCC_AO     *sRTCC_AOPtr;
+  static LwIPMgr_AO  *sLwIPMgr_AOPtr;
 
 #if LWIP_HTTPD_SSI
   static char const *sSSITags[];
