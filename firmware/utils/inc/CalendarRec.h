@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -55,6 +55,8 @@ class CalendarRec : public DBRec {
   void ClrEntry(unsigned int const aWeekday, Time const &aTimeRef);
   void SetTimeEntry(Time const &aTimeRef);
   void ClrAllEntries(void);
+
+  bool IsEntrySet(Time const &aTimeRef);
 
   // Gets the next set entry from current time.
   bool GetNextEntry(Weekday const &aWeekdayRef,
