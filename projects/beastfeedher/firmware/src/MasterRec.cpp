@@ -190,7 +190,8 @@ char const *MasterRec::sSSITags[] = {
 
 #if LWIP_HTTPD_CGI
 tCGI const MasterRec::sCGIEntries[] = {
-  {"/index.cgi",  DispIndex}
+  {"/index.cgi",  DispIndex},
+  {"/config.cgi", DispCfg}
 };
 #endif // LWIP_HTTPD_CGI
 
@@ -629,14 +630,14 @@ int MasterRec::SSICalendarHandler(int          aTagIx,
   if (MasterRec::sCalendarPtr->IsEntrySet(lTime)) {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s%02d_00\">%02d:00 checked",
+                    "%s%02d\" checked>%02d:00",
                     sFeedingCalStr,
                     aHour,
                     aHour);
   } else {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s%02d_00\">%02d:00",
+                    "%s%02d\">%02d:00",
                     sFeedingCalStr,
                     aHour,
                     aHour);
@@ -674,29 +675,101 @@ int MasterRec::SSIStatsHandler(int   aTagIx,
 #if LWIP_HTTPD_CGI
 // HTTPD customizations.
 // CGI handlers.
-char const *MasterRec::DispIndex(int   aIx,
+char const *MasterRec::DispIndex(int   aCGIIx,
                                  int   aParamsQty,
                                  char *aParamsVec[],
                                  char *aValsVec[]) {
 
-  for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-    if (strstr(aParamsVec[lIx], "timed_feed") != nullptr) {
-      // Param found.
-      // Send event with value as parameter.
-      BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt,
-                                          SIG_FEED_MGR_TIMED_FEED_CMD);
-      sscanf(aValsVec[aIx], "%d", &lEvtPtr->mTime);
+  if (0 == strcmp(aParamsVec[0], "timed_feed")) {
+    // Param found.
+    // Send event with value as parameter.
+    BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt,
+                                        SIG_FEED_MGR_TIMED_FEED_CMD);
+    sscanf(aValsVec[0], "%d", &lEvtPtr->mTime);
 
-      // Could use QF_Publish() to decouple from active object.
-      // Here, there's only this well-known recipient.
-      BFH_Mgr_AO::AOInstance().POST(lEvtPtr, 0);
+    // Could use QF_Publish() to decouple from active object.
+    // Here, there's only this well-known recipient.
+    BFH_Mgr_AO::AOInstance().POST(lEvtPtr, 0);
 
-      // Return where we're coming from.
-      return "/index.shtml";
-    }
+    // Return where we're coming from.
+    return "/index.shtml";
   }
 
   return nullptr;
+}
+
+
+char const *MasterRec::DispCfg(int   aCGIIx,
+                               int   aParamsQty,
+                               char *aParamsVec[],
+                               char *aValsVec[]) {
+
+  // Try to find the Time and Date apply button.
+  for (int lIx = 0; lIx < aParamsQty; ++lIx) {
+    if (0 == strcmp(aParamsVec[lIx], "date")) {
+      unsigned int lYear  = 0;
+      unsigned int lMonth = 0;
+      unsigned int lDayDate  = 0;
+      sscanf(aValsVec[lIx], "%d-%d-%d", &lYear, &lMonth, &lDayDate);
+      Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
+
+      // Send event to write new date.
+      RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                       SIG_RTCC_SET_DATE);
+      lEvtPtr->mDate = lDate;
+      sRTCC_AOPtr->POST(lEvtPtr, 0);
+
+    } else if (0 == strcmp(aParamsVec[lIx], "time")) {
+      unsigned int lHours   = 0;
+      unsigned int lMinutes = 0;
+      sscanf(aValsVec[lIx], "%d%%3A%d", &lHours, &lMinutes);
+      Time lTime(lHours, lMinutes, 0);
+      Date lDate();
+
+      // Send event to write new time.
+      // Send event to write new date.
+      RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                       SIG_RTCC_SET_TIME);
+      lEvtPtr->mTime = lTime;
+      sRTCC_AOPtr->POST(lEvtPtr, 0);
+
+    }
+  }
+
+
+  // Try to find the Config and Calendar apply button.
+  for (int lIx = 0; lIx < aParamsQty; ++lIx) {
+    if (0 == strcmp(aParamsVec[lIx], "feeding_pad")) {
+      if ('y' == *aValsVec[lIx]) {
+        MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(true);
+      } else {
+        MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(false);
+      }
+    } else if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
+      if ('y' == *aValsVec[lIx]) {
+        MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(true);
+      } else {
+        MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(false);
+      }
+    } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
+      unsigned int lFeedingTime = 0;
+      sscanf(aValsVec[lIx], "%d", &lFeedingTime);
+      MasterRec::sFeedCfgRecPtr->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
+    } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
+      unsigned int lHour = 0;
+      sscanf(aValsVec[lIx], "%d", &lHour);
+      Time lTime(lHour, 0, 0);
+      static bool lIsCleared = false;
+      if (!lIsCleared) {
+        MasterRec::sCalendarPtr->ClrAllEntries();
+        lIsCleared = true;
+      }
+      MasterRec::sCalendarPtr->SetTimeEntry(lTime);
+    }
+  }
+
+  // Return where we're coming from.
+  return "/config.shtml";
 }
 #endif // LWIP_HTTPD_CGI
 

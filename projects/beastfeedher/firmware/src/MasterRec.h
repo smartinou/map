@@ -113,6 +113,10 @@ static char const *DispIndex(int   aIx,
                              int   aParamsQty,
                              char *aParamsVec[],
                              char *aValsVec[]);
+static char const *DispCfg(int   aIx,
+                           int   aParamsQty,
+                           char *aParamsVec[],
+                           char *aValsVec[]);
 #endif // LWIP_HTTPD_CGI
 
 

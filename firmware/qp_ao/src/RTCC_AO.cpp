@@ -175,7 +175,8 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
   //   -Interrupt Control enabled.
   //   -Alarm 1 enabled.
   //     -1Hz interrupt rate.
-  me->mDS3234Ptr = new DS3234(lRTCCInitEvtPtr->mSPIDevRef,
+  me->mDS3234Ptr = new DS3234(2000,
+                              lRTCCInitEvtPtr->mSPIDevRef,
                               *me->mRTCSPISlaveCfgPtr);
   me->mDS3234Ptr->Init(DS3234::Ctrl::INTCn);
 
@@ -293,6 +294,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
+    // FIXME: replace by _UPDATE_CALENDAR or such.
   case SIG_RTCC_ADD_CALENDAR_ENTRY: {
     RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
     me->mCalendarPtr->SetEntry(lSetEvtPtr->mDate.GetWeekday(),
@@ -305,6 +307,20 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
     RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
     me->mCalendarPtr->ClrEntry(lSetEvtPtr->mDate.GetWeekday(),
                                lSetEvtPtr->mTime);
+    SetNextCalendarEvt(me);
+    return Q_HANDLED();
+  }
+
+  case SIG_RTCC_SET_TIME: {
+    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
+    me->mDS3234Ptr->WrTime(lSetEvtPtr->mTime);
+    SetNextCalendarEvt(me);
+    return Q_HANDLED();
+  }
+
+  case SIG_RTCC_SET_DATE: {
+    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
+    me->mDS3234Ptr->WrDate(lSetEvtPtr->mDate);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }

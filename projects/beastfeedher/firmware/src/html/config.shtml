@@ -52,7 +52,7 @@
 		Time:<!--#g_time-->
 	      </td>
 	      <td>
-                <input type="submit" name="GetCfg" value="Apply">
+                <input type="submit" name="set_time" value="Apply">
 	      </td>
 	    </tr>
 	  </tbody>
@@ -169,7 +169,7 @@
 	  </tbody>
         </table>
 	<br>
-        <input type="submit" name="SetFeed" value="Apply">
+        <input type="submit" name="set_cfg" value="Apply">
 
       </form>
     </div>
