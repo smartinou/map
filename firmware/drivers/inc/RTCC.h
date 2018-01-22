@@ -43,7 +43,7 @@
 class RTCC {
 
  public:
-  RTCC();
+  RTCC(unsigned int aBaseYear);
   ~RTCC();
 
   virtual void RdTime(Time &aTimeRef) = 0;
@@ -62,11 +62,11 @@ class RTCC {
 
   virtual bool HasNVMem(void) const = 0;
   virtual void RdFromRAM(uint8_t     *aDataPtr,
-		         unsigned int aOffset,
-		         unsigned int aSize) = 0;
+                         unsigned int aOffset,
+                         unsigned int aSize) = 0;
   virtual void WrToRAM(uint8_t const *aDataPtr,
-	               unsigned int   aOffset,
-	               unsigned int   aSize) = 0;
+                       unsigned int   aOffset,
+                       unsigned int   aSize) = 0;
 
  protected:
   bool IsImpure(void) { return mIsImpure; }
@@ -75,6 +75,7 @@ class RTCC {
   unsigned int BinaryToBCD(unsigned int aBinVal);
   unsigned int BCDToBinary(unsigned int aBCDVal);
 
+  unsigned int mBaseYear;
   unsigned int mCentury;
   bool         mIsImpure;
 };

@@ -113,7 +113,8 @@ class DS3234 : public RTCC {
   typedef struct L_ADDR_MAP_STRUCT_TAG rtcc_reg_map_t;
 
  public:
-  DS3234(SPIDev      &aSPIDevRef,
+  DS3234(unsigned int aBaseYear,
+         SPIDev      &aSPIDevRef,
          SPISlaveCfg &aSPICfgRef);
   ~DS3234();
 

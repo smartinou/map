@@ -78,18 +78,21 @@ enum L_LIMITS {
 // *****************************************************************************
 
 // Ctor.
-DS3234::DS3234(SPIDev      &aSPIDevRef,
-               SPISlaveCfg &aSPICfgRef) :
-  RTCC(),
-  mSPIDevRef(aSPIDevRef),
-  mSPICfgRef(aSPICfgRef) {
+DS3234::DS3234(unsigned int aBaseYear,
+               SPIDev      &aSPIDevRef,
+               SPISlaveCfg &aSPICfgRef)
+  : RTCC(aBaseYear)
+  , mSPIDevRef(aSPIDevRef)
+  , mSPICfgRef(aSPICfgRef)
+  , mRegMap{0} {
 
-  // Clear register map array.
-  uint8_t *lBytePtr = reinterpret_cast<uint8_t *>(&mRegMap);
-  for (unsigned int lByteIx = 0; lByteIx < sizeof(rtcc_reg_map_t); lByteIx++) {
-    *lBytePtr = 0x00;
-    lBytePtr++;
-  }
+  // Ctor body intentionally left empty.
+}
+
+
+DS3234::~DS3234() {
+
+  // Dtor body intentionally left empty.
 }
 
 
@@ -495,13 +498,13 @@ void DS3234::UpdateDate(Date &aDateRef) {
   unsigned int lMonth   = BCDToBinary(mRegMap.mDate.mMonth & ~Month::CENTURY);
   unsigned int lYear    = BCDToBinary(mRegMap.mDate.mYear);
   if (mRegMap.mDate.mMonth & Month::CENTURY) {
-    lYear += 100;
+    mCentury += 100;
   }
 
   aDateRef.SetWeekday(lWeekday);
   aDateRef.SetDate(lDate);
   aDateRef.SetMonth(lMonth);
-  aDateRef.SetYear(lYear + mCentury);
+  aDateRef.SetYear(lYear + mBaseYear + mCentury);
 }
 
 
@@ -528,7 +531,9 @@ void DS3234::FillDateStruct(Date const &aDateRef) {
   unsigned int lWeekday = aDateRef.GetWeekday();
   unsigned int lDate    = BinaryToBCD(aDateRef.GetDate());
   unsigned int lMonth   = BinaryToBCD(aDateRef.GetMonth());
-  unsigned int lYear    = BinaryToBCD(aDateRef.GetYear() - mCentury);
+  unsigned int lYear    = BinaryToBCD(aDateRef.GetYear()
+                                      - mBaseYear
+                                      - mCentury);
 
   mRegMap.mDate.mWeekday = lWeekday;
   mRegMap.mDate.mDate    = lDate;
