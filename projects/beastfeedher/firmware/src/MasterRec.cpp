@@ -56,26 +56,32 @@ enum {
   SSI_TAG_IX_EMPTY,
 
   // Info.
-  SSI_TAG_IX_INFO_FW_VERSION,
+  SSI_TAG_IX_INFO_FIRST,
+  SSI_TAG_IX_INFO_FW_VERSION = SSI_TAG_IX_INFO_FIRST,
   SSI_TAG_IX_INFO_BUILD_DATE,
   SSI_TAG_IX_INFO_BUILD_TIME,
   SSI_TAG_IX_INFO_GIT_HASH,
   SSI_TAG_IX_INFO_DB_STATUS,
   SSI_TAG_IX_INFO_RTCC_TEMP,
+  SSI_TAG_IX_INFO_LAST = SSI_TAG_IX_INFO_RTCC_TEMP,
 
   // Global: Time and Date.
-  SSI_TAG_IX_GLOBAL_DATE,
-  SSI_TAG_IX_GLOBAL_TIME,
+  SSI_TAG_IX_CFG_GLOBAL_DATE,
+  SSI_TAG_IX_CFG_GLOBAL_TIME,
 
   // Configuration.
-  SSI_TAG_IX_CFG_PAD_ENABLE,
+  SSI_TAG_IX_CFG_FIRST,
+  SSI_TAG_IX_CFG_PAD_ENABLE = SSI_TAG_IX_CFG_FIRST,
   SSI_TAG_IX_CFG_PAD_DISABLE,
   SSI_TAG_IX_CFG_MANUAL_ENABLE,
   SSI_TAG_IX_CFG_MANUAL_DISABLE,
+  SSI_TAG_IX_CFG_LAST = SSI_TAG_IX_CFG_MANUAL_DISABLE,
+
   SSI_TAG_IX_CFG_FEED_TIME,
 
   // Calendar.
-  SSI_TAG_IX_CFG_CALENDAR_06_00,
+  SSI_TAG_IX_CFG_CALENDAR_FIRST,
+  SSI_TAG_IX_CFG_CALENDAR_06_00 = SSI_TAG_IX_CFG_CALENDAR_FIRST,
   SSI_TAG_IX_CFG_CALENDAR_07_00,
   SSI_TAG_IX_CFG_CALENDAR_08_00,
   SSI_TAG_IX_CFG_CALENDAR_09_00,
@@ -91,9 +97,34 @@ enum {
   SSI_TAG_IX_CFG_CALENDAR_19_00,
   SSI_TAG_IX_CFG_CALENDAR_20_00,
   SSI_TAG_IX_CFG_CALENDAR_21_00,
+  SSI_TAG_IX_CFG_CALENDAR_LAST = SSI_TAG_IX_CFG_CALENDAR_21_00,
+
+  // Network configuration.
+  SSI_TAG_IX_NET_MAC_ADDR,
+  SSI_TAG_IX_NET_IPV4_ADD,
+  SSI_TAG_IX_NET_SUBNET_MASK,
+  SSI_TAG_IX_NET_GW_ADD,
+
+  SSI_TAG_IX_NET_USE_DHCP,
+  SSI_TAG_IX_NET_USE_MANUAL,
+  SSI_TAG_IX_NET_STATIC_FIRST,
+  SSI_TAG_IX_NET_STATIC_IPV4_ADD_0 = SSI_TAG_IX_NET_STATIC_FIRST,
+  SSI_TAG_IX_NET_STATIC_IPV4_ADD_1,
+  SSI_TAG_IX_NET_STATIC_IPV4_ADD_2,
+  SSI_TAG_IX_NET_STATIC_IPV4_ADD_3,
+  SSI_TAG_IX_NET_STATIC_SUBNET_MASK_0,
+  SSI_TAG_IX_NET_STATIC_SUBNET_MASK_1,
+  SSI_TAG_IX_NET_STATIC_SUBNET_MASK_2,
+  SSI_TAG_IX_NET_STATIC_SUBNET_MASK_3,
+  SSI_TAG_IX_NET_STATIC_GW_ADD_0,
+  SSI_TAG_IX_NET_STATIC_GW_ADD_1,
+  SSI_TAG_IX_NET_STATIC_GW_ADD_2,
+  SSI_TAG_IX_NET_STATIC_GW_ADD_3,
+  SSI_TAG_IX_NET_STATIC_LAST = SSI_TAG_IX_NET_STATIC_GW_ADD_3,
 
   // Network statistics.
-  SSI_TAG_IX_STATS_TX,
+  SSI_TAG_IX_STATS_FIRST,
+  SSI_TAG_IX_STATS_TX = SSI_TAG_IX_STATS_FIRST,
   SSI_TAG_IX_STATS_RX,
   SSI_TAG_IX_STATS_FW,
   SSI_TAG_IX_STATS_DROP,
@@ -104,6 +135,7 @@ enum {
   SSI_TAG_IX_STATS_PRO_ERR,
   SSI_TAG_IX_STATS_OPT_ERR,
   SSI_TAG_IX_STATS_ERR,
+  SSI_TAG_IX_STATS_LAST = SSI_TAG_IX_STATS_ERR,
 
   // Network interface.
   SSI_TAG_IX_LAST = SSI_TAG_IX_STATS_ERR,
@@ -134,56 +166,76 @@ LwIPMgr_AO  *MasterRec::sLwIPMgr_AOPtr = nullptr;
 // Server-Side Include (SSI) demo.
 char const *MasterRec::sSSITags[] = {
   // Common/misc. tags.
-  "_zero",    // 0
-  "_empty",   // 1
+  "_zero",     // SSI_TAG_IX_ZERO
+  "_empty",    // SSI_TAG_IX_EMPTY
 
   // Info.
-  "i_ver",
-  "i_date",
-  "i_time",
-  "i_hash",
-  "i_status",
-  "i_temp",
+  "i_ver",     // SSI_TAG_IX_INFO_FW_VERSION
+  "i_date",    // SSI_TAG_IX_INFO_BUILD_DATE
+  "i_time",    // SSI_TAG_IX_INFO_BUILD_TIME
+  "i_hash",    // SSI_TAG_IX_INFO_GIT_HASH
+  "i_status",  // SSI_TAG_IX_INFO_DB_STATUS
+  "i_temp",    // SSI_TAG_IX_INFO_RTCC_TEMP
 
   // Global: Time and Date.
-  "g_date",
-  "g_time",
+  "g_date",    // SSI_TAG_IX_CFG_GLOBAL_DATE
+  "g_time",    // SSI_TAG_IX_CFG_GLOBAL_TIME
 
   // Configuration.
-  "c_pad_en",
-  "c_pad_di",
-  "c_but_en",
-  "c_but_di",
-  "c_time",
-  "c_cal_06",
-  "c_cal_07",
-  "c_cal_08",
-  "c_cal_09",
-  "c_cal_10",
-  "c_cal_11",
-  "c_cal_12",
-  "c_cal_13",
-  "c_cal_14",
-  "c_cal_15",
-  "c_cal_16",
-  "c_cal_17",
-  "c_cal_18",
-  "c_cal_19",
-  "c_cal_20",
-  "c_cal_21",
+  "c_pad_en",  // SSI_TAG_IX_CFG_PAD_ENABLE
+  "c_pad_di",  // SSI_TAG_IX_CFG_PAD_DISABLE
+  "c_but_en",  // SSI_TAG_IX_CFG_MANUAL_ENABLE
+  "c_but_di",  // SSI_TAG_IX_CFG_MANUAL_DISABLE
+  "c_time",    // SSI_TAG_IX_CFG_FEED_TIME
+  "c_cal_06",  // SSI_TAG_IX_CFG_CALENDAR_06_00
+  "c_cal_07",  // SSI_TAG_IX_CFG_CALENDAR_07_00
+  "c_cal_08",  // SSI_TAG_IX_CFG_CALENDAR_09_00
+  "c_cal_09",  // SSI_TAG_IX_CFG_CALENDAR_09_00
+  "c_cal_10",  // SSI_TAG_IX_CFG_CALENDAR_10_00
+  "c_cal_11",  // SSI_TAG_IX_CFG_CALENDAR_11_00
+  "c_cal_12",  // SSI_TAG_IX_CFG_CALENDAR_12_00
+  "c_cal_13",  // SSI_TAG_IX_CFG_CALENDAR_13_00
+  "c_cal_14",  // SSI_TAG_IX_CFG_CALENDAR_14_00
+  "c_cal_15",  // SSI_TAG_IX_CFG_CALENDAR_15_00
+  "c_cal_16",  // SSI_TAG_IX_CFG_CALENDAR_16_00
+  "c_cal_17",  // SSI_TAG_IX_CFG_CALENDAR_17_00
+  "c_cal_18",  // SSI_TAG_IX_CFG_CALENDAR_18_00
+  "c_cal_19",  // SSI_TAG_IX_CFG_CALENDAR_19_00
+  "c_cal_20",  // SSI_TAG_IX_CFG_CALENDAR_20_00
+  "c_cal_21",  // SSI_TAG_IX_CFG_CALENDAR_21_00
+
+  // Network configuration.
+  "n_mac",     // SSI_TAG_IX_NET_MAC_ADDR
+  "n_ipv4",    // SSI_TAG_IX_NET_IPV4_ADD
+  "n_subnet",  // SSI_TAG_IX_NET_SUBNET_MASK
+  "n_gateway", // SSI_TAG_IX_NET_GW_ADD
+  "n_dhcp",    // SSI_TAG_IX_NET_USE_DHCP
+  "n_manual",  // SSI_TAG_IX_NET_USE_MANUAL
+  "n_sip0",    // SSI_TAG_IX_NET_STATIC_IPV4_ADD_0
+  "n_sip1",    // SSI_TAG_IX_NET_STATIC_IPV4_ADD_1
+  "n_sip2",    // SSI_TAG_IX_NET_STATIC_IPV4_ADD_2
+  "n_sip3",    // SSI_TAG_IX_NET_STATIC_IPV4_ADD_3
+  "n_ssn0",    // SSI_TAG_IX_NET_STATIC_SUBNET_MASK_0
+  "n_ssn1",    // SSI_TAG_IX_NET_STATIC_SUBNET_MASK_1
+  "n_ssn2",    // SSI_TAG_IX_NET_STATIC_SUBNET_MASK_2
+  "n_ssn3",    // SSI_TAG_IX_NET_STATIC_SUBNET_MASK_3
+  "n_sgw0",    // SSI_TAG_IX_NET_STATIC_GW_ADD_0
+  "n_sgw1",    // SSI_TAG_IX_NET_STATIC_GW_ADD_1
+  "n_sgw2",    // SSI_TAG_IX_NET_STATIC_GW_ADD_2
+  "n_sgw3",    // SSI_TAG_IX_NET_STATIC_GW_ADD_3
 
   // Network statistics.
-  "s_xmit",
-  "s_recv",
-  "s_fw",
-  "s_drop",
-  "s_chkerr",
-  "s_lenerr",
-  "s_memerr",
-  "s_rterr",
-  "s_proerr",
-  "s_opterr",
-  "s_err",
+  "s_xmit",    // SSI_TAG_IX_STATS_TX
+  "s_recv",    // SSI_TAG_IX_STATS_RX
+  "s_fw",      // SSI_TAG_IX_STATS_FW
+  "s_drop",    // SSI_TAG_IX_STATS_DROP
+  "s_chkerr",  // SSI_TAG_IX_STATS_CHK_ERR
+  "s_lenerr",  // SSI_TAG_IX_STATS_LEN_ERR
+  "s_memerr",  // SSI_TAG_IX_STATS_MEM_ERR
+  "s_rterr",   // SSI_TAG_IX_STATS_RT_ERR
+  "s_proerr",  // SSI_TAG_IX_STATS_PRO_ERR
+  "s_opterr",  // SSI_TAG_IX_STATS_OPT_ERR
+  "s_err",     // SSI_TAG_IX_STATS_ERR
 };
 #endif //LWIP_HTTPD_SSI
 
@@ -468,7 +520,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                     RTCC_AO::GetInstancePtr()->GetTemperature());
 
   // Global.
-  case SSI_TAG_IX_GLOBAL_DATE: {
+  case SSI_TAG_IX_CFG_GLOBAL_DATE: {
     static char const * const lDateInputStr =
       "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
     char        lDateBuf[16] = {0};
@@ -481,7 +533,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                     lDateStr);
   }
 
-  case SSI_TAG_IX_GLOBAL_TIME: {
+  case SSI_TAG_IX_CFG_GLOBAL_TIME: {
     static char const * const lTimeInputStr =
       "<input type=\"time\" name=\"time\" value=\"";
     char        lTimeBuf[16] = {0};
@@ -496,39 +548,31 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
 
   // Configuration.
   case SSI_TAG_IX_CFG_PAD_ENABLE: {
-    static char const * const sFeedingPadEnabledStr =
-      "<input type=\"radio\" name=\"feeding_pad\" value=\"y\"";
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
-                                 sFeedingPadEnabledStr,
+                                 "feeding_pad\" value=\"y\"",
                                  MasterRec::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
   }
   case SSI_TAG_IX_CFG_PAD_DISABLE: {
-    static char const * const sFeedingPadDisabledStr =
-      "<input type=\"radio\" name=\"feeding_pad\" value=\"n\"";
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
-                                 sFeedingPadDisabledStr,
+                                 "feeding_pad\" value=\"n\"",
                                  !MasterRec::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
   }
   case SSI_TAG_IX_CFG_MANUAL_ENABLE: {
-    static char const * const sFeedingButtonEnabledStr =
-      "<input type=\"radio\" name=\"feeding_button\" value=\"y\"";
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
-                                 sFeedingButtonEnabledStr,
+                                 "feeding_button\" value=\"y\"",
                                  MasterRec::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_MANUAL_DISABLE: {
-    static char const * const sFeedingButtonDisabledStr =
-      "<input type=\"radio\" name=\"feeding_button\" value=\"n\"";
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
-                                 sFeedingButtonDisabledStr,
+                                 "feeding_button\" value=\"n\"",
                                  !MasterRec::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_FEED_TIME: {
@@ -576,6 +620,58 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
   case SSI_TAG_IX_CFG_CALENDAR_21_00:
     return SSICalendarHandler(aTagIx, aInsertStr, aInsertStrLen, 21);
 
+
+  // Network configuration.
+  case SSI_TAG_IX_NET_MAC_ADDR:
+  case SSI_TAG_IX_NET_IPV4_ADD:
+  case SSI_TAG_IX_NET_SUBNET_MASK:
+  case SSI_TAG_IX_NET_GW_ADD:
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    " ");
+
+  case SSI_TAG_IX_NET_USE_DHCP:
+    return SSIRadioButtonHandler(aTagIx,
+                                 aInsertStr,
+                                 aInsertStrLen,
+                                 "use_dhcp\" value=\"y\"",
+                                 true);
+
+  case SSI_TAG_IX_NET_USE_MANUAL:
+    return SSIRadioButtonHandler(aTagIx,
+                                 aInsertStr,
+                                 aInsertStrLen,
+                                 "use_dhcp\" value=\"n\"",
+                                 false);
+
+  case SSI_TAG_IX_NET_STATIC_IPV4_ADD_0:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_0");
+  case SSI_TAG_IX_NET_STATIC_IPV4_ADD_1:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_1");
+  case SSI_TAG_IX_NET_STATIC_IPV4_ADD_2:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_2");
+  case SSI_TAG_IX_NET_STATIC_IPV4_ADD_3:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_3");
+
+  case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_0:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_0");
+  case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_1:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_1");
+  case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_2:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_2");
+  case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_3:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_3");
+
+  case SSI_TAG_IX_NET_STATIC_GW_ADD_0:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_0");
+  case SSI_TAG_IX_NET_STATIC_GW_ADD_1:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_1");
+  case SSI_TAG_IX_NET_STATIC_GW_ADD_2:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_2");
+  case SSI_TAG_IX_NET_STATIC_GW_ADD_3:
+    return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_3");
+
+
   case SSI_TAG_IX_STATS_TX:
   case SSI_TAG_IX_STATS_RX:
   case SSI_TAG_IX_STATS_FW:
@@ -601,19 +697,22 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
 int MasterRec::SSIRadioButtonHandler(int                aTagIx,
                                      char              *aInsertStr,
                                      int                aInsertStrLen,
-                                     char const * const aHTMLStr,
+                                     char const * const aNameValStr,
                                      bool               aIsChecked) {
 
+  static char const * const sInputRadioStr = "<input type=\"radio\" name=\"";
   if (aIsChecked) {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s checked>",
-                    aHTMLStr);
+                    "%s%s checked>",
+                    sInputRadioStr,
+                    aNameValStr);
   } else {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                    "%s>",
-                    aHTMLStr);
+                    "%s%s>",
+                    sInputRadioStr,
+                    aNameValStr);
   }
 }
 
@@ -642,6 +741,24 @@ int MasterRec::SSICalendarHandler(int          aTagIx,
                     aHour,
                     aHour);
   }
+}
+
+
+int MasterRec::SSINetworkHandler(int                aTagIx,
+                                 char              *aInsertStr,
+                                 int                aInsertStrLen,
+                                 char const * const aTagNameStr) {
+
+  static char const * const sInputTagStr = "<input name=\"";
+  static char const * const sInputValueStr =
+    "\" type=\"text\" size=\"2\" maxlength=\"3\" value=\"";
+    return snprintf(aInsertStr,
+                    LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+                    "%s%s%s%d\">",
+                    sInputTagStr,
+                    aTagNameStr,
+                    sInputValueStr,
+                    0);
 }
 
 

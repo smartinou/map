@@ -97,12 +97,16 @@ class MasterRec : public DBRec {
   static int SSIRadioButtonHandler(int                aTagIx,
                                    char              *aInsertStr,
                                    int                aInsertStrLen,
-                                   char const * const aHTMLStr,
+                                   char const * const aNameValStr,
                                    bool               aIsChecked);
   static int SSICalendarHandler(int          aTagIx,
                                 char        *aInsertStr,
                                 int          aInsertStrLen,
                                 unsigned int aHour);
+  static int SSINetworkHandler(int                aTagIx,
+                               char              *aInsertStr,
+                               int                aInsertStrLen,
+                               char const * const aTagNameStr);
   static int SSIStatsHandler(int   aTagIx,
                              char *aInsertStr,
                              int   aInsertStrLen);
