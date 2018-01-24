@@ -695,7 +695,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
 
 
 int MasterRec::SSIRadioButtonHandler(int                aTagIx,
-                                     char              *aInsertStr,
+                                     char       * const aInsertStr,
                                      int                aInsertStrLen,
                                      char const * const aNameValStr,
                                      bool               aIsChecked) {
@@ -718,7 +718,7 @@ int MasterRec::SSIRadioButtonHandler(int                aTagIx,
 
 
 int MasterRec::SSICalendarHandler(int          aTagIx,
-                                  char        *aInsertStr,
+                                  char * const aInsertStr,
                                   int          aInsertStrLen,
                                   unsigned int aHour) {
 
@@ -745,7 +745,7 @@ int MasterRec::SSICalendarHandler(int          aTagIx,
 
 
 int MasterRec::SSINetworkHandler(int                aTagIx,
-                                 char              *aInsertStr,
+                                 char       * const aInsertStr,
                                  int                aInsertStrLen,
                                  char const * const aTagNameStr) {
 
@@ -762,9 +762,9 @@ int MasterRec::SSINetworkHandler(int                aTagIx,
 }
 
 
-int MasterRec::SSIStatsHandler(int   aTagIx,
-                               char *aInsertStr,
-                               int   aInsertStrLen) {
+int MasterRec::SSIStatsHandler(int          aTagIx,
+                               char * const aInsertStr,
+                               int          aInsertStrLen) {
 
   struct stats_proto *lStatsPtr = &lwip_stats.link;
 
@@ -822,71 +822,97 @@ char const *MasterRec::DispCfg(int   aCGIIx,
                                char *aValsVec[]) {
 
   // Try to find the Time and Date apply button.
-  for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-    if (0 == strcmp(aParamsVec[lIx], "date")) {
-      unsigned int lYear  = 0;
-      unsigned int lMonth = 0;
-      unsigned int lDayDate  = 0;
-      sscanf(aValsVec[lIx], "%d-%d-%d", &lYear, &lMonth, &lDayDate);
-      Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
+  char const *lSubmitVal = FindTagVal("set_time",
+                                      aParamsQty,
+                                      aParamsVec,
+                                      aValsVec);
+  if (0 == strcmp(lSubmitVal, "Apply")) {
+    for (int lIx = 0; lIx < aParamsQty; ++lIx) {
+      if (0 == strcmp(aParamsVec[lIx], "date")) {
+        unsigned int lYear  = 0;
+        unsigned int lMonth = 0;
+        unsigned int lDayDate  = 0;
+        sscanf(aValsVec[lIx], "%d-%d-%d", &lYear, &lMonth, &lDayDate);
+        Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
 
-      // Send event to write new date.
-      RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
-                                       SIG_RTCC_SET_DATE);
-      lEvtPtr->mDate = lDate;
-      sRTCC_AOPtr->POST(lEvtPtr, 0);
+        // Send event to write new date.
+        RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                         SIG_RTCC_SET_DATE);
+        lEvtPtr->mDate = lDate;
+        sRTCC_AOPtr->POST(lEvtPtr, 0);
 
-    } else if (0 == strcmp(aParamsVec[lIx], "time")) {
-      unsigned int lHours   = 0;
-      unsigned int lMinutes = 0;
-      sscanf(aValsVec[lIx], "%d%%3A%d", &lHours, &lMinutes);
-      Time lTime(lHours, lMinutes, 0);
-      Date lDate();
+      } else if (0 == strcmp(aParamsVec[lIx], "time")) {
+        unsigned int lHours   = 0;
+        unsigned int lMinutes = 0;
+        sscanf(aValsVec[lIx], "%d%%3A%d", &lHours, &lMinutes);
+        Time lTime(lHours, lMinutes, 0);
+        Date lDate();
 
-      // Send event to write new time.
-      // Send event to write new date.
-      RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
-                                       SIG_RTCC_SET_TIME);
-      lEvtPtr->mTime = lTime;
-      sRTCC_AOPtr->POST(lEvtPtr, 0);
+        // Send event to write new time.
+        // Send event to write new date.
+        RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                         SIG_RTCC_SET_TIME);
+        lEvtPtr->mTime = lTime;
+        sRTCC_AOPtr->POST(lEvtPtr, 0);
 
+      }
     }
+    // Return where we're coming from.
+    return "/config.shtml";
   }
 
-
   // Try to find the Config and Calendar apply button.
-  for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-    if (0 == strcmp(aParamsVec[lIx], "feeding_pad")) {
-      if ('y' == *aValsVec[lIx]) {
-        MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(true);
-      } else {
-        MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(false);
+  lSubmitVal = FindTagVal("set_cfg",
+                          aParamsQty,
+                          aParamsVec,
+                          aValsVec);
+  if (0 == strcmp(lSubmitVal, "Apply")) {
+    // Make sure the calendar is cleared before setting new entries.
+    // Must be done only once!
+    MasterRec::sCalendarPtr->ClrAllEntries();
+    for (int lIx = 0; lIx < aParamsQty; ++lIx) {
+      if (0 == strcmp(aParamsVec[lIx], "feeding_pad")) {
+        if ('y' == *aValsVec[lIx]) {
+          MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(true);
+        } else {
+          MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(false);
+        }
+      } else if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
+        if ('y' == *aValsVec[lIx]) {
+          MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(true);
+        } else {
+          MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(false);
+        }
+      } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
+        unsigned int lFeedingTime = 0;
+        sscanf(aValsVec[lIx], "%d", &lFeedingTime);
+        MasterRec::sFeedCfgRecPtr->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
+      } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
+        unsigned int lHour = 0;
+        sscanf(aValsVec[lIx], "%d", &lHour);
+        Time lTime(lHour, 0, 0);
+        MasterRec::sCalendarPtr->SetTimeEntry(lTime);
       }
-    } else if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
-      if ('y' == *aValsVec[lIx]) {
-        MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(true);
-      } else {
-        MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(false);
-      }
-    } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
-      unsigned int lFeedingTime = 0;
-      sscanf(aValsVec[lIx], "%d", &lFeedingTime);
-      MasterRec::sFeedCfgRecPtr->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
-    } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
-      unsigned int lHour = 0;
-      sscanf(aValsVec[lIx], "%d", &lHour);
-      Time lTime(lHour, 0, 0);
-      static bool lIsCleared = false;
-      if (!lIsCleared) {
-        MasterRec::sCalendarPtr->ClrAllEntries();
-        lIsCleared = true;
-      }
-      MasterRec::sCalendarPtr->SetTimeEntry(lTime);
     }
   }
 
   // Return where we're coming from.
   return "/config.shtml";
+}
+
+
+char const *MasterRec::FindTagVal(char const  *aTagNameStr,
+                                  int          aParamsQty,
+                                  char * const aParamsVec[],
+                                  char * const aValsVec[]) {
+
+  for (int lIx = 0; lIx < aParamsQty; lIx++) {
+    if (0 == strcmp(aParamsVec[lIx], aTagNameStr)) {
+      return aValsVec[lIx];
+    }
+  }
+
+  return nullptr;
 }
 #endif // LWIP_HTTPD_CGI
 

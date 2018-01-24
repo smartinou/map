@@ -95,21 +95,26 @@ class MasterRec : public DBRec {
                              char *aInsertPtr,
                              int   aInsertStrLen);
   static int SSIRadioButtonHandler(int                aTagIx,
-                                   char              *aInsertStr,
+                                   char       * const aInsertStr,
                                    int                aInsertStrLen,
                                    char const * const aNameValStr,
                                    bool               aIsChecked);
   static int SSICalendarHandler(int          aTagIx,
-                                char        *aInsertStr,
+                                char * const aInsertStr,
                                 int          aInsertStrLen,
                                 unsigned int aHour);
   static int SSINetworkHandler(int                aTagIx,
-                               char              *aInsertStr,
+                               char       * const aInsertStr,
                                int                aInsertStrLen,
                                char const * const aTagNameStr);
-  static int SSIStatsHandler(int   aTagIx,
-                             char *aInsertStr,
-                             int   aInsertStrLen);
+  static int SSIStatsHandler(int          aTagIx,
+                             char * const aInsertStr,
+                             int          aInsertStrLen);
+
+  static char const *FindTagVal(char const  *aTagNameStr,
+                                int          aParamsQty,
+                                char * const aParamsVec[],
+                                char * const aValsVec[]);
 #endif // LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
