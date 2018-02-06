@@ -141,6 +141,7 @@ CPP_SRCS := \
         CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
+        DB.cpp \
         DBRec.cpp \
         DS3234.cpp \
         FeedCfgRec.cpp \
