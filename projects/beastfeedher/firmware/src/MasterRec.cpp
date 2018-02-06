@@ -27,6 +27,7 @@
 #include <string.h>
 
 // Common Library.
+#include "DB.h"
 #include "DBRec.h"
 
 // LwIP stack.
@@ -251,19 +252,12 @@ tCGI const MasterRec::sCGIEntries[] = {
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-MasterRec::MasterRec()
-  : DBRec()
-  , mMasterRec{0}
-  , mRecQty(0)
-  , mRecIx(0)
-  , mDBRec{nullptr} {
-
+MasterRec::MasterRec() {
   // Ctor body left intentionally empty.
 }
 
 
 MasterRec::~MasterRec() {
-
   // Dtor body left intentionally empty.
 }
 
@@ -273,19 +267,17 @@ bool MasterRec::Init(void) {
   // Initialize the Board Support Package.
   CoreLink::SPIDev *lSPIDevPtr = BSPInit();
 
-  // Create sub-records and assign them to master record.
+  // Create records and assign them to DB.
   // Deserialize NV memory into it.
   // Sanity of records is checked once deserialized.
-  mRecQty = 3;
-  mDBRec = new DBRec *[mRecQty];
   sCalendarPtr = new CalendarRec();
-  AddRec(sCalendarPtr);
+  DB::AddRec(sCalendarPtr);
 
   sNetIFRecPtr = new NetIFRec();
-  AddRec(sNetIFRecPtr);
+  DB::AddRec(sNetIFRecPtr);
 
   sFeedCfgRecPtr = new FeedCfgRec();
-  AddRec(sFeedCfgRecPtr);
+  DB::AddRec(sFeedCfgRecPtr);
 
   unsigned long lIRQGPIOPort = IRQGPIOPortGet();
   unsigned long lIntNbr = BSPGPIOPortToInt(lIRQGPIOPort);
@@ -296,7 +288,6 @@ bool MasterRec::Init(void) {
                                             lIRQGPIOPort,
                                             IRQGPIOPinGet(),
                                             lIntNbr,
-                                            this,
                                             MasterRec::sCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
   MasterRec::sRTCC_AOPtr = new RTCC_AO();
@@ -333,120 +324,6 @@ bool MasterRec::Init(void) {
                                    &sLwIPInitEvt);
 
   return true;
-}
-
-
-bool MasterRec::IsDirty(void) const {
-  bool lIsDirty = false;
-
-  for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
-    lIsDirty |= mDBRec[lRecIx]->IsDirty();
-  }
-
-  return lIsDirty;
-}
-
-
-bool MasterRec::IsSane(void) {
-  if (!DBRec::IsCRCGood(reinterpret_cast<uint8_t *>(&mMasterRec), sizeof(mMasterRec))) {
-    return false;
-  }
-
-  // Check magic value.
-  if (('M' != mMasterRec.mMagic[0])
-      || ('S' != mMasterRec.mMagic[1])
-      || ('T' != mMasterRec.mMagic[2])) {
-    return false;
-  }
-
-  for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
-    if (!mDBRec[lRecIx]->IsSane()) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-
-unsigned int MasterRec::AddRec(DBRec * const aDBRecPtr) {
-  mDBRec[mRecIx] = aDBRecPtr;
-  return mRecIx++;
-}
-
-
-void MasterRec::ResetDflt(void) {
-
-  mMasterRec.mMagic[0] = 'M';
-  mMasterRec.mMagic[1] = 'S';
-  mMasterRec.mMagic[2] = 'T';
-
-  mMasterRec.mVerMajor = VER_MAJOR;
-  mMasterRec.mVerMinor = VER_MINOR;
-  mMasterRec.mVerRev   = VER_REV;
-
-  mMasterRec.mRecQty = 4;
-
-  // Set record info.
-  for (unsigned int lRecIx= 0; lRecIx < 3; lRecIx++) {
-    mMasterRec.mRecInfo[lRecIx].mType   = 0;
-    mMasterRec.mRecInfo[lRecIx].mOffset = 0;
-    mMasterRec.mRecInfo[lRecIx].mSize   = 0;
-  }
-
-  // Nullify reserved fields.
-  memset(&mMasterRec.mRsvd[0], 0, 12);
-
-  // Reset all sub-records.
-  for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
-    mDBRec[lRecIx]->ResetDflt();
-  }
-
-  mMasterRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mMasterRec), sizeof(mMasterRec));
-
-  mIsDirty = true;
-}
-
-
-unsigned int MasterRec::GetRecSize(void) const {
-
-  unsigned int lSize = sizeof(mMasterRec);
-  for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
-    lSize += mDBRec[lRecIx]->GetRecSize();
-  }
-
-  return lSize;
-}
-
-
-// Trivial serialization function.
-void MasterRec::Serialize(uint8_t * const aDataPtr) const {
-
-  uint8_t *lDataPtr = aDataPtr;
-  memcpy(lDataPtr,
-         reinterpret_cast<void const *>(&mMasterRec),
-         sizeof(struct RecStructTag));
-  lDataPtr += sizeof(struct RecStructTag);
-
-  for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
-    mDBRec[lRecIx]->Serialize(lDataPtr);
-    lDataPtr += mDBRec[lRecIx]->GetRecSize();
-  }
-}
-
-
-// Trivial serialization function.
-void MasterRec::Deserialize(uint8_t const *aDataPtr) {
-
-  memcpy(reinterpret_cast<void *>(&mMasterRec),
-         aDataPtr,
-         sizeof(struct RecStructTag));
-  aDataPtr += sizeof(struct RecStructTag);
-
-  for (unsigned int lRecIx = 0; lRecIx < mRecQty; lRecIx++) {
-    mDBRec[lRecIx]->Deserialize(aDataPtr);
-    aDataPtr += mDBRec[lRecIx]->GetRecSize();
-  }
 }
 
 // *****************************************************************************
@@ -894,6 +771,9 @@ char const *MasterRec::DispCfg(int   aCGIIx,
         MasterRec::sCalendarPtr->SetTimeEntry(lTime);
       }
     }
+
+    // Send event to trigger updated DB writing.
+    // We could discriminate between FeedCfgRec and CalendarRec.
   }
 
   // Return where we're coming from.
@@ -901,7 +781,7 @@ char const *MasterRec::DispCfg(int   aCGIIx,
 }
 
 
-char const *MasterRec::FindTagVal(char const  *aTagNameStr,
+char const *MasterRec::FindTagVal(char  const *aTagNameStr,
                                   int          aParamsQty,
                                   char * const aParamsVec[],
                                   char * const aValsVec[]) {
