@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -23,18 +23,8 @@
 // Standard Library.
 #include <stddef.h>
 
-// TI Library.
-
-// QP Library.
-
-// Common Library.
-
 // This project.
 #include "DBRec.h"
-
-//Q_DEFINE_THIS_FILE
-
-//namespace BFH {
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -52,28 +42,30 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-unsigned int DBRec::mDBObjCnt = 0;
-
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 DBRec::DBRec()
   : mIsDirty(false)
-  , mDBObjIx(0) {
+  , mNextRecPtr(nullptr) {
 
-  mDBObjIx = mDBObjCnt;
-  mDBObjCnt++;
-}
-
-
-unsigned int DBRec::GetMyIx(void) {
-  return mDBObjIx;
+  // Ctor body left intentionally emtpy.
 }
 
 
 bool DBRec::IsDirty(void) const {
   return mIsDirty;
+}
+
+
+DBRec *DBRec::GetNextRec(void) const {
+  return mNextRecPtr;
+}
+
+
+void DBRec::SetNextRec(DBRec * const aDBRecPtr) {
+  mNextRecPtr = aDBRecPtr;
 }
 
 // *****************************************************************************
