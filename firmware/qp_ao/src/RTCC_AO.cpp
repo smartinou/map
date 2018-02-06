@@ -42,6 +42,7 @@
 #include "qpcpp.h"
 
 // Common Library.
+#include "DB.h"
 #include "Date.h"
 #include "DS3234.h"
 #include "SPI.h"
@@ -141,9 +142,8 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
   // Subscribe to signals if any.
   //aMe->subscribe(<>_SIG);
 
-  // Init MasterRec.
-  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
-  me->RdDBRec(lRTCCInitEvtPtr->mMasterDBRecPtr);
+  // Init database and calendar.
+  lResult = InitDB(me, e);
   lResult = InitCalendar(me, e);
   lResult = InitInterrupt(me, e);
 
@@ -179,6 +179,29 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
                               lRTCCInitEvtPtr->mSPIDevRef,
                               *me->mRTCSPISlaveCfgPtr);
   me->mDS3234Ptr->Init(DS3234::Ctrl::INTCn);
+
+  return 0;
+}
+
+
+unsigned int RTCC_AO::InitDB(RTCC_AO         * const me,  //aMePtr,
+                             QP::QEvt  const * const e) { //aEvtPtr
+
+  if (me->mDS3234Ptr->HasNVMem()) {
+    uint8_t      lSRAMData[256];
+    unsigned int lDBSize = DB::GetSize();
+
+    me->mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lDBSize);
+    DB::Deserialize(&lSRAMData[0]);
+    if (!DB::IsSane()) {
+      // Reset defaults and write back to NV mem.
+      DB::ResetDflt();
+      DB::Serialize(&lSRAMData[0]);
+      me->mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lDBSize);
+    }
+  } else {
+    DB::ResetDflt();
+  }
 
   return 0;
 }
@@ -373,26 +396,6 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
     // No next entry found:
     // clear alarm so it does not generate an interrupt.
     me->mDS3234Ptr->DisableAlarm(DS3234::ALARM_ID::ALARM_ID_2);
-  }
-}
-
-
-void RTCC_AO::RdDBRec(DBRec * const aDBRecPtr) {
-
-  if (mDS3234Ptr->HasNVMem()) {
-    uint8_t      lSRAMData[256];
-    unsigned int lRecSize = aDBRecPtr->GetRecSize();
-
-    mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lRecSize);
-    aDBRecPtr->Deserialize(&lSRAMData[0]);
-    if (!aDBRecPtr->IsSane()) {
-      // Reset defaults and write back to NV mem.
-      aDBRecPtr->ResetDflt();
-      aDBRecPtr->Serialize(&lSRAMData[0]);
-      mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lRecSize);
-    }
-  } else {
-    aDBRecPtr->ResetDflt();
   }
 }
 

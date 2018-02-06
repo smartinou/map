@@ -63,6 +63,8 @@ class RTCC_AO : public QP::QActive {
  private:
   static unsigned int InitRTCC(RTCC_AO         * const aMePtr,
                                QP::QEvt  const * const aEvtPtr);
+  static unsigned int InitDB(RTCC_AO         * const aMePtr,
+                             QP::QEvt  const * const aEvtPtr);
   static unsigned int InitCalendar(RTCC_AO         * const aMePtr,
                                    QP::QEvt  const * const aEvtPtr);
   static unsigned int InitInterrupt(RTCC_AO         * const aMePtr,
@@ -70,7 +72,6 @@ class RTCC_AO : public QP::QActive {
 
   static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
 
-  void RdDBRec(DBRec * const aDBRecPtr);
 
   Time  mTime;
   Date  mDate;
