@@ -373,14 +373,14 @@ void DS3234::ClrAlarmFlag(enum ALARM_ID aAlarmID) {
 }
 
 
-bool DS3234::HasNVMem(void) const {
-  return true;
+unsigned int DS3234::GetNVMemSize(void) const {
+  return mNVMemSize;
 }
 
 
-void DS3234::RdFromRAM(uint8_t * const aDataPtr,
-                       unsigned int    aOffset,
-                       unsigned int    aSize) {
+void DS3234::RdFromNVMem(uint8_t * const aDataPtr,
+                         unsigned int    aOffset,
+                         unsigned int    aSize) {
 
   // Write SRAM address register.
   // Cap size.
@@ -390,7 +390,7 @@ void DS3234::RdFromRAM(uint8_t * const aDataPtr,
                     sizeof(rtcc_reg_t),
                     mSPICfgRef);
 
-  unsigned int lMaxSize = 256 - aOffset;
+  unsigned int lMaxSize = mNVMemSize - aOffset;
   if (aSize > lMaxSize) {
     aSize = lMaxSize;
   }
@@ -402,9 +402,9 @@ void DS3234::RdFromRAM(uint8_t * const aDataPtr,
 }
 
 
-void DS3234::WrToRAM(uint8_t const * const aDataPtr,
-                     unsigned int          aOffset,
-                     unsigned int          aSize) {
+void DS3234::WrToNVMem(uint8_t const * const aDataPtr,
+                       unsigned int          aOffset,
+                       unsigned int          aSize) {
 
   // Write SRAM address register.
   // Cap size.
@@ -414,7 +414,7 @@ void DS3234::WrToRAM(uint8_t const * const aDataPtr,
                     sizeof(rtcc_reg_t),
                     mSPICfgRef);
 
-  unsigned int lMaxSize = 256 - aOffset;
+  unsigned int lMaxSize = mNVMemSize - aOffset;
   if (aSize > lMaxSize) {
     aSize = lMaxSize;
   }

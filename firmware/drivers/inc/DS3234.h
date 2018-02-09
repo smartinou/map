@@ -139,13 +139,14 @@ class DS3234 : public RTCC {
   void DisableAlarm(enum ALARM_ID aAlarmID);
   void ClrAlarmFlag(enum ALARM_ID aAlarmID);
 
-  bool HasNVMem(void) const;
-  void RdFromRAM(uint8_t * const aDataPtr,
-                 unsigned int    aOffset,
-                 unsigned int    aSize);
-  void WrToRAM(uint8_t const * const aDataPtr,
-               unsigned int          aOffset,
-               unsigned int          aSize);
+  unsigned int GetNVMemSize(void) const;
+
+  void RdFromNVMem(uint8_t * const aDataPtr,
+                   unsigned int    aOffset,
+                   unsigned int    aSize);
+  void WrToNVMem(uint8_t const * const aDataPtr,
+                 unsigned int          aOffset,
+                 unsigned int          aSize);
 
   // Interrupt-based/cached API.
   void    GetTimeAndDate(Time &aTimeRef, Date &aDateRef);
@@ -248,6 +249,8 @@ class DS3234 : public RTCC {
   CoreLink::SPISlaveCfg &mSPICfgRef;
 
   rtcc_reg_map_t mRegMap;
+
+  static unsigned int const mNVMemSize = 256;
 };
 
 // ******************************************************************************
