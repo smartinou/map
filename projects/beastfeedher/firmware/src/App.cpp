@@ -381,7 +381,7 @@ uint16_t App::SSIHandler(int   aTagIx,
                     "%s",
                     FWVersionGenerated::GitHash);
   case SSI_TAG_IX_INFO_DB_STATUS:
-    if (DB::IsSane()) {
+    if (DB::GetRecCount() && DB::IsSane()) {
       return snprintf(aInsertStr,
                       LWIP_HTTPD_MAX_TAG_INSERT_LEN,
                       "Passed");
@@ -738,6 +738,7 @@ char const *App::DispCfg(int   aCGIIx,
     return "/config.shtml";
   }
 
+  bool lIsCalendarChanged = false;
   // Try to find the Config and Calendar apply button.
   lSubmitVal = FindTagVal("set_cfg",
                           aParamsQty,
@@ -769,11 +770,15 @@ char const *App::DispCfg(int   aCGIIx,
         sscanf(aValsVec[lIx], "%d", &lHour);
         Time lTime(lHour, 0, 0);
         App::sCalendarPtr->SetTimeEntry(lTime);
+	lIsCalendarChanged = true;
       }
     }
 
     // Send event to trigger updated DB writing.
-    // We could discriminate between FeedCfgRec and CalendarRec.
+    RTCCSaveToRAMEvt *lSaveEvtPtr = Q_NEW(RTCCSaveToRAMEvt,
+					  SIG_RTCC_SAVE_TO_NV_MEM);
+    lSaveEvtPtr->mIsCalendarChanged = lIsCalendarChanged;
+    App::sRTCC_AOPtr->POST(lSaveEvtPtr, 0);
   }
 
   // Return where we're coming from.
