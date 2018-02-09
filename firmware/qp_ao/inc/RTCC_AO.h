@@ -71,6 +71,8 @@ class RTCC_AO : public QP::QActive {
 
   static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
 
+  static void WrToNVMem(RTCC_AO * const aMePtr);
+
 
   Time  mTime;
   Date  mDate;
@@ -85,6 +87,9 @@ class RTCC_AO : public QP::QActive {
 
   // The single instance of RTCC Active Object.
   static RTCC_AO *mInstancePtr;
+
+  // Buffer of bytes to hold NV memory content.
+  static uint8_t *mNVMemBuf;
 };
 
 // ******************************************************************************

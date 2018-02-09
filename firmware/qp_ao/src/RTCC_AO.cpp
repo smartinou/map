@@ -60,7 +60,7 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 
 #define RTCC_CALENDAR_DBG
-//#undef  RTCC_CALENDAR_DBG
+#undef  RTCC_CALENDAR_DBG
 
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -74,7 +74,8 @@ Q_DEFINE_THIS_FILE
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-RTCC_AO *RTCC_AO::mInstancePtr = static_cast<RTCC_AO *>(0);
+RTCC_AO *RTCC_AO::mInstancePtr = nullptr;
+uint8_t *RTCC_AO::mNVMemBuf    = nullptr;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -85,8 +86,8 @@ RTCC_AO::RTCC_AO() :
   mTime(),
   mDate(),
   mTemperature(0.0),
-  mRTCSPISlaveCfgPtr(static_cast<CoreLink::SPISlaveCfg *>(0)),
-  mDS3234Ptr(static_cast<DS3234 *>(0)),
+  mRTCSPISlaveCfgPtr(nullptr),
+  mDS3234Ptr(nullptr),
   mCalendarPtr(nullptr),
   mIntNbr(0) {
 
@@ -180,6 +181,11 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
                               *me->mRTCSPISlaveCfgPtr);
   me->mDS3234Ptr->Init(DS3234::Ctrl::INTCn);
 
+  unsigned int lNVMemSize = me->mDS3234Ptr->GetNVMemSize();
+  if (lNVMemSize) {
+    mNVMemBuf = new uint8_t [lNVMemSize];
+  }
+
   return 0;
 }
 
@@ -187,17 +193,15 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
 unsigned int RTCC_AO::InitDB(RTCC_AO         * const me,  //aMePtr,
                              QP::QEvt  const * const e) { //aEvtPtr
 
-  if (me->mDS3234Ptr->HasNVMem()) {
-    uint8_t      lSRAMData[256];
+  unsigned int lNVMemSize = me->mDS3234Ptr->GetNVMemSize();
+  if (lNVMemSize) {
     unsigned int lDBSize = DB::GetSize();
-
-    me->mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lDBSize);
-    DB::Deserialize(&lSRAMData[0]);
+    me->mDS3234Ptr->RdFromNVMem(mNVMemBuf, 0, lDBSize);
+    DB::Deserialize(mNVMemBuf);
     if (!DB::IsSane()) {
       // Reset defaults and write back to NV mem.
       DB::ResetDflt();
-      DB::Serialize(&lSRAMData[0]);
-      me->mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lDBSize);
+      RTCC_AO::WrToNVMem(me);
     }
   } else {
     DB::ResetDflt();
@@ -317,21 +321,14 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-    // FIXME: replace by _UPDATE_CALENDAR or such.
-  case SIG_RTCC_ADD_CALENDAR_ENTRY: {
-    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
-    me->mCalendarPtr->SetEntry(lSetEvtPtr->mDate.GetWeekday(),
-                               lSetEvtPtr->mTime);
-    SetNextCalendarEvt(me);
-    return Q_HANDLED();
-  }
+  case SIG_RTCC_SAVE_TO_NV_MEM: {
+    RTCCSaveToRAMEvt const *lSaveEvtPtr = static_cast<RTCCSaveToRAMEvt const *>(e);
+    if (lSaveEvtPtr->mIsCalendarChanged) {
+      SetNextCalendarEvt(me);
+    }
 
-  case SIG_RTCC_DEL_CALENDAR_ENTRY: {
-    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
-    me->mCalendarPtr->ClrEntry(lSetEvtPtr->mDate.GetWeekday(),
-                               lSetEvtPtr->mTime);
-    SetNextCalendarEvt(me);
-    return Q_HANDLED();
+    // Save to NV mem.
+    RTCC_AO::WrToNVMem(me);
   }
 
   case SIG_RTCC_SET_TIME: {
@@ -397,6 +394,14 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
     // clear alarm so it does not generate an interrupt.
     me->mDS3234Ptr->DisableAlarm(DS3234::ALARM_ID::ALARM_ID_2);
   }
+}
+
+
+void RTCC_AO::WrToNVMem(RTCC_AO * const me) {
+
+  unsigned int lDBSize = DB::GetSize();
+  DB::Serialize(mNVMemBuf);
+  me->mDS3234Ptr->WrToNVMem(mNVMemBuf, 0, lDBSize);
 }
 
 // *****************************************************************************

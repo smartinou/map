@@ -87,6 +87,18 @@ class RTCCTimeDateEvt : public QP::QEvt {
   Date mDate;
 };
 
+
+class RTCCSaveToRAMEvt : public QP::QEvt {
+ public:
+  RTCCSaveToRAMEvt(QP::QSignal aSig, bool aIsCalendarChanged) {
+    sig                = aSig;
+    mIsCalendarChanged = aIsCalendarChanged;
+  }
+
+ public:
+  bool mIsCalendarChanged;
+};
+
 // ******************************************************************************
 //                            EXPORTED VARIABLES
 // ******************************************************************************
