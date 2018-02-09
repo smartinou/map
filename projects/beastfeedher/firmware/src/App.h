@@ -3,7 +3,7 @@
 //
 // Project: Beast Feed'Her.
 //
-// Module: Master record class.
+// Module: Application class.
 //
 // *******************************************************************************
 
@@ -41,10 +41,10 @@ class LwIPMgr_AO;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class MasterRec {
+class App {
  public:
-  MasterRec();
-  ~MasterRec();
+  App();
+  ~App();
 
   bool Init(void);
 

@@ -134,6 +134,7 @@ C_SRCS := \
 
 # C++ source files.
 CPP_SRCS := \
+        App.cpp \
         Main.cpp \
         BFH_Mgr_AO.cpp \
         BSP.cpp \
@@ -149,7 +150,6 @@ CPP_SRCS := \
         Limit.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
-        MasterRec.cpp \
         Month.cpp \
         NetIFRec.cpp \
         RTCC.cpp \

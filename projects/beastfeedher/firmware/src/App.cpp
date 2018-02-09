@@ -2,7 +2,7 @@
 //
 // Project: Beast Feed'Her
 //
-// Module: Master record class.
+// Module: Application class.
 //
 // *****************************************************************************
 
@@ -35,6 +35,7 @@
 #include "lwip/stats.h"
 
 // This project.
+#include "App.h"
 #include "BFH_Mgr_AO.h"
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
@@ -43,7 +44,6 @@
 #include "FWVersionGenerated.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
-#include "MasterRec.h"
 #include "NetIFRec.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"
@@ -155,17 +155,17 @@ enum {
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-CalendarRec *MasterRec::sCalendarPtr   = nullptr;
-NetIFRec    *MasterRec::sNetIFRecPtr   = nullptr;
-FeedCfgRec  *MasterRec::sFeedCfgRecPtr = nullptr;
+CalendarRec *App::sCalendarPtr   = nullptr;
+NetIFRec    *App::sNetIFRecPtr   = nullptr;
+FeedCfgRec  *App::sFeedCfgRecPtr = nullptr;
 
-RTCC_AO     *MasterRec::sRTCC_AOPtr    = nullptr;
-LwIPMgr_AO  *MasterRec::sLwIPMgr_AOPtr = nullptr;
+RTCC_AO     *App::sRTCC_AOPtr    = nullptr;
+LwIPMgr_AO  *App::sLwIPMgr_AOPtr = nullptr;
 
 
 #if LWIP_HTTPD_SSI
 // Server-Side Include (SSI) demo.
-char const *MasterRec::sSSITags[] = {
+char const *App::sSSITags[] = {
   // Common/misc. tags.
   "_zero",     // SSI_TAG_IX_ZERO
   "_empty",    // SSI_TAG_IX_EMPTY
@@ -242,7 +242,7 @@ char const *MasterRec::sSSITags[] = {
 
 
 #if LWIP_HTTPD_CGI
-tCGI const MasterRec::sCGIEntries[] = {
+tCGI const App::sCGIEntries[] = {
   {"/index.cgi",  DispIndex},
   {"/config.cgi", DispCfg}
 };
@@ -252,17 +252,17 @@ tCGI const MasterRec::sCGIEntries[] = {
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-MasterRec::MasterRec() {
+App::App() {
   // Ctor body left intentionally empty.
 }
 
 
-MasterRec::~MasterRec() {
+App::~App() {
   // Dtor body left intentionally empty.
 }
 
 
-bool MasterRec::Init(void) {
+bool App::Init(void) {
 
   // Initialize the Board Support Package.
   CoreLink::SPIDev *lSPIDevPtr = BSPInit();
@@ -288,20 +288,20 @@ bool MasterRec::Init(void) {
                                             lIRQGPIOPort,
                                             IRQGPIOPinGet(),
                                             lIntNbr,
-                                            MasterRec::sCalendarPtr };
+                                            App::sCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
-  MasterRec::sRTCC_AOPtr = new RTCC_AO();
-  MasterRec::sRTCC_AOPtr->start(1U,
-                                sRTCCEvtQPtr,
-                                Q_DIM(sRTCCEvtQPtr),
-                                nullptr,
-                                0U,
-                                &sRTCCInitEvt);
+  App::sRTCC_AOPtr = new RTCC_AO();
+  App::sRTCC_AOPtr->start(1U,
+                          sRTCCEvtQPtr,
+                          Q_DIM(sRTCCEvtQPtr),
+                          nullptr,
+                          0U,
+                          &sRTCCInitEvt);
 
   // DB records are now deserialized, and fixed if required.
   // Create all other AOs.
   static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY,
-                                          MasterRec::sFeedCfgRecPtr };
+                                          App::sFeedCfgRecPtr };
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
   BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
   lBFH_Mgr_AO.start(2U,
@@ -312,16 +312,16 @@ bool MasterRec::Init(void) {
                     &sBFHInitEvt);
 
   static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY,
-                                            MasterRec::sNetIFRecPtr,
-                                            MasterRec::NetCallbackInit };
+                                            App::sNetIFRecPtr,
+                                            App::NetCallbackInit };
   static QP::QEvt const *sLwIPEvtQPtr[10];
-  MasterRec::sLwIPMgr_AOPtr = new LwIPMgr_AO();
-  MasterRec::sLwIPMgr_AOPtr->start(3U,
-                                   sLwIPEvtQPtr,
-                                   Q_DIM(sLwIPEvtQPtr),
-                                   nullptr,
-                                   0U,
-                                   &sLwIPInitEvt);
+  App::sLwIPMgr_AOPtr = new LwIPMgr_AO();
+  App::sLwIPMgr_AOPtr->start(3U,
+                             sLwIPEvtQPtr,
+                             Q_DIM(sLwIPEvtQPtr),
+                             nullptr,
+                             0U,
+                             &sLwIPInitEvt);
 
   return true;
 }
@@ -330,17 +330,17 @@ bool MasterRec::Init(void) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void MasterRec::NetCallbackInit(void) {
+void App::NetCallbackInit(void) {
 
 #if LWIP_HTTPD_SSI
-  http_set_ssi_handler(MasterRec::SSIHandler,
-                       MasterRec::sSSITags,
-                       Q_DIM(MasterRec::sSSITags));
+  http_set_ssi_handler(App::SSIHandler,
+                       App::sSSITags,
+                       Q_DIM(App::sSSITags));
 #endif // LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
-  http_set_cgi_handlers(MasterRec::sCGIEntries,
-                        Q_DIM(MasterRec::sCGIEntries));
+  http_set_cgi_handlers(App::sCGIEntries,
+                        Q_DIM(App::sCGIEntries));
 #endif // LWIP_HTTPD_CGI
 }
 
@@ -348,9 +348,9 @@ void MasterRec::NetCallbackInit(void) {
 #if LWIP_HTTPD_SSI
 // HTTPD customizations.
 // Server-Side Include (SSI) handler.
-uint16_t MasterRec::SSIHandler(int   aTagIx,
-                               char *aInsertStr,
-                               int   aInsertStrLen) {
+uint16_t App::SSIHandler(int   aTagIx,
+                         char *aInsertStr,
+                         int   aInsertStrLen) {
 
   switch (aTagIx) {
   case SSI_TAG_IX_ZERO:
@@ -381,7 +381,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                     "%s",
                     FWVersionGenerated::GitHash);
   case SSI_TAG_IX_INFO_DB_STATUS:
-    if (1) {
+    if (DB::IsSane()) {
       return snprintf(aInsertStr,
                       LWIP_HTTPD_MAX_TAG_INSERT_LEN,
                       "Passed");
@@ -401,7 +401,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
     static char const * const lDateInputStr =
       "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
     char        lDateBuf[16] = {0};
-    Date       &lDate    = MasterRec::sRTCC_AOPtr->GetDate();
+    Date       &lDate    = App::sRTCC_AOPtr->GetDate();
     char const *lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -414,7 +414,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
     static char const * const lTimeInputStr =
       "<input type=\"time\" name=\"time\" value=\"";
     char        lTimeBuf[16] = {0};
-    Time       &lTime    = MasterRec::sRTCC_AOPtr->GetTime();
+    Time       &lTime    = App::sRTCC_AOPtr->GetTime();
     char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -429,28 +429,28 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  "feeding_pad\" value=\"y\"",
-                                 MasterRec::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
+                                 App::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
   }
   case SSI_TAG_IX_CFG_PAD_DISABLE: {
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  "feeding_pad\" value=\"n\"",
-                                 !MasterRec::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
+                                 !App::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
   }
   case SSI_TAG_IX_CFG_MANUAL_ENABLE: {
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  "feeding_button\" value=\"y\"",
-                                 MasterRec::sFeedCfgRecPtr->IsManualFeedingEnable());
+                                 App::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_MANUAL_DISABLE: {
     return SSIRadioButtonHandler(aTagIx,
                                  aInsertStr,
                                  aInsertStrLen,
                                  "feeding_button\" value=\"n\"",
-                                 !MasterRec::sFeedCfgRecPtr->IsManualFeedingEnable());
+                                 !App::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_FEED_TIME: {
     static char const * const sFeedingTimeStr =
@@ -460,7 +460,7 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
                     "%s%d\">",
                     sFeedingTimeStr,
-                    MasterRec::sFeedCfgRecPtr->GetTimedFeedPeriod());
+                    App::sFeedCfgRecPtr->GetTimedFeedPeriod());
   }
 
   // Calendar.
@@ -571,11 +571,11 @@ uint16_t MasterRec::SSIHandler(int   aTagIx,
 }
 
 
-int MasterRec::SSIRadioButtonHandler(int                aTagIx,
-                                     char       * const aInsertStr,
-                                     int                aInsertStrLen,
-                                     char const * const aNameValStr,
-                                     bool               aIsChecked) {
+int App::SSIRadioButtonHandler(int                aTagIx,
+                               char       * const aInsertStr,
+                               int                aInsertStrLen,
+                               char const * const aNameValStr,
+                               bool               aIsChecked) {
 
   static char const * const sInputRadioStr = "<input type=\"radio\" name=\"";
   if (aIsChecked) {
@@ -594,16 +594,16 @@ int MasterRec::SSIRadioButtonHandler(int                aTagIx,
 }
 
 
-int MasterRec::SSICalendarHandler(int          aTagIx,
-                                  char * const aInsertStr,
-                                  int          aInsertStrLen,
-                                  unsigned int aHour) {
+int App::SSICalendarHandler(int          aTagIx,
+                            char * const aInsertStr,
+                            int          aInsertStrLen,
+                            unsigned int aHour) {
 
   static char const *sFeedingCalStr =
     "<input type=\"checkbox\" name=\"feed_time\" value=\"";
 
   Time lTime(aHour, 0, 0, true, false);
-  if (MasterRec::sCalendarPtr->IsEntrySet(lTime)) {
+  if (App::sCalendarPtr->IsEntrySet(lTime)) {
     return snprintf(aInsertStr,
                     LWIP_HTTPD_MAX_TAG_INSERT_LEN,
                     "%s%02d\" checked>%02d:00",
@@ -621,10 +621,10 @@ int MasterRec::SSICalendarHandler(int          aTagIx,
 }
 
 
-int MasterRec::SSINetworkHandler(int                aTagIx,
-                                 char       * const aInsertStr,
-                                 int                aInsertStrLen,
-                                 char const * const aTagNameStr) {
+int App::SSINetworkHandler(int                aTagIx,
+                           char       * const aInsertStr,
+                           int                aInsertStrLen,
+                           char const * const aTagNameStr) {
 
   static char const * const sInputTagStr = "<input name=\"";
   static char const * const sInputValueStr =
@@ -639,9 +639,9 @@ int MasterRec::SSINetworkHandler(int                aTagIx,
 }
 
 
-int MasterRec::SSIStatsHandler(int          aTagIx,
-                               char * const aInsertStr,
-                               int          aInsertStrLen) {
+int App::SSIStatsHandler(int          aTagIx,
+                         char * const aInsertStr,
+                         int          aInsertStrLen) {
 
   struct stats_proto *lStatsPtr = &lwip_stats.link;
 
@@ -669,10 +669,10 @@ int MasterRec::SSIStatsHandler(int          aTagIx,
 #if LWIP_HTTPD_CGI
 // HTTPD customizations.
 // CGI handlers.
-char const *MasterRec::DispIndex(int   aCGIIx,
-                                 int   aParamsQty,
-                                 char *aParamsVec[],
-                                 char *aValsVec[]) {
+char const *App::DispIndex(int   aCGIIx,
+                           int   aParamsQty,
+                           char *aParamsVec[],
+                           char *aValsVec[]) {
 
   if (0 == strcmp(aParamsVec[0], "timed_feed")) {
     // Param found.
@@ -693,10 +693,10 @@ char const *MasterRec::DispIndex(int   aCGIIx,
 }
 
 
-char const *MasterRec::DispCfg(int   aCGIIx,
-                               int   aParamsQty,
-                               char *aParamsVec[],
-                               char *aValsVec[]) {
+char const *App::DispCfg(int   aCGIIx,
+                         int   aParamsQty,
+                         char *aParamsVec[],
+                         char *aValsVec[]) {
 
   // Try to find the Time and Date apply button.
   char const *lSubmitVal = FindTagVal("set_time",
@@ -746,29 +746,29 @@ char const *MasterRec::DispCfg(int   aCGIIx,
   if (0 == strcmp(lSubmitVal, "Apply")) {
     // Make sure the calendar is cleared before setting new entries.
     // Must be done only once!
-    MasterRec::sCalendarPtr->ClrAllEntries();
+    App::sCalendarPtr->ClrAllEntries();
     for (int lIx = 0; lIx < aParamsQty; ++lIx) {
       if (0 == strcmp(aParamsVec[lIx], "feeding_pad")) {
         if ('y' == *aValsVec[lIx]) {
-          MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(true);
+          App::sFeedCfgRecPtr->SetIsManualFeedingEnabled(true);
         } else {
-          MasterRec::sFeedCfgRecPtr->SetIsManualFeedingEnabled(false);
+          App::sFeedCfgRecPtr->SetIsManualFeedingEnabled(false);
         }
       } else if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
         if ('y' == *aValsVec[lIx]) {
-          MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(true);
+          App::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(true);
         } else {
-          MasterRec::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(false);
+          App::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(false);
         }
       } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
         unsigned int lFeedingTime = 0;
         sscanf(aValsVec[lIx], "%d", &lFeedingTime);
-        MasterRec::sFeedCfgRecPtr->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
+        App::sFeedCfgRecPtr->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
       } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
         unsigned int lHour = 0;
         sscanf(aValsVec[lIx], "%d", &lHour);
         Time lTime(lHour, 0, 0);
-        MasterRec::sCalendarPtr->SetTimeEntry(lTime);
+        App::sCalendarPtr->SetTimeEntry(lTime);
       }
     }
 
@@ -781,10 +781,10 @@ char const *MasterRec::DispCfg(int   aCGIIx,
 }
 
 
-char const *MasterRec::FindTagVal(char  const *aTagNameStr,
-                                  int          aParamsQty,
-                                  char * const aParamsVec[],
-                                  char * const aValsVec[]) {
+char const *App::FindTagVal(char  const *aTagNameStr,
+                            int          aParamsQty,
+                            char * const aParamsVec[],
+                            char * const aValsVec[]) {
 
   for (int lIx = 0; lIx < aParamsQty; lIx++) {
     if (0 == strcmp(aParamsVec[lIx], aTagNameStr)) {
