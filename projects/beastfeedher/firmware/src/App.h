@@ -1,10 +1,9 @@
-#ifndef MASTER_REC_H_
-#define MASTER_REC_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Beast Feed'Her.
 //
-// Module: Master record class.
+// Module: Application class.
 //
 // *******************************************************************************
 
@@ -22,8 +21,6 @@
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-#include "DBRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -44,50 +41,14 @@ class LwIPMgr_AO;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class MasterRec : public DBRec {
+class App {
  public:
-  MasterRec();
-  ~MasterRec();
+  App();
+  ~App();
 
   bool Init(void);
 
-  unsigned int AddRec(DBRec * const aDBRecPtr);
-
-  bool IsSane(void);
-  bool IsDirty(void) const;
-  void ResetDflt(void);
-
-  // Simple Serialize/Deserialize methods.
-  unsigned int GetRecSize(void) const;
-  void Serialize(  uint8_t       * const aDataPtr) const;
-  void Deserialize(uint8_t const * const aDataPtr);
-
  private:
-  enum {
-    VER_MAJOR = 1,
-    VER_MINOR = 0,
-    VER_REV   = 0
-  };
-
-  struct RecInfoStructTag {
-    uint8_t mType;
-    uint8_t mOffset;
-    uint8_t mSize;
-  };
-
-  typedef struct RecInfoStructTag REC_INFO;
-
-  struct RecStructTag {
-    uint8_t  mCRC;
-    char     mMagic[3];
-    uint8_t  mVerMajor;
-    uint8_t  mVerMinor;
-    uint8_t  mVerRev;
-    uint8_t  mRecQty;
-    REC_INFO mRecInfo[3];
-    uint8_t  mRsvd[12];
-  };
-
   static void NetCallbackInit(void);
 
 #if LWIP_HTTPD_SSI
@@ -111,7 +72,7 @@ class MasterRec : public DBRec {
                              char * const aInsertStr,
                              int          aInsertStrLen);
 
-  static char const *FindTagVal(char const  *aTagNameStr,
+  static char const *FindTagVal(char  const *aTagNameStr,
                                 int          aParamsQty,
                                 char * const aParamsVec[],
                                 char * const aValsVec[]);
@@ -128,18 +89,12 @@ static char const *DispCfg(int   aIx,
                            char *aValsVec[]);
 #endif // LWIP_HTTPD_CGI
 
-
-  // The actual record storage.
-  struct RecStructTag mMasterRec;
-
-  unsigned int mRecQty;
-  unsigned int mRecIx;
-  DBRec      **mDBRec;
-
+  // DB records.
   static CalendarRec *sCalendarPtr;
   static NetIFRec    *sNetIFRecPtr;
   static FeedCfgRec  *sFeedCfgRecPtr;
 
+  // QP AOs.
   static RTCC_AO     *sRTCC_AOPtr;
   static LwIPMgr_AO  *sLwIPMgr_AOPtr;
 
@@ -167,4 +122,3 @@ static char const *DispCfg(int   aIx,
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // MASTER_REC_H_

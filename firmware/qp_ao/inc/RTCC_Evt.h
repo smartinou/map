@@ -1,5 +1,4 @@
-#ifndef RTCC_EVT_H_
-#define RTCC_EVT_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Active Object Library
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -49,8 +48,7 @@ class RTCCInitEvt : public QP::QEvt {
               unsigned int      aCSnGPIOPin,
               unsigned long     aIRQGPIOPort,
               unsigned int      aIRQGPIOPin,
-	      unsigned long     aIntNbr,
-              DBRec            *aMasterDBRecPtr,
+              unsigned long     aIntNbr,
               CalendarRec      *aCalendarPtr):
   mSPIDevRef(aSPIDevRef) {
     sig          = aSig;
@@ -61,7 +59,6 @@ class RTCCInitEvt : public QP::QEvt {
     mIRQGPIOPort = aIRQGPIOPort;
     mIRQGPIOPin  = aIRQGPIOPin;
     mIntNbr      = aIntNbr;
-    mMasterDBRecPtr = aMasterDBRecPtr;
     mCalendarPtr = aCalendarPtr;
   }
 
@@ -72,7 +69,6 @@ class RTCCInitEvt : public QP::QEvt {
   unsigned long     mIRQGPIOPort;
   unsigned int      mIRQGPIOPin;
   unsigned long     mIntNbr;
-  DBRec            *mMasterDBRecPtr;
   CalendarRec      *mCalendarPtr;
 };
 
@@ -106,4 +102,3 @@ class RTCCTimeDateEvt : public QP::QEvt {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // RTCC_EVT_H_

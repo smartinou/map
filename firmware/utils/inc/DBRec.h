@@ -1,5 +1,4 @@
-#ifndef DB_REC_H_
-#define DB_REC_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Beast Feed'Her!
@@ -14,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -43,8 +42,6 @@ class DBRec {
   DBRec();
   virtual ~DBRec() {}
 
-  unsigned int GetMyIx(void);
-
   virtual bool IsSane(void) = 0;
   virtual bool IsDirty(void) const;
   virtual void ResetDflt(void) = 0;
@@ -53,16 +50,16 @@ class DBRec {
   virtual void         Serialize(uint8_t * const aDataPtr) const = 0;
   virtual void         Deserialize(uint8_t const * const aDataPtr) = 0;
 
+  DBRec *GetNextRec(void) const;
+  void   SetNextRec(DBRec * const aDBRecPtr);
+
  protected:
   uint8_t ComputeCRC(uint8_t const *aDataPtr, unsigned int aSize);
-  bool    IsCRCGood(uint8_t const *aDataPtr, unsigned int aSize);
-
-  bool mIsDirty;
+  bool    IsCRCGood( uint8_t const *aDataPtr, unsigned int aSize);
 
  private:
-  static unsigned int mDBObjCnt;
-
-  unsigned int mDBObjIx;
+  bool   mIsDirty;
+  DBRec *mNextRecPtr;
 };
 
 // ******************************************************************************
@@ -80,4 +77,3 @@ class DBRec {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif //DB_REC_H_

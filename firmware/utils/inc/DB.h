@@ -1,9 +1,9 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Active Object Library
+// Project: Beast Feed'Her!
 //
-// Module: RTCC QP Active Object.
+// Module: DB holder class.
 //
 // *******************************************************************************
 
@@ -11,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -22,8 +21,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "DBRec.h"
-#include "CalendarRec.h"
+#include <stddef.h>
+#include <stdint.h>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -33,58 +32,33 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPIDev;
-class SPISlaveCfg;
-class DS3234;
+// Forward declarations.
+class DBRec;
 
 
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class RTCC_AO : public QP::QActive {
+
+//! \brief Button component.
+class DB {
  public:
-  RTCC_AO();
+  static void AddRec(DBRec * const aDBRecPtr);
 
-  static RTCC_AO     * const GetInstancePtr(void);
-  static QP::QActive * const GetOpaqueAOInstancePtr(void);
+  static bool IsSane(void);
+  static bool IsDirty(void);
+  static void ResetDflt(void);
 
-  void ISRCallback(void);
+  static unsigned int GetSize(void);
+  static void Serialize(uint8_t *aDataPtr);
+  static void Deserialize(uint8_t const * const aDataPtr);
 
-  float GetTemperature(void) const;
-  Time &GetTime(void);
-  Date &GetDate(void);
-
- protected:
-  static QP::QState Initial(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
-  static QP::QState Running(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
  private:
-  static unsigned int InitRTCC(RTCC_AO         * const aMePtr,
-                               QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitDB(RTCC_AO         * const aMePtr,
-                             QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitCalendar(RTCC_AO         * const aMePtr,
-                                   QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitInterrupt(RTCC_AO         * const aMePtr,
-                                    QP::QEvt  const * const aEvtPtr);
+  static bool IsSane(DBRec * const aDBRecPtr);
+  static bool IsDirty(DBRec * const aDBRecPtr);
 
-  static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
-
-
-  Time  mTime;
-  Date  mDate;
-  float mTemperature;
-
-  CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
-  DS3234 *mDS3234Ptr;
-
-  CalendarRec *mCalendarPtr;
-
-  unsigned long mIntNbr;
-
-  // The single instance of RTCC Active Object.
-  static RTCC_AO *mInstancePtr;
+  static DBRec       *mRootDBRecPtr;
+  static unsigned int mDBRecObjCnt;
 };
 
 // ******************************************************************************
