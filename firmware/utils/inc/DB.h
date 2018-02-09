@@ -53,12 +53,14 @@ class DB {
   static void Serialize(uint8_t *aDataPtr);
   static void Deserialize(uint8_t const * const aDataPtr);
 
+  static unsigned int GetRecCount(void);
+
  private:
   static bool IsSane(DBRec * const aDBRecPtr);
   static bool IsDirty(DBRec * const aDBRecPtr);
 
   static DBRec       *mRootDBRecPtr;
-  static unsigned int mDBRecObjCnt;
+  static unsigned int mDBRecObjCount;
 };
 
 // ******************************************************************************

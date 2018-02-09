@@ -56,9 +56,9 @@ class DBRec {
  protected:
   uint8_t ComputeCRC(uint8_t const *aDataPtr, unsigned int aSize);
   bool    IsCRCGood( uint8_t const *aDataPtr, unsigned int aSize);
+  bool    mIsDirty;
 
  private:
-  bool   mIsDirty;
   DBRec *mNextRecPtr;
 };
 

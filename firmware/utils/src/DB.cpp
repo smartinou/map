@@ -43,36 +43,39 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-DBRec       *DB::mRootDBRecPtr = nullptr;
-unsigned int DB::mDBRecObjCnt  = 0;
+DBRec       *DB::mRootDBRecPtr  = nullptr;
+unsigned int DB::mDBRecObjCount = 0;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 void DB::AddRec(DBRec * const aDBRecPtr) {
-
-  if (nullptr == mRootDBRecPtr) {
-    mRootDBRecPtr = aDBRecPtr;
-  } else {
-    DBRec *lDBRecPtr = DB::mRootDBRecPtr;
-    while (nullptr != lDBRecPtr->GetNextRec()) {
-      lDBRecPtr = lDBRecPtr->GetNextRec();
-    }
-    lDBRecPtr->SetNextRec(aDBRecPtr);
+  // Insert at head of the DB.
+  if (nullptr != mRootDBRecPtr) {
+    aDBRecPtr->SetNextRec(mRootDBRecPtr);
   }
+  mRootDBRecPtr = aDBRecPtr;
 
-  mDBRecObjCnt++;
+  mDBRecObjCount++;
 }
 
 
 bool DB::IsSane(void) {
-  return IsSane(mRootDBRecPtr);
+  if (nullptr != mRootDBRecPtr) {
+    return IsSane(mRootDBRecPtr);
+  }
+
+  return false;
 }
 
 
 bool DB::IsDirty(void) {
-  return IsDirty(mRootDBRecPtr);
+  if (nullptr != mRootDBRecPtr) {
+    return IsDirty(mRootDBRecPtr);
+  }
+
+  return false;
 }
 
 
@@ -120,6 +123,11 @@ void DB::Deserialize(uint8_t const *aDataPtr) {
     aDataPtr += lSize;
     lDBRecPtr = lDBRecPtr->GetNextRec();
   }
+}
+
+
+unsigned int DB::GetRecCount(void) {
+  return mDBRecObjCount;
 }
 
 // *****************************************************************************
