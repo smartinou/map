@@ -3,7 +3,7 @@
 //
 // Project: Utilities.
 //
-// Module: Button class.
+// Module: GPIOs class.
 //
 // *******************************************************************************
 
@@ -21,8 +21,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "GPIOs.h"
-
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -34,31 +32,18 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-//! \brief Button component.
-class Button : public GPIOs {
+//! \brief GPIO component.
+class GPIOs {
  public:
-  Button(unsigned long aPort,
-         unsigned int  aPin,
-         unsigned long aIntNbr,
-         unsigned int  aID);
-  Button(GPIOs const   &aGPIO,
-         unsigned long aIntNbr,
-         unsigned int  aID);
+  GPIOs(unsigned long aPort,
+        unsigned int  aPin);
 
-  unsigned int GetGPIOPinState(void);
+  unsigned long GetPort(void) const;
+  unsigned int  GetPin(void)  const;
 
-  void DisableInt(void);
-  void EnableInt(void);
-  void ClrInt(void);
-
-  enum State {
-    RELEASED = 0,
-    PRESSED  = 1
-  };
-
- private:
-  unsigned long mIntNbr;
-  unsigned int  mID;
+ protected:
+  unsigned long mPort;
+  unsigned int  mPin;
 };
 
 // ******************************************************************************

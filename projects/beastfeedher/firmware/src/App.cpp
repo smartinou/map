@@ -42,6 +42,7 @@
 #include "CalendarRec.h"
 #include "FeedCfgRec.h"
 #include "FWVersionGenerated.h"
+#include "GPIOs.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "NetIFRec.h"
@@ -279,15 +280,12 @@ bool App::Init(void) {
   sFeedCfgRecPtr = new FeedCfgRec();
   DB::AddRec(sFeedCfgRecPtr);
 
-  unsigned long lIRQGPIOPort = IRQGPIOPortGet();
-  unsigned long lIntNbr = BSPGPIOPortToInt(lIRQGPIOPort);
+  unsigned long lIntNbr = BSPGPIOPortToInt(gRTCCIntPtr->GetPort());
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
                                             *lSPIDevPtr,
-                                            CSnGPIOPortGet(),
-                                            CSnGPIOPinGet(),
-                                            lIRQGPIOPort,
-                                            IRQGPIOPinGet(),
                                             lIntNbr,
+                                            gRTCCCSnPtr,
+                                            gRTCCIntPtr,
                                             App::sCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
   App::sRTCC_AOPtr = new RTCC_AO();
@@ -770,13 +768,13 @@ char const *App::DispCfg(int   aCGIIx,
         sscanf(aValsVec[lIx], "%d", &lHour);
         Time lTime(lHour, 0, 0);
         App::sCalendarPtr->SetTimeEntry(lTime);
-	lIsCalendarChanged = true;
+        lIsCalendarChanged = true;
       }
     }
 
     // Send event to trigger updated DB writing.
     RTCCSaveToRAMEvt *lSaveEvtPtr = Q_NEW(RTCCSaveToRAMEvt,
-					  SIG_RTCC_SAVE_TO_NV_MEM);
+                                          SIG_RTCC_SAVE_TO_NV_MEM);
     lSaveEvtPtr->mIsCalendarChanged = lIsCalendarChanged;
     App::sRTCC_AOPtr->POST(lSaveEvtPtr, 0);
   }

@@ -1,5 +1,4 @@
-#ifndef BSP_H_
-#define BSP_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Beast Feed'Her!
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -26,8 +25,6 @@
 #include "Date.h"
 #include "Time.h"
 #include "SPI.h"
-
-//using namespace CoreLink;
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -80,34 +77,21 @@ enum BSP_NAV_BUTTON_ENUM_TAG {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declarations.
-//class Time;
-//class Date;
-
-
-// [MG] MOVE THIS TO "BEAST FEEDER" HEADER FILE.
-
-// Event to pass GPIO info to initial transition.
-// Avoids ctor with long argument list.
-class GPIOInitEvt : public QP::QEvt {
- public:
-  GPIOInitEvt(QP::QSignal aSig,
-              unsigned long aGPIOPort,
-              unsigned int aGPIOPin) {
-    sig = aSig;
-    poolId_ = 0U;
-    mGPIOPort = aGPIOPort;
-    mGPIOPin = aGPIOPin;
-  }
-
- public:
-  unsigned long mGPIOPort;
-  unsigned int  mGPIOPin;
-};
-
 // ******************************************************************************
 //                            EXPORTED VARIABLES
 // ******************************************************************************
+
+class GPIOs;
+
+
+// RTCC GPIOs.
+extern GPIOs *gRTCCCSnPtr;
+extern GPIOs *gRTCCIntPtr;
+
+// Motor controller GPIOs.
+extern GPIOs *gIn1Ptr;
+extern GPIOs *gIn2Ptr;
+extern GPIOs *gPWMPtr;
 
 // ******************************************************************************
 //                                 EXTERNS
@@ -117,22 +101,10 @@ class GPIOInitEvt : public QP::QEvt {
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-namespace {
-
-  //void BSP_Init(void);
-
-}
-
 CoreLink::SPIDev * BSPInit(void);
 
 unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort);
 
-unsigned long CSnGPIOPortGet(void);
-unsigned int  CSnGPIOPinGet(void);
-unsigned long IRQGPIOPortGet(void);
-unsigned int  IRQGPIOPinGet(void);
-
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // BSP_H_
