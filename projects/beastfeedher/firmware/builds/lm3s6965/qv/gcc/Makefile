@@ -145,8 +145,9 @@ CPP_SRCS := \
         DB.cpp \
         DBRec.cpp \
         DS3234.cpp \
-        FeedCfgRec.cpp \
         eth_driver.cpp \
+        FeedCfgRec.cpp \
+        GPIOs.cpp \
         Limit.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \

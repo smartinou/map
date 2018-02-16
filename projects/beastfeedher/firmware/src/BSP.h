@@ -109,6 +109,18 @@ class GPIOInitEvt : public QP::QEvt {
 //                            EXPORTED VARIABLES
 // ******************************************************************************
 
+class GPIOs;
+
+
+// RTCC GPIOs.
+extern GPIOs *gRTCCCSnPtr;
+extern GPIOs *gRTCCIntPtr;
+
+// Motor controller GPIOs.
+extern GPIOs *gIn1Ptr;
+extern GPIOs *gIn2Ptr;
+extern GPIOs *gPWMPtr;
+
 // ******************************************************************************
 //                                 EXTERNS
 // ******************************************************************************

@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -41,6 +41,7 @@
 #include "Button.h"
 
 #include "DS3234.h"
+#include "GPIOs.h"
 #include "SSD1329.h"
 #include "SPI.h"
 
@@ -108,10 +109,20 @@ static void EtherLEDInit(void);
 // *****************************************************************************
 
 // Button objects.
-Button *sManualFeedButtonPtr = nullptr; // static_cast<Button *>(0);
-Button *sTimedFeedButtonPtr  = nullptr; // static_cast<Button *>(0);
+GPIOs  *gFeederManualFeedPtr = new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_4);
+GPIOs  *gFeederTimedFeedPtr  = new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_4);
 
-Button *sNavButtonArray[BSP_NAV_BUTTON_QTY] = { nullptr };
+Button *sManualFeedButtonPtr = nullptr;
+Button *sTimedFeedButtonPtr  = nullptr;
+
+// RTCC GPIOs.
+GPIOs *gRTCCCSnPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_7);
+GPIOs *gRTCCIntPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_6);
+
+// Motor controller GPIOs.
+GPIOs *gIn1Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_5);
+GPIOs *gIn2Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_6);
+GPIOs *gPWMPtr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_0);
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -142,35 +153,21 @@ CoreLink::SPIDev * BSPInit(void) {
   SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
   SSIPinCfg *lSPIMasterPinCfgPtr = new LM3S6965SSIPinCfg(0);
   CoreLink::SPIDev *lSPIDevPtr = new CoreLink::SPIDev(SSI0_BASE,
-						      *lSPIMasterPinCfgPtr);
+                                                      *lSPIMasterPinCfgPtr);
 
-
-  // Create all required buttons.
-#if 0
-  sFeedButtonPtr = new Button(GPIO_PORTF_BASE, GPIO_PIN_1, 0U);
-
-  sNavButtonArray[BSP_NAV_BUTTON_UP]     = new Button(GPIO_PORTE_BASE, GPIO_PIN_0, 0U);
-  sNavButtonArray[BSP_NAV_BUTTON_DOWN]   = new Button(GPIO_PORTE_BASE, GPIO_PIN_1, 0U);
-  sNavButtonArray[BSP_NAV_BUTTON_LEFT]   = new Button(GPIO_PORTE_BASE, GPIO_PIN_2, 0U);
-  sNavButtonArray[BSP_NAV_BUTTON_RIGHT]  = new Button(GPIO_PORTE_BASE, GPIO_PIN_3, 0U);
-  sNavButtonArray[BSP_NAV_BUTTON_SELECT] = new Button(GPIO_PORTF_BASE, GPIO_PIN_1, 0U);
-#else
 
   // Manual and Timed Feed cap sensor.
   // Those are debounced signals.
+  // FIXME: move to application layer, referring to GPIOs here.
   unsigned long lIntNbr = BSPGPIOPortToInt(GPIO_PORTC_BASE);
-  sManualFeedButtonPtr = new Button(GPIO_PORTC_BASE,
-                                    GPIO_PIN_4,
+  sManualFeedButtonPtr = new Button(*gFeederManualFeedPtr,
                                     lIntNbr,
                                     0U);
   lIntNbr = BSPGPIOPortToInt(GPIO_PORTD_BASE);
-  sTimedFeedButtonPtr = new Button(GPIO_PORTD_BASE,
-                                   GPIO_PIN_4,
+  sTimedFeedButtonPtr = new Button(*gFeederTimedFeedPtr,
                                    lIntNbr,
                                    0U);
 
-
-#endif
 #if 0
   // Initialize the OLED display.
   // Create an SPI slave configuration for the OLED display.
@@ -231,26 +228,6 @@ unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort) {
   return 0;
 }
 
-
-unsigned long CSnGPIOPortGet(void) {
-  return GPIO_PORTA_BASE;
-}
-
-
-unsigned int CSnGPIOPinGet(void) {
-  return GPIO_PIN_7;
-}
-
-
-unsigned long IRQGPIOPortGet(void) {
-  return GPIO_PORTA_BASE;
-}
-
-
-unsigned int IRQGPIOPinGet(void) {
-  return GPIO_PIN_6;
-}
-  
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -430,38 +407,6 @@ void GPIOPortD_IRQHandler(void) {
     GPIOPinIntClear(GPIO_PORTD_BASE, GPIO_PIN_4);
     //sTimedFeedButtonPtr->GenerateEvt();
   }
-}
-
-
-// GPIO port E interrupt handler.
-void GPIOPortE_IRQHandler(void);
-void GPIOPortE_IRQHandler(void) {
-
-  // Get the state of the GPIO and issue the corresponding event.
-  static const bool lIsMasked = true;
-  unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTE_BASE, lIsMasked);
-  if (GPIO_PIN_0 & lIntStatus) {
-    GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_0);
-    //sNavButtonArray[BSP_NAV_BUTTON_UP]->GenerateEvt();
-  }
-
-  if (GPIO_PIN_1 & lIntStatus) {
-    GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_1);
-    //sNavButtonArray[BSP_NAV_BUTTON_DOWN]->GenerateEvt();
-  }
-
-  if (GPIO_PIN_2 & lIntStatus) {
-    GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_2);
-    //sNavButtonArray[BSP_NAV_BUTTON_LEFT]->GenerateEvt();
-  }
-
-  if (GPIO_PIN_3 & lIntStatus) {
-    GPIOPinIntClear(GPIO_PORTE_BASE, GPIO_PIN_3);
-    //sNavButtonArray[BSP_NAV_BUTTON_RIGHT]->GenerateEvt();
-  }
-
-  // Process state of other pins here if required.
-
 }
 
 
