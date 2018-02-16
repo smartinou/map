@@ -1,6 +1,6 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: Utilities.
 //
 // Module: Button class.
 //
@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,23 +20,14 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// Standard Library.
-#include <stddef.h>
-
 // TI Library.
 #include "hw_types.h"
 #include "gpio.h"
 #include "interrupt.h"
 
-// QP Library.
-#include "qpcpp.h"
-
 // This project.
+#include "GPIOs.h"
 #include "Button.h"
-
-Q_DEFINE_THIS_FILE
-
-//namespace BFH {
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -61,35 +52,45 @@ Q_DEFINE_THIS_FILE
 Button::Button(unsigned long aGPIOPort,
                unsigned int  aGPIOPin,
                unsigned long aIntNbr,
-               unsigned int  aID) :
-  mGPIOPort(aGPIOPort),
-  mGPIOPin(aGPIOPin),
-  mIntNbr(aIntNbr),
-  mID(aID) {
+               unsigned int  aID)
+  : GPIOs(aGPIOPort, aGPIOPin)
+  , mIntNbr(aIntNbr)
+  , mID(aID) {
 
   DisableInt();
 
   // Set specified GPIO as edge triggered input.
   // Don't enable interrupt just yet.
-  GPIOPinTypeGPIOInput(mGPIOPort, mGPIOPin);
-  GPIOIntTypeSet(mGPIOPort, mGPIOPin, GPIO_BOTH_EDGES);
-  GPIOPadConfigSet(mGPIOPort,
-                   mGPIOPin,
+  GPIOPinTypeGPIOInput(mPort, mPin);
+  GPIOIntTypeSet(mPort, mPin, GPIO_BOTH_EDGES);
+  GPIOPadConfigSet(mPort,
+                   mPin,
                    GPIO_STRENGTH_2MA,
                    GPIO_PIN_TYPE_STD_WPU);
 
   // Enable the interrupt of the selected GPIO.
-  GPIOPinIntEnable(mGPIOPort, mGPIOPin);
-  GPIOPinIntClear(mGPIOPort, mGPIOPin);
-  //IntEnable(lInt);
+  // Don't enable the interrupt globally yet.
+  GPIOPinIntEnable(mPort, mPin);
+  GPIOPinIntClear(mPort, mPin);
+}
+
+
+Button::Button(GPIOs const   &aGPIO,
+               unsigned long aIntNbr,
+               unsigned int  aID)
+  : Button(aGPIO.GetPort(),
+           aGPIO.GetPin(),
+           aIntNbr,
+           aID) {
+  // Ctor body left intentionally empty.
 }
 
 
 unsigned int Button::GetGPIOPinState(void) {
 
-  unsigned long lGPIOPin = GPIOPinRead(mGPIOPort, mGPIOPin);
+  unsigned long lGPIOPin = GPIOPinRead(mPort, mPin);
   unsigned int  lState = RELEASED;
-  if (lGPIOPin & mGPIOPin) {
+  if (lGPIOPin & mPin) {
     lState = PRESSED;
   }
 
@@ -108,14 +109,12 @@ void Button::EnableInt(void) {
 
 
 void Button::ClrInt(void) {
-  GPIOPinIntClear(mGPIOPort, mGPIOPin);
+  GPIOPinIntClear(mPort, mPin);
 }
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
-
-//} // namespace BFH
 
 // *****************************************************************************
 //                                END OF FILE

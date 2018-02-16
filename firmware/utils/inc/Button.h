@@ -1,8 +1,7 @@
-#ifndef BUTTON_H_
-#define BUTTON_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: Utilities.
 //
 // Module: Button class.
 //
@@ -14,13 +13,15 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include "GPIOs.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -34,16 +35,17 @@
 //! Details follow...
 //! ...here.
 //! \brief Button component.
-class Button {
+class Button : public GPIOs {
  public:
   Button(unsigned long aPort,
          unsigned int  aPin,
          unsigned long aIntNbr,
          unsigned int  aID);
+  Button(GPIOs const   &aGPIO,
+         unsigned long aIntNbr,
+         unsigned int  aID);
 
-  unsigned long GetGPIOPort(void) { return mGPIOPort; }
-  unsigned int  GetGPIOPin(void)  { return mGPIOPin;  }
-  unsigned int  GetGPIOPinState(void);
+  unsigned int GetGPIOPinState(void);
 
   void DisableInt(void);
   void EnableInt(void);
@@ -55,8 +57,6 @@ class Button {
   };
 
  private:
-  unsigned long mGPIOPort;
-  unsigned int  mGPIOPin;
   unsigned long mIntNbr;
   unsigned int  mID;
 };
@@ -76,4 +76,3 @@ class Button {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // BUTTON_H_
