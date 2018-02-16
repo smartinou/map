@@ -45,6 +45,7 @@
 #include "DB.h"
 #include "Date.h"
 #include "DS3234.h"
+#include "GPIOs.h"
 #include "SPI.h"
 #include "Time.h"
 
@@ -165,8 +166,8 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
   me->mRTCSPISlaveCfgPtr->SetProtocol(CoreLink::SPISlaveCfg::MOTO_1);
   me->mRTCSPISlaveCfgPtr->SetBitRate(4000000);
   me->mRTCSPISlaveCfgPtr->SetDataWidth(8);
-  me->mRTCSPISlaveCfgPtr->SetCSnGPIO(lRTCCInitEvtPtr->mCSnGPIOPort,
-                                     lRTCCInitEvtPtr->mCSnGPIOPin);
+  me->mRTCSPISlaveCfgPtr->SetCSnGPIO(lRTCCInitEvtPtr->mCSn->GetPort(),
+                                     lRTCCInitEvtPtr->mCSn->GetPin());
 
   // Create & initialize the DS3234 RTCC.
   // Configure the RTCC to desired state:
@@ -249,16 +250,17 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
 
   // Set interrupt pin and periodic alarm.
   RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
+  unsigned long lIntPort = lRTCCInitEvtPtr->mInt->GetPort();
+  unsigned int  lIntPin  = lRTCCInitEvtPtr->mInt->GetPin();
   me->mIntNbr = lRTCCInitEvtPtr->mIntNbr;
   IntDisable(me->mIntNbr);
 
-  GPIOPinTypeGPIOInput(lRTCCInitEvtPtr->mIRQGPIOPort,
-                       lRTCCInitEvtPtr->mIRQGPIOPin);
-  GPIOIntTypeSet(lRTCCInitEvtPtr->mIRQGPIOPort,
-                 lRTCCInitEvtPtr->mIRQGPIOPin,
+  GPIOPinTypeGPIOInput(lIntPort, lIntPin);
+  GPIOIntTypeSet(lIntPort,
+                 lIntPin,
                  GPIO_FALLING_EDGE);
-  GPIOPadConfigSet(lRTCCInitEvtPtr->mIRQGPIOPort,
-                   lRTCCInitEvtPtr->mIRQGPIOPin,
+  GPIOPadConfigSet(lIntPort,
+                   lIntPin,
                    GPIO_STRENGTH_2MA,
                    GPIO_PIN_TYPE_STD);
 
@@ -267,7 +269,7 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
                           me->mDate,
                           DS3234::ALARM_MODE::ONCE_PER_SEC);
 
-  GPIOPinIntEnable(lRTCCInitEvtPtr->mIRQGPIOPort, lRTCCInitEvtPtr->mIRQGPIOPin);
+  GPIOPinIntEnable(lIntPort, lIntPin);
   // [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
   //GPIOPinIntClear(lGPIOInitEvtPtr->mIRQGPIOPort, lGPIOInitEvtPtr->mIRQGPIOPin);
   return 0;

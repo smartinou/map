@@ -37,6 +37,7 @@
 // Forward declarations.
 class DBRec;
 class CalendarRec;
+class GPIOs;
 
 
 // Class definitions.
@@ -44,31 +45,25 @@ class RTCCInitEvt : public QP::QEvt {
  public:
   RTCCInitEvt(QP::QSignal       aSig,
               CoreLink::SPIDev &aSPIDevRef,
-              unsigned long     aCSnGPIOPort,
-              unsigned int      aCSnGPIOPin,
-              unsigned long     aIRQGPIOPort,
-              unsigned int      aIRQGPIOPin,
               unsigned long     aIntNbr,
+              GPIOs            *aCSn,
+              GPIOs            *aInt,
               CalendarRec      *aCalendarPtr):
   mSPIDevRef(aSPIDevRef) {
     sig          = aSig;
     poolId_      = 0U;
     mSPIDevRef   = aSPIDevRef;
-    mCSnGPIOPort = aCSnGPIOPort;
-    mCSnGPIOPin  = aCSnGPIOPin;
-    mIRQGPIOPort = aIRQGPIOPort;
-    mIRQGPIOPin  = aIRQGPIOPin;
     mIntNbr      = aIntNbr;
+    mCSn         = aCSn;
+    mInt         = aInt;
     mCalendarPtr = aCalendarPtr;
   }
 
  public:
   CoreLink::SPIDev &mSPIDevRef;
-  unsigned long     mCSnGPIOPort;
-  unsigned int      mCSnGPIOPin;
-  unsigned long     mIRQGPIOPort;
-  unsigned int      mIRQGPIOPin;
   unsigned long     mIntNbr;
+  GPIOs            *mCSn;
+  GPIOs            *mInt;
   CalendarRec      *mCalendarPtr;
 };
 
