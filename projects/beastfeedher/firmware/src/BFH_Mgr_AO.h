@@ -1,5 +1,4 @@
-#ifndef BEAST_FEED_HER_MGR_
-#define BEAST_FEED_HER_MGR_
+#pragma once
 // *******************************************************************************
 //
 // Project: Beast Feed'Her!
@@ -37,6 +36,7 @@
 
 // Forward declaration.
 class FeedCfgRec;
+class TB6612;
 
 
 //! \brief Brief description.
@@ -78,6 +78,8 @@ private:
   FeedCfgRec const *mFeedCfgRecPtr;
   unsigned int      mFeedTime;
 
+  TB6612 *mMotorCtrlPtr;
+
   static BFH_Mgr_AO *mInstancePtr;
 };
 
@@ -96,4 +98,3 @@ private:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // BEAST_FEED_HER_MGR_

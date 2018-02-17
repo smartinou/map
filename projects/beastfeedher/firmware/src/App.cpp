@@ -299,7 +299,10 @@ bool App::Init(void) {
   // DB records are now deserialized, and fixed if required.
   // Create all other AOs.
   static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY,
-                                          App::sFeedCfgRecPtr };
+                                          App::sFeedCfgRecPtr,
+                                          gIn1Ptr,
+                                          gIn2Ptr,
+                                          gPWMPtr };
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
   BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
   lBFH_Mgr_AO.start(2U,

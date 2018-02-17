@@ -51,6 +51,7 @@
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_Evt.h"
+#include "TB6612.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -105,7 +106,8 @@ BFH_Mgr_AO::BFH_Mgr_AO() :
   mFeedEvtQueueSto{nullptr},
   mFeedTimerEvt(this, SIG_FEED_MGR_TIMEOUT, 0U),
   mFeedCfgRecPtr(nullptr),
-  mFeedTime(0) {
+  mFeedTime(0),
+  mMotorCtrlPtr(nullptr) {
 
   // Ctor body intentionally left empty.
 }
@@ -114,15 +116,19 @@ BFH_Mgr_AO::BFH_Mgr_AO() :
 QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
                                QP::QEvt const * const e) { //aEvtPtr
 
-  me->mFeedCfgRecPtr = reinterpret_cast<FeedCfgRec const *>(e);
+  BFHInitEvt const * const lBFHInitEvtPtr = static_cast<BFHInitEvt const * const>(e);
+  me->mFeedCfgRecPtr = lBFHInitEvtPtr->mFeedCfgRecPtr;
+
+  // Store reference to a feeder unit, or a motor controller.
+  me->mMotorCtrlPtr = new TB6612(*lBFHInitEvtPtr->mMotorCtrlIn1Ptr,
+                                 *lBFHInitEvtPtr->mMotorCtrlIn2Ptr,
+                                 *lBFHInitEvtPtr->mMotorCtrlPWMPtr);
 
   // Initialize the QF queue for deferred feed requests.
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
 
   // Subscribe to signals if any.
   me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
-
-  // Store reference to a feeder unit, or a motor controller.
 
   return Q_TRAN(&BFH_Mgr_AO::FeedingMgr);
 }
@@ -138,7 +144,7 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const * const lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
       return Q_TRAN(&BFH_Mgr_AO::ManualFeed);
     }
@@ -158,7 +164,7 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_TIMED_FEED_CMD: {
     // FIXME: perform boundary check on value.
-    BFHTimedFeedCmdEvt const *lEvtPtr = reinterpret_cast<BFHTimedFeedCmdEvt const *>(e);
+    BFHTimedFeedCmdEvt const * const lEvtPtr = reinterpret_cast<BFHTimedFeedCmdEvt const * const>(e);
     me->mFeedTime = lEvtPtr->mTime;
     return Q_TRAN(&BFH_Mgr_AO::TimedFeed);
   }
@@ -236,7 +242,7 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const * const lEvtPtr = static_cast<BFHManualFeedCmdEvt const * const>(e);
     if (lEvtPtr->mIsOn) {
       // On: DoNothing();
       return Q_HANDLED();
@@ -291,13 +297,13 @@ QP::QState BFH_Mgr_AO::TimeCappedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
 void BFH_Mgr_AO::StartFeeding(void) const {
   // Turn on feeding mechanism.
-  // FeederUnit->Start();
+  mMotorCtrlPtr->TurnOnCW();
 }
 
 
 void BFH_Mgr_AO::StopFeeding(void) const {
   // Turn off feeding mechanism.
-  // FeederUnit->Stop();
+  mMotorCtrlPtr->TurnOff();
 }
 
 // *****************************************************************************
