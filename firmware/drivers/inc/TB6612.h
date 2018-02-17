@@ -1,8 +1,7 @@
-#ifndef TB6612_H_
-#define TB6612_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: Component drivers.
 //
 // Module: Motor controller class.
 //
@@ -15,15 +14,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-// Standard Libraries.
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -33,33 +30,32 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
+// Forward declarations.
+class GPIOs;
+
+
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
 class TB6612 {
  public:
-  TB6612(unsigned long aIn1GPIOPort,
-	 unsigned int  aIn1GPIOPin,
-	 unsigned long aIn2GPIOPort,
-	 unsigned int  aIn2GPIOPin,
-	 unsigned long aPWMGPIOPort,
-	 unsigned int  aPWMGPIOPin);
+  TB6612(GPIOs &aIn1,
+         GPIOs &aIn2,
+         GPIOs &aPWM);
   ~TB6612() {}
 
+  void Init(unsigned int aSysClk, unsigned int aPeriod);
+
   // Sets/clears the entry for the specified time, rounded to quarter hour.
-  void TurnOnCW(unsigned int aDutyCycle) const;
-  void TurnOnCCW(unsigned int aDutyCycle) const;
+  void TurnOnCW(unsigned int aDutyCycle = 100) const;
+  void TurnOnCCW(unsigned int aDutyCycle = 100) const;
   void TurnOff(void) const;
 
   // Gets the next set entry from current time.
  private:
-  unsigned long const mIn1GPIOPort;
-  unsigned long const mIn2GPIOPort;
-  unsigned long const mPWMGPIOPort;
-
-  unsigned int  const mIn1GPIOPin;
-  unsigned int  const mIn2GPIOPin;
-  unsigned int  const mPWMGPIOPin;
+  GPIOs const &mIn1;
+  GPIOs const &mIn2;
+  GPIOs const &mPWM;
 };
 
 // ******************************************************************************
@@ -77,4 +73,3 @@ class TB6612 {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // TB6612_H_
