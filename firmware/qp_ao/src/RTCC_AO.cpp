@@ -385,7 +385,7 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
                                                      me->mTime,
                                                      lAlarmWeekday,
                                                      lAlarmTime);
-  lIsNextEntry = true;
+
   if (lIsNextEntry) {
     // Entry found: use alarm 2 for feeding alarm.
     me->mDS3234Ptr->WrAlarm(DS3234::ALARM_ID::ALARM_ID_2,
