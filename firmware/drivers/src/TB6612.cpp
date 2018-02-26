@@ -139,35 +139,35 @@ TB6612::TB6612(GPIOs &aIn1,
 
 void TB6612::TurnOnCW(unsigned int aDutyCycle) const {
 
+  // PWM: H
   // In1: H
   // In2: L
-  // Turn on PWM output.
-  GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), mIn1.GetPin());
-  GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
   //PWMGenEnable(PWM_BASE, PWM_GEN_1);
   GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
+  GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), mIn1.GetPin());
+  GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
 }
 
 
 void TB6612::TurnOnCCW(unsigned int aDutyCycle) const {
 
+  // PWM: H
   // In1: L
   // In2: H
-  // Turn on PWM output.
+  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
+  //PWMGenEnable(PWM_BASE, PWM_GEN_1);
   GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), 0);
   GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), mIn2.GetPin());
-  //PWMGenEnable(PWM_BASE, PWM_GEN_1);
-  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
 }
 
 
 void TB6612::TurnOff(void) const {
 
-  // Turn off PWM output.
+  // PWM: H
   // In1: L
   // In2: L
   //PWMGenDisable(PWM_BASE, PWM_GEN_1);
-  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), 0);
+  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
   GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), 0);
   GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
 }
