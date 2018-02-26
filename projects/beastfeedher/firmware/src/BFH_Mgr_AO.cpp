@@ -123,6 +123,7 @@ QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
   me->mMotorCtrlPtr = new TB6612(*lBFHInitEvtPtr->mMotorCtrlIn1Ptr,
                                  *lBFHInitEvtPtr->mMotorCtrlIn2Ptr,
                                  *lBFHInitEvtPtr->mMotorCtrlPWMPtr);
+  me->StopFeeding();
 
   // Initialize the QF queue for deferred feed requests.
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
