@@ -1,5 +1,4 @@
-#ifndef BFH_MGR_EVT_H_
-#define BFH_MGR_EVT_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Beast Feed'Her!
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -34,19 +33,28 @@
 // Forward declarations.
 class DBRec;
 class FeedCfgRec;
-
+class GPIOs;
 
 // Class definitions.
 class BFHInitEvt : public QP::QEvt {
  public:
   BFHInitEvt(QP::QSignal  aSig,
-             FeedCfgRec  *aFeedCfgRecPtr) {
-    sig            = aSig;
-    mFeedCfgRecPtr = aFeedCfgRecPtr;
+             FeedCfgRec  *aFeedCfgRecPtr,
+             GPIOs       *aMotorCtrlIn1Ptr,
+             GPIOs       *aMotorCtrlIn2Ptr,
+             GPIOs       *aMotorCtrlPWMPtr) {
+    sig              = aSig;
+    mFeedCfgRecPtr   = aFeedCfgRecPtr;
+    mMotorCtrlIn1Ptr = aMotorCtrlIn1Ptr;
+    mMotorCtrlIn2Ptr = aMotorCtrlIn2Ptr;
+    mMotorCtrlPWMPtr = aMotorCtrlPWMPtr;
   }
 
  public:
   FeedCfgRec *mFeedCfgRecPtr;
+  GPIOs      *mMotorCtrlIn1Ptr;
+  GPIOs      *mMotorCtrlIn2Ptr;
+  GPIOs      *mMotorCtrlPWMPtr;
 };
 
 
@@ -90,4 +98,3 @@ class BFHTimedFeedCmdEvt : public QP::QEvt {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // BFH_MGR_EVT_H_

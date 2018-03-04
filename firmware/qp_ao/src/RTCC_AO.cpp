@@ -158,7 +158,7 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
 unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
                                QP::QEvt  const * const e) { //aEvtPtr
 
-  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
+  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
 
   // Create an SPI slave configuration for the DS3234 RTCC.
   // TODO: Verify if this can be changed into local var.
@@ -249,7 +249,7 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
                                     QP::QEvt  const * const e) { //aEvtPtr
 
   // Set interrupt pin and periodic alarm.
-  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
+  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
   unsigned long lIntPort = lRTCCInitEvtPtr->mInt->GetPort();
   unsigned int  lIntPin  = lRTCCInitEvtPtr->mInt->GetPin();
   me->mIntNbr = lRTCCInitEvtPtr->mIntNbr;
@@ -313,7 +313,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
       UARTprintf("A");
 #endif // RTCC_DBG
       me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_2);
-      RTCCTimeDateEvt *lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
+      RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
       lCalendarEvtPtr->mTime = me->mTime;
       lCalendarEvtPtr->mDate = me->mDate;
       QP::QF::PUBLISH(static_cast<QP::QEvt *>(lCalendarEvtPtr), me);
@@ -324,7 +324,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
   }
 
   case SIG_RTCC_SAVE_TO_NV_MEM: {
-    RTCCSaveToRAMEvt const *lSaveEvtPtr = static_cast<RTCCSaveToRAMEvt const *>(e);
+    RTCCSaveToRAMEvt const * const lSaveEvtPtr = static_cast<RTCCSaveToRAMEvt const * const>(e);
     if (lSaveEvtPtr->mIsCalendarChanged) {
       SetNextCalendarEvt(me);
     }
@@ -334,14 +334,14 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
   }
 
   case SIG_RTCC_SET_TIME: {
-    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
+    RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
     me->mDS3234Ptr->WrTime(lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }
 
   case SIG_RTCC_SET_DATE: {
-    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
+    RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
     me->mDS3234Ptr->WrDate(lSetEvtPtr->mDate);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
@@ -385,7 +385,7 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
                                                      me->mTime,
                                                      lAlarmWeekday,
                                                      lAlarmTime);
-  lIsNextEntry = true;
+
   if (lIsNextEntry) {
     // Entry found: use alarm 2 for feeding alarm.
     me->mDS3234Ptr->WrAlarm(DS3234::ALARM_ID::ALARM_ID_2,

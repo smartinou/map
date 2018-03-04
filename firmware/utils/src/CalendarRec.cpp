@@ -155,7 +155,7 @@ bool CalendarRec::GetNextEntry(Weekday  const &aWeekdayRef,
       lHourIx = 0;
       lNextWeekdayMask <<= 1;
       if (lNextWeekdayMask > (0x1 << 7)) {
-        lNextWeekdayMask = 0;
+        lNextWeekdayMask = 1;
       }
     }
   }

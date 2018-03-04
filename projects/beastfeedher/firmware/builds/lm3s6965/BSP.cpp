@@ -120,8 +120,8 @@ GPIOs *gRTCCCSnPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_7);
 GPIOs *gRTCCIntPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_6);
 
 // Motor controller GPIOs.
-GPIOs *gIn1Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_5);
-GPIOs *gIn2Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_6);
+GPIOs *gIn1Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_6);
+GPIOs *gIn2Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_5);
 GPIOs *gPWMPtr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_0);
 
 // *****************************************************************************
@@ -144,6 +144,7 @@ CoreLink::SPIDev * BSPInit(void) {
 
   // Enable all required GPIOs.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
