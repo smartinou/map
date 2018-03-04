@@ -35,15 +35,15 @@
 //! \brief GPIO component.
 class GPIOs {
  public:
-  GPIOs(unsigned long aPort,
-        unsigned int  aPin);
+  GPIOs(unsigned long const aPort,
+        unsigned int  const aPin);
 
   unsigned long GetPort(void) const;
   unsigned int  GetPin(void)  const;
 
  protected:
-  unsigned long mPort;
-  unsigned int  mPin;
+  unsigned long const mPort;
+  unsigned int  const mPin;
 };
 
 // ******************************************************************************

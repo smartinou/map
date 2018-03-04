@@ -49,10 +49,10 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Button::Button(unsigned long aGPIOPort,
-               unsigned int  aGPIOPin,
-               unsigned long aIntNbr,
-               unsigned int  aID)
+Button::Button(unsigned long const aGPIOPort,
+               unsigned int  const aGPIOPin,
+               unsigned long const aIntNbr,
+               unsigned int  const aID)
   : GPIOs(aGPIOPort, aGPIOPin)
   , mIntNbr(aIntNbr)
   , mID(aID) {
@@ -75,9 +75,9 @@ Button::Button(unsigned long aGPIOPort,
 }
 
 
-Button::Button(GPIOs const   &aGPIO,
-               unsigned long aIntNbr,
-               unsigned int  aID)
+Button::Button(GPIOs         const &aGPIO,
+               unsigned long const aIntNbr,
+               unsigned int  const aID)
   : Button(aGPIO.GetPort(),
            aGPIO.GetPin(),
            aIntNbr,

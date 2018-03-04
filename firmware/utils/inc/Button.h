@@ -37,13 +37,13 @@
 //! \brief Button component.
 class Button : public GPIOs {
  public:
-  Button(unsigned long aPort,
-         unsigned int  aPin,
-         unsigned long aIntNbr,
-         unsigned int  aID);
-  Button(GPIOs const   &aGPIO,
-         unsigned long aIntNbr,
-         unsigned int  aID);
+  Button(unsigned long const aPort,
+         unsigned int  const aPin,
+         unsigned long const aIntNbr,
+         unsigned int  const aID);
+  Button(GPIOs         const &aGPIO,
+         unsigned long const aIntNbr,
+         unsigned int  const aID);
 
   unsigned int GetGPIOPinState(void);
 
@@ -57,8 +57,8 @@ class Button : public GPIOs {
   };
 
  private:
-  unsigned long mIntNbr;
-  unsigned int  mID;
+  unsigned long const mIntNbr;
+  unsigned int  const mID;
 };
 
 // ******************************************************************************
