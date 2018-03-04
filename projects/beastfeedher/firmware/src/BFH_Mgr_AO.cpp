@@ -266,7 +266,7 @@ QP::QState BFH_Mgr_AO::WaitPeriod(BFH_Mgr_AO     * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(50);
+    me->mFeedTimerEvt.armX(TIME_CAPPED_DEBOUNCE * BSP_TICKS_PER_SEC);
     return Q_HANDLED();
 
   case SIG_FEED_MGR_TIMEOUT:
@@ -285,7 +285,8 @@ QP::QState BFH_Mgr_AO::TimeCappedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(200);
+    me->mFeedTimerEvt.armX(TIME_CAPPED_TIMEOUT * BSP_TICKS_PER_SEC);
+    me->StartFeeding();
     return Q_HANDLED();
 
   case Q_EXIT_SIG:

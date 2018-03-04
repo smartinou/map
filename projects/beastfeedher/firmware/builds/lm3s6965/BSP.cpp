@@ -37,12 +37,14 @@
 #include "interrupt.h"
 #include "sysctl.h"
 
-// Common Library.
+// Utilities Library.
 #include "Button.h"
-
-#include "DS3234.h"
 #include "GPIOs.h"
-#include "SSD1329.h"
+
+// Drivers Library.
+#include "DS3234.h"
+
+// Corelink Library.
 #include "SPI.h"
 
 // This application.
@@ -81,12 +83,11 @@ enum KernelAwareISRs {
 Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 #endif
 
-// FIXME: assign aliases to GPIO ports and pins.
-
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // *****************************************************************************
 
+// TODO/FIXME: check if this can be simplified in any way.
 class LM3S6965SSIPinCfg : public SSIPinCfg {
  public:
   LM3S6965SSIPinCfg(unsigned int aSPIID) : SSIPinCfg(aSPIID) {}
@@ -109,20 +110,27 @@ static void EtherLEDInit(void);
 // *****************************************************************************
 
 // Button objects.
-GPIOs  *gFeederManualFeedPtr = new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_4);
-GPIOs  *gFeederTimedFeedPtr  = new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_4);
+static Button *sManualFeedButtonPtr = nullptr;
+static Button *sTimedFeedButtonPtr  = nullptr;
+static Button *sSelectButtonPtr     = nullptr;
 
-Button *sManualFeedButtonPtr = nullptr;
-Button *sTimedFeedButtonPtr  = nullptr;
+static GPIOs  *sSelectGPIOPtr = new GPIOs(GPIO_PORTF_BASE, GPIO_PIN_1);
+
+static GPIOs  *sFeederManualFeedPtr = new GPIOs(GPIO_PORTC_BASE, GPIO_PIN_4);
+static GPIOs  *sFeederTimedFeedPtr  = new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_4);
 
 // RTCC GPIOs.
 GPIOs *gRTCCCSnPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_7);
 GPIOs *gRTCCIntPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_6);
 
 // Motor controller GPIOs.
-GPIOs *gIn1Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_6);
-GPIOs *gIn2Ptr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_5);
-GPIOs *gPWMPtr = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_0);
+GPIOs *gIn1Ptr     = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_6);
+GPIOs *gIn2Ptr     = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_5);
+GPIOs *gPWMPtr     = new GPIOs(GPIO_PORTB_BASE, GPIO_PIN_0);
+
+// SSD1329 GPIOs.
+GPIOs *gDCnPtr     = new GPIOs(GPIO_PORTC_BASE, GPIO_PIN_7);
+GPIOs *gEn15VPtr   = new GPIOs(GPIO_PORTC_BASE, GPIO_PIN_6);
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -152,22 +160,9 @@ CoreLink::SPIDev * BSPInit(void) {
 
   // Initialize SPI Master.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
-  SSIPinCfg *lSPIMasterPinCfgPtr = new LM3S6965SSIPinCfg(0);
+  SSIPinCfg * const lSPIMasterPinCfgPtr = new LM3S6965SSIPinCfg(0);
   CoreLink::SPIDev *lSPIDevPtr = new CoreLink::SPIDev(SSI0_BASE,
                                                       *lSPIMasterPinCfgPtr);
-
-
-  // Manual and Timed Feed cap sensor.
-  // Those are debounced signals.
-  // FIXME: move to application layer, referring to GPIOs here.
-  unsigned long lIntNbr = BSPGPIOPortToInt(GPIO_PORTC_BASE);
-  sManualFeedButtonPtr = new Button(*gFeederManualFeedPtr,
-                                    lIntNbr,
-                                    0U);
-  lIntNbr = BSPGPIOPortToInt(GPIO_PORTD_BASE);
-  sTimedFeedButtonPtr = new Button(*gFeederTimedFeedPtr,
-                                   lIntNbr,
-                                   0U);
 
 #if 0
   // Initialize the OLED display.
@@ -259,11 +254,28 @@ void QP::QF::onStartup(void) {
   UserLEDInit();
   EtherLEDInit();
 
-  // Manual Feed cap sensor input.
-  sManualFeedButtonPtr->EnableInt();
+  // Manual and Timed Feed cap sensor.
+  // Those are debounced signals.
+  unsigned long lIntNbr = BSPGPIOPortToInt(GPIO_PORTC_BASE);
+  sManualFeedButtonPtr = new Button(*sFeederManualFeedPtr,
+                                    lIntNbr,
+                                    0U);
+  lIntNbr = BSPGPIOPortToInt(GPIO_PORTD_BASE);
+  sTimedFeedButtonPtr = new Button(*sFeederTimedFeedPtr,
+                                   lIntNbr,
+                                   0U);
 
+  // Select button.
+  // Not debounced, but simply used to turn display on.
+  lIntNbr = BSPGPIOPortToInt(GPIO_PORTF_BASE);
+  sSelectButtonPtr = new Button(*sSelectGPIOPtr, lIntNbr, 0U);
+
+  // Manual Feed cap sensor input.
   // Timed Feed cap sensor input.
+  sManualFeedButtonPtr->EnableInt();
   sTimedFeedButtonPtr->EnableInt();
+
+  sSelectButtonPtr->EnableInt();
 }
 
 //............................................................................
@@ -389,14 +401,18 @@ void GPIOPortC_IRQHandler(void) {
   static const bool lIsMasked = true;
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTC_BASE, lIsMasked);
   if (GPIO_PIN_4 & lIntStatus) {
-    sManualFeedButtonPtr->ClrInt();
-    static BFHManualFeedCmdEvt sEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, 0U };
-    sEvt.mIsOn = sManualFeedButtonPtr->GetGPIOPinState();
-    BFH_Mgr_AO::AOInstance().POST(&sEvt, 0);
+    GPIOPinIntClear(GPIO_PORTC_BASE, GPIO_PIN_4);
+    static BFHManualFeedCmdEvt sOnEvt  = { SIG_FEED_MGR_MANUAL_FEED_CMD, true };
+    static BFHManualFeedCmdEvt sOffEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, false };
+    if (Button::PRESSED == sManualFeedButtonPtr->GetGPIOPinState()) {
+      BFH_Mgr_AO::AOInstance().POST(&sOnEvt, 0);
+    } else {
+      BFH_Mgr_AO::AOInstance().POST(&sOffEvt, 0);
+    }
   }
 }
 
-#if 0
+
 // GPIO port D interrupt handler.
 void GPIOPortD_IRQHandler(void);
 void GPIOPortD_IRQHandler(void) {
@@ -406,7 +422,11 @@ void GPIOPortD_IRQHandler(void) {
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTD_BASE, lIsMasked);
   if (GPIO_PIN_4 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTD_BASE, GPIO_PIN_4);
-    //sTimedFeedButtonPtr->GenerateEvt();
+    // Only interested in the pin coming high.
+    if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
+      static BFHTimedFeedCmdEvt sEvt = { SIG_FEED_MGR_TIMED_FEED_CMD, 0 };
+      BFH_Mgr_AO::AOInstance().POST(&sEvt, 0);
+    }
   }
 }
 
@@ -420,12 +440,12 @@ void GPIOPortF_IRQHandler(void) {
   unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTF_BASE, lIsMasked);
   if (GPIO_PIN_1 & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTF_BASE, GPIO_PIN_1);
-    //sFeedButtonPtr->GenerateEvt(*gMain_BeastFeedHerMgrAOPtr);
-  }
+    // Only interested in the pin coming high.
+    if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
 
-  // Process state of other pins here if required.
+    }
+  }
 }
-#endif
 
 
 void Ethernet_IRQHandler(void);

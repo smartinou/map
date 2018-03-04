@@ -64,6 +64,10 @@ class BFH_Mgr_AO : public QP::QActive {
                                    QP::QEvt const * const aEvtPtr);
 
 private:
+  enum {
+    TIME_CAPPED_DEBOUNCE = 2,
+    TIME_CAPPED_TIMEOUT  = 10
+  };
   BFH_Mgr_AO();
   BFH_Mgr_AO(BFH_Mgr_AO const &);
   void operator=(BFH_Mgr_AO const &) = delete;
