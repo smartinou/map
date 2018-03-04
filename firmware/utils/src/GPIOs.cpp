@@ -20,10 +20,6 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// TI Library.
-#include "hw_types.h"
-#include "gpio.h"
-
 // This project.
 #include "GPIOs.h"
 
@@ -47,8 +43,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-GPIOs::GPIOs(unsigned long aPort,
-             unsigned int  aPin)
+GPIOs::GPIOs(unsigned long const aPort,
+             unsigned int  const aPin)
   : mPort(aPort)
   , mPin(aPin) {
 
