@@ -144,6 +144,7 @@ CPP_SRCS := \
         Date.cpp \
         DB.cpp \
         DBRec.cpp \
+        DisplayMgr_AO.cpp \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \
