@@ -54,8 +54,10 @@ enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
   LWIP_TX_READY_SIG,
   LWIP_RX_OVERRUN_SIG,
 
-  SIG_BUTTON_EVT,
-  SIG_DEBOUNCE_TIMEOUT,
+  // Display signals.
+  SIG_DISPLAY_TIMEOUT,
+  SIG_DISPLAY_REFRESH,
+  SIG_DISPLAY_TEXT,
 
   SIG_TERMINATE,
   SIG_QTY
@@ -63,15 +65,6 @@ enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
 
 
 #define BSP_TICKS_PER_SEC (100)
-
-enum BSP_NAV_BUTTON_ENUM_TAG {
-  BSP_NAV_BUTTON_UP     = 0,
-  BSP_NAV_BUTTON_DOWN   = 1,
-  BSP_NAV_BUTTON_LEFT   = 2,
-  BSP_NAV_BUTTON_RIGHT  = 3,
-  BSP_NAV_BUTTON_SELECT = 4,
-  BSP_NAV_BUTTON_QTY    = 5,
-};
 
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -82,16 +75,17 @@ enum BSP_NAV_BUTTON_ENUM_TAG {
 // ******************************************************************************
 
 class GPIOs;
+class SSD1329;
 
 
 // RTCC GPIOs.
-extern GPIOs *gRTCCCSnPtr;
-extern GPIOs *gRTCCIntPtr;
+extern GPIOs * const BSP_gRTCCCSnGPIOPtr;
+extern GPIOs * const BSP_gRTCCIntGPIOPtr;
 
 // Motor controller GPIOs.
-extern GPIOs *gIn1Ptr;
-extern GPIOs *gIn2Ptr;
-extern GPIOs *gPWMPtr;
+extern GPIOs * const BSP_gIn1GPIOPtr;
+extern GPIOs * const BSP_gIn2GPIOPtr;
+extern GPIOs * const BSP_gPWMGPIOPtr;
 
 // ******************************************************************************
 //                                 EXTERNS
@@ -101,9 +95,12 @@ extern GPIOs *gPWMPtr;
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-CoreLink::SPIDev * BSPInit(void);
+void BSP_Init(void);
 
-unsigned int BSPGPIOPortToInt(unsigned long aGPIOPort);
+CoreLink::SPIDev *BSP_InitSPIDev(void);
+SSD1329          *BSP_InitOLEDDisplay(void);
+
+unsigned int BSP_GPIOPortToInt(unsigned long aGPIOPort);
 
 // ******************************************************************************
 //                                END OF FILE

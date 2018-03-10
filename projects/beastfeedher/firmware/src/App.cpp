@@ -40,6 +40,7 @@
 #include "BFH_Mgr_Evt.h"
 #include "BSP.h"
 #include "CalendarRec.h"
+#include "DisplayMgr_AO.h"
 #include "FeedCfgRec.h"
 #include "FWVersionGenerated.h"
 #include "GPIOs.h"
@@ -266,7 +267,8 @@ App::~App() {
 bool App::Init(void) {
 
   // Initialize the Board Support Package.
-  CoreLink::SPIDev *lSPIDevPtr = BSPInit();
+  BSP_Init();
+  CoreLink::SPIDev *lSPIDevPtr = BSP_InitSPIDev();
 
   // Create records and assign them to DB.
   // Deserialize NV memory into it.
@@ -280,12 +282,12 @@ bool App::Init(void) {
   sFeedCfgRecPtr = new FeedCfgRec();
   DB::AddRec(sFeedCfgRecPtr);
 
-  unsigned long lIntNbr = BSPGPIOPortToInt(gRTCCIntPtr->GetPort());
+  unsigned long lIntNbr = BSP_GPIOPortToInt(BSP_gRTCCIntGPIOPtr->GetPort());
   static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
                                             *lSPIDevPtr,
                                             lIntNbr,
-                                            gRTCCCSnPtr,
-                                            gRTCCIntPtr,
+                                            BSP_gRTCCCSnGPIOPtr,
+                                            BSP_gRTCCIntGPIOPtr,
                                             App::sCalendarPtr };
   static QP::QEvt const *sRTCCEvtQPtr[10];
   App::sRTCC_AOPtr = new RTCC_AO();
@@ -300,9 +302,9 @@ bool App::Init(void) {
   // Create all other AOs.
   static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY,
                                           App::sFeedCfgRecPtr,
-                                          gIn1Ptr,
-                                          gIn2Ptr,
-                                          gPWMPtr };
+                                          BSP_gIn1GPIOPtr,
+                                          BSP_gIn2GPIOPtr,
+                                          BSP_gPWMGPIOPtr };
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
   BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
   lBFH_Mgr_AO.start(2U,
@@ -323,6 +325,18 @@ bool App::Init(void) {
                              nullptr,
                              0U,
                              &sLwIPInitEvt);
+
+  SSD1329 * const lOLEDDisplayPtr = BSP_InitOLEDDisplay();
+  static DisplayMgrInitEvt const sDisplayMgrInitEvt = { SIG_DUMMY,
+                                                        lOLEDDisplayPtr };
+  static QP::QEvt const *sDisplayMgrEvtQPtr[5];
+  DisplayMgr_AO &lDisplayMgr_AO = DisplayMgr_AO::Instance();
+  lDisplayMgr_AO.start(4U,
+                       sDisplayMgrEvtQPtr,
+                       Q_DIM(sDisplayMgrEvtQPtr),
+                       nullptr,
+                       0U,
+                       &sDisplayMgrInitEvt);
 
   return true;
 }
