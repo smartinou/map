@@ -36,8 +36,8 @@
 
 // This project.
 #include "App.h"
-#include "BFH_Mgr_AO.h"
-#include "BFH_Mgr_Evt.h"
+#include "BFHMgr_AO.h"
+#include "BFHMgr_Evt.h"
 #include "BSP.h"
 #include "CalendarRec.h"
 #include "DisplayMgr_AO.h"
@@ -306,13 +306,13 @@ bool App::Init(void) {
                                           BSP_gIn2GPIOPtr,
                                           BSP_gPWMGPIOPtr };
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
-  BFH_Mgr_AO &lBFH_Mgr_AO = BFH_Mgr_AO::Instance();
-  lBFH_Mgr_AO.start(2U,
-                    sBeastMgrEvtQPtr,
-                    Q_DIM(sBeastMgrEvtQPtr),
-                    nullptr,
-                    0U,
-                    &sBFHInitEvt);
+  BFHMgr_AO &lBFHMgr_AO = BFHMgr_AO::Instance();
+  lBFHMgr_AO.start(2U,
+                   sBeastMgrEvtQPtr,
+                   Q_DIM(sBeastMgrEvtQPtr),
+                   nullptr,
+                   0U,
+                   &sBFHInitEvt);
 
   static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY,
                                             App::sNetIFRecPtr,
@@ -328,7 +328,8 @@ bool App::Init(void) {
 
   SSD1329 * const lOLEDDisplayPtr = BSP_InitOLEDDisplay();
   static DisplayMgrInitEvt const sDisplayMgrInitEvt = { SIG_DUMMY,
-                                                        lOLEDDisplayPtr };
+                                                        lOLEDDisplayPtr,
+                                                        5 };
   static QP::QEvt const *sDisplayMgrEvtQPtr[5];
   DisplayMgr_AO &lDisplayMgr_AO = DisplayMgr_AO::Instance();
   lDisplayMgr_AO.start(4U,
@@ -698,7 +699,7 @@ char const *App::DispIndex(int   aCGIIx,
 
     // Could use QF_Publish() to decouple from active object.
     // Here, there's only this well-known recipient.
-    BFH_Mgr_AO::AOInstance().POST(lEvtPtr, 0);
+    BFHMgr_AO::AOInstance().POST(lEvtPtr, 0);
 
     // Return where we're coming from.
     return "/index.shtml";

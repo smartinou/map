@@ -49,8 +49,8 @@
 #include "SPI.h"
 
 // This application.
-#include "BFH_Mgr_AO.h"
-#include "BFH_Mgr_Evt.h"
+#include "BFHMgr_AO.h"
+#include "BFHMgr_Evt.h"
 #include "BSP.h"
 #include "DisplayMgr_AO.h"
 #include "RTCC_AO.h"
@@ -442,9 +442,9 @@ void GPIOPortC_IRQHandler(void) {
     static BFHManualFeedCmdEvt sOnEvt  = { SIG_FEED_MGR_MANUAL_FEED_CMD, true };
     static BFHManualFeedCmdEvt sOffEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, false };
     if (Button::PRESSED == sManualFeedButtonPtr->GetGPIOPinState()) {
-      BFH_Mgr_AO::AOInstance().POST(&sOnEvt, 0);
+      BFHMgr_AO::AOInstance().POST(&sOnEvt, 0);
     } else {
-      BFH_Mgr_AO::AOInstance().POST(&sOffEvt, 0);
+      BFHMgr_AO::AOInstance().POST(&sOffEvt, 0);
     }
   }
 }
@@ -463,7 +463,7 @@ void GPIOPortD_IRQHandler(void) {
     // Only interested in the pin coming high.
     if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
       static BFHTimedFeedCmdEvt sEvt = { SIG_FEED_MGR_TIMED_FEED_CMD, 0 };
-      BFH_Mgr_AO::AOInstance().POST(&sEvt, 0);
+      BFHMgr_AO::AOInstance().POST(&sEvt, 0);
     }
   }
 }

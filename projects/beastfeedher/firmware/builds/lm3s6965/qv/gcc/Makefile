@@ -136,7 +136,7 @@ C_SRCS := \
 CPP_SRCS := \
         App.cpp \
         Main.cpp \
-        BFH_Mgr_AO.cpp \
+        BFHMgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
