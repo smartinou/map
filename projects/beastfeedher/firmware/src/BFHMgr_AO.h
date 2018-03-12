@@ -42,25 +42,25 @@ class TB6612;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class BFH_Mgr_AO : public QP::QActive {
+class BFHMgr_AO : public QP::QActive {
  public:
-  static BFH_Mgr_AO  &Instance(void);
+  static BFHMgr_AO  &Instance(void);
   static QP::QActive &AOInstance(void);
 
  protected:
-  static QP::QState Initial(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState Initial(BFHMgr_AO      * const aMePtr,
                             QP::QEvt const * const aEvtPtr);
-  static QP::QState FeedingMgr(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState FeedingMgr(BFHMgr_AO      * const aMePtr,
                                QP::QEvt const * const aEvtPtr);
-  static QP::QState Waiting(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState Waiting(BFHMgr_AO      * const aMePtr,
                             QP::QEvt const * const aEvtPtr);
-  static QP::QState TimedFeed(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState TimedFeed(BFHMgr_AO      * const aMePtr,
                               QP::QEvt const * const aEvtPtr);
-  static QP::QState ManualFeed(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState ManualFeed(BFHMgr_AO      * const aMePtr,
                                QP::QEvt const * const aEvtPtr);
-  static QP::QState WaitPeriod(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState WaitPeriod(BFHMgr_AO      * const aMePtr,
                                QP::QEvt const * const aEvtPtr);
-  static QP::QState TimeCappedFeed(BFH_Mgr_AO     * const aMePtr,
+  static QP::QState TimeCappedFeed(BFHMgr_AO      * const aMePtr,
                                    QP::QEvt const * const aEvtPtr);
 
 private:
@@ -68,9 +68,9 @@ private:
     TIME_CAPPED_DEBOUNCE = 2,
     TIME_CAPPED_TIMEOUT  = 10
   };
-  BFH_Mgr_AO();
-  BFH_Mgr_AO(BFH_Mgr_AO const &);
-  void operator=(BFH_Mgr_AO const &) = delete;
+  BFHMgr_AO();
+  BFHMgr_AO(BFHMgr_AO const &);
+  void operator=(BFHMgr_AO const &) = delete;
 
   void StartFeeding(void) const;
   void StopFeeding(void)  const;
@@ -84,7 +84,7 @@ private:
 
   TB6612 *mMotorCtrlPtr;
 
-  static BFH_Mgr_AO *mInstancePtr;
+  static BFHMgr_AO *mInstancePtr;
 };
 
 // ******************************************************************************

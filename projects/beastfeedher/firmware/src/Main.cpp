@@ -31,7 +31,7 @@
 
 // This application.
 #include "App.h"
-#include "BFH_Mgr_Evt.h"
+#include "BFHMgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_Evt.h"
 

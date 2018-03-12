@@ -136,7 +136,7 @@ C_SRCS := \
 CPP_SRCS := \
         App.cpp \
         Main.cpp \
-        BFH_Mgr_AO.cpp \
+        BFHMgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
@@ -144,6 +144,7 @@ CPP_SRCS := \
         Date.cpp \
         DB.cpp \
         DBRec.cpp \
+        DisplayMgr_AO.cpp \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \

@@ -207,9 +207,8 @@ void SSD1329::Init(void) {
 		   GPIO_PIN_TYPE_STD);
   GPIOPinWrite(mEn15VGPIOPort, mEn15VGPIOPin, mEn15VGPIOPin);
 
-  // Clear screen and activate display.
+  // Clear screen.
   Clr();
-  DisplayOn();
 }
 
 
