@@ -31,8 +31,6 @@
 // QP-port.
 #include "qpcpp.h"
 
-using namespace QP;
-
 // LwIP stack.
 #include "lwip/autoip.h"
 #include "lwip/def.h"
@@ -65,6 +63,7 @@ extern "C" {
 // This project.
 #include "BSP.h"
 #include "DBRec.h"
+#include "DisplayMgr_Evt.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "NetIFRec.h"
@@ -94,7 +93,7 @@ Q_DEFINE_THIS_FILE
 //Q_ASSERT_COMPILE(SIG_QTY < DEV_DRIVER_SIG);
 
 // The single instance of LwIPMgr_AO.
-LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = static_cast<LwIPMgr_AO *>(0);
+LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = nullptr;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -104,8 +103,7 @@ LwIPMgr_AO::LwIPMgr_AO() :
   QActive(Q_STATE_CAST(&LwIPMgr_AO::Initial))
   , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
   //, mEthDrvPtr(0)
-  , mNetIFPtr(static_cast<struct netif *>(0))
-  //  , mPCBPtr(static_cast<struct udp_pcb *>(0))
+  , mNetIFPtr(nullptr)
   , mIPAddr(IPADDR_ANY)
 #if LWIP_TCP
   , mTCPTimer(0)
@@ -256,17 +254,18 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
       uint32_t lIPAddrNet = ntohl(me->mIPAddr);
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
-#if 0
-      TextEvt *lTextEvtPtr = Q_NEW(TextEvt, DISPLAY_IPADDR_SIG);
-      snprintf(te->text,
-               Q_DIM(lTextEvtPtr->text),
-               "%d.%d.%d.%d",
-               ((lIPAddrNet) >> 24) & 0xFF,
-               ((lIPAddrNet) >> 16) & 0xFF,
-               ((lIPAddrNet) >>  8) & 0xFF,
-               ((lIPAddrNet) >>  0) & 0xFF);
-      QP::QF::publish(static_cast<QP::QEvt *)>(TextEvtPtr));
-#endif
+      DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt, SIG_DISPLAY_TEXT);
+      snprintf(&lTextEvtPtr->mStr[0],
+               Q_DIM(lTextEvtPtr->mStr),
+               "IP: %u.%u.%u.%u    ",
+               static_cast<unsigned int>((lIPAddrNet) >> 24) & 0xFF,
+               static_cast<unsigned int>((lIPAddrNet) >> 16) & 0xFF,
+               static_cast<unsigned int>((lIPAddrNet) >>  8) & 0xFF,
+               static_cast<unsigned int>((lIPAddrNet) >>  0) & 0xFF);
+      lTextEvtPtr->mPosX   = 0 * 6;
+      lTextEvtPtr->mPosY   = 0 * 8;
+      lTextEvtPtr->mGreyLvl = 12;
+      QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTextEvtPtr), me);
     }
 
 #if LWIP_TCP
