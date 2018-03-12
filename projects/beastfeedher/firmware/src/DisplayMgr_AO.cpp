@@ -90,7 +90,8 @@ DisplayMgr_AO::DisplayMgr_AO()
   : QActive(Q_STATE_CAST(&DisplayMgr_AO::Initial))
   , mDisplayTimerEvt(this, SIG_DISPLAY_TIMEOUT, 0U)
   , mDisplayPtr(nullptr)
-  , mIsDisplayOn(false) {
+  , mIsDisplayOn(false)
+  , mDisplayTime(0) {
   // Ctor body intentionally left empty.
 }
 
@@ -100,7 +101,8 @@ QP::QState DisplayMgr_AO::Initial(DisplayMgr_AO  * const me,  //aMePtr,
 
   DisplayMgrInitEvt const * const lInitEvtPtr = static_cast<DisplayMgrInitEvt const * const>(e);
 
-  me->mDisplayPtr = lInitEvtPtr->mSSD1329Ptr;
+  me->mDisplayPtr  = lInitEvtPtr->mSSD1329Ptr;
+  me->mDisplayTime = lInitEvtPtr->mDisplayTime;
 
   // Subscribe to signals if any.
   me->subscribe(SIG_DISPLAY_TEXT);
@@ -114,15 +116,14 @@ QP::QState DisplayMgr_AO::Running(DisplayMgr_AO  * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mDisplayTimerEvt.armX(5 * BSP_TICKS_PER_SEC);
     me->DisplayInit(me);
     // Intentional fallthrough.
   case Q_INIT_SIG:
     return Q_HANDLED();
 
   case SIG_DISPLAY_TEXT: {
-    char const * lStr = &static_cast<DisplayTextEvt const * const>(e)->mStr[0];
-    DisplayText(me, lStr);
+    //char const * lStr = &static_cast<DisplayTextEvt const * const>(e)->mStr[0];
+    DisplayText(me, e); //lStr);
     return Q_HANDLED();
   }
   case SIG_DISPLAY_TIMEOUT:
@@ -150,17 +151,21 @@ void DisplayMgr_AO::DisplayInit(DisplayMgr_AO * const me) {
 }
 
 
-void DisplayMgr_AO::DisplayText(DisplayMgr_AO * const me,
-                                char const           *aStr) {
+void DisplayMgr_AO::DisplayText(DisplayMgr_AO  * const me,
+                                QP::QEvt const * const e) {
+
+  DisplayTextEvt const * const lTextEvtPtr = static_cast<DisplayTextEvt const * const>(e);
   me->DisplayOn(me);
-  me->mDisplayPtr->Clr();
-  me->mDisplayPtr->DrawStr(aStr, 0*6, 0*8, 5);
+  me->mDisplayPtr->DrawStr(&lTextEvtPtr->mStr[0],
+                           lTextEvtPtr->mPosX,
+                           lTextEvtPtr->mPosY,
+                           lTextEvtPtr->mGreyLvl);
 }
 
 
 void DisplayMgr_AO::DisplayOn(DisplayMgr_AO * const me) {
 
-  me->mDisplayTimerEvt.rearm(5 * BSP_TICKS_PER_SEC);
+  me->mDisplayTimerEvt.rearm(me->mDisplayTime * BSP_TICKS_PER_SEC);
   if (!me->mIsDisplayOn) {
     me->mIsDisplayOn = true;
     me->mDisplayPtr->DisplayOn();
