@@ -40,13 +40,17 @@ class NetIFRec;
 class LwIPInitEvt : public QP::QEvt {
  public:
   LwIPInitEvt(QP::QSignal aSig,
-              NetIFRec   *aNetIFRecPtr) {
-    sig          = aSig;
-    mNetIFRecPtr = aNetIFRecPtr;
+              NetIFRec   *aNetIFRecPtr,
+              void      (*aCallbackInit)(void)
+	      ) {
+    sig           = aSig;
+    mNetIFRecPtr  = aNetIFRecPtr;
+    mCallbackInit = aCallbackInit;
   }
 
  public:
-  NetIFRec *mNetIFRecPtr;
+  NetIFRec   *mNetIFRecPtr;
+  void      (*mCallbackInit)(void);
 };
 
 // ******************************************************************************

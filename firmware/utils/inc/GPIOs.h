@@ -1,9 +1,9 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Active Object Library
+// Project: Utilities.
 //
-// Module: RTCC QP Active Object.
+// Module: GPIOs class.
 //
 // *******************************************************************************
 
@@ -11,19 +11,15 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-#include "DBRec.h"
-#include "CalendarRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -33,63 +29,21 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPIDev;
-class SPISlaveCfg;
-class DS3234;
-
-
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class RTCC_AO : public QP::QActive {
+//! \brief GPIO component.
+class GPIOs {
  public:
-  RTCC_AO();
+  GPIOs(unsigned long const aPort,
+        unsigned int  const aPin);
 
-  static RTCC_AO     * const GetInstancePtr(void);
-  static QP::QActive * const GetOpaqueAOInstancePtr(void);
-
-  void ISRCallback(void);
-
-  float GetTemperature(void) const;
-  Time &GetTime(void);
-  Date &GetDate(void);
+  unsigned long GetPort(void) const;
+  unsigned int  GetPin(void)  const;
 
  protected:
-  static QP::QState Initial(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
-  static QP::QState Running(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
- private:
-  static unsigned int InitRTCC(RTCC_AO         * const aMePtr,
-                               QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitDB(RTCC_AO         * const aMePtr,
-                             QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitCalendar(RTCC_AO         * const aMePtr,
-                                   QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitInterrupt(RTCC_AO         * const aMePtr,
-                                    QP::QEvt  const * const aEvtPtr);
-
-  static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
-
-  static void WrToNVMem(RTCC_AO * const aMePtr);
-
-
-  Time  mTime;
-  Date  mDate;
-  float mTemperature;
-
-  CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
-  DS3234 *mDS3234Ptr;
-
-  CalendarRec *mCalendarPtr;
-
-  unsigned long mIntNbr;
-
-  // The single instance of RTCC Active Object.
-  static RTCC_AO *mInstancePtr;
-
-  // Buffer of bytes to hold NV memory content.
-  static uint8_t *mNVMemBuf;
+  unsigned long const mPort;
+  unsigned int  const mPin;
 };
 
 // ******************************************************************************

@@ -43,9 +43,10 @@
 // *****************************************************************************
 
 // Ctor.
-RTCC::RTCC() :
-  mCentury(),
-  mIsImpure(true) {
+RTCC::RTCC(unsigned int aBaseYear)
+  : mBaseYear(aBaseYear)
+  , mCentury(0)
+  , mIsImpure(true) {
 
   // Intentional empty ctor body.
 }

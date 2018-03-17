@@ -2,9 +2,9 @@
 #define TIME_H_
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utilities.
 //
-// Module: Module in the larger project scope.
+// Module: Time class.
 //
 // *******************************************************************************
 
@@ -15,7 +15,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -38,38 +38,35 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-// [MG] CONSIDER MOVING IMPLEMENTATION TO CPP FILE TO HIDE DETAILS,
-// [MG] ... AND TO PERFORM FORWARD CLASS DECLARATION INSTEAD OF INCLUDES.
 class Time {
  public:
-  Time()
-    : mHours(0),
-    mMinutes(0),
-    mSeconds(0),
-    mIs24H(true),
-    mIsPM(false) {}
-  explicit Time(Hour aHours, Minute aMinutes, Second aSeconds, bool aIs24H = true, bool aIsPM = false)
-    : mHours(aHours),
-    mMinutes(aMinutes),
-    mSeconds(aSeconds),
-    mIs24H(aIs24H),
-    mIsPM(aIsPM) {}
-  ~Time() {}
+  Time();
+  explicit Time(Hour   aHours,
+                Minute aMinutes,
+                Second aSeconds,
+                bool   aIs24H = true,
+                bool   aIsPM  = false);
+  explicit Time(unsigned int aHours,
+                unsigned int aMinutes,
+                unsigned int aSeconds,
+                bool         aIs24H = true,
+                bool         aIsPM  = false);
+  ~Time();
 
-  unsigned int GetHours(void)   const { return mHours.Get();   }
-  unsigned int GetMinutes(void) const { return mMinutes.Get(); }
-  unsigned int GetSeconds(void) const { return mSeconds.Get(); }
+  unsigned int GetHours(void)   const;
+  unsigned int GetMinutes(void) const;
+  unsigned int GetSeconds(void) const;
 
-  bool Is24H(void) const { return mIs24H; }
-  bool IsPM(void)  const { return mIsPM;  }
+  bool Is24H(void) const;
+  bool IsPM(void)  const;
 
-  void SetHours(  unsigned int aHours)   { mHours.Set(aHours);     }
-  void SetMinutes(unsigned int aMinutes) { mMinutes.Set(aMinutes); }
-  void SetSeconds(unsigned int aSeconds) { mSeconds.Set(aSeconds); }
+  void SetHours(  unsigned int aHours);
+  void SetMinutes(unsigned int aMinutes);
+  void SetSeconds(unsigned int aSeconds);
 
-  void SetIs24H(bool aIs24H) { mIs24H = aIs24H; }
-  void SetIsPM( bool aIsPM)  { mIsPM  = aIsPM;  }
-  
+  void SetIs24H(bool aIs24H);
+  void SetIsPM( bool aIsPM);
+
  private:
   Hour   mHours;
   Minute mMinutes;
@@ -78,6 +75,14 @@ class Time {
   bool   mIs24H;
   bool   mIsPM;
 };
+
+
+// Helper functions.
+namespace TimeHelper {
+
+char const *ToStr(Time &aTime, char * const aInStr);
+
+} // namespace TimeHelper
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES

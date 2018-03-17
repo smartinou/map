@@ -22,7 +22,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,14 +42,16 @@
 
 // Common Library.
 #include "Date.h"
-//#include "DBRec.h"
+#include "DBRec.h"
+#include "FeedCfgRec.h"
 #include "Time.h"
 
 // This project.
-#include "BFH_Mgr_AO.h"
-#include "BFH_Mgr_Evt.h"
+#include "BFHMgr_AO.h"
+#include "BFHMgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_Evt.h"
+#include "TB6612.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -69,26 +71,26 @@ Q_DEFINE_THIS_FILE
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-BFH_Mgr_AO *BFH_Mgr_AO::mInstancePtr = static_cast<BFH_Mgr_AO *>(0);
+BFHMgr_AO *BFHMgr_AO::mInstancePtr = static_cast<BFHMgr_AO *>(0);
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-BFH_Mgr_AO &BFH_Mgr_AO::Instance(void) {
+BFHMgr_AO &BFHMgr_AO::Instance(void) {
 
-  if (static_cast<BFH_Mgr_AO *>(0) == mInstancePtr) {
-    mInstancePtr = new BFH_Mgr_AO();
+  if (static_cast<BFHMgr_AO *>(0) == mInstancePtr) {
+    mInstancePtr = new BFHMgr_AO();
   }
 
   return *mInstancePtr;
 }
 
 
-QP::QActive &BFH_Mgr_AO::AOInstance(void) {
+QP::QActive &BFHMgr_AO::AOInstance(void) {
 
-  if (static_cast<BFH_Mgr_AO *>(0) == mInstancePtr) {
-    mInstancePtr = new BFH_Mgr_AO();
+  if (static_cast<BFHMgr_AO *>(0) == mInstancePtr) {
+    mInstancePtr = new BFHMgr_AO();
   }
 
   return static_cast<QP::QActive &>(*mInstancePtr);
@@ -98,16 +100,30 @@ QP::QActive &BFH_Mgr_AO::AOInstance(void) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-BFH_Mgr_AO::BFH_Mgr_AO() :
-  QActive(Q_STATE_CAST(&BFH_Mgr_AO::Initial)),
-  mFeedTimerEvt(this, SIG_FEED_MGR_TIMEOUT, 0U) {
+BFHMgr_AO::BFHMgr_AO() :
+  QActive(Q_STATE_CAST(&BFHMgr_AO::Initial)),
+  mFeedEvtQueue(),
+  mFeedEvtQueueSto{nullptr},
+  mFeedTimerEvt(this, SIG_FEED_MGR_TIMEOUT, 0U),
+  mFeedCfgRecPtr(nullptr),
+  mFeedTime(0),
+  mMotorCtrlPtr(nullptr) {
 
   // Ctor body intentionally left empty.
 }
 
 
-QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
-                               QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::Initial(BFHMgr_AO      * const me,  //aMePtr,
+                              QP::QEvt const * const e) { //aEvtPtr
+
+  BFHInitEvt const * const lBFHInitEvtPtr = static_cast<BFHInitEvt const * const>(e);
+  me->mFeedCfgRecPtr = lBFHInitEvtPtr->mFeedCfgRecPtr;
+
+  // Store reference to a feeder unit, or a motor controller.
+  me->mMotorCtrlPtr = new TB6612(*lBFHInitEvtPtr->mMotorCtrlIn1Ptr,
+                                 *lBFHInitEvtPtr->mMotorCtrlIn2Ptr,
+                                 *lBFHInitEvtPtr->mMotorCtrlPWMPtr);
+  me->StopFeeding();
 
   // Initialize the QF queue for deferred feed requests.
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
@@ -115,14 +131,12 @@ QP::QState BFH_Mgr_AO::Initial(BFH_Mgr_AO     * const me,  //aMePtr,
   // Subscribe to signals if any.
   me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
 
-  // Store reference to a feeder unit, or a motor controller.
-
-  return Q_TRAN(&BFH_Mgr_AO::FeedingMgr);
+  return Q_TRAN(&BFHMgr_AO::FeedingMgr);
 }
 
 
-QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
-                                  QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
+                                 QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -131,22 +145,30 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const * const lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
-      return Q_TRAN(&BFH_Mgr_AO::ManualFeed);
+      return Q_TRAN(&BFHMgr_AO::ManualFeed);
     }
     // Off: intentional fallthrough.
   }
+
   case Q_INIT_SIG:
     // Go into default nested state.
   case SIG_FEED_MGR_TIMEOUT:
-    return Q_TRAN(&BFH_Mgr_AO::Waiting);
+    return Q_TRAN(&BFHMgr_AO::Waiting);
 
   case SIG_RTCC_CALENDAR_EVENT_ALARM:
     //RTCCEvt const *lEvtPtr = static_cast<RTCCEvt const *>(e);
     //Log(Time, Date);
-  case SIG_FEED_MGR_TIMED_FEED_CMD:
-    return Q_TRAN(&BFH_Mgr_AO::TimedFeed);
+    me->mFeedTime = me->mFeedCfgRecPtr->GetTimedFeedPeriod();
+    return Q_TRAN(&BFHMgr_AO::TimedFeed);
+
+  case SIG_FEED_MGR_TIMED_FEED_CMD: {
+    // FIXME: perform boundary check on value.
+    BFHTimedFeedCmdEvt const * const lEvtPtr = reinterpret_cast<BFHTimedFeedCmdEvt const * const>(e);
+    me->mFeedTime = lEvtPtr->mTime;
+    return Q_TRAN(&BFHMgr_AO::TimedFeed);
+  }
 
   case Q_EXIT_SIG:
     return Q_HANDLED();
@@ -162,8 +184,8 @@ QP::QState BFH_Mgr_AO::FeedingMgr(BFH_Mgr_AO     * const me,  //aMePtr,
 }
 
 
-QP::QState BFH_Mgr_AO::Waiting(BFH_Mgr_AO     * const me,  //aMePtr,
-                               QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::Waiting(BFHMgr_AO      * const me,  //aMePtr,
+                              QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -171,16 +193,16 @@ QP::QState BFH_Mgr_AO::Waiting(BFH_Mgr_AO     * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::FeedingMgr);
+  return Q_SUPER(&BFHMgr_AO::FeedingMgr);
 }
 
 
-QP::QState BFH_Mgr_AO::TimedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
-                                 QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::TimedFeed(BFHMgr_AO      * const me,  //aMePtr,
+                                QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(30);
+    me->mFeedTimerEvt.armX(me->mFeedTime * BSP_TICKS_PER_SEC);
     me->StartFeeding();
     return Q_HANDLED();
 
@@ -199,12 +221,12 @@ QP::QState BFH_Mgr_AO::TimedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::FeedingMgr);
+  return Q_SUPER(&BFHMgr_AO::FeedingMgr);
 }
 
 
-QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
-                                  QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::ManualFeed(BFHMgr_AO      * const me,  //aMePtr,
+                                 QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
@@ -212,7 +234,7 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case Q_INIT_SIG:
     // Go into default nested state.
-    return Q_TRAN(&BFH_Mgr_AO::WaitPeriod);
+    return Q_TRAN(&BFHMgr_AO::WaitPeriod);
 
   case SIG_RTCC_CALENDAR_EVENT_ALARM:
     // Cast event, log(Time, Date);
@@ -221,7 +243,7 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
 
   case SIG_FEED_MGR_MANUAL_FEED_CMD: {
     // Cast event to know the state (on/off).
-    BFHManualFeedCmdEvt const *lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
+    BFHManualFeedCmdEvt const * const lEvtPtr = static_cast<BFHManualFeedCmdEvt const * const>(e);
     if (lEvtPtr->mIsOn) {
       // On: DoNothing();
       return Q_HANDLED();
@@ -235,54 +257,55 @@ QP::QState BFH_Mgr_AO::ManualFeed(BFH_Mgr_AO     * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::FeedingMgr);
+  return Q_SUPER(&BFHMgr_AO::FeedingMgr);
 }
 
 
-QP::QState BFH_Mgr_AO::WaitPeriod(BFH_Mgr_AO     * const me,  //aMePtr,
-                                  QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::WaitPeriod(BFHMgr_AO      * const me,  //aMePtr,
+                                 QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(50);
+    me->mFeedTimerEvt.armX(TIME_CAPPED_DEBOUNCE * BSP_TICKS_PER_SEC);
     return Q_HANDLED();
 
   case SIG_FEED_MGR_TIMEOUT:
-    return Q_TRAN(&BFH_Mgr_AO::TimeCappedFeed);
+    return Q_TRAN(&BFHMgr_AO::TimeCappedFeed);
 
   case Q_EXIT_SIG:
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::ManualFeed);
+  return Q_SUPER(&BFHMgr_AO::ManualFeed);
 }
 
 
-QP::QState BFH_Mgr_AO::TimeCappedFeed(BFH_Mgr_AO     * const me,  //aMePtr,
-                                      QP::QEvt const * const e) { //aEvtPtr
+QP::QState BFHMgr_AO::TimeCappedFeed(BFHMgr_AO      * const me,  //aMePtr,
+                                     QP::QEvt const * const e) { //aEvtPtr
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(200);
+    me->mFeedTimerEvt.armX(TIME_CAPPED_TIMEOUT * BSP_TICKS_PER_SEC);
+    me->StartFeeding();
     return Q_HANDLED();
 
   case Q_EXIT_SIG:
     return Q_HANDLED();
   }
 
-  return Q_SUPER(&BFH_Mgr_AO::ManualFeed);
+  return Q_SUPER(&BFHMgr_AO::ManualFeed);
 }
 
 
-void BFH_Mgr_AO::StartFeeding(void) const {
+void BFHMgr_AO::StartFeeding(void) const {
   // Turn on feeding mechanism.
-  // FeederUnit->Start();
+  mMotorCtrlPtr->TurnOnCW();
 }
 
 
-void BFH_Mgr_AO::StopFeeding(void) const {
+void BFHMgr_AO::StopFeeding(void) const {
   // Turn off feeding mechanism.
-  // FeederUnit->Stop();
+  mMotorCtrlPtr->TurnOff();
 }
 
 // *****************************************************************************

@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
-// Project: Utilities.
+// Project: Beast Feed'Her
 //
-// Module: Time class.
+// Module: Feeding configuration class.
 //
 // *****************************************************************************
 
@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,9 +20,14 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include "stdio.h"
+// Standard Library.
+#include <string.h>
 
-#include "Time.h"
+// Common Library.
+#include "DBRec.h"
+
+// This project.
+#include "FeedCfgRec.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -44,115 +49,97 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Time::Time()
-  : mHours(0)
-  , mMinutes(0)
-  , mSeconds(0)
-  , mIs24H(true)
-  , mIsPM(false) {
+FeedCfgRec::FeedCfgRec()
+  : DBRec()
+  , mRec{0} {
 
-  // Ctor intentionally empty.
+  // Ctor body left intentionally empty.
 }
 
 
-Time::Time(Hour   aHours,
-           Minute aMinutes,
-           Second aSeconds,
-           bool   aIs24H,
-           bool   aIsPM)
-  : mHours(aHours)
-  , mMinutes(aMinutes)
-  , mSeconds(aSeconds)
-  , mIs24H(aIs24H)
-  , mIsPM(aIsPM) {
-
-  // Ctor intentionally empty.
+uint8_t FeedCfgRec::GetTimedFeedPeriod(void) const {
+  return mRec.mTimedFeedPeriod;
 }
 
 
-Time::Time(unsigned int aHours,
-           unsigned int aMinutes,
-           unsigned int aSeconds,
-           bool         aIs24H,
-           bool         aIsPM)
-    : mHours(aHours)
-    , mMinutes(aMinutes)
-    , mSeconds(aSeconds)
-    , mIs24H(aIs24H)
-    , mIsPM(aIsPM) {
-
-  // Ctor intentionally empty.
+bool FeedCfgRec::IsWebFeedingEnable(void) const {
+  return mRec.mIsWebFeedingEnable;
 }
 
 
-Time::~Time() {
-
-  // Dtor intentionally empty.
+bool FeedCfgRec::IsAutoPetFeedingEnable(void) const {
+  return mRec.mIsAutoPetFeedingEnable;
 }
 
 
-unsigned int Time::GetHours(void) const {
-  return mHours.Get();
+void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
+  mRec.mTimedFeedPeriod = aPeriod;
 }
 
 
-unsigned int Time::GetMinutes(void) const {
-  return mMinutes.Get();
+void FeedCfgRec::SetIsWebFeedingEnabled(bool aIsEnabled) {
+  mRec.mIsWebFeedingEnable = aIsEnabled;
 }
 
 
-unsigned int Time::GetSeconds(void) const {
-  return mSeconds.Get();
+void FeedCfgRec::SetIsAutoPetFeedingEnabled(bool aIsEnabled) {
+  mRec.mIsAutoPetFeedingEnable = aIsEnabled;
 }
 
 
-bool Time::Is24H(void) const {
-  return mIs24H;
-}
-
-
-bool Time::IsPM(void) const {
-  return mIsPM;
-}
-
-
-void Time::SetHours(unsigned int aHours) {
-    mHours.Set(aHours);
-}
-
-
-void Time::SetMinutes(unsigned int aMinutes) {
-  mMinutes.Set(aMinutes);
-}
-
-
-void Time::SetSeconds(unsigned int aSeconds) {
-  mSeconds.Set(aSeconds);
-}
-
-
-void Time::SetIs24H(bool aIs24H) {
-  mIs24H = aIs24H;
-}
-
-
-void Time::SetIsPM(bool aIsPM) {
-  mIsPM = aIsPM;
-}
-
-
-// TimeHelper functions.
-char const *TimeHelper::ToStr(Time &aTime, char * const aInStr) {
-
-  if (aTime.Is24H()) {
-    snprintf(aInStr, 5 + 1, "%02d:%02d", aTime.GetHours(), aTime.GetMinutes());
-  } else if (aTime.IsPM()) {
-    snprintf(aInStr, 8 + 1, "%02d:%02d PM", aTime.GetHours(), aTime.GetMinutes());
-  } else {
-    snprintf(aInStr, 8 + 1, "%02d:%02d AM", aTime.GetHours(), aTime.GetMinutes());
+bool FeedCfgRec::IsSane(void) {
+  if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+    return false;
   }
 
-  return aInStr;
+  // Check magic value.
+  if (('C' != mRec.mMagic[0])
+      || ('F' != mRec.mMagic[1])
+      || ('G' != mRec.mMagic[2])) {
+    return false;
+  }
+
+  return true;
+}
+
+
+bool FeedCfgRec::IsDirty(void) const {
+  return mIsDirty;
+}
+
+
+void FeedCfgRec::ResetDflt(void) {
+
+  // Set magic.
+  mRec.mMagic[0] = 'C';
+  mRec.mMagic[1] = 'F';
+  mRec.mMagic[2] = 'G';
+
+  mRec.mTimedFeedPeriod = 2;
+  mRec.mIsWebFeedingEnable     = true;
+  mRec.mIsAutoPetFeedingEnable = true;
+
+  mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
+  mIsDirty = true;
+}
+
+
+unsigned int FeedCfgRec::GetRecSize(void) const {
+  return sizeof(struct RecStructTag);
+}
+
+
+// Trivial serialization function.
+void FeedCfgRec::Serialize(uint8_t * const aDataPtr) const {
+
+  memcpy(aDataPtr, &mRec, GetRecSize());
+}
+
+
+// Trivial serialization function.
+void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
+
+  memcpy(&mRec, aDataPtr, GetRecSize());
 }
 
 // *****************************************************************************

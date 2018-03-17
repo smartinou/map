@@ -1,9 +1,9 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Active Object Library
+// Project: Beast Feed'Her!
 //
-// Module: RTCC QP Active Object.
+// Module: Beast feeder manager QP Events.
 //
 // *******************************************************************************
 
@@ -14,16 +14,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-#include "DBRec.h"
-#include "CalendarRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -33,63 +30,57 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPIDev;
-class SPISlaveCfg;
-class DS3234;
+// Forward declarations.
+class DBRec;
+class FeedCfgRec;
+class GPIOs;
 
-
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class RTCC_AO : public QP::QActive {
+// Class definitions.
+class BFHInitEvt : public QP::QEvt {
  public:
-  RTCC_AO();
+  BFHInitEvt(QP::QSignal  aSig,
+             FeedCfgRec  *aFeedCfgRecPtr,
+             GPIOs       *aMotorCtrlIn1Ptr,
+             GPIOs       *aMotorCtrlIn2Ptr,
+             GPIOs       *aMotorCtrlPWMPtr) {
+    sig              = aSig;
+    mFeedCfgRecPtr   = aFeedCfgRecPtr;
+    mMotorCtrlIn1Ptr = aMotorCtrlIn1Ptr;
+    mMotorCtrlIn2Ptr = aMotorCtrlIn2Ptr;
+    mMotorCtrlPWMPtr = aMotorCtrlPWMPtr;
+  }
 
-  static RTCC_AO     * const GetInstancePtr(void);
-  static QP::QActive * const GetOpaqueAOInstancePtr(void);
-
-  void ISRCallback(void);
-
-  float GetTemperature(void) const;
-  Time &GetTime(void);
-  Date &GetDate(void);
-
- protected:
-  static QP::QState Initial(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
-  static QP::QState Running(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
- private:
-  static unsigned int InitRTCC(RTCC_AO         * const aMePtr,
-                               QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitDB(RTCC_AO         * const aMePtr,
-                             QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitCalendar(RTCC_AO         * const aMePtr,
-                                   QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitInterrupt(RTCC_AO         * const aMePtr,
-                                    QP::QEvt  const * const aEvtPtr);
-
-  static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
-
-  static void WrToNVMem(RTCC_AO * const aMePtr);
+ public:
+  FeedCfgRec *mFeedCfgRecPtr;
+  GPIOs      *mMotorCtrlIn1Ptr;
+  GPIOs      *mMotorCtrlIn2Ptr;
+  GPIOs      *mMotorCtrlPWMPtr;
+};
 
 
-  Time  mTime;
-  Date  mDate;
-  float mTemperature;
+class BFHManualFeedCmdEvt : public QP::QEvt {
+ public:
+  BFHManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
+    sig     = aSig;
+    poolId_ = 0U;
+    mIsOn   = aIsOn;
+  }
 
-  CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
-  DS3234 *mDS3234Ptr;
+ public:
+  bool mIsOn;
+};
 
-  CalendarRec *mCalendarPtr;
 
-  unsigned long mIntNbr;
+class BFHTimedFeedCmdEvt : public QP::QEvt {
+ public:
+  BFHTimedFeedCmdEvt(QP::QSignal aSig, unsigned int aTime) {
+    sig     = aSig;
+    poolId_ = 0U;
+    mTime   = aTime;
+  }
 
-  // The single instance of RTCC Active Object.
-  static RTCC_AO *mInstancePtr;
-
-  // Buffer of bytes to hold NV memory content.
-  static uint8_t *mNVMemBuf;
+ public:
+  unsigned int mTime;
 };
 
 // ******************************************************************************

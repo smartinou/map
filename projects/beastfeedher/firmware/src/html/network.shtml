@@ -34,33 +34,30 @@
       </table>
     </header>
 
-      
     <div class="content">
       <h1>Network Info</h1>
-
       <table>
 	<tr>
 	  <td style="text-align:left;width:150px">
 	    MAC address:
 	  </td>
 	  <td style="text-align:right;width:100px">
-	    <!--#s_dummy-->
+	    <!--#n_mac-->
 	  </td>
 	</tr>
 	<tr>
-	  <td>
+	  <th>
 	    IPv4:
-	  </td>
-	  <td>
-	    <!--#s_dummy-->
-	  </td>
+	  </th>
+	  <th>
+	  </th>
 	</tr>
 	<tr>
 	  <td>
 	    IPv4 Address:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#n_ipv4-->
 	  </td>
 	</tr>
 	<tr>
@@ -68,7 +65,7 @@
 	    Subnet Mask:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#n_subnet-->
 	  </td>
 	</tr>
 	<tr>
@@ -76,71 +73,70 @@
 	    Gateway:
 	  </td>
 	  <td>
-	    <!--#s_dummy-->
+	    <!--#n_gateway-->
 	  </td>
 	</tr>
       </table>
 
-    <hr>
+      <hr>
 
-    <h1>IP Configuration</h1>
-    <form name="IPConfig" method="POST">
-
-    <table>
-        <tr>
-            <td style="text-align:left;width:150px"><B>Configuration:</B></td><td>
-            <input onchange="_UpdateFormFields()" type="RADIO" NAME="AssignIPType" VALUE="1"><B>Automatic (DHCP)</B>
-            </td></tr><tr><td>  </td><td>
-            <input onchange="_UpdateFormFields()" type="RADIO" NAME="AssignIPType" VALUE="0"><B>Manual</B>
+      <h1>IP Configuration</h1>
+      <form method="get" action="network.cgi">
+        <table>
+          <tr>
+            <td style="text-align:left;width:150px"><B>Configuration:</B>
+	    </td>
+	    <td>
+              <!--#n_dhcp-->Automatic (DHCP)
+            </td>
+	  </tr>
+	  <tr>
+	    <td>
+	    </td>
+	    <td>
+              <!--#n_manual-->Manual
             </td>
           </tr>
           <tr>
             <td COLSPAN="2">
-              <table>
-              </table>
             </td>
           </tr>
           <tr>
-            <td><B>IP address:</B></td>
             <td>
-              <INPUT name="IPAddr_0" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPAddr_1" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPAddr_2" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPAddr_3" TYPE="text" SIZE="2" MAXLENGTH="3" value="">
+	      <B>IP address:</B>
+	    </td>
+            <td>
+	      <!--#n_sip0-->.<!--#n_sip1-->.<!--#n_sip2-->.<!--#n_sip3-->
             </td>
           </tr>    
           <tr>
-            <td><B>Subnet mask:</B></td>
             <td>
-              <INPUT name="IPMask_0" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPMask_1" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPMask_2" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPMask_3" TYPE="text" SIZE="2" MAXLENGTH="3" value="">
+	      <B>Subnet mask:</B>
+	    </td>
+            <td>
+	      <!--#n_ssn0-->.<!--#n_ssn1-->.<!--#n_ssn2-->.<!--#n_ssn3-->
             </td>
           </tr>
           <tr>
-            <td><B>Gateway:</B></td>
             <td>
-              <INPUT name="IPGateway_0" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPGateway_1" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPGateway_2" TYPE="text" SIZE="2" MAXLENGTH="3" value="">.
-              <INPUT name="IPGateway_3" TYPE="text" SIZE="2" MAXLENGTH="3" value="">
+	      <B>Gateway:</B>
+	    </td>
+            <td>
+	      <!--#n_sgw0-->.<!--#n_sgw1-->.<!--#n_sgw2-->.<!--#n_sgw3-->
             </td>
           </tr>
           <tr>
             <td COLSPAN="2">
-              <table>
-              </table>
             </td>
           </tr>
         </table>
-        <input type="submit" value="Apply" name="SetIP">
-
-    </form>
+        <br>
+        <input type="submit" name="set_ip" value="Apply">
+      </form>
     </div>
 
     <footer>
-       <p>Copyright &copy; 2017-2018, <strong><b>Smart Monkeys Inc.</b></strong> All rights reserved.&nbsp;&nbsp;</p>
+      <p>Copyright &copy; 2017-2018, <strong><b>Smart Monkeys Inc.</b></strong> All rights reserved.&nbsp;&nbsp;</p>
     </footer>
   </body>
 </html>

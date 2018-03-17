@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -61,6 +61,17 @@ CalendarRec::CalendarRec() :
 void CalendarRec::ClrAllEntries(void) {
 
   mRec.mCalendarArray.fill(0);
+}
+
+
+bool CalendarRec::IsEntrySet(Time const &aTimeRef) {
+
+  unsigned int lArrayIx = GetArrayIx(aTimeRef);
+  if (mRec.mCalendarArray.at(lArrayIx)) {
+    return true;
+  }
+
+  return false;
 }
 
 
@@ -144,7 +155,7 @@ bool CalendarRec::GetNextEntry(Weekday  const &aWeekdayRef,
       lHourIx = 0;
       lNextWeekdayMask <<= 1;
       if (lNextWeekdayMask > (0x1 << 7)) {
-        lNextWeekdayMask = 0;
+        lNextWeekdayMask = 1;
       }
     }
   }

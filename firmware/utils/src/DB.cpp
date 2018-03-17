@@ -2,7 +2,7 @@
 //
 // Project: Beast Feed'Her
 //
-// Module: DB record base abstract class.
+// Module: DB holder class.
 //
 // *****************************************************************************
 
@@ -25,6 +25,7 @@
 
 // This project.
 #include "DBRec.h"
+#include "DB.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -42,60 +43,126 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
+DBRec       *DB::mRootDBRecPtr  = nullptr;
+unsigned int DB::mDBRecObjCount = 0;
+
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-DBRec::DBRec()
-  : mIsDirty(false)
-  , mNextRecPtr(nullptr) {
+void DB::AddRec(DBRec * const aDBRecPtr) {
+  // Insert at head of the DB.
+  if (nullptr != mRootDBRecPtr) {
+    aDBRecPtr->SetNextRec(mRootDBRecPtr);
+  }
+  mRootDBRecPtr = aDBRecPtr;
 
-  // Ctor body left intentionally emtpy.
+  mDBRecObjCount++;
 }
 
 
-bool DBRec::IsDirty(void) const {
-  return mIsDirty;
+bool DB::IsSane(void) {
+  if (nullptr != mRootDBRecPtr) {
+    return IsSane(mRootDBRecPtr);
+  }
+
+  return false;
 }
 
 
-DBRec *DBRec::GetNextRec(void) const {
-  return mNextRecPtr;
+bool DB::IsDirty(void) {
+  if (nullptr != mRootDBRecPtr) {
+    return IsDirty(mRootDBRecPtr);
+  }
+
+  return false;
 }
 
 
-void DBRec::SetNextRec(DBRec * const aDBRecPtr) {
-  mNextRecPtr = aDBRecPtr;
+void DB::ResetDflt(void) {
+
+  DBRec *lDBRecPtr = mRootDBRecPtr;
+  while (nullptr != lDBRecPtr) {
+    lDBRecPtr->ResetDflt();
+    lDBRecPtr = lDBRecPtr->GetNextRec();
+  }
+}
+
+
+unsigned int DB::GetSize(void) {
+
+  DBRec *lDBRecPtr = mRootDBRecPtr;
+  unsigned int lDBSize = 0;
+  while (nullptr != lDBRecPtr) {
+    lDBSize += lDBRecPtr->GetRecSize();
+    lDBRecPtr = lDBRecPtr->GetNextRec();
+  }
+
+  return lDBSize;
+}
+
+
+void DB::Serialize(uint8_t *aDataPtr) {
+
+  DBRec *lDBRecPtr = mRootDBRecPtr;
+  while (nullptr != lDBRecPtr) {
+    lDBRecPtr->Serialize(aDataPtr);
+    unsigned int lSize = lDBRecPtr->GetRecSize();
+    aDataPtr += lSize;
+    lDBRecPtr = lDBRecPtr->GetNextRec();
+  }
+}
+
+
+void DB::Deserialize(uint8_t const *aDataPtr) {
+
+  DBRec *lDBRecPtr = mRootDBRecPtr;
+  while (nullptr != lDBRecPtr) {
+    lDBRecPtr->Deserialize(aDataPtr);
+    unsigned int lSize = lDBRecPtr->GetRecSize();
+    aDataPtr += lSize;
+    lDBRecPtr = lDBRecPtr->GetNextRec();
+  }
+}
+
+
+unsigned int DB::GetRecCount(void) {
+  return mDBRecObjCount;
 }
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-uint8_t DBRec::ComputeCRC(uint8_t const *aDataPtr, unsigned int aSize) {
-  uint8_t lCRC = 0;
-  for (unsigned int lIx = 1; lIx < aSize; lIx++) {
-    lCRC += aDataPtr[lIx];
+bool DB::IsSane(DBRec * const aDBRecPtr) {
+
+  // Check current record.
+  // Bail out the minute one record is not sane.
+  bool lIsRecSane = aDBRecPtr->IsSane();
+  if (false == lIsRecSane) {
+    return false;
+  } else if (nullptr == aDBRecPtr->GetNextRec()) {
+    return true;
   }
 
-  return ~lCRC;
+  // Recursive call to end of record list.
+  return lIsRecSane && IsSane(aDBRecPtr->GetNextRec());
 }
 
 
-bool DBRec::IsCRCGood(uint8_t const *aDataPtr, unsigned int aSize) {
-  uint8_t lCRC = 0;
-  for (unsigned int lIx = 0; lIx < aSize; lIx++) {
-    lCRC += aDataPtr[lIx];
-  }
+bool DB::IsDirty(DBRec * const aDBRecPtr) {
 
-  lCRC++;
-
-  // Total CRC (data + CRC) should yield 0.
-  if (lCRC) {
+  // Check current record.
+  // Bail out the minute one record is dirty.
+  bool lIsRecDirty = aDBRecPtr->IsDirty();
+  if (true == lIsRecDirty) {
+    return true;
+  } else if (nullptr == aDBRecPtr->GetNextRec()) {
     return false;
   }
 
-  return true;
+  // Recursive call to end of record list.
+  return lIsRecDirty || IsDirty(aDBRecPtr->GetNextRec());
 }
 
 // *****************************************************************************

@@ -1,10 +1,9 @@
-#ifndef MASTER_REC_H_
-#define MASTER_REC_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: Beast Feed'Her!
 //
-// Module: Master record class.
+// Module: Beast feeder manager QP Active Object.
 //
 // *******************************************************************************
 
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -23,7 +22,9 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "DBRec.h"
+// Common Library.
+
+// This project.
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -34,60 +35,56 @@
 // ******************************************************************************
 
 // Forward declaration.
+class FeedCfgRec;
+class TB6612;
+
 
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class MasterRec : public DBRec {
+class BFHMgr_AO : public QP::QActive {
  public:
-  MasterRec();
-  ~MasterRec();
+  static BFHMgr_AO  &Instance(void);
+  static QP::QActive &AOInstance(void);
 
-  bool Init(void);
+ protected:
+  static QP::QState Initial(BFHMgr_AO      * const aMePtr,
+                            QP::QEvt const * const aEvtPtr);
+  static QP::QState FeedingMgr(BFHMgr_AO      * const aMePtr,
+                               QP::QEvt const * const aEvtPtr);
+  static QP::QState Waiting(BFHMgr_AO      * const aMePtr,
+                            QP::QEvt const * const aEvtPtr);
+  static QP::QState TimedFeed(BFHMgr_AO      * const aMePtr,
+                              QP::QEvt const * const aEvtPtr);
+  static QP::QState ManualFeed(BFHMgr_AO      * const aMePtr,
+                               QP::QEvt const * const aEvtPtr);
+  static QP::QState WaitPeriod(BFHMgr_AO      * const aMePtr,
+                               QP::QEvt const * const aEvtPtr);
+  static QP::QState TimeCappedFeed(BFHMgr_AO      * const aMePtr,
+                                   QP::QEvt const * const aEvtPtr);
 
-  unsigned int AddRec(DBRec * const aDBRecPtr);
-
-  bool IsSane(void);
-  bool IsDirty(void) const;
-  void ResetDflt(void);
-
-  // Simple Serialize/Deserialize methods.
-  unsigned int GetRecSize(void) const;
-  void Serialize(  uint8_t       * const aDataPtr) const;
-  void Deserialize(uint8_t const * const aDataPtr);
-
- private:
+private:
   enum {
-    VER_MAJOR = 1,
-    VER_MINOR = 0,
-    VER_REV   = 0
+    TIME_CAPPED_DEBOUNCE = 2,
+    TIME_CAPPED_TIMEOUT  = 10
   };
+  BFHMgr_AO();
+  BFHMgr_AO(BFHMgr_AO const &);
+  void operator=(BFHMgr_AO const &) = delete;
 
-  struct RecInfoStructTag {
-    uint8_t mType;
-    uint8_t mOffset;
-    uint8_t mSize;
-  };
+  void StartFeeding(void) const;
+  void StopFeeding(void)  const;
 
-  typedef struct RecInfoStructTag REC_INFO;
+  QP::QEQueue     mFeedEvtQueue;
+  QP::QEvt const *mFeedEvtQueueSto[4];
+  QP::QTimeEvt    mFeedTimerEvt;
 
-  struct RecStructTag {
-    uint8_t  mCRC;
-    char     mMagic[3];
-    uint8_t  mVerMajor;
-    uint8_t  mVerMinor;
-    uint8_t  mVerRev;
-    uint8_t  mRecQty;
-    REC_INFO mRecInfo[3];
-    uint8_t  mRsvd[12];
-  };
+  FeedCfgRec const *mFeedCfgRecPtr;
+  unsigned int      mFeedTime;
 
-  // The actual record storage.
-  struct RecStructTag mMasterRec;
+  TB6612 *mMotorCtrlPtr;
 
-  unsigned int mRecQty;
-  unsigned int mRecIx;
-  DBRec **mDBRec;
+  static BFHMgr_AO *mInstancePtr;
 };
 
 // ******************************************************************************
@@ -105,4 +102,3 @@ class MasterRec : public DBRec {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // MASTER_REC_H_

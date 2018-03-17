@@ -1,10 +1,9 @@
-#ifndef BEAST_FEED_HER_MGR_
-#define BEAST_FEED_HER_MGR_
+#pragma once
 // *******************************************************************************
 //
 // Project: Beast Feed'Her!
 //
-// Module: Beast feeder manager QP Active Object.
+// Module: DB holder class.
 //
 // *******************************************************************************
 
@@ -12,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -23,9 +21,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-// Common Library.
-
-// This project.
+#include <stddef.h>
+#include <stdint.h>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -35,43 +32,35 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
+// Forward declarations.
+class DBRec;
+
+
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class BFH_Mgr_AO : public QP::QActive {
+
+//! \brief Button component.
+class DB {
  public:
-  static BFH_Mgr_AO  &Instance(void);
-  static QP::QActive &AOInstance(void);
+  static void AddRec(DBRec * const aDBRecPtr);
 
- protected:
-  static QP::QState Initial(BFH_Mgr_AO     * const aMePtr,
-                            QP::QEvt const * const aEvtPtr);
-  static QP::QState FeedingMgr(BFH_Mgr_AO     * const aMePtr,
-                               QP::QEvt const * const aEvtPtr);
-  static QP::QState Waiting(BFH_Mgr_AO     * const aMePtr,
-                            QP::QEvt const * const aEvtPtr);
-  static QP::QState TimedFeed(BFH_Mgr_AO     * const aMePtr,
-                              QP::QEvt const * const aEvtPtr);
-  static QP::QState ManualFeed(BFH_Mgr_AO     * const aMePtr,
-                               QP::QEvt const * const aEvtPtr);
-  static QP::QState WaitPeriod(BFH_Mgr_AO     * const aMePtr,
-                               QP::QEvt const * const aEvtPtr);
-  static QP::QState TimeCappedFeed(BFH_Mgr_AO     * const aMePtr,
-                                   QP::QEvt const * const aEvtPtr);
+  static bool IsSane(void);
+  static bool IsDirty(void);
+  static void ResetDflt(void);
 
-private:
-  BFH_Mgr_AO();
-  BFH_Mgr_AO(BFH_Mgr_AO const &);
-  void operator=(BFH_Mgr_AO const &) = delete;
+  static unsigned int GetSize(void);
+  static void Serialize(uint8_t *aDataPtr);
+  static void Deserialize(uint8_t const * const aDataPtr);
 
-  void StartFeeding(void) const;
-  void StopFeeding(void)  const;
+  static unsigned int GetRecCount(void);
 
-  QP::QEQueue     mFeedEvtQueue;
-  QP::QEvt const *mFeedEvtQueueSto[4];
-  QP::QTimeEvt    mFeedTimerEvt;
+ private:
+  static bool IsSane(DBRec * const aDBRecPtr);
+  static bool IsDirty(DBRec * const aDBRecPtr);
 
-  static BFH_Mgr_AO *mInstancePtr;
+  static DBRec       *mRootDBRecPtr;
+  static unsigned int mDBRecObjCount;
 };
 
 // ******************************************************************************
@@ -89,4 +78,3 @@ private:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // BEAST_FEED_HER_MGR_

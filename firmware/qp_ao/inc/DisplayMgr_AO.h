@@ -1,9 +1,9 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Active Object Library
+// Project: Beast Feed'Her!
 //
-// Module: RTCC QP Active Object.
+// Module: Display manager QP Active Object.
 //
 // *******************************************************************************
 
@@ -14,16 +14,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-#include "DBRec.h"
-#include "CalendarRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -33,63 +30,59 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPIDev;
-class SPISlaveCfg;
-class DS3234;
+// Forward declaration.
+class SSD1329;
+
+
+class DisplayMgrInitEvt : public QP::QEvt {
+ public:
+  DisplayMgrInitEvt(QP::QSignal     aSig,
+                    SSD1329 * const aSSD1329Ptr,
+		    unsigned int    aDisplayTime) {
+    sig          = aSig;
+    mSSD1329Ptr  = aSSD1329Ptr;
+    mDisplayTime = aDisplayTime;
+  }
+
+ public:
+  SSD1329     *mSSD1329Ptr;
+  unsigned int mDisplayTime;
+};
 
 
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class RTCC_AO : public QP::QActive {
+class DisplayMgr_AO : public QP::QActive {
  public:
-  RTCC_AO();
+  static DisplayMgr_AO  &Instance(void);
+  static QP::QActive    &AOInstance(void);
 
-  static RTCC_AO     * const GetInstancePtr(void);
-  static QP::QActive * const GetOpaqueAOInstancePtr(void);
-
-  void ISRCallback(void);
-
-  float GetTemperature(void) const;
-  Time &GetTime(void);
-  Date &GetDate(void);
-
- protected:
-  static QP::QState Initial(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
-  static QP::QState Running(RTCC_AO         * const aMePtr,
-                            QP::QEvt  const * const aEvtPtr);
  private:
-  static unsigned int InitRTCC(RTCC_AO         * const aMePtr,
-                               QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitDB(RTCC_AO         * const aMePtr,
-                             QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitCalendar(RTCC_AO         * const aMePtr,
-                                   QP::QEvt  const * const aEvtPtr);
-  static unsigned int InitInterrupt(RTCC_AO         * const aMePtr,
-                                    QP::QEvt  const * const aEvtPtr);
+  static QP::QState Initial(DisplayMgr_AO  * const aMePtr,
+                            QP::QEvt const * const aEvtPtr);
+  static QP::QState Running(DisplayMgr_AO  * const aMePtr,
+                            QP::QEvt const * const aEvtPtr);
 
-  static void SetNextCalendarEvt(RTCC_AO * const aMePtr);
+private:
+  DisplayMgr_AO();
+  DisplayMgr_AO(DisplayMgr_AO const &);
+  void operator=(DisplayMgr_AO const &) = delete;
 
-  static void WrToNVMem(RTCC_AO * const aMePtr);
+  static void DisplayInit(DisplayMgr_AO * const aMePtr);
+  static void DisplayText(DisplayMgr_AO * const aMePtr,
+                          QP::QEvt const * const aEvtPtr);
 
+  static void DisplayOn(DisplayMgr_AO  * const aMePtr);
+  static void DisplayOff(DisplayMgr_AO * const aMePtr);
 
-  Time  mTime;
-  Date  mDate;
-  float mTemperature;
+  QP::QTimeEvt mDisplayTimerEvt;
 
-  CoreLink::SPISlaveCfg *mRTCSPISlaveCfgPtr;
-  DS3234 *mDS3234Ptr;
+  SSD1329     *mDisplayPtr;
+  bool         mIsDisplayOn;
+  unsigned int mDisplayTime;
 
-  CalendarRec *mCalendarPtr;
-
-  unsigned long mIntNbr;
-
-  // The single instance of RTCC Active Object.
-  static RTCC_AO *mInstancePtr;
-
-  // Buffer of bytes to hold NV memory content.
-  static uint8_t *mNVMemBuf;
+  static DisplayMgr_AO *mInstancePtr;
 };
 
 // ******************************************************************************

@@ -16,7 +16,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,8 +42,10 @@
 #include "qpcpp.h"
 
 // Common Library.
+#include "DB.h"
 #include "Date.h"
 #include "DS3234.h"
+#include "GPIOs.h"
 #include "SPI.h"
 #include "Time.h"
 
@@ -59,7 +61,7 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 
 #define RTCC_CALENDAR_DBG
-//#undef  RTCC_CALENDAR_DBG
+#undef  RTCC_CALENDAR_DBG
 
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -73,7 +75,8 @@ Q_DEFINE_THIS_FILE
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-RTCC_AO *RTCC_AO::mInstancePtr = static_cast<RTCC_AO *>(0);
+RTCC_AO *RTCC_AO::mInstancePtr = nullptr;
+uint8_t *RTCC_AO::mNVMemBuf    = nullptr;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -84,8 +87,8 @@ RTCC_AO::RTCC_AO() :
   mTime(),
   mDate(),
   mTemperature(0.0),
-  mRTCSPISlaveCfgPtr(static_cast<CoreLink::SPISlaveCfg *>(0)),
-  mDS3234Ptr(static_cast<DS3234 *>(0)),
+  mRTCSPISlaveCfgPtr(nullptr),
+  mDS3234Ptr(nullptr),
   mCalendarPtr(nullptr),
   mIntNbr(0) {
 
@@ -101,6 +104,21 @@ void RTCC_AO::ISRCallback(void) {
 
   // Signal to AO that RTCC generated an interrupt.
   POST(&sRTCCAlarmIntEvt, 0);
+}
+
+
+float RTCC_AO::GetTemperature(void) const {
+  return mTemperature;
+}
+
+
+Time &RTCC_AO::GetTime(void) {
+  return mTime;
+}
+
+
+Date &RTCC_AO::GetDate(void) {
+  return mDate;
 }
 
 
@@ -126,9 +144,8 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
   // Subscribe to signals if any.
   //aMe->subscribe(<>_SIG);
 
-  // Init MasterRec.
-  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
-  me->RdDBRec(lRTCCInitEvtPtr->mMasterDBRecPtr);
+  // Init database and calendar.
+  lResult = InitDB(me, e);
   lResult = InitCalendar(me, e);
   lResult = InitInterrupt(me, e);
 
@@ -141,7 +158,7 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
 unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
                                QP::QEvt  const * const e) { //aEvtPtr
 
-  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
+  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
 
   // Create an SPI slave configuration for the DS3234 RTCC.
   // TODO: Verify if this can be changed into local var.
@@ -149,8 +166,8 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
   me->mRTCSPISlaveCfgPtr->SetProtocol(CoreLink::SPISlaveCfg::MOTO_1);
   me->mRTCSPISlaveCfgPtr->SetBitRate(4000000);
   me->mRTCSPISlaveCfgPtr->SetDataWidth(8);
-  me->mRTCSPISlaveCfgPtr->SetCSnGPIO(lRTCCInitEvtPtr->mCSnGPIOPort,
-                                     lRTCCInitEvtPtr->mCSnGPIOPin);
+  me->mRTCSPISlaveCfgPtr->SetCSnGPIO(lRTCCInitEvtPtr->mCSn->GetPort(),
+                                     lRTCCInitEvtPtr->mCSn->GetPin());
 
   // Create & initialize the DS3234 RTCC.
   // Configure the RTCC to desired state:
@@ -160,9 +177,36 @@ unsigned int RTCC_AO::InitRTCC(RTCC_AO         * const me,  //aMePtr,
   //   -Interrupt Control enabled.
   //   -Alarm 1 enabled.
   //     -1Hz interrupt rate.
-  me->mDS3234Ptr = new DS3234(lRTCCInitEvtPtr->mSPIDevRef,
+  me->mDS3234Ptr = new DS3234(2000,
+                              lRTCCInitEvtPtr->mSPIDevRef,
                               *me->mRTCSPISlaveCfgPtr);
   me->mDS3234Ptr->Init(DS3234::Ctrl::INTCn);
+
+  unsigned int lNVMemSize = me->mDS3234Ptr->GetNVMemSize();
+  if (lNVMemSize) {
+    mNVMemBuf = new uint8_t [lNVMemSize];
+  }
+
+  return 0;
+}
+
+
+unsigned int RTCC_AO::InitDB(RTCC_AO         * const me,  //aMePtr,
+                             QP::QEvt  const * const e) { //aEvtPtr
+
+  unsigned int lNVMemSize = me->mDS3234Ptr->GetNVMemSize();
+  if (lNVMemSize) {
+    unsigned int lDBSize = DB::GetSize();
+    me->mDS3234Ptr->RdFromNVMem(mNVMemBuf, 0, lDBSize);
+    DB::Deserialize(mNVMemBuf);
+    if (!DB::IsSane()) {
+      // Reset defaults and write back to NV mem.
+      DB::ResetDflt();
+      RTCC_AO::WrToNVMem(me);
+    }
+  } else {
+    DB::ResetDflt();
+  }
 
   return 0;
 }
@@ -205,17 +249,18 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
                                     QP::QEvt  const * const e) { //aEvtPtr
 
   // Set interrupt pin and periodic alarm.
-  RTCCInitEvt const *lRTCCInitEvtPtr = static_cast<RTCCInitEvt const *>(e);
+  RTCCInitEvt const * const lRTCCInitEvtPtr = static_cast<RTCCInitEvt const * const>(e);
+  unsigned long lIntPort = lRTCCInitEvtPtr->mInt->GetPort();
+  unsigned int  lIntPin  = lRTCCInitEvtPtr->mInt->GetPin();
   me->mIntNbr = lRTCCInitEvtPtr->mIntNbr;
   IntDisable(me->mIntNbr);
 
-  GPIOPinTypeGPIOInput(lRTCCInitEvtPtr->mIRQGPIOPort,
-                       lRTCCInitEvtPtr->mIRQGPIOPin);
-  GPIOIntTypeSet(lRTCCInitEvtPtr->mIRQGPIOPort,
-                 lRTCCInitEvtPtr->mIRQGPIOPin,
+  GPIOPinTypeGPIOInput(lIntPort, lIntPin);
+  GPIOIntTypeSet(lIntPort,
+                 lIntPin,
                  GPIO_FALLING_EDGE);
-  GPIOPadConfigSet(lRTCCInitEvtPtr->mIRQGPIOPort,
-                   lRTCCInitEvtPtr->mIRQGPIOPin,
+  GPIOPadConfigSet(lIntPort,
+                   lIntPin,
                    GPIO_STRENGTH_2MA,
                    GPIO_PIN_TYPE_STD);
 
@@ -224,7 +269,7 @@ unsigned int RTCC_AO::InitInterrupt(RTCC_AO         * const me,  //aMePtr,
                           me->mDate,
                           DS3234::ALARM_MODE::ONCE_PER_SEC);
 
-  GPIOPinIntEnable(lRTCCInitEvtPtr->mIRQGPIOPort, lRTCCInitEvtPtr->mIRQGPIOPin);
+  GPIOPinIntEnable(lIntPort, lIntPin);
   // [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
   //GPIOPinIntClear(lGPIOInitEvtPtr->mIRQGPIOPort, lGPIOInitEvtPtr->mIRQGPIOPin);
   return 0;
@@ -268,7 +313,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
       UARTprintf("A");
 #endif // RTCC_DBG
       me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_2);
-      RTCCTimeDateEvt *lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
+      RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
       lCalendarEvtPtr->mTime = me->mTime;
       lCalendarEvtPtr->mDate = me->mDate;
       QP::QF::PUBLISH(static_cast<QP::QEvt *>(lCalendarEvtPtr), me);
@@ -278,18 +323,26 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  case SIG_RTCC_ADD_CALENDAR_ENTRY: {
-    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
-    me->mCalendarPtr->SetEntry(lSetEvtPtr->mDate.GetWeekday(),
-                               lSetEvtPtr->mTime);
+  case SIG_RTCC_SAVE_TO_NV_MEM: {
+    RTCCSaveToRAMEvt const * const lSaveEvtPtr = static_cast<RTCCSaveToRAMEvt const * const>(e);
+    if (lSaveEvtPtr->mIsCalendarChanged) {
+      SetNextCalendarEvt(me);
+    }
+
+    // Save to NV mem.
+    RTCC_AO::WrToNVMem(me);
+  }
+
+  case SIG_RTCC_SET_TIME: {
+    RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
+    me->mDS3234Ptr->WrTime(lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }
 
-  case SIG_RTCC_DEL_CALENDAR_ENTRY: {
-    RTCCTimeDateEvt const *lSetEvtPtr = static_cast<RTCCTimeDateEvt const *>(e);
-    me->mCalendarPtr->ClrEntry(lSetEvtPtr->mDate.GetWeekday(),
-                               lSetEvtPtr->mTime);
+  case SIG_RTCC_SET_DATE: {
+    RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
+    me->mDS3234Ptr->WrDate(lSetEvtPtr->mDate);
     SetNextCalendarEvt(me);
     return Q_HANDLED();
   }
@@ -332,7 +385,7 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
                                                      me->mTime,
                                                      lAlarmWeekday,
                                                      lAlarmTime);
-  lIsNextEntry = true;
+
   if (lIsNextEntry) {
     // Entry found: use alarm 2 for feeding alarm.
     me->mDS3234Ptr->WrAlarm(DS3234::ALARM_ID::ALARM_ID_2,
@@ -346,23 +399,11 @@ void RTCC_AO::SetNextCalendarEvt(RTCC_AO * const me) {
 }
 
 
-void RTCC_AO::RdDBRec(DBRec * const aDBRecPtr) {
+void RTCC_AO::WrToNVMem(RTCC_AO * const me) {
 
-  if (mDS3234Ptr->HasNVMem()) {
-    uint8_t      lSRAMData[256];
-    unsigned int lRecSize = aDBRecPtr->GetRecSize();
-
-    mDS3234Ptr->RdFromRAM(&lSRAMData[0], 0, lRecSize);
-    aDBRecPtr->Deserialize(&lSRAMData[0]);
-    if (!aDBRecPtr->IsSane()) {
-      // Reset defaults and write back to NV mem.
-      aDBRecPtr->ResetDflt();
-      aDBRecPtr->Serialize(&lSRAMData[0]);
-      mDS3234Ptr->WrToRAM(&lSRAMData[0], 0, lRecSize);
-    }
-  } else {
-    aDBRecPtr->ResetDflt();
-  }
+  unsigned int lDBSize = DB::GetSize();
+  DB::Serialize(mNVMemBuf);
+  me->mDS3234Ptr->WrToNVMem(mNVMemBuf, 0, lDBSize);
 }
 
 // *****************************************************************************

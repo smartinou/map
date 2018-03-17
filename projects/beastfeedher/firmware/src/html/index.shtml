@@ -13,29 +13,29 @@
   <body>
     <header>
       <table style="width:100%;">
-	<tr>
-	  <td style="font-size:larger;">
-	    <b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b>
-	  </td>
-	  <td style="font-size:larger;">
-	    <b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b>
-	  </td>
-	  <td>
-	    <a href="config.shtml" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
-	  </td>
-	  <td>
-	    <a href="network.shtml" style="color:powderblue;">&nbsp;&nbsp;Network&nbsp;&nbsp;</a>
-	  </td>
-	  <td>
-	    <a href="stats.shtml" style="color:powderblue;">&nbsp;&nbsp;Statistics&nbsp;&nbsp;</a>
-	  </td>
-	  <td style="width:30%;"></td>
-	  <td style="text-align:right;white-space:nowrap;">
-	    <b style="font-size:larger;color:navy;">Smart Monkeys</b><br>
-	    <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a><br>
-	    <a href="http://www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
-	  </td>
-	</tr>
+        <tr>
+          <td style="font-size:larger;">
+            <b>&nbsp;&nbsp;BFH&nbsp;&nbsp;|</b>
+          </td>
+          <td style="font-size:larger;">
+            <b>&nbsp;&nbsp;Home&nbsp;&nbsp;</b>
+          </td>
+          <td>
+            <a href="config.shtml" style="color:powderblue;">&nbsp;&nbsp;Config&nbsp;&nbsp;</a>
+          </td>
+          <td>
+            <a href="network.shtml" style="color:powderblue;">&nbsp;&nbsp;Network&nbsp;&nbsp;</a>
+          </td>
+          <td>
+            <a href="stats.shtml" style="color:powderblue;">&nbsp;&nbsp;Statistics&nbsp;&nbsp;</a>
+          </td>
+          <td style="width:30%;"></td>
+          <td style="text-align:right;white-space:nowrap;">
+            <b style="font-size:larger;color:navy;">Smart Monkeys</b><br>
+            <a href="mailto:info@smartmonkeys.com" style="color:powderblue;">info@smartmonkeys.com</a><br>
+            <a href="http://www.smartmonkeys.com" style="color:powderblue;">www.smartmonkeys.com</a>
+          </td>
+        </tr>
       </table>
     </header>
 
@@ -44,62 +44,78 @@
       <h1> Device Info </h1>
 
       <table>
-	<tr>
-	  <td style="text-align:left;width:200px">
-	    Firmware version:
-	  </td>
-	  <td style="text-align:right;width:100px">
-	    <!--#s_dummy-->
-	  </td>
-	</tr>
-	<tr>
-	  <td>
-	    Build date:
-	  </td>
-	  <td>
-	    <!--#s_dummy-->
-	  </td>
-	</tr>
-	<tr>
-	  <td>
-	    Git hash:
-	  </td>
-	  <td>
-	    <!--#s_dummy-->
-	  </td>
-	</tr>
-	<tr>
-	  <td>
-	    Database status:
-	  </td>
-	  <td>
-	    <!--#s_dummy-->
-	  </td>
-	</tr>
+        <tr>
+          <td style="text-align:left;width:200px">
+            Firmware Version:
+          </td>
+          <td>
+            <!--#i_ver-->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Build Date:
+          </td>
+          <td>
+            <!--#i_date-->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Build Time:
+          </td>
+          <td>
+            <!--#i_time-->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Git Hash:
+          </td>
+          <td>
+            <!--#i_hash-->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Database Status:
+          </td>
+          <td>
+            <!--#i_status-->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            RTCC Temperature:
+          </td>
+          <td>
+            <!--#i_temp--> C
+          </td>
+        </tr>
       </table>
 
       <hr>
 
 
-      <form>
+      <form method="get" action="index.cgi">
       <h1> Feed the Beast </h1>
         <table>
-	  <tbody>
+          <tbody>
             <tr>
               <td>
-	        Timed Feed:
-	      </td>
-	      <td>
-	        <input type="button" name="button_timed_feed" value="2s Feed"><br>
-	      </td>
-	      <td>
-	        <input type="button" name="button_timed_feed" value="5s Feed"><br>
-	      </td>
-	      <td>
-	        <input type="button" name="button_timed_feed" value="10s Feed"><br>
-	      </td>
-	    </tr>
-	  </tbody>
+                Timed Feed:
+              </td>
+              <td style="width:100px">
+                <button name="timed_feed" value="1" type="submit">1s Feed</button>
+              </td>
+              <td style="width:100px">
+                <button name="timed_feed" value="2" type="submit">2s Feed</button>
+              </td>
+              <td style="width:100px">
+                <button name="timed_feed" value="5" type="submit">5s Feed</button>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </form>
 

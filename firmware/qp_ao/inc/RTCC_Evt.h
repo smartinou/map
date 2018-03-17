@@ -1,5 +1,4 @@
-#ifndef RTCC_EVT_H_
-#define RTCC_EVT_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Active Object Library
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -38,6 +37,7 @@
 // Forward declarations.
 class DBRec;
 class CalendarRec;
+class GPIOs;
 
 
 // Class definitions.
@@ -45,34 +45,25 @@ class RTCCInitEvt : public QP::QEvt {
  public:
   RTCCInitEvt(QP::QSignal       aSig,
               CoreLink::SPIDev &aSPIDevRef,
-              unsigned long     aCSnGPIOPort,
-              unsigned int      aCSnGPIOPin,
-              unsigned long     aIRQGPIOPort,
-              unsigned int      aIRQGPIOPin,
-	      unsigned long     aIntNbr,
-              DBRec            *aMasterDBRecPtr,
+              unsigned long     aIntNbr,
+              GPIOs            *aCSn,
+              GPIOs            *aInt,
               CalendarRec      *aCalendarPtr):
   mSPIDevRef(aSPIDevRef) {
     sig          = aSig;
     poolId_      = 0U;
     mSPIDevRef   = aSPIDevRef;
-    mCSnGPIOPort = aCSnGPIOPort;
-    mCSnGPIOPin  = aCSnGPIOPin;
-    mIRQGPIOPort = aIRQGPIOPort;
-    mIRQGPIOPin  = aIRQGPIOPin;
     mIntNbr      = aIntNbr;
-    mMasterDBRecPtr = aMasterDBRecPtr;
+    mCSn         = aCSn;
+    mInt         = aInt;
     mCalendarPtr = aCalendarPtr;
   }
 
  public:
   CoreLink::SPIDev &mSPIDevRef;
-  unsigned long     mCSnGPIOPort;
-  unsigned int      mCSnGPIOPin;
-  unsigned long     mIRQGPIOPort;
-  unsigned int      mIRQGPIOPin;
   unsigned long     mIntNbr;
-  DBRec            *mMasterDBRecPtr;
+  GPIOs            *mCSn;
+  GPIOs            *mInt;
   CalendarRec      *mCalendarPtr;
 };
 
@@ -91,6 +82,18 @@ class RTCCTimeDateEvt : public QP::QEvt {
   Date mDate;
 };
 
+
+class RTCCSaveToRAMEvt : public QP::QEvt {
+ public:
+  RTCCSaveToRAMEvt(QP::QSignal aSig, bool aIsCalendarChanged) {
+    sig                = aSig;
+    mIsCalendarChanged = aIsCalendarChanged;
+  }
+
+ public:
+  bool mIsCalendarChanged;
+};
+
 // ******************************************************************************
 //                            EXPORTED VARIABLES
 // ******************************************************************************
@@ -106,4 +109,3 @@ class RTCCTimeDateEvt : public QP::QEvt {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // RTCC_EVT_H_

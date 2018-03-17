@@ -134,26 +134,32 @@ C_SRCS := \
 
 # C++ source files.
 CPP_SRCS := \
+        App.cpp \
         Main.cpp \
-        BFH_Mgr_AO.cpp \
+        BFHMgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
+        DB.cpp \
         DBRec.cpp \
+        DisplayMgr_AO.cpp \
         DS3234.cpp \
         eth_driver.cpp \
+        FeedCfgRec.cpp \
+        GPIOs.cpp \
         Limit.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
-        MasterRec.cpp \
         Month.cpp \
         NetIFRec.cpp \
         RTCC.cpp \
         RTCC_AO.cpp \
         SSD1329.cpp \
         SPI.cpp \
+        TB6612.cpp \
+        Time.cpp \
         Weekday.cpp
 
 
@@ -322,6 +328,7 @@ WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
 MAKE_FSDATA_DIR := $(LWIPDIR)/apps/httpd/makefsdata
 
 WEB_HTML_FILES := \
+  config.shtml \
   index.shtml \
   network.shtml \
   stats.shtml \

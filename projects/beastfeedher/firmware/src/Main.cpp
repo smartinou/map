@@ -30,9 +30,9 @@
 #include "SPI.h"
 
 // This application.
-#include "BFH_Mgr_Evt.h"
+#include "App.h"
+#include "BFHMgr_Evt.h"
 #include "BSP.h"
-#include "MasterRec.h"
 #include "RTCC_Evt.h"
 
 Q_DEFINE_THIS_FILE
@@ -81,8 +81,8 @@ int main(void) {
 
   // Start master record.
   // Contains all AOs.
-  MasterRec *lMasterRecPtr = new MasterRec();
-  bool lInitGood = lMasterRecPtr->Init();
+  App *lAppPtr = new App();
+  bool lInitGood = lAppPtr->Init();
 
   // Run the QF application.
   if (lInitGood) {
