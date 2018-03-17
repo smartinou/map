@@ -75,15 +75,6 @@
 	    </tr>
 	    <tr>
 	      <td>
-		Enable manual feeding
-	      </td>
-	      <td>
-		<!--#c_but_en-->Yes
-		<!--#c_but_di-->No
-	      </td>
-	    </tr>
-	    <tr>
-	      <td>
 		Feeding time
 	      </td>
 	      <td>

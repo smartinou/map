@@ -67,11 +67,6 @@ bool FeedCfgRec::IsWebFeedingEnable(void) const {
 }
 
 
-bool FeedCfgRec::IsManualFeedingEnable(void) const {
-  return mRec.mIsManualFeedingEnable;
-}
-
-
 bool FeedCfgRec::IsAutoPetFeedingEnable(void) const {
   return mRec.mIsAutoPetFeedingEnable;
 }
@@ -84,11 +79,6 @@ void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
 
 void FeedCfgRec::SetIsWebFeedingEnabled(bool aIsEnabled) {
   mRec.mIsWebFeedingEnable = aIsEnabled;
-}
-
-
-void FeedCfgRec::SetIsManualFeedingEnabled(bool aIsEnabled) {
-  mRec.mIsManualFeedingEnable = aIsEnabled;
 }
 
 
@@ -127,7 +117,6 @@ void FeedCfgRec::ResetDflt(void) {
 
   mRec.mTimedFeedPeriod = 2;
   mRec.mIsWebFeedingEnable     = true;
-  mRec.mIsManualFeedingEnable  = true;
   mRec.mIsAutoPetFeedingEnable = true;
 
   mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));

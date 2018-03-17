@@ -122,8 +122,7 @@ QP::QState DisplayMgr_AO::Running(DisplayMgr_AO  * const me,  //aMePtr,
     return Q_HANDLED();
 
   case SIG_DISPLAY_TEXT: {
-    //char const * lStr = &static_cast<DisplayTextEvt const * const>(e)->mStr[0];
-    DisplayText(me, e); //lStr);
+    DisplayText(me, e);
     return Q_HANDLED();
   }
   case SIG_DISPLAY_TIMEOUT:

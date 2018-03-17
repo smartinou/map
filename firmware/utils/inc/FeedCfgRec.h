@@ -40,12 +40,10 @@ class FeedCfgRec : public DBRec {
 
   uint8_t GetTimedFeedPeriod(void) const;
   bool    IsWebFeedingEnable(void) const;
-  bool    IsManualFeedingEnable(void) const;
   bool    IsAutoPetFeedingEnable(void) const;
 
   void SetTimedFeedPeriod(uint8_t aPeriod);
   void SetIsWebFeedingEnabled(bool aIsEnabled);
-  void SetIsManualFeedingEnabled(bool aIsEnabled);
   void SetIsAutoPetFeedingEnabled(bool aIsEnabled);
 
   bool IsSane(void);
@@ -63,7 +61,6 @@ class FeedCfgRec : public DBRec {
     char     mMagic[3];
     uint8_t  mTimedFeedPeriod;
     bool     mIsWebFeedingEnable;
-    bool     mIsManualFeedingEnable;
     bool     mIsAutoPetFeedingEnable;
   };
 

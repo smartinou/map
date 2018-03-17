@@ -76,9 +76,7 @@ enum {
   SSI_TAG_IX_CFG_FIRST,
   SSI_TAG_IX_CFG_PAD_ENABLE = SSI_TAG_IX_CFG_FIRST,
   SSI_TAG_IX_CFG_PAD_DISABLE,
-  SSI_TAG_IX_CFG_MANUAL_ENABLE,
-  SSI_TAG_IX_CFG_MANUAL_DISABLE,
-  SSI_TAG_IX_CFG_LAST = SSI_TAG_IX_CFG_MANUAL_DISABLE,
+  SSI_TAG_IX_CFG_LAST = SSI_TAG_IX_CFG_PAD_DISABLE,
 
   SSI_TAG_IX_CFG_FEED_TIME,
 
@@ -187,8 +185,6 @@ char const *App::sSSITags[] = {
   // Configuration.
   "c_pad_en",  // SSI_TAG_IX_CFG_PAD_ENABLE
   "c_pad_di",  // SSI_TAG_IX_CFG_PAD_DISABLE
-  "c_but_en",  // SSI_TAG_IX_CFG_MANUAL_ENABLE
-  "c_but_di",  // SSI_TAG_IX_CFG_MANUAL_DISABLE
   "c_time",    // SSI_TAG_IX_CFG_FEED_TIME
   "c_cal_06",  // SSI_TAG_IX_CFG_CALENDAR_06_00
   "c_cal_07",  // SSI_TAG_IX_CFG_CALENDAR_07_00
@@ -453,20 +449,6 @@ uint16_t App::SSIHandler(int   aTagIx,
                                  aInsertStrLen,
                                  "feeding_pad\" value=\"n\"",
                                  !App::sFeedCfgRecPtr->IsAutoPetFeedingEnable());
-  }
-  case SSI_TAG_IX_CFG_MANUAL_ENABLE: {
-    return SSIRadioButtonHandler(aTagIx,
-                                 aInsertStr,
-                                 aInsertStrLen,
-                                 "feeding_button\" value=\"y\"",
-                                 App::sFeedCfgRecPtr->IsManualFeedingEnable());
-  }
-  case SSI_TAG_IX_CFG_MANUAL_DISABLE: {
-    return SSIRadioButtonHandler(aTagIx,
-                                 aInsertStr,
-                                 aInsertStrLen,
-                                 "feeding_button\" value=\"n\"",
-                                 !App::sFeedCfgRecPtr->IsManualFeedingEnable());
   }
   case SSI_TAG_IX_CFG_FEED_TIME: {
     static char const * const sFeedingTimeStr =
@@ -765,13 +747,7 @@ char const *App::DispCfg(int   aCGIIx,
     // Must be done only once!
     App::sCalendarPtr->ClrAllEntries();
     for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-      if (0 == strcmp(aParamsVec[lIx], "feeding_pad")) {
-        if ('y' == *aValsVec[lIx]) {
-          App::sFeedCfgRecPtr->SetIsManualFeedingEnabled(true);
-        } else {
-          App::sFeedCfgRecPtr->SetIsManualFeedingEnabled(false);
-        }
-      } else if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
+      if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
         if ('y' == *aValsVec[lIx]) {
           App::sFeedCfgRecPtr->SetIsAutoPetFeedingEnabled(true);
         } else {
