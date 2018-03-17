@@ -323,6 +323,18 @@ void QP::QV::onIdle(void) {
                sUserLEDGPIO.mPin,
                0);
   QF_INT_ENABLE();
+
+#if 0
+    // Put the CPU and peripherals to the low-power mode.
+    // you might need to customize the clock management for your application,
+    // see the datasheet for your particular Cortex-M3 MCU.
+    //
+    // Atomically go to sleep and enable interrupts.
+    QV_CPU_SLEEP();
+#else
+     // Just enable interrupts.
+    QF_INT_ENABLE();
+#endif
 }
 
 
