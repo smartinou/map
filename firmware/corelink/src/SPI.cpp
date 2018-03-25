@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -27,7 +27,6 @@
 #include "hw_types.h"
 
 #include "gpio.h"
-//#include "ssi.h"
 
 #include "SPI.h"
 
@@ -62,6 +61,28 @@ CoreLink::SPISlaveCfg::SPISlaveCfg() :
 }
 
 
+CoreLink::SPISlaveCfg::SPISlaveCfg(unsigned int aPort, unsigned int aPin)
+  : mProtocol(MOTO_0)
+  , mBitRate(0)
+  , mDataWidth(8)
+  , mCSnGPIOPort(aPort)
+  , mCSnGPIOPin(aPin) {
+
+  // Enable and configures the GPIO pin used for CSn.
+  // The proper GPIO peripheral must be enabled using
+  // SysCtlPeripheralEnable() prior to the following calls,
+  // otherwise CPU will rise a HW fault.
+  GPIOPinTypeGPIOOutput(mCSnGPIOPort, mCSnGPIOPin);
+  GPIOPadConfigSet(mCSnGPIOPort,
+                   mCSnGPIOPin,
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
+
+  // Put the CSn pin in deasserted state.
+  DeassertCSn();
+}
+
+
 void CoreLink::SPISlaveCfg::SetCSnGPIO(unsigned long aPort,
                                        unsigned int  aPin) {
 
@@ -72,7 +93,6 @@ void CoreLink::SPISlaveCfg::SetCSnGPIO(unsigned long aPort,
   // The proper GPIO peripheral must be enabled using
   // SysCtlPeripheralEnable() prior to the following calls,
   // otherwise CPU will rise a HW fault.
-  // [MG] COULD CALL SysCtlPeripheralEnable() BASED ON PORT.
   GPIOPinTypeGPIOOutput(mCSnGPIOPort, mCSnGPIOPin);
   GPIOPadConfigSet(mCSnGPIOPort,
                    mCSnGPIOPin,
@@ -80,18 +100,17 @@ void CoreLink::SPISlaveCfg::SetCSnGPIO(unsigned long aPort,
                    GPIO_PIN_TYPE_STD);
 
   // Put the CSn pin in deasserted state.
-  //GPIOPinWrite(mCSnGPIOPort, mCSnGPIOPin, mCSnGPIOPin);
   DeassertCSn();
 }
 
 
-inline void CoreLink::SPISlaveCfg::AssertCSn(void) {
+void CoreLink::SPISlaveCfg::AssertCSn(void) {
 
   GPIOPinWrite(mCSnGPIOPort, mCSnGPIOPin, 0);
 }
 
 
-inline void CoreLink::SPISlaveCfg::DeassertCSn(void) {
+void CoreLink::SPISlaveCfg::DeassertCSn(void) {
 
   GPIOPinWrite(mCSnGPIOPort, mCSnGPIOPin, mCSnGPIOPin);
 }
@@ -114,7 +133,7 @@ unsigned int CoreLink::SPISlaveCfg::ToNativeProtocol(void) const {
 CoreLink::SPIDev::SPIDev(uint32_t   aBaseAddr,
                          SSIPinCfg &aSPIMasterPinCfgRef) :
   PeripheralDev(aBaseAddr),
-  mLastSPICfgPtr(0) {
+  mLastSPICfgPtr(nullptr) {
 
   SSIDisable(aBaseAddr);
     aSPIMasterPinCfgRef.SetPins();
@@ -242,7 +261,6 @@ uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte) {
 
   return static_cast<uint8_t>(lRxData);
 }
-
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
