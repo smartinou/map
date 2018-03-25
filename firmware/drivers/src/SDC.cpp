@@ -344,7 +344,7 @@ int SDC::RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen) {
 
 
 #if (FF_FS_READONLY == 0)
-int SDC:TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken) {
+int SDC::TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken) {
 
 }
 #endif // FF_FS_READONLY

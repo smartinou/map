@@ -43,10 +43,15 @@
 
 // Drivers Library.
 #include "DS3234.h"
+#include "SDC.h"
 #include "SSD1329.h"
 
 // Corelink Library.
 #include "SPI.h"
+
+// FatFS.
+#include "diskio.h"
+#include "ff.h"
 
 // This application.
 #include "BFHMgr_AO.h"
@@ -157,9 +162,16 @@ static struct SSIGPIO const sSSIGPIOs = {
   GPIO_PIN_5  // Tx.
 };
 
+// SDC GPIOs.
+static struct GPIO const sSDCCsGPIO = {GPIO_PORTD_BASE, GPIO_PIN_0};
+static SDC *sDrive0Ptr = nullptr;
+
 // UART0 GPIOs.
 static struct GPIO const sU0RxGPIO = {GPIO_PORTA_BASE, GPIO_PIN_0};
 static struct GPIO const sU0TxGPIO = {GPIO_PORTA_BASE, GPIO_PIN_1};
+
+// FatFS.
+static FATFS sFatFS = {0};
 
 // RTCC GPIOs.
 GPIOs * const BSP_gRTCCCSnGPIOPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_7);
@@ -242,6 +254,26 @@ SSD1329 *BSP_InitOLEDDisplay(void) {
                                      128,
                                      96);
   return lSSD1329Ptr;
+}
+
+
+bool BSP_InitFS(void) {
+
+  CoreLink::SPISlaveCfg * const lSDCSlaveCfgPtr = new CoreLink::SPISlaveCfg();
+
+  lSDCSlaveCfgPtr->SetProtocol(CoreLink::SPISlaveCfg::MOTO_0);
+  lSDCSlaveCfgPtr->SetBitRate(400000);
+  lSDCSlaveCfgPtr->SetDataWidth(8);
+  lSDCSlaveCfgPtr->SetCSnGPIO(sSDCCsGPIO.mPort, sSDCCsGPIO.mPin);
+
+  sDrive0Ptr = new SDC(0, *sSPIDevPtr, *lSDCSlaveCfgPtr);
+
+  FRESULT lResult = f_mount(&sFatFS, "", 0);
+  if (FR_OK != lResult) {
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -504,6 +536,62 @@ void Ethernet_IRQHandler(void);
 void Ethernet_IRQHandler(void) {
   ISR_Ethernet();
 }
+
+
+DSTATUS disk_initialize(BYTE pdrv) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->DiskInit();
+  } else {
+    return RES_PARERR;
+  }
+}
+
+
+DSTATUS disk_status(BYTE pdrv) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->GetDiskStatus();
+  } else {
+    return RES_PARERR;
+  }
+}
+
+
+DRESULT disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->DiskRd(buff, sector, count);
+  } else {
+    return RES_PARERR;
+  }
+}
+
+
+#if (FF_FS_READONLY == 0)
+DRESULT disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->DiskWr(buff, sector, count);
+  } else {
+    return RES_PARERR;
+  }
+}
+#endif // FF_FS_READONLY
+
+
+#if (FF_FS_READONLY == 0)
+DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff) {
+  return (DRESULT)0;
+}
+#endif // FF_FS_READONLY
+
+
+#if !FF_FS_READONLY && !FF_FS_NORTC
+DWORD get_fattime(void) {
+  return 0;
+}
+#endif
 
 } // extern C
 

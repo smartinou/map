@@ -93,7 +93,8 @@ VPATH = \
         $(LWIPDIR)/core/ipv4 \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/httpd
+        $(LWIPDIR)/apps/httpd \
+        $(FAT_FS_SRC_DIR)
 
 # List of all include directories needed by this project.
 INCLUDES  = \
@@ -114,11 +115,21 @@ INCLUDES  = \
         -I$(CMSIS_LIB)/lm3s \
         -I$(CMSIS_LIB)/core \
         -I$(CMSIS_LIB) \
-        -I$(LWIPDIR)/include
+        -I$(LWIPDIR)/include \
+        -I$(FAT_FS_INC_DIR)
 
 # Files
 # Assembler source files.
 ASM_SRCS :=
+
+
+
+FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff13a
+FAT_FS_SRC_DIR := $(FAT_FS_DIR)/source
+FAT_FS_INC_DIR := $(FAT_FS_SRC_DIR)
+
+FAT_FS_SRCS := \
+        ff.c
 
 # C source files.
 C_SRCS := \
@@ -129,7 +140,8 @@ C_SRCS := \
 	$(CORE4FILES) \
 	$(APIFILES) \
 	$(LWIPDIR)/netif/ethernet.c \
-	$(HTTPDFILES)
+	$(HTTPDFILES) \
+        $(FAT_FS_SRCS)
 
 
 # C++ source files.
@@ -150,12 +162,14 @@ CPP_SRCS := \
         FeedCfgRec.cpp \
         GPIOs.cpp \
         Limit.cpp \
+        Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
         Month.cpp \
         NetIFRec.cpp \
         RTCC.cpp \
         RTCC_AO.cpp \
+        SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
         TB6612.cpp \

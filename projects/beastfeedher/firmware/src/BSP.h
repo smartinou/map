@@ -99,6 +99,7 @@ void BSP_Init(void);
 
 CoreLink::SPIDev *BSP_InitSPIDev(void);
 SSD1329          *BSP_InitOLEDDisplay(void);
+bool              BSP_InitFS(void);
 
 unsigned int BSP_GPIOPortToInt(unsigned long aGPIOPort);
 
