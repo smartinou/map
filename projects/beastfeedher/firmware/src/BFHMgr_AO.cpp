@@ -166,7 +166,11 @@ QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
   case SIG_FEED_MGR_TIMED_FEED_CMD: {
     // FIXME: perform boundary check on value.
     BFHTimedFeedCmdEvt const * const lEvtPtr = reinterpret_cast<BFHTimedFeedCmdEvt const * const>(e);
-    me->mFeedTime = lEvtPtr->mTime;
+    if (0 != lEvtPtr->mTime) {
+      me->mFeedTime = lEvtPtr->mTime;
+    } else {
+      me->mFeedTime = me->mFeedCfgRecPtr->GetTimedFeedPeriod();
+    }
     return Q_TRAN(&BFHMgr_AO::TimedFeed);
   }
 

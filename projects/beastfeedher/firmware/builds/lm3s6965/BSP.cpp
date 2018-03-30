@@ -524,7 +524,7 @@ void GPIOPortF_IRQHandler(void) {
   if (lPin & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTF_BASE, lPin);
     // Only interested in the pin coming high.
-    if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
+    if (Button::PRESSED == sSelectButtonPtr->GetGPIOPinState()) {
       static QP::QEvt sEvt = { SIG_DISPLAY_REFRESH, 0 };
       DisplayMgr_AO::AOInstance().POST(&sEvt, 0);
     }
