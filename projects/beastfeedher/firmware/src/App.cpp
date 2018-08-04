@@ -335,6 +335,15 @@ bool App::Init(void) {
                        0U,
                        &sDisplayMgrInitEvt);
 
+  // Send signal dictionaries for globally published events...
+  //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
+
+  // Send object dictionaries for event queues...
+  QS_OBJ_DICTIONARY(sRTCCEvtQPtr);
+  QS_OBJ_DICTIONARY(sBeastMgrEvtQPtr);
+  QS_OBJ_DICTIONARY(sLwIPEvtQPtr);
+  QS_OBJ_DICTIONARY(sDisplayMgrEvtQPtr);
+
   return true;
 }
 
