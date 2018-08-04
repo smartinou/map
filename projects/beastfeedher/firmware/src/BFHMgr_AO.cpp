@@ -131,6 +131,29 @@ QP::QState BFHMgr_AO::Initial(BFHMgr_AO      * const me,  //aMePtr,
   // Subscribe to signals if any.
   me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
 
+  // Object dictionary for BFHMgr_AO object.
+  static BFHMgr_AO const * const sBFHMgrAOPtr = reinterpret_cast<BFHMgr_AO const * const>(me);
+  QS_OBJ_DICTIONARY(sBFHMgrAOPtr);
+  QS_OBJ_DICTIONARY(&sBFHMgrAOPtr->mFeedTimerEvt);
+  QS_OBJ_DICTIONARY(&sBFHMgrAOPtr->mFeedEvtQueueSto[0]);
+
+  // Function dictionaries for BFHMgr_AO state handlers.
+  QS_FUN_DICTIONARY(&BFHMgr_AO::Initial);
+  QS_FUN_DICTIONARY(&BFHMgr_AO::FeedingMgr);
+  QS_FUN_DICTIONARY(&BFHMgr_AO::Waiting);
+  QS_FUN_DICTIONARY(&BFHMgr_AO::TimedFeed);
+  QS_FUN_DICTIONARY(&BFHMgr_AO::ManualFeed);
+  QS_FUN_DICTIONARY(&BFHMgr_AO::WaitPeriod);
+  QS_FUN_DICTIONARY(&BFHMgr_AO::TimeCappedFeed);
+
+  // Locally consumed signals.
+  QS_SIG_DICTIONARY(SIG_FEED_MGR_MANUAL_FEED_CMD,  sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_FEED_MGR_TIMEOUT,          sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_RTCC_CALENDAR_EVENT_ALARM, sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_FEED_MGR_TIMED_FEED_CMD,   sBFHMgrAOPtr);
+
+  // Published signals.
+
   return Q_TRAN(&BFHMgr_AO::FeedingMgr);
 }
 

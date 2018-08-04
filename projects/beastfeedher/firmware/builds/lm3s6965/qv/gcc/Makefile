@@ -162,7 +162,6 @@ CPP_SRCS := \
         FeedCfgRec.cpp \
         GPIOs.cpp \
         Limit.cpp \
-        Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
         Month.cpp \
@@ -359,7 +358,7 @@ BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BI
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: version generate_fsdata $(TARGET_BIN)
+all: show version generate_fsdata $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
 .PHONY: version
@@ -439,3 +438,4 @@ show:
 	@echo C_DEPS_EXT = $(C_DEPS_EXT)
 	@echo CPP_DEPS_EXT = $(CPP_DEPS_EXT)
 	@echo TARGET_ELF = $(TARGET_ELF)
+	@echo TARGET_BIN = $(TARGET_BIN)

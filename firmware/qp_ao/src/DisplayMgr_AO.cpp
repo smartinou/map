@@ -107,6 +107,19 @@ QP::QState DisplayMgr_AO::Initial(DisplayMgr_AO  * const me,  //aMePtr,
   // Subscribe to signals if any.
   me->subscribe(SIG_DISPLAY_TEXT);
 
+  // Object dictionary for DisplayMgr_AO object.
+  static DisplayMgr_AO const * const sDisplayMgrAOPtr = reinterpret_cast<DisplayMgr_AO const * const>(me);
+  QS_OBJ_DICTIONARY(sDisplayMgrAOPtr);
+  QS_OBJ_DICTIONARY(&sDisplayMgrAOPtr->mDisplayTimerEvt);
+
+  // Function dictionaries for DisplayMgr_AO state handlers.
+  QS_FUN_DICTIONARY(&DisplayMgr_AO::Running);
+
+  // Locally consumed signals.
+  QS_SIG_DICTIONARY(SIG_DISPLAY_TEXT,    sDisplayMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_DISPLAY_TIMEOUT, sDisplayMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_DISPLAY_REFRESH, sDisplayMgrAOPtr);
+
   return Q_TRAN(&DisplayMgr_AO::Running);
 }
 

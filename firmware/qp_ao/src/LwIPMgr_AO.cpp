@@ -101,7 +101,7 @@ LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = nullptr;
 
 LwIPMgr_AO::LwIPMgr_AO() :
   QActive(Q_STATE_CAST(&LwIPMgr_AO::Initial))
-  , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
+  , mSlowTickTimer(this, SIG_LWIP_SLOW_TICK, 0U)
   //, mEthDrvPtr(0)
   , mNetIFPtr(nullptr)
   , mIPAddr(IPADDR_ANY)
@@ -201,19 +201,20 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
     lCallbackInit();
   }
 
-#if 0
-  QS_OBJ_DICTIONARY(&l_lwIPMgr);
-  QS_OBJ_DICTIONARY(&l_lwIPMgr.mSlowTickTimer);
-  QS_FUN_DICTIONARY(&QP::QHsm_top);
+  // Object dictionary for RTCC_AO object.
+  static LwIPMgr_AO const * const sLwIPMgrPtr = reinterpret_cast<LwIPMgr_AO const * const>(me);
+  QS_OBJ_DICTIONARY(sLwIPMgrPtr);
+  QS_OBJ_DICTIONARY(&sLwIPMgrPtr->mSlowTickTimer);
+
+  // Function dictionaries for LwIPMgr_AO state handlers.
   QS_FUN_DICTIONARY(&LwIPMgr_AO::Initial);
   QS_FUN_DICTIONARY(&LwIPMgr_AO::Running);
 
-  QS_SIG_DICTIONARY(SEND_UDP_SIG,        static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_SLOW_TICK_SIG,  static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_RX_READY_SIG,   static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_TX_READY_SIG,   static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_RX_OVERRUN_SIG, static_cast<QP::QActive *>(me));
-#endif
+  // Locally consumed signals.
+  QS_SIG_DICTIONARY(SIG_LWIP_SLOW_TICK, sLwIPMgrPtr);//static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(SIG_LWIP_RX_READY,  sLwIPMgrPtr);//static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(SIG_LWIP_TX_READY,  sLwIPMgrPtr);//static_cast<QP::QActive *>(me));
+
   return Q_TRAN(&LwIPMgr_AO::Running);
 }
 
@@ -233,19 +234,19 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  case LWIP_RX_READY_SIG: {
+  case SIG_LWIP_RX_READY: {
     eth_driver_read();
     //me->mEthDrvPtr->Rd();
     return Q_HANDLED();
   }
 
-  case LWIP_TX_READY_SIG: {
+  case SIG_LWIP_TX_READY: {
     eth_driver_write();
     //me->mEthDrvPtr->Wr();
     return Q_HANDLED();
   }
 
-  case LWIP_SLOW_TICK_SIG: {
+  case SIG_LWIP_SLOW_TICK: {
     // Has IP address changed?
     if (me->mIPAddr != me->mNetIFPtr->ip_addr.addr) {
       // IP address in the network byte order.
@@ -304,7 +305,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  case LWIP_RX_OVERRUN_SIG: {
+  case SIG_LWIP_RX_OVERRUN: {
     LINK_STATS_INC(link.err);
     return Q_HANDLED();
   }
