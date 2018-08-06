@@ -96,7 +96,6 @@ static char const *DispCfg(int   aIx,
 
   // QP AOs.
   static RTCC_AO     *sRTCC_AOPtr;
-  static LwIPMgr_AO  *sLwIPMgr_AOPtr;
 
 #if LWIP_HTTPD_SSI
   static char const *sSSITags[];

@@ -160,7 +160,6 @@ NetIFRec    *App::sNetIFRecPtr   = nullptr;
 FeedCfgRec  *App::sFeedCfgRecPtr = nullptr;
 
 RTCC_AO     *App::sRTCC_AOPtr    = nullptr;
-LwIPMgr_AO  *App::sLwIPMgr_AOPtr = nullptr;
 
 
 #if LWIP_HTTPD_SSI
@@ -279,12 +278,13 @@ bool App::Init(void) {
   DB::AddRec(sFeedCfgRecPtr);
 
   unsigned long lIntNbr = BSP_GPIOPortToInt(BSP_gRTCCIntGPIOPtr->GetPort());
-  static RTCCInitEvt const sRTCCInitEvt = { SIG_DUMMY,
-                                            *lSPIDevPtr,
-                                            lIntNbr,
-                                            BSP_gRTCCCSnGPIOPtr,
-                                            BSP_gRTCCIntGPIOPtr,
-                                            App::sCalendarPtr };
+  RTCCInitEvt const lRTCCInitEvt(SIG_DUMMY,
+                                 *lSPIDevPtr,
+                                 lIntNbr,
+                                 BSP_gRTCCCSnGPIOPtr,
+                                 BSP_gRTCCIntGPIOPtr,
+                                 App::sCalendarPtr);
+
   static QP::QEvt const *sRTCCEvtQPtr[10];
   App::sRTCC_AOPtr = new RTCC_AO();
   App::sRTCC_AOPtr->start(1U,
@@ -292,48 +292,46 @@ bool App::Init(void) {
                           Q_DIM(sRTCCEvtQPtr),
                           nullptr,
                           0U,
-                          &sRTCCInitEvt);
+                          &lRTCCInitEvt);
 
   // DB records are now deserialized, and fixed if required.
   // Create all other AOs.
-  static BFHInitEvt const sBFHInitEvt = { SIG_DUMMY,
-                                          App::sFeedCfgRecPtr,
-                                          BSP_gIn1GPIOPtr,
-                                          BSP_gIn2GPIOPtr,
-                                          BSP_gPWMGPIOPtr };
+  BFHInitEvt const lBFHInitEvt(SIG_DUMMY,
+                               App::sFeedCfgRecPtr,
+                               BSP_gIn1GPIOPtr,
+                               BSP_gIn2GPIOPtr,
+                               BSP_gPWMGPIOPtr);
   static QP::QEvt const *sBeastMgrEvtQPtr[5];
-  BFHMgr_AO &lBFHMgr_AO = BFHMgr_AO::Instance();
-  lBFHMgr_AO.start(2U,
+  static BFHMgr_AO &sBFHMgr_AO = BFHMgr_AO::Instance();
+  sBFHMgr_AO.start(2U,
                    sBeastMgrEvtQPtr,
                    Q_DIM(sBeastMgrEvtQPtr),
                    nullptr,
                    0U,
-                   &sBFHInitEvt);
+                   &lBFHInitEvt);
 
-  static LwIPInitEvt const sLwIPInitEvt = { SIG_DUMMY,
-                                            App::sNetIFRecPtr,
-                                            App::NetCallbackInit };
+  LwIPInitEvt const lLwIPInitEvt(SIG_DUMMY,
+                                 App::sNetIFRecPtr,
+                                 App::NetCallbackInit);
   static QP::QEvt const *sLwIPEvtQPtr[10];
-  App::sLwIPMgr_AOPtr = new LwIPMgr_AO();
-  App::sLwIPMgr_AOPtr->start(3U,
-                             sLwIPEvtQPtr,
-                             Q_DIM(sLwIPEvtQPtr),
-                             nullptr,
-                             0U,
-                             &sLwIPInitEvt);
+  static LwIPMgr_AO sLwIPMgr_AO;
+  sLwIPMgr_AO.start(3U,
+                    sLwIPEvtQPtr,
+                    Q_DIM(sLwIPEvtQPtr),
+                    nullptr,
+                    0U,
+                    &lLwIPInitEvt);
 
   SSD1329 * const lOLEDDisplayPtr = BSP_InitOLEDDisplay();
-  static DisplayMgrInitEvt const sDisplayMgrInitEvt = { SIG_DUMMY,
-                                                        lOLEDDisplayPtr,
-                                                        5 };
+  DisplayMgrInitEvt const lDisplayMgrInitEvt(SIG_DUMMY, 5);
   static QP::QEvt const *sDisplayMgrEvtQPtr[5];
-  DisplayMgr_AO &lDisplayMgr_AO = DisplayMgr_AO::Instance();
+  static DisplayMgr_AO lDisplayMgr_AO(*lOLEDDisplayPtr);
   lDisplayMgr_AO.start(4U,
                        sDisplayMgrEvtQPtr,
                        Q_DIM(sDisplayMgrEvtQPtr),
                        nullptr,
                        0U,
-                       &sDisplayMgrInitEvt);
+                       &lDisplayMgrInitEvt);
 
   // Send signal dictionaries for globally published events...
   //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
@@ -684,9 +682,11 @@ char const *App::DispIndex(int   aCGIIx,
   if (0 == strcmp(aParamsVec[0], "timed_feed")) {
     // Param found.
     // Send event with value as parameter.
+    unsigned int lTime = 0;
+    sscanf(aValsVec[0], "%d", &lTime);
     BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(BFHTimedFeedCmdEvt,
-                                        SIG_FEED_MGR_TIMED_FEED_CMD);
-    sscanf(aValsVec[0], "%d", &lEvtPtr->mTime);
+                                        SIG_FEED_MGR_TIMED_FEED_CMD,
+                                        lTime);
 
     // Could use QF_Publish() to decouple from active object.
     // Here, there's only this well-known recipient.
@@ -721,8 +721,9 @@ char const *App::DispCfg(int   aCGIIx,
 
         // Send event to write new date.
         RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
-                                         SIG_RTCC_SET_DATE);
-        lEvtPtr->mDate = lDate;
+                                         SIG_RTCC_SET_DATE,
+                                         Time(),
+                                         lDate);
         sRTCC_AOPtr->POST(lEvtPtr, 0);
 
       } else if (0 == strcmp(aParamsVec[lIx], "time")) {
@@ -730,13 +731,13 @@ char const *App::DispCfg(int   aCGIIx,
         unsigned int lMinutes = 0;
         sscanf(aValsVec[lIx], "%d%%3A%d", &lHours, &lMinutes);
         Time lTime(lHours, lMinutes, 0);
-        Date lDate();
 
         // Send event to write new time.
         // Send event to write new date.
         RTCCTimeDateEvt *lEvtPtr = Q_NEW(RTCCTimeDateEvt,
-                                         SIG_RTCC_SET_TIME);
-        lEvtPtr->mTime = lTime;
+                                         SIG_RTCC_SET_TIME,
+                                         lTime,
+                                         Date());
         sRTCC_AOPtr->POST(lEvtPtr, 0);
 
       }
@@ -777,8 +778,8 @@ char const *App::DispCfg(int   aCGIIx,
 
     // Send event to trigger updated DB writing.
     RTCCSaveToRAMEvt *lSaveEvtPtr = Q_NEW(RTCCSaveToRAMEvt,
-                                          SIG_RTCC_SAVE_TO_NV_MEM);
-    lSaveEvtPtr->mIsCalendarChanged = lIsCalendarChanged;
+                                          SIG_RTCC_SAVE_TO_NV_MEM,
+                                          lIsCalendarChanged);
     App::sRTCC_AOPtr->POST(lSaveEvtPtr, 0);
   }
 
