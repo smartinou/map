@@ -14,7 +14,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -255,7 +255,11 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
       uint32_t lIPAddrNet = ntohl(me->mIPAddr);
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
-      DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt, SIG_DISPLAY_TEXT);
+      DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt,
+                                                 SIG_DISPLAY_TEXT,
+                                                 0 * 6,
+                                                 0 * 8,
+                                                 12);
       snprintf(&lTextEvtPtr->mStr[0],
                Q_DIM(lTextEvtPtr->mStr),
                "IP: %u.%u.%u.%u    ",
@@ -263,10 +267,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
                static_cast<unsigned int>((lIPAddrNet) >> 16) & 0xFF,
                static_cast<unsigned int>((lIPAddrNet) >>  8) & 0xFF,
                static_cast<unsigned int>((lIPAddrNet) >>  0) & 0xFF);
-      lTextEvtPtr->mPosX   = 0 * 6;
-      lTextEvtPtr->mPosY   = 0 * 8;
-      lTextEvtPtr->mGreyLvl = 12;
-      QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTextEvtPtr), me);
+      QP::QF::PUBLISH(lTextEvtPtr, me);
     }
 
 #if LWIP_TCP

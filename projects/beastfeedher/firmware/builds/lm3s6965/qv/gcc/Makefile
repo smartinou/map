@@ -162,6 +162,7 @@ CPP_SRCS := \
         FeedCfgRec.cpp \
         GPIOs.cpp \
         Limit.cpp \
+        Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
         Month.cpp \
@@ -210,6 +211,7 @@ LIBS      := -ldriver-cm3
 # [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
 DEFINES   := -DQ_NASSERT
 DEFINES   += -D__STARTUP_CLEAR_BSS
+DEFINES   += -DQ_EVT_CTOR
 
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3
@@ -272,8 +274,8 @@ CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++11 \
-	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG \
-	-DQ_EVT_CTOR
+	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+
 
 else ifeq (spy, $(CONF))
 # Spy configuration.

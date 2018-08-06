@@ -626,7 +626,7 @@ void SysTick_Handler(void) {
   // Uncomment those line if need to publish every single tick.
   // Process time events for rate 0.
   // Publish to suscribers.
-  //static QP::QEvt const sTickEvt = { SIG_TIME_TICK, 0U, 0U };
+  //static QP::QEvt const sTickEvt(SIG_TIME_TICK);
   //QP::QF::PUBLISH(&sTickEvt, &sSysTick_Handler);
 }
 
@@ -656,8 +656,8 @@ void GPIOPortC_IRQHandler(void) {
   unsigned int lPin = sManualFeedGPIOPtr->GetPin();
   if (lPin & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTC_BASE, lPin);
-    static BFHManualFeedCmdEvt sOnEvt  = { SIG_FEED_MGR_MANUAL_FEED_CMD, true };
-    static BFHManualFeedCmdEvt sOffEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, false };
+    static BFHManualFeedCmdEvt sOnEvt(SIG_FEED_MGR_MANUAL_FEED_CMD, true);
+    static BFHManualFeedCmdEvt sOffEvt(SIG_FEED_MGR_MANUAL_FEED_CMD, false);
     if (Button::PRESSED == sManualFeedButtonPtr->GetGPIOPinState()) {
       BFHMgr_AO::AOInstance().POST(&sOnEvt, 0);
     } else {
@@ -679,7 +679,7 @@ void GPIOPortD_IRQHandler(void) {
     GPIOPinIntClear(GPIO_PORTD_BASE, lPin);
     // Only interested in the pin coming high.
     if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
-      static BFHTimedFeedCmdEvt sEvt = { SIG_FEED_MGR_TIMED_FEED_CMD, 0 };
+      static BFHTimedFeedCmdEvt sEvt(SIG_FEED_MGR_TIMED_FEED_CMD, 0);
       BFHMgr_AO::AOInstance().POST(&sEvt, 0);
     }
   }
@@ -698,7 +698,7 @@ void GPIOPortF_IRQHandler(void) {
     GPIOPinIntClear(GPIO_PORTF_BASE, lPin);
     // Only interested in the pin coming high.
     if (Button::PRESSED == sSelectButtonPtr->GetGPIOPinState()) {
-      static QP::QEvt sEvt = { SIG_DISPLAY_REFRESH, 0 };
+      static QP::QEvt sEvt(SIG_DISPLAY_REFRESH);
       DisplayMgr_AO::AOInstance().POST(&sEvt, 0);
     }
   }

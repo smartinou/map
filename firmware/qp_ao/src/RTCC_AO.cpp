@@ -99,7 +99,7 @@ RTCC_AO::RTCC_AO() :
 
 void RTCC_AO::ISRCallback(void) {
   // Static event.
-  static QP::QEvt const sRTCCAlarmIntEvt = { SIG_RTCC_INTERRUPT, 0U, 0U };
+  static QP::QEvt const sRTCCAlarmIntEvt(SIG_RTCC_INTERRUPT);
   mDS3234Ptr->ISRCallback();
 
   // Signal to AO that RTCC generated an interrupt.
@@ -318,10 +318,11 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
 #endif // RTCC_DBG
 
     // Publish Tick Alarm Event.
-    RTCCTimeDateEvt *lTickAlarmEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_TIME_TICK_ALARM);
-    lTickAlarmEvtPtr->mTime = me->mTime;
-    lTickAlarmEvtPtr->mDate = me->mDate;
-    QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTickAlarmEvtPtr), me);
+    RTCCTimeDateEvt * const lTickAlarmEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                                     SIG_RTCC_TIME_TICK_ALARM,
+                                                     me->mTime,
+                                                     me->mDate);
+    QP::QF::PUBLISH(lTickAlarmEvtPtr, me);
 
     if ((DS3234::AF2  & me->mDS3234Ptr->GetStatus()) &&
         (DS3234::AEI2 & me->mDS3234Ptr->GetCtrl())) {
@@ -331,10 +332,11 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
       UARTprintf("A");
 #endif // RTCC_DBG
       me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_2);
-      RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
-      lCalendarEvtPtr->mTime = me->mTime;
-      lCalendarEvtPtr->mDate = me->mDate;
-      QP::QF::PUBLISH(static_cast<QP::QEvt *>(lCalendarEvtPtr), me);
+      RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                                      SIG_RTCC_CALENDAR_EVENT_ALARM,
+                                                      me->mTime,
+                                                      me->mDate);
+      QP::QF::PUBLISH(lCalendarEvtPtr, me);
 
       SetNextCalendarEvt(me);
     }

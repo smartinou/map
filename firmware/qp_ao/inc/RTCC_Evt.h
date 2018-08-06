@@ -43,55 +43,58 @@ class GPIOs;
 // Class definitions.
 class RTCCInitEvt : public QP::QEvt {
  public:
-  RTCCInitEvt(QP::QSignal       aSig,
-              CoreLink::SPIDev &aSPIDevRef,
-              unsigned long     aIntNbr,
-              GPIOs            *aCSn,
-              GPIOs            *aInt,
-              CalendarRec      *aCalendarPtr):
-  mSPIDevRef(aSPIDevRef) {
-    sig          = aSig;
-    poolId_      = 0U;
-    mSPIDevRef   = aSPIDevRef;
-    mIntNbr      = aIntNbr;
-    mCSn         = aCSn;
-    mInt         = aInt;
-    mCalendarPtr = aCalendarPtr;
+  RTCCInitEvt(QP::QSignal      const aSig,
+              CoreLink::SPIDev      &aSPIDevRef,
+              unsigned long    const aIntNbr,
+              GPIOs          * const aCSn,
+              GPIOs          * const aInt,
+              CalendarRec    * const aCalendarPtr):
+  QP::QEvt(aSig)
+    , mSPIDevRef(aSPIDevRef)
+    , mIntNbr(aIntNbr)
+    , mCSn(aCSn)
+    , mInt(aInt)
+    , mCalendarPtr(aCalendarPtr) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  CoreLink::SPIDev &mSPIDevRef;
-  unsigned long     mIntNbr;
-  GPIOs            *mCSn;
-  GPIOs            *mInt;
-  CalendarRec      *mCalendarPtr;
+  CoreLink::SPIDev       &mSPIDevRef;
+  unsigned long    const  mIntNbr;
+  GPIOs          * const  mCSn;
+  GPIOs          * const  mInt;
+  CalendarRec    * const  mCalendarPtr;
 };
 
 
 class RTCCTimeDateEvt : public QP::QEvt {
  public:
-  RTCCTimeDateEvt(QP::QSignal aSig, Time aTime, Date aDate) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mTime   = aTime;
-    mDate   = aDate;
+  RTCCTimeDateEvt(QP::QSignal const aSig,
+                  Time        const aTime,
+                  Date        const aDate)
+    : QP::QEvt(aSig)
+    , mTime(aTime)
+    , mDate(aDate) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  Time mTime;
-  Date mDate;
+  Time const mTime;
+  Date const mDate;
 };
 
 
 class RTCCSaveToRAMEvt : public QP::QEvt {
  public:
-  RTCCSaveToRAMEvt(QP::QSignal aSig, bool aIsCalendarChanged) {
-    sig                = aSig;
-    mIsCalendarChanged = aIsCalendarChanged;
+  RTCCSaveToRAMEvt(QP::QSignal const aSig,
+                   bool        const aIsCalendarChanged)
+    : QP::QEvt(aSig)
+    , mIsCalendarChanged(aIsCalendarChanged) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  bool mIsCalendarChanged;
+  bool const mIsCalendarChanged;
 };
 
 // ******************************************************************************
