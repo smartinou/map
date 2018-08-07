@@ -28,6 +28,7 @@
 // QP-port.
 #include "qpcpp.h"
 
+#include "BSP.h"
 #include "Logger.h"
 
 // ******************************************************************************
@@ -37,6 +38,36 @@
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
+
+class LogEvt : public QP::QEvt {
+ public:
+  LogEvt(QP::QSignal  const         aSig,
+         LogLevel_t   const         aLevel,
+         char         const * const aFileStr,
+         unsigned int const         aLine,
+         char         const * const aFunctionStr,
+         char         const * const aCategoryStr,
+         char         const * const aFormatStr)
+    : QP::QEvt(aSig)
+    , mLevel(aLevel)
+    , mFileStr(aFileStr)
+    , mLine(aLine)
+    , mFunctionStr(aFunctionStr)
+    , mCategoryStr(aCategoryStr)
+    , mFormatStr(aFormatStr) {
+
+    // Ctor body left intentionally empty.
+  }
+
+ public:
+  LogLevel_t   const   mLevel;
+  char         const  *mFileStr;
+  unsigned int const   mLine;
+  char         const  *mFunctionStr;
+  char         const  *mCategoryStr;
+  char         const  *mFormatStr;
+};
+
 
 // ******************************************************************************
 //                            FUNCTION PROTOTYPES
@@ -52,23 +83,6 @@ size_t Logger::mCategoryQty = 0;
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
-
-LogEvt::LogEvt(LogLevel_t   aLevel,
-	       char const  *aFileStr,
-	       unsigned int aLine,
-	       char const  *aFunctionStr,
-	       char const  *aCategoryStr,
-	       char const  *aFormatStr)
-  : mLevel(aLevel)
-  , mFileStr(aFileStr)
-  , mLine(aLine)
-  , mFunctionStr(aFunctionStr)
-  , mCategoryStr(aCategoryStr)
-  , mFormatStr(aFormatStr) {
-
-  
-}
-
 
 Logger & Logger::Instance() {
   static Logger sLogger;
@@ -122,9 +136,9 @@ void Logger::SetLogLevel(LogLevel_t const aLevel) {
 }
 
 
-bool Logger::AddCategory(unsigned int const  aEvtSignal,
-			 char         const *aCategoryStr,
-			 LogLevel_t   const  aLevel) {
+bool Logger::AddCategory(unsigned int const aEvtSignal,
+                         char const * const aCategoryStr,
+                         LogLevel_t   const aLevel) {
 
   if (mCategoryQty >= sMaxLogCategories) {
     return false;
@@ -133,10 +147,10 @@ bool Logger::AddCategory(unsigned int const  aEvtSignal,
   if (mCategoryQty > 0) {
     LogCategory_t * const lCategoryStr =
       static_cast<LogCategory_t * const>(bsearch(aCategoryStr,
-						 mCategories,
-						 mCategoryQty,
-						 sizeof(LogCategory_t),
-						 Logger::CompareStr));
+                                                 mCategories,
+                                                 mCategoryQty,
+                                                 sizeof(LogCategory_t),
+                                                 Logger::CompareStr));
     if (nullptr != lCategoryStr) {
       lCategoryStr->mEvtSignal = aEvtSignal;
       lCategoryStr->mLevel = aLevel;
@@ -145,38 +159,51 @@ bool Logger::AddCategory(unsigned int const  aEvtSignal,
   }
 
   strncpy(mCategories[mCategoryQty].mName,
-	  aCategoryStr,
-	  sMaxLogCategoryLen);
+          aCategoryStr,
+          sMaxLogCategoryLen);
   mCategories[mCategoryQty].mLevel = aLevel;
   mCategories[mCategoryQty].mEvtSignal = aEvtSignal;
   mCategoryQty++;
 
   qsort(mCategories,
-	mCategoryQty,
-	sizeof(LogCategory_t),
-	Logger::CompareStr);
+        mCategoryQty,
+        sizeof(LogCategory_t),
+        Logger::CompareStr);
   return true;
 }
 
-#if 1
-bool Logger::Log(LogLevel_t   aLevel,
-		 char const  *aFileStr,
-		 unsigned int aLine,
-		 char const  *aFunctionStr,
-		 char const  *aCategoryStr,
-		 char const  *aFormat, ...) {
 
-  // Create the Log event and post it!
-  LogLevel_t lCategoryLevel = GetLevel(aCategoryStr);
+bool Logger::Log(LogLevel_t    const aLevel,
+                 char  const * const aFileStr,
+                 unsigned int  const aLine,
+                 char  const * const aFunctionStr,
+                 char  const * const aCategoryStr,
+                 char  const * const aFormat, ...) {
+
+  // Check for log level threshold (global and per category).
+  LogLevel_t lCategoryLevel = GetLogLevel(aCategoryStr);
   if (lCategoryLevel != sInvalidCategory) {
     if (aLevel < lCategoryLevel) {
       return false;
     }
   } else if (aLevel < mLogLevel) {
     return false;
-  }  
+  }
+
+  // Create the Log event and publish it to all!
+  LogEvt * const lLogEvt = Q_NEW(LogEvt,
+                                 SIG_LOG,
+                                 aLevel,
+                                 aFileStr,
+                                 aLine,
+                                 aFunctionStr,
+                                 aCategoryStr,
+                                 aFormat);
+
+  QP::QF::PUBLISH(lLogEvt, this);
+  return true;
 }
-#endif
+
 
 #define _(enum, str) case enum: return str;
 char const *Logger::LogLevelToStr(LogLevel_t const aLevel) {
@@ -200,19 +227,19 @@ Logger::LogCategory_t *Logger::FindCategory(char const * const aCategoryStr) con
 
   LogCategory_t * const lCategoryStr =
     static_cast<LogCategory_t * const>(bsearch(aCategoryStr,
-					       mCategories,
-					       mCategoryQty,
-					       sizeof(LogCategory_t),
-					       Logger::CompareStr));
+                                               mCategories,
+                                               mCategoryQty,
+                                               sizeof(LogCategory_t),
+                                               Logger::CompareStr));
   return lCategoryStr;
 }
 
 
 int Logger::CompareStr(void const * const aFirstStr,
-		       void const * const aSecondStr) {
+                       void const * const aSecondStr) {
 
   return strcmp(static_cast<LogCategory_t const * const>(aFirstStr)->mName,
-		static_cast<LogCategory_t const * const>(aSecondStr)->mName);
+                static_cast<LogCategory_t const * const>(aSecondStr)->mName);
 }
 
 // ******************************************************************************

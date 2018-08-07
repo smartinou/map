@@ -51,46 +51,46 @@ typedef enum {
 #if defined(_DEBUG) || !defined(NDEBUG)
 #define LOG_DEBUG(aCategory, ...) \
   LOGGER.Log(PRI_DBG,             \
-	     __FILE__,            \
-	     __LINE__,            \
-	     __FUNCTION__,        \
-	     aCategory,           \
-	     __VA_ARGS__)
+             __FILE__,            \
+             __LINE__,            \
+             __FUNCTION__,        \
+             aCategory,           \
+             __VA_ARGS__)
 #else
 #define LOG_DEBUG(aCategory, ...)
 #endif
 
 #define LOG_INFO(aCategory, ...) \
   LOGGER.Log(PRI_INFO,           \
-	     __FILE__,           \
-	     __LINE__,           \
-	     __FUNCTION__,       \
-	     aCategory,          \
-	     __VA_ARGS__)
+             __FILE__,           \
+             __LINE__,           \
+             __FUNCTION__,       \
+             aCategory,          \
+             __VA_ARGS__)
 
 #define LOG_WARNING(aCategory, ...) \
   LOGGER.Log(PRI_WARN,              \
-	     __FILE__,              \
-	     __LINE__,              \
-	     __FUNCTION__,          \
-	     aCategory,             \
-	     __VA_ARGS__)
+             __FILE__,              \
+             __LINE__,              \
+             __FUNCTION__,          \
+             aCategory,             \
+             __VA_ARGS__)
 
 #define LOG_ERROR(aCategory, ...) \
   LOGGER.Log(PRI_ERR,             \
-	     __FILE__,            \
-	     __LINE__,            \
-	     __FUNCTION__,        \
-	     aCategory,           \
-	     __VA_ARGS__)
+             __FILE__,            \
+             __LINE__,            \
+             __FUNCTION__,        \
+             aCategory,           \
+             __VA_ARGS__)
 
 #define LOG_CRITICAL(aCategory, ...) \
   LOGGER.Log(PRI_CRIT,               \
-	     __FILE__,               \
-	     __LINE__,               \
-	     __FUNCTION__,           \
-	     aCategory,              \
-	     __VA_ARGS__)
+             __FILE__,               \
+             __LINE__,               \
+             __FUNCTION__,           \
+             aCategory,              \
+             __VA_ARGS__)
 
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -99,33 +99,6 @@ typedef enum {
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class LogEvt : public QP::QEvt {
- public:
-  LogEvt(LogLevel_t   aLevel,
-	 char const  *aFileStr,
-	 unsigned int aLine,
-	 char const  *aFunctionStr,
-	 char const  *aCategoryStr,
-	 char const  *aFormatStr);
-
- public:
-#if 0
-  char const  *mFileStr;
-  unsigned int mLine;
-  char const  *mFunctionStr;
-  char const  *mCategoryStr;
-  char const  *mFormatStr;
-#else
-  LogLevel_t   const  mLevel;
-  std::string  const &mFileStr;
-  unsigned int const  mLine;
-  std::string  const &mFunctionStr;
-  std::string  const &mCategoryStr;
-  std::string  const &mFormatStr;
-#endif
-};
-
-
 class Logger {
  public:
   static Logger &Instance();
@@ -139,16 +112,16 @@ class Logger {
   unsigned int GetEvtSignal(char const * const aCategoryStr) const;
 
   void SetLogLevel(LogLevel_t const aLevel);
-  bool AddCategory(unsigned int const  aEvtSignal,
-		   char         const *aCategoryStr,
-		   LogLevel_t   const  aLevel = PRI_ERR);
+  bool AddCategory(unsigned int const aEvtSignal,
+                   char const * const aCategoryStr,
+                   LogLevel_t   const aLevel = PRI_ERR);
 
-bool Log(LogLevel_t   aLevel,
-		 char const  *aFileStr,
-		 unsigned int aLine,
-		 char const  *aFunctionStr,
-		 char const  *aCategoryStr,
-	 char const  *aFormat, ...);
+  bool Log(LogLevel_t   const         aLevel,
+           char         const * const aFileStr,
+           unsigned int const         aLine,
+           char         const * const aFunctionStr,
+           char         const * const aCategoryStr,
+           char         const * const aFormat, ...);
   static char const *LogLevelToStr(LogLevel_t const aLevel);
 
  private:
@@ -158,10 +131,10 @@ bool Log(LogLevel_t   aLevel,
   void operator=(Logger const&);
 
   static int CompareStr(void const * const aFirstStr,
-			void const * const aSecondStr);
+                        void const * const aSecondStr);
 
-  static int const sMaxLogCategories  = 32;
-  static int const sMaxLogCategoryLen = 32;
+  static unsigned int const sMaxLogCategories  = 32;
+  static unsigned int const sMaxLogCategoryLen = 32;
   static LogLevel_t const sInvalidCategory = static_cast<LogLevel_t>(-1);
 
   typedef struct {
