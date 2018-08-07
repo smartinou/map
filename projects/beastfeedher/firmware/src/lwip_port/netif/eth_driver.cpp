@@ -133,20 +133,20 @@ void ISR_Ethernet(void) {
     eth_stat &= HWREG(ETH_BASE + MAC_O_IM);/* mask only the enabled sources */
 
     if ((eth_stat & ETH_INT_RX) != 0) {
-        static QEvent const evt_eth_rx = { SIG_LWIP_RX_READY, 0 };
+        static QEvent const evt_eth_rx(SIG_LWIP_RX_READY);
         //QActive_postFIFO(l_active, &evt_eth_rx);          /* send to the AO */
         l_active->POST(&evt_eth_rx, 0);          /* send to the AO */
 
         HWREG(ETH_BASE + MAC_O_IM) &= ~ETH_INT_RX;    /* disable further RX */
     }
     if ((eth_stat & ETH_INT_TX) != 0) {
-        static QEvent const evt_eth_tx = { SIG_LWIP_TX_READY, 0 };
+        static QEvent const evt_eth_tx(SIG_LWIP_TX_READY);
         //QActive_postFIFO(l_active, &evt_eth_tx);          /* send to the AO */
         l_active->POST(&evt_eth_tx, 0);          /* send to the AO */
     }
 #if LINK_STATS
     if ((eth_stat & ETH_INT_RXOF) != 0) {
-        static QEvent const evt_eth_er = { SIG_LWIP_RX_OVERRUN, 0 };
+        static QEvent const evt_eth_er(SIG_LWIP_RX_OVERRUN);
         //QActive_postFIFO(l_active, &evt_eth_er);          /* send to the AO */
         l_active->POST(&evt_eth_er, 0);          /* send to the AO */
     }
