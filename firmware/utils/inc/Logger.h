@@ -45,7 +45,7 @@ typedef enum {
 #undef _
 
 
-#define LOGGER (Log::Instance())
+#define LOGGER (Logger::Instance())
 
 // TODO: Verify that release builds with gcc define NDEBUG.
 #if defined(_DEBUG) || !defined(NDEBUG)

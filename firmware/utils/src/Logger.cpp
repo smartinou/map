@@ -192,7 +192,7 @@ bool Logger::Log(LogLevel_t    const aLevel,
 
   // Create the Log event and publish it to all!
   LogEvt * const lLogEvt = Q_NEW(LogEvt,
-                                 SIG_LOG,
+                                 GetEvtSignal(aCategoryStr),
                                  aLevel,
                                  aFileStr,
                                  aLine,
