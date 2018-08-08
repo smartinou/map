@@ -24,6 +24,7 @@
 // Standard Libraries.
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 // QP-port.
 #include "qpcpp.h"
@@ -47,14 +48,14 @@ class LogEvt : public QP::QEvt {
          unsigned int const         aLine,
          char         const * const aFunctionStr,
          char         const * const aCategoryStr,
-         char         const * const aFormatStr)
+         char         const * const aMsgStr)
     : QP::QEvt(aSig)
     , mLevel(aLevel)
     , mFileStr(aFileStr)
     , mLine(aLine)
     , mFunctionStr(aFunctionStr)
     , mCategoryStr(aCategoryStr)
-    , mFormatStr(aFormatStr) {
+    , mMsgStr(aMsgStr) {
 
     // Ctor body left intentionally empty.
   }
@@ -65,7 +66,7 @@ class LogEvt : public QP::QEvt {
   unsigned int const   mLine;
   char         const  *mFunctionStr;
   char         const  *mCategoryStr;
-  char         const  *mFormatStr;
+  char         const  *mMsgStr;
 };
 
 
@@ -178,7 +179,8 @@ bool Logger::Log(LogLevel_t    const aLevel,
                  unsigned int  const aLine,
                  char  const * const aFunctionStr,
                  char  const * const aCategoryStr,
-                 char  const * const aFormat, ...) {
+                 char  const * const aFormatStr,
+                 ...) {
 
   // Check for log level threshold (global and per category).
   LogLevel_t lCategoryLevel = GetLogLevel(aCategoryStr);
@@ -190,6 +192,13 @@ bool Logger::Log(LogLevel_t    const aLevel,
     return false;
   }
 
+  // Concatenate variadics if any.
+  va_list lArgs;
+  va_start(lArgs, aFormatStr);
+  static char lMsgBuf[sMsgBufLen];
+  vsprintf(&lMsgBuf[0], aFormatStr, lArgs);
+  va_end(lArgs);
+
   // Create the Log event and publish it to all!
   LogEvt * const lLogEvt = Q_NEW(LogEvt,
                                  GetEvtSignal(aCategoryStr),
@@ -198,7 +207,7 @@ bool Logger::Log(LogLevel_t    const aLevel,
                                  aLine,
                                  aFunctionStr,
                                  aCategoryStr,
-                                 aFormat);
+                                 &lMsgBuf[0]);
 
   QP::QF::PUBLISH(lLogEvt, this);
   return true;

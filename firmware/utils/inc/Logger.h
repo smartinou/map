@@ -121,7 +121,8 @@ class Logger {
            unsigned int const         aLine,
            char         const * const aFunctionStr,
            char         const * const aCategoryStr,
-           char         const * const aFormat, ...);
+           char         const * const aFormatStr,
+           ...);
   static char const *LogLevelToStr(LogLevel_t const aLevel);
 
  private:
@@ -135,7 +136,8 @@ class Logger {
 
   static unsigned int const sMaxLogCategories  = 32;
   static unsigned int const sMaxLogCategoryLen = 32;
-  static LogLevel_t const sInvalidCategory = static_cast<LogLevel_t>(-1);
+  static LogLevel_t   const sInvalidCategory = static_cast<LogLevel_t>(-1);
+  static unsigned int const sMsgBufLen = 1024;
 
   typedef struct {
     unsigned int mEvtSignal;
