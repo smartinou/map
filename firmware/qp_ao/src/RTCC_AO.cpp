@@ -50,6 +50,7 @@
 #include "Time.h"
 
 // This project.
+#include "Logger.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"
 #include "BSP.h"
@@ -77,6 +78,8 @@ Q_DEFINE_THIS_FILE
 
 RTCC_AO *RTCC_AO::mInstancePtr = nullptr;
 uint8_t *RTCC_AO::mNVMemBuf    = nullptr;
+
+static char const sLogCategory[] = "RTCC";
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -150,6 +153,9 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
   lResult = InitInterrupt(me, e);
 
   (void)lResult;
+
+  // Set logging category.
+  LOGGER.AddCategory(SIG_RTCC_LOG, &sLogCategory[0]);
 
   // Object dictionary for RTCC_AO object.
   static RTCC_AO const * const sRTCCAOPtr = reinterpret_cast<RTCC_AO const * const>(me);
@@ -331,6 +337,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
 #if defined(RTCC_DBG) && !defined(Q_SPY)
       UARTprintf("A");
 #endif // RTCC_DBG
+      LOG_INFO(&sLogCategory[0], "Calendar event.");
       me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_2);
       RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt,
                                                       SIG_RTCC_CALENDAR_EVENT_ALARM,
@@ -354,6 +361,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
   }
 
   case SIG_RTCC_SET_TIME: {
+    LOG_INFO(&sLogCategory[0], "New time set.");
     RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
     me->mDS3234Ptr->WrTime(lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
@@ -361,6 +369,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
   }
 
   case SIG_RTCC_SET_DATE: {
+    LOG_INFO(&sLogCategory[0], "New date set.");
     RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
     me->mDS3234Ptr->WrDate(lSetEvtPtr->mDate);
     SetNextCalendarEvt(me);

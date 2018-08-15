@@ -44,6 +44,7 @@
 #include "Date.h"
 #include "DBRec.h"
 #include "FeedCfgRec.h"
+#include "Logger.h"
 #include "Time.h"
 
 // This project.
@@ -72,6 +73,8 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 
 BFHMgr_AO *BFHMgr_AO::mInstancePtr = static_cast<BFHMgr_AO *>(0);
+
+static char const sLogCategory[] = "Feeder manager";
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -131,6 +134,9 @@ QP::QState BFHMgr_AO::Initial(BFHMgr_AO      * const me,  //aMePtr,
   // Subscribe to signals if any.
   me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
 
+  // Set logging category.
+  LOGGER.AddCategory(SIG_FEED_MGR_LOG, &sLogCategory[0]);
+
   // Object dictionary for BFHMgr_AO object.
   static BFHMgr_AO const * const sBFHMgrAOPtr = reinterpret_cast<BFHMgr_AO const * const>(me);
   QS_OBJ_DICTIONARY(sBFHMgrAOPtr);
@@ -170,9 +176,11 @@ QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
     // Cast event to know the state (on/off).
     BFHManualFeedCmdEvt const * const lEvtPtr = static_cast<BFHManualFeedCmdEvt const *>(e);
     if (lEvtPtr->mIsOn) {
+      LOG_INFO(&sLogCategory[0], "Manual feed event (on).");
       return Q_TRAN(&BFHMgr_AO::ManualFeed);
     }
     // Off: intentional fallthrough.
+    LOG_INFO(&sLogCategory[0], "Manual feed event (off).");
   }
 
   case Q_INIT_SIG:
@@ -182,7 +190,7 @@ QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
 
   case SIG_RTCC_CALENDAR_EVENT_ALARM:
     //RTCCEvt const *lEvtPtr = static_cast<RTCCEvt const *>(e);
-    //Log(Time, Date);
+    LOG_INFO(&sLogCategory[0], "Timed feed event from calendar entry.");
     me->mFeedTime = me->mFeedCfgRecPtr->GetTimedFeedPeriod();
     return Q_TRAN(&BFHMgr_AO::TimedFeed);
 
@@ -194,6 +202,7 @@ QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
     } else {
       me->mFeedTime = me->mFeedCfgRecPtr->GetTimedFeedPeriod();
     }
+    LOG_INFO(&sLogCategory[0], "Timed feed event from other source.");
     return Q_TRAN(&BFHMgr_AO::TimedFeed);
   }
 

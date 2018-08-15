@@ -64,6 +64,7 @@ extern "C" {
 #include "BSP.h"
 #include "DBRec.h"
 #include "DisplayMgr_Evt.h"
+#include "Logger.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "NetIFRec.h"
@@ -94,6 +95,8 @@ Q_DEFINE_THIS_FILE
 
 // The single instance of LwIPMgr_AO.
 LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = nullptr;
+
+static char const sLogCategory[] = "LwIP manager";
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -201,6 +204,9 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
     lCallbackInit();
   }
 
+  // Set logging category.
+  LOGGER.AddCategory(SIG_LWIP_MGR_LOG, &sLogCategory[0]);
+
   // Object dictionary for RTCC_AO object.
   static LwIPMgr_AO const * const sLwIPMgrPtr = reinterpret_cast<LwIPMgr_AO const * const>(me);
   QS_OBJ_DICTIONARY(sLwIPMgrPtr);
@@ -253,6 +259,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
       // Save the IP addr.
       me->mIPAddr = me->mNetIFPtr->ip_addr.addr;
       uint32_t lIPAddrNet = ntohl(me->mIPAddr);
+      LOG_INFO(&sLogCategory[0], "New IP address.");
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
       DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt,
