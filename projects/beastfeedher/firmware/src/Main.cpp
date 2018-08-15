@@ -24,7 +24,7 @@
 #include "qpcpp.h"
 
 // TI Library.
-#include "uartstdio.h"
+//#include "uartstdio.h"
 
 // Common Library.
 #include "SPI.h"
@@ -78,6 +78,11 @@ int main(void) {
   static QP::QSubscrList lSubsribeSto[SIG_QTY];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
+  // Send object dictionaries for event pools...
+  QS_OBJ_DICTIONARY(sSmallPoolSto);
+  QS_OBJ_DICTIONARY(sMediumPoolSto);
+
+  QS_FUN_DICTIONARY(&QP::QHsm::top);
 
   // Start master record.
   // Contains all AOs.
@@ -86,7 +91,7 @@ int main(void) {
 
   // Run the QF application.
   if (lInitGood) {
-    UARTprintf("QF version: %s", QP::QF::getVersion());
+    //UARTprintf("QF version: %s", QP::QF::getVersion());
     return QP::QF::run();
   }
 

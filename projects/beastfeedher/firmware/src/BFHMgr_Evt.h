@@ -38,49 +38,50 @@ class GPIOs;
 // Class definitions.
 class BFHInitEvt : public QP::QEvt {
  public:
-  BFHInitEvt(QP::QSignal  aSig,
-             FeedCfgRec  *aFeedCfgRecPtr,
-             GPIOs       *aMotorCtrlIn1Ptr,
-             GPIOs       *aMotorCtrlIn2Ptr,
-             GPIOs       *aMotorCtrlPWMPtr) {
-    sig              = aSig;
-    mFeedCfgRecPtr   = aFeedCfgRecPtr;
-    mMotorCtrlIn1Ptr = aMotorCtrlIn1Ptr;
-    mMotorCtrlIn2Ptr = aMotorCtrlIn2Ptr;
-    mMotorCtrlPWMPtr = aMotorCtrlPWMPtr;
+  BFHInitEvt(QP::QSignal  const aSig,
+             FeedCfgRec * const aFeedCfgRecPtr,
+             GPIOs      * const aMotorCtrlIn1Ptr,
+             GPIOs      * const aMotorCtrlIn2Ptr,
+             GPIOs      * const aMotorCtrlPWMPtr)
+    : QP::QEvt(aSig)
+    , mFeedCfgRecPtr(aFeedCfgRecPtr)
+    , mMotorCtrlIn1Ptr(aMotorCtrlIn1Ptr)
+    , mMotorCtrlIn2Ptr(aMotorCtrlIn2Ptr)
+    , mMotorCtrlPWMPtr(aMotorCtrlPWMPtr) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  FeedCfgRec *mFeedCfgRecPtr;
-  GPIOs      *mMotorCtrlIn1Ptr;
-  GPIOs      *mMotorCtrlIn2Ptr;
-  GPIOs      *mMotorCtrlPWMPtr;
+  FeedCfgRec * const mFeedCfgRecPtr;
+  GPIOs      * const mMotorCtrlIn1Ptr;
+  GPIOs      * const mMotorCtrlIn2Ptr;
+  GPIOs      * const mMotorCtrlPWMPtr;
 };
 
 
 class BFHManualFeedCmdEvt : public QP::QEvt {
  public:
-  BFHManualFeedCmdEvt(QP::QSignal aSig, bool aIsOn) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mIsOn   = aIsOn;
+  BFHManualFeedCmdEvt(QP::QSignal const aSig, bool const aIsOn)
+    : QP::QEvt(aSig)
+    , mIsOn(aIsOn) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  bool mIsOn;
+  bool const mIsOn;
 };
 
 
 class BFHTimedFeedCmdEvt : public QP::QEvt {
  public:
-  BFHTimedFeedCmdEvt(QP::QSignal aSig, unsigned int aTime) {
-    sig     = aSig;
-    poolId_ = 0U;
-    mTime   = aTime;
+  BFHTimedFeedCmdEvt(QP::QSignal const aSig, unsigned int const aTime)
+    : QP::QEvt(aSig)
+    , mTime(aTime) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  unsigned int mTime;
+  unsigned int const mTime;
 };
 
 // ******************************************************************************

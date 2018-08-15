@@ -93,7 +93,8 @@ VPATH = \
         $(LWIPDIR)/core/ipv4 \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/httpd
+        $(LWIPDIR)/apps/httpd \
+        $(FAT_FS_SRC_DIR)
 
 # List of all include directories needed by this project.
 INCLUDES  = \
@@ -114,11 +115,21 @@ INCLUDES  = \
         -I$(CMSIS_LIB)/lm3s \
         -I$(CMSIS_LIB)/core \
         -I$(CMSIS_LIB) \
-        -I$(LWIPDIR)/include
+        -I$(LWIPDIR)/include \
+        -I$(FAT_FS_INC_DIR)
 
 # Files
 # Assembler source files.
 ASM_SRCS :=
+
+
+
+FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff13a
+FAT_FS_SRC_DIR := $(FAT_FS_DIR)/source
+FAT_FS_INC_DIR := $(FAT_FS_SRC_DIR)
+
+FAT_FS_SRCS := \
+        ff.c
 
 # C source files.
 C_SRCS := \
@@ -129,7 +140,8 @@ C_SRCS := \
 	$(CORE4FILES) \
 	$(APIFILES) \
 	$(LWIPDIR)/netif/ethernet.c \
-	$(HTTPDFILES)
+	$(HTTPDFILES) \
+        $(FAT_FS_SRCS)
 
 
 # C++ source files.
@@ -150,12 +162,14 @@ CPP_SRCS := \
         FeedCfgRec.cpp \
         GPIOs.cpp \
         Limit.cpp \
+        Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
         Month.cpp \
         NetIFRec.cpp \
         RTCC.cpp \
         RTCC_AO.cpp \
+        SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
         TB6612.cpp \
@@ -197,6 +211,7 @@ LIBS      := -ldriver-cm3
 # [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
 DEFINES   := -DQ_NASSERT
 DEFINES   += -D__STARTUP_CLEAR_BSS
+DEFINES   += -DQ_EVT_CTOR
 
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3
@@ -259,8 +274,8 @@ CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++11 \
-	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG \
-	-DQ_EVT_CTOR
+	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+
 
 else ifeq (spy, $(CONF))
 # Spy configuration.
@@ -345,7 +360,7 @@ BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BI
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: version generate_fsdata $(TARGET_BIN)
+all: show version generate_fsdata $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
 .PHONY: version
@@ -425,3 +440,4 @@ show:
 	@echo C_DEPS_EXT = $(C_DEPS_EXT)
 	@echo CPP_DEPS_EXT = $(CPP_DEPS_EXT)
 	@echo TARGET_ELF = $(TARGET_ELF)
+	@echo TARGET_BIN = $(TARGET_BIN)

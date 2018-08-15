@@ -1,5 +1,4 @@
-#ifndef CORELINK_SPI_H_
-#define CORELINK_SPI_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: ARM Cortex-M.
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -42,6 +41,7 @@ namespace CoreLink {
 class SPISlaveCfg {
  public:
   SPISlaveCfg();
+  SPISlaveCfg(unsigned int aPort, unsigned int aPin);
   ~SPISlaveCfg() {}
 
   enum PROTOCOL_ENUM_TAG {
@@ -52,12 +52,12 @@ class SPISlaveCfg {
     TI     = SSI_FRF_TI,
     NMW    = SSI_FRF_NMW
   };
-  
+
   typedef enum PROTOCOL_ENUM_TAG protocol_t;
 
-  void SetProtocol(protocol_t aProtocol)     { mProtocol    = aProtocol;  }
-  void SetBitRate(unsigned int aBitRate)     { mBitRate     = aBitRate;   }
-  void SetDataWidth(unsigned int aDataWidth) { mDataWidth   = aDataWidth; }
+  void SetProtocol(protocol_t aProtocol)     { mProtocol  = aProtocol;  }
+  void SetBitRate(unsigned int aBitRate)     { mBitRate   = aBitRate;   }
+  void SetDataWidth(unsigned int aDataWidth) { mDataWidth = aDataWidth; }
   void SetCSnGPIO(unsigned long aPort, unsigned int aPin);
 
   protocol_t    GetProtocol(void)  const { return mProtocol;  }
@@ -71,7 +71,7 @@ class SPISlaveCfg {
   protocol_t    mProtocol;
   unsigned long mBitRate;
   unsigned long mDataWidth;
-  
+
   unsigned long mCSnGPIOPort;
   unsigned char mCSnGPIOPin;
 };
@@ -90,13 +90,9 @@ class SSIPinCfg {
   unsigned int mID;
 };
 
- 
+
 class SPIDev : public PeripheralDev {
  public:
-  // [MG] INSTEAD OF PASSING SSIPinCfg, MAYBE BETTER SIMPLY PASSING ID.
-  // [MG] COULD BE A DEFAULT SetPin() METHOD TO SET SSI0 ON PORTA.
-  // [MG] OR WOULDN'T PASSING A PTR TO FUNCTION BE SIMPLER TOO?
-  // [MG] SIGNATURE COULD BE void (*)(void *)
   SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef);
   ~SPIDev();
 
@@ -125,9 +121,8 @@ class SPIDev : public PeripheralDev {
  private:
   void SetCfg(SPISlaveCfg &aSPISlaveCfgRef);
 
-  SPISlaveCfg *mLastSPICfgPtr;
+  SPISlaveCfg const *mLastSPICfgPtr;
 };
-
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -141,8 +136,9 @@ class SPIDev : public PeripheralDev {
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
+} // namespace CoreLink
+
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-}
-#endif // CORELINK_SPI_H_
+

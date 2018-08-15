@@ -36,17 +36,15 @@ class SSD1329;
 
 class DisplayMgrInitEvt : public QP::QEvt {
  public:
-  DisplayMgrInitEvt(QP::QSignal     aSig,
-                    SSD1329 * const aSSD1329Ptr,
-		    unsigned int    aDisplayTime) {
-    sig          = aSig;
-    mSSD1329Ptr  = aSSD1329Ptr;
-    mDisplayTime = aDisplayTime;
+  DisplayMgrInitEvt(QP::QSignal  const aSig,
+                    unsigned int const aDisplayTime)
+    : QP::QEvt(aSig)
+    , mDisplayTime(aDisplayTime) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  SSD1329     *mSSD1329Ptr;
-  unsigned int mDisplayTime;
+  unsigned int const mDisplayTime;
 };
 
 
@@ -55,6 +53,7 @@ class DisplayMgrInitEvt : public QP::QEvt {
 //! ...here.
 class DisplayMgr_AO : public QP::QActive {
  public:
+  DisplayMgr_AO(SSD1329 &aSSD1329Ptr);
   static DisplayMgr_AO  &Instance(void);
   static QP::QActive    &AOInstance(void);
 
@@ -65,7 +64,6 @@ class DisplayMgr_AO : public QP::QActive {
                             QP::QEvt const * const aEvtPtr);
 
 private:
-  DisplayMgr_AO();
   DisplayMgr_AO(DisplayMgr_AO const &);
   void operator=(DisplayMgr_AO const &) = delete;
 
@@ -78,7 +76,7 @@ private:
 
   QP::QTimeEvt mDisplayTimerEvt;
 
-  SSD1329     *mDisplayPtr;
+  SSD1329     &mDisplay;
   bool         mIsDisplayOn;
   unsigned int mDisplayTime;
 

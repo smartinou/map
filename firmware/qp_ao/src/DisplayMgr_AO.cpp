@@ -64,21 +64,11 @@ DisplayMgr_AO *DisplayMgr_AO::mInstancePtr = nullptr;
 // *****************************************************************************
 
 DisplayMgr_AO &DisplayMgr_AO::Instance(void) {
-
-  if (nullptr == mInstancePtr) {
-    mInstancePtr = new DisplayMgr_AO();
-  }
-
   return *mInstancePtr;
 }
 
 
 QP::QActive &DisplayMgr_AO::AOInstance(void) {
-
-  if (nullptr == mInstancePtr) {
-    mInstancePtr = new DisplayMgr_AO();
-  }
-
   return static_cast<QP::QActive &>(*mInstancePtr);
 }
 
@@ -86,10 +76,10 @@ QP::QActive &DisplayMgr_AO::AOInstance(void) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-DisplayMgr_AO::DisplayMgr_AO()
+DisplayMgr_AO::DisplayMgr_AO(SSD1329 &aSSD1329Ptr)
   : QActive(Q_STATE_CAST(&DisplayMgr_AO::Initial))
   , mDisplayTimerEvt(this, SIG_DISPLAY_TIMEOUT, 0U)
-  , mDisplayPtr(nullptr)
+  , mDisplay(aSSD1329Ptr)
   , mIsDisplayOn(false)
   , mDisplayTime(0) {
   // Ctor body intentionally left empty.
@@ -101,11 +91,23 @@ QP::QState DisplayMgr_AO::Initial(DisplayMgr_AO  * const me,  //aMePtr,
 
   DisplayMgrInitEvt const * const lInitEvtPtr = static_cast<DisplayMgrInitEvt const * const>(e);
 
-  me->mDisplayPtr  = lInitEvtPtr->mSSD1329Ptr;
   me->mDisplayTime = lInitEvtPtr->mDisplayTime;
 
   // Subscribe to signals if any.
   me->subscribe(SIG_DISPLAY_TEXT);
+
+  // Object dictionary for DisplayMgr_AO object.
+  static DisplayMgr_AO const * const sDisplayMgrAOPtr = reinterpret_cast<DisplayMgr_AO const * const>(me);
+  QS_OBJ_DICTIONARY(sDisplayMgrAOPtr);
+  QS_OBJ_DICTIONARY(&sDisplayMgrAOPtr->mDisplayTimerEvt);
+
+  // Function dictionaries for DisplayMgr_AO state handlers.
+  QS_FUN_DICTIONARY(&DisplayMgr_AO::Running);
+
+  // Locally consumed signals.
+  QS_SIG_DICTIONARY(SIG_DISPLAY_TEXT,    sDisplayMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_DISPLAY_TIMEOUT, sDisplayMgrAOPtr);
+  QS_SIG_DICTIONARY(SIG_DISPLAY_REFRESH, sDisplayMgrAOPtr);
 
   return Q_TRAN(&DisplayMgr_AO::Running);
 }
@@ -145,7 +147,7 @@ QP::QState DisplayMgr_AO::Running(DisplayMgr_AO  * const me,  //aMePtr,
 
 
 void DisplayMgr_AO::DisplayInit(DisplayMgr_AO * const me) {
-  me->mDisplayPtr->Init();
+  me->mDisplay.Init();
   me->mIsDisplayOn = false;
 }
 
@@ -155,7 +157,7 @@ void DisplayMgr_AO::DisplayText(DisplayMgr_AO  * const me,
 
   DisplayTextEvt const * const lTextEvtPtr = static_cast<DisplayTextEvt const * const>(e);
   me->DisplayOn(me);
-  me->mDisplayPtr->DrawStr(&lTextEvtPtr->mStr[0],
+  me->mDisplay.DrawStr(&lTextEvtPtr->mStr[0],
                            lTextEvtPtr->mPosX,
                            lTextEvtPtr->mPosY,
                            lTextEvtPtr->mGreyLvl);
@@ -167,7 +169,7 @@ void DisplayMgr_AO::DisplayOn(DisplayMgr_AO * const me) {
   me->mDisplayTimerEvt.rearm(me->mDisplayTime * BSP_TICKS_PER_SEC);
   if (!me->mIsDisplayOn) {
     me->mIsDisplayOn = true;
-    me->mDisplayPtr->DisplayOn();
+    me->mDisplay.DisplayOn();
   }
 }
 
@@ -175,7 +177,7 @@ void DisplayMgr_AO::DisplayOn(DisplayMgr_AO * const me) {
 void DisplayMgr_AO::DisplayOff(DisplayMgr_AO * const me) {
   if (me->mIsDisplayOn) {
     me->mIsDisplayOn = false;
-    me->mDisplayPtr->DisplayOff();
+    me->mDisplay.DisplayOff();
   }
 }
 

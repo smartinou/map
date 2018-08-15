@@ -24,7 +24,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 #define RTCC_DBG
-//#undef RTCC_DBG
+#undef RTCC_DBG
 
 
 // Standard Library.
@@ -34,7 +34,7 @@
 #include "hw_types.h"
 #include "gpio.h"
 #include "interrupt.h"
-#ifdef RTCC_DBG
+#if defined(RTCC_DBG) && !defined(Q_SPY)
 #include "uartstdio.h"
 #endif // RTCC_DBG
 
@@ -50,6 +50,7 @@
 #include "Time.h"
 
 // This project.
+#include "Logger.h"
 #include "RTCC_AO.h"
 #include "RTCC_Evt.h"
 #include "BSP.h"
@@ -78,6 +79,8 @@ Q_DEFINE_THIS_FILE
 RTCC_AO *RTCC_AO::mInstancePtr = nullptr;
 uint8_t *RTCC_AO::mNVMemBuf    = nullptr;
 
+static char const sLogCategory[] = "RTCC";
+
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
@@ -99,7 +102,7 @@ RTCC_AO::RTCC_AO() :
 
 void RTCC_AO::ISRCallback(void) {
   // Static event.
-  static QP::QEvt const sRTCCAlarmIntEvt = { SIG_RTCC_INTERRUPT, 0U, 0U };
+  static QP::QEvt const sRTCCAlarmIntEvt(SIG_RTCC_INTERRUPT);
   mDS3234Ptr->ISRCallback();
 
   // Signal to AO that RTCC generated an interrupt.
@@ -150,6 +153,27 @@ QP::QState RTCC_AO::Initial(RTCC_AO        * const me,  //aMePtr,
   lResult = InitInterrupt(me, e);
 
   (void)lResult;
+
+  // Set logging category.
+  LOGGER.AddCategory(SIG_RTCC_LOG, &sLogCategory[0]);
+
+  // Object dictionary for RTCC_AO object.
+  static RTCC_AO const * const sRTCCAOPtr = reinterpret_cast<RTCC_AO const * const>(me);
+  QS_OBJ_DICTIONARY(sRTCCAOPtr);
+
+  // Function dictionaries for RTCC_AO state handlers.
+  QS_FUN_DICTIONARY(&RTCC_AO::Initial);
+  QS_FUN_DICTIONARY(&RTCC_AO::Running);
+
+  // Locally consumed signals.
+  QS_SIG_DICTIONARY(SIG_RTCC_INTERRUPT,      sRTCCAOPtr);
+  QS_SIG_DICTIONARY(SIG_RTCC_SAVE_TO_NV_MEM, sRTCCAOPtr);
+  QS_SIG_DICTIONARY(SIG_RTCC_SET_TIME,       sRTCCAOPtr);
+  QS_SIG_DICTIONARY(SIG_RTCC_SET_DATE,       sRTCCAOPtr);
+
+  // Published signals.
+  QS_SIG_DICTIONARY(SIG_RTCC_TIME_TICK_ALARM,      nullptr);
+  QS_SIG_DICTIONARY(SIG_RTCC_CALENDAR_EVENT_ALARM, nullptr);
 
   return Q_TRAN(&RTCC_AO::Running);
 }
@@ -289,7 +313,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
     me->mDS3234Ptr->GetTimeAndDate(me->mTime, me->mDate);
     me->mTemperature = me->mDS3234Ptr->GetTemperature();
     me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_1);
-#ifdef RTCC_DBG
+#if defined(RTCC_DBG) && !defined(Q_SPY)
     if ((0 == me->mTime.GetMinutes()) && (0 == me->mTime.GetSeconds())) {
       UARTprintf("\nH\n");
     } else if (0 == me->mTime.GetSeconds()){
@@ -300,23 +324,26 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
 #endif // RTCC_DBG
 
     // Publish Tick Alarm Event.
-    RTCCTimeDateEvt *lTickAlarmEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_TIME_TICK_ALARM);
-    lTickAlarmEvtPtr->mTime = me->mTime;
-    lTickAlarmEvtPtr->mDate = me->mDate;
-    QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTickAlarmEvtPtr), me);
+    RTCCTimeDateEvt * const lTickAlarmEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                                     SIG_RTCC_TIME_TICK_ALARM,
+                                                     me->mTime,
+                                                     me->mDate);
+    QP::QF::PUBLISH(lTickAlarmEvtPtr, me);
 
     if ((DS3234::AF2  & me->mDS3234Ptr->GetStatus()) &&
         (DS3234::AEI2 & me->mDS3234Ptr->GetCtrl())) {
       // Got a calendar event alarm: create event.
       // Set next calendar alarm event.
-#ifdef RTCC_DBG
+#if defined(RTCC_DBG) && !defined(Q_SPY)
       UARTprintf("A");
 #endif // RTCC_DBG
+      LOG_INFO(&sLogCategory[0], "Calendar event.");
       me->mDS3234Ptr->ClrAlarmFlag(DS3234::ALARM_ID::ALARM_ID_2);
-      RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt, SIG_RTCC_CALENDAR_EVENT_ALARM);
-      lCalendarEvtPtr->mTime = me->mTime;
-      lCalendarEvtPtr->mDate = me->mDate;
-      QP::QF::PUBLISH(static_cast<QP::QEvt *>(lCalendarEvtPtr), me);
+      RTCCTimeDateEvt * const lCalendarEvtPtr = Q_NEW(RTCCTimeDateEvt,
+                                                      SIG_RTCC_CALENDAR_EVENT_ALARM,
+                                                      me->mTime,
+                                                      me->mDate);
+      QP::QF::PUBLISH(lCalendarEvtPtr, me);
 
       SetNextCalendarEvt(me);
     }
@@ -334,6 +361,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
   }
 
   case SIG_RTCC_SET_TIME: {
+    LOG_INFO(&sLogCategory[0], "New time set.");
     RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
     me->mDS3234Ptr->WrTime(lSetEvtPtr->mTime);
     SetNextCalendarEvt(me);
@@ -341,6 +369,7 @@ QP::QState RTCC_AO::Running(RTCC_AO        * const me,  //aMePtr,
   }
 
   case SIG_RTCC_SET_DATE: {
+    LOG_INFO(&sLogCategory[0], "New date set.");
     RTCCTimeDateEvt const * const lSetEvtPtr = static_cast<RTCCTimeDateEvt const * const>(e);
     me->mDS3234Ptr->WrDate(lSetEvtPtr->mDate);
     SetNextCalendarEvt(me);

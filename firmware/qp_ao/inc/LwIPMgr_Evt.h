@@ -1,5 +1,4 @@
-#ifndef LWIP_MGR_EVT_H_
-#define LWIP_MGR_EVT_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Active Object Library
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2017-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -39,18 +38,18 @@ class NetIFRec;
 // Class definitions.
 class LwIPInitEvt : public QP::QEvt {
  public:
-  LwIPInitEvt(QP::QSignal aSig,
-              NetIFRec   *aNetIFRecPtr,
-              void      (*aCallbackInit)(void)
-	      ) {
-    sig           = aSig;
-    mNetIFRecPtr  = aNetIFRecPtr;
-    mCallbackInit = aCallbackInit;
+  LwIPInitEvt(QP::QSignal const aSig,
+              NetIFRec  * const aNetIFRecPtr,
+              void     (* const aCallbackInit)(void))
+    : QP::QEvt(aSig)
+    , mNetIFRecPtr(aNetIFRecPtr)
+    , mCallbackInit(aCallbackInit) {
+    // Ctor body left intentionally empty.
   }
 
  public:
-  NetIFRec   *mNetIFRecPtr;
-  void      (*mCallbackInit)(void);
+  NetIFRec  * const mNetIFRecPtr;
+  void     (* const mCallbackInit)(void);
 };
 
 // ******************************************************************************
@@ -68,4 +67,3 @@ class LwIPInitEvt : public QP::QEvt {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // LWIP_MGR_EVT_H_

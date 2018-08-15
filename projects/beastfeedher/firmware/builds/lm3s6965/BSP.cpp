@@ -30,7 +30,8 @@
 #include "hw_types.h"
 #include "hw_ints.h"
 #include "systick.h"
-#include "uartstdio.h"
+#include "uart.h"
+//#include "uartstdio.h"
 
 #include "debug.h"
 #include "gpio.h"
@@ -43,10 +44,15 @@
 
 // Drivers Library.
 #include "DS3234.h"
+#include "SDC.h"
 #include "SSD1329.h"
 
 // Corelink Library.
 #include "SPI.h"
+
+// FatFS.
+#include "diskio.h"
+#include "ff.h"
 
 // This application.
 #include "BFHMgr_AO.h"
@@ -64,26 +70,47 @@ Q_DEFINE_THIS_FILE
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!! CAUTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Assign a priority to EVERY ISR explicitly by calling NVIC_SetPriority().
 // DO NOT LEAVE THE ISR PRIORITIES AT THE DEFAULT VALUE!
-//
-enum KernelUnawareISRs { // see NOTE00
-    // ...
-    MAX_KERNEL_UNAWARE_CMSIS_PRI  // keep always last
+// See NOTE00
+enum KernelUnawareISRs {
+  UART0_PRIO,
+  // ...
+  // Keep always last.
+  MAX_KERNEL_UNAWARE_CMSIS_PRI
 };
 
-// "kernel-unaware" interrupts can't overlap "kernel-aware" interrupts
+
+// "kernel-unaware" interrupts can't overlap "kernel-aware" interrupts.
 Q_ASSERT_COMPILE(MAX_KERNEL_UNAWARE_CMSIS_PRI <= QF_AWARE_ISR_CMSIS_PRI);
-#if 1
+
+// See NOTE00.
 enum KernelAwareISRs {
-    SYSTICK_PRIO = QF_AWARE_ISR_CMSIS_PRI, // see NOTE00
-    GPIOPORTA_PRIO,
-    GPIOPORTE_PRIO,
-    GPIOPORTF_PRIO,
-    // ...
-    MAX_KERNEL_AWARE_CMSIS_PRI // keep always last
+  SYSTICK_PRIO = QF_AWARE_ISR_CMSIS_PRI,
+  GPIOPORTA_PRIO,
+  GPIOPORTE_PRIO,
+  GPIOPORTF_PRIO,
+  // ...
+  // Keep always last.
+  MAX_KERNEL_AWARE_CMSIS_PRI
 };
-// "kernel-aware" interrupts should not overlap the PendSV priority
+
+// "kernel-aware" interrupts should not overlap the PendSV priority.
 Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
-#endif
+
+
+
+#ifdef Q_SPY
+
+  QP::QSTimeCtr QS_tickTime_;
+  QP::QSTimeCtr QS_tickPeriod_;
+
+  // event-source identifiers used for tracing
+  static uint8_t const sSysTick_Handler      = 0U;
+  //static uint8_t const sGPIOPortA_IRQHandler = 0U;
+
+  #define UART_BAUD_RATE      115200U
+  #define UART_TXFIFO_DEPTH   16U
+
+#endif // Q_SPY
 
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -157,9 +184,16 @@ static struct SSIGPIO const sSSIGPIOs = {
   GPIO_PIN_5  // Tx.
 };
 
+// SDC GPIOs.
+static struct GPIO const sSDCCsGPIO = {GPIO_PORTD_BASE, GPIO_PIN_0};
+static SDC *sDrive0Ptr = nullptr;
+
 // UART0 GPIOs.
 static struct GPIO const sU0RxGPIO = {GPIO_PORTA_BASE, GPIO_PIN_0};
 static struct GPIO const sU0TxGPIO = {GPIO_PORTA_BASE, GPIO_PIN_1};
+
+// FatFS.
+static FATFS sFatFS = {0};
 
 // RTCC GPIOs.
 GPIOs * const BSP_gRTCCCSnGPIOPtr = new GPIOs(GPIO_PORTA_BASE, GPIO_PIN_7);
@@ -201,8 +235,32 @@ void BSP_Init(void) {
   // Debug UART port.
   SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
   GPIOPinTypeUART(sU0RxGPIO.mPort, sU0RxGPIO.mPin | sU0TxGPIO.mPin);
-  UARTStdioInit(0);
-  UARTprintf("Hello!\n");
+  //UARTStdioInit(0);
+  // Enable UART0:
+  // @115200, 8-N-1.
+  // Interrupt on rx FIFO half-full.
+  // UART interrupts: rx and rx-to.
+  // Flush the buffers.
+  UARTConfigSetExpClk(UART0_BASE,
+                      SysCtlClockGet(),
+                      115200,
+                      (UART_CONFIG_PAR_NONE
+                       | UART_CONFIG_STOP_ONE
+                       | UART_CONFIG_WLEN_8));
+  UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);
+  UARTEnable(UART0_BASE);
+
+  // Enable interrupts.
+  UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
+  UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+  IntEnable(INT_UART0);
+
+  // Initialize the QS software tracing.
+  if (0U == QS_INIT(nullptr)) {
+    Q_ERROR();
+  }
+  QS_OBJ_DICTIONARY(&sSysTick_Handler);
+  //QS_OBJ_DICTIONARY(&sGPIOPortA_IRQHandler);
 }
 
 
@@ -242,6 +300,26 @@ SSD1329 *BSP_InitOLEDDisplay(void) {
                                      128,
                                      96);
   return lSSD1329Ptr;
+}
+
+
+bool BSP_InitFS(void) {
+
+  CoreLink::SPISlaveCfg * const lSDCSlaveCfgPtr = new CoreLink::SPISlaveCfg();
+
+  lSDCSlaveCfgPtr->SetProtocol(CoreLink::SPISlaveCfg::MOTO_0);
+  lSDCSlaveCfgPtr->SetBitRate(400000);
+  lSDCSlaveCfgPtr->SetDataWidth(8);
+  lSDCSlaveCfgPtr->SetCSnGPIO(sSDCCsGPIO.mPort, sSDCCsGPIO.mPin);
+
+  sDrive0Ptr = new SDC(0, *sSPIDevPtr, *lSDCSlaveCfgPtr);
+
+  FRESULT lResult = f_mount(&sFatFS, "", 0);
+  if (FR_OK != lResult) {
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -285,6 +363,8 @@ void QP::QF::onStartup(void) {
   IntPrioritySet(INT_GPIOF, 0x60); //GPIOPORTF_PRIO);
   IntPrioritySet(INT_ETH, 0x60);
 
+  NVIC_SetPriority(UART0_IRQn, UART0_PRIO);
+
   // Init user LED.
   // Init Ethernet LEDs.
   UserLEDInit();
@@ -308,6 +388,11 @@ void QP::QF::onStartup(void) {
   sTimedFeedButtonPtr->EnableInt();
 
   sSelectButtonPtr->EnableInt();
+
+#ifdef Q_SPY
+  // UART0 interrupt used for QS-RX.
+  NVIC_EnableIRQ(UART0_IRQn);
+#endif // Q_SPY
 }
 
 //............................................................................
@@ -315,28 +400,138 @@ void QP::QF::onStartup(void) {
 void QP::QV::onIdle(void) {
 
   // Toggle the user LED, ON then OFF.
-  QF_INT_DISABLE();
   GPIOPinWrite(sUserLEDGPIO.mPort,
                sUserLEDGPIO.mPin,
                sUserLEDGPIO.mPin);
   GPIOPinWrite(sUserLEDGPIO.mPort,
                sUserLEDGPIO.mPin,
                0);
+
+#ifdef Q_SPY
   QF_INT_ENABLE();
 
-#if 0
-    // Put the CPU and peripherals to the low-power mode.
-    // you might need to customize the clock management for your application,
-    // see the datasheet for your particular Cortex-M3 MCU.
-    //
-    // Atomically go to sleep and enable interrupts.
-    QV_CPU_SLEEP();
-#else
-     // Just enable interrupts.
+  // Parse all the received bytes.
+  QS::rxParse();
+
+  // TX done?
+  if (UARTSpaceAvail(UART0_BASE)) {
+    // Max bytes we can accept.
+    uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
+
+    QF_INT_DISABLE();
+    // Try to get next block to transmit.
+    uint8_t const *lBlockPtr = QS::getBlock(&lFIFOLen);
     QF_INT_ENABLE();
-#endif
+
+    // Any bytes in the block?
+    while (lFIFOLen-- != 0U) {
+      // Put into the FIFO.
+      UARTCharPut(UART0_BASE, *lBlockPtr++);
+    }
+  }
+
+#elif defined NDEBUG
+  // Put the CPU and peripherals to the low-power mode.
+  // you might need to customize the clock management for your application,
+  // see the datasheet for your particular Cortex-M3 MCU.
+  //
+  // Atomically go to sleep and enable interrupts.
+  QV_CPU_SLEEP();
+#else
+  // Just enable interrupts.
+  QF_INT_ENABLE();
+#endif // Q_SPY
 }
 
+
+// QS callbacks ==============================================================
+#ifdef Q_SPY
+
+//............................................................................
+bool QP::QS::onStartup(void const *aArgPtr) {
+
+  // Buffer for Quantum Spy.
+  // Buffer for QS receive channel.
+  static uint8_t sQSTxBuf[2 * 1024];
+  static uint8_t sQSRxBuf[100];
+
+  initBuf(sQSTxBuf, sizeof(sQSTxBuf));
+  rxInitBuf(sQSRxBuf, sizeof(sQSRxBuf));
+
+  // To start timestamp at zero.
+  QS_tickPeriod_ = SystemCoreClock / BSP_TICKS_PER_SEC;
+  QS_tickTime_   = QS_tickPeriod_;
+
+  // Setup the QS filters...
+  QS_FILTER_ON(QS_QEP_STATE_ENTRY);
+  QS_FILTER_ON(QS_QEP_STATE_EXIT);
+  QS_FILTER_ON(QS_QEP_STATE_INIT);
+  QS_FILTER_ON(QS_QEP_INIT_TRAN);
+  QS_FILTER_ON(QS_QEP_INTERN_TRAN);
+  QS_FILTER_ON(QS_QEP_TRAN);
+  QS_FILTER_ON(QS_QEP_IGNORED);
+  QS_FILTER_ON(QS_QEP_DISPATCH);
+  QS_FILTER_ON(QS_QEP_UNHANDLED);
+
+  // Return success.
+  return true;
+}
+//............................................................................
+void QP::QS::onCleanup(void) {
+}
+//............................................................................
+// NOTE: invoked with interrupts DISABLED.
+QP::QSTimeCtr QP::QS::onGetTime(void) {
+  // Not set?
+  // TODO: Check if can be done via API call.
+  if ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0) {
+    return QS_tickTime_ - static_cast<QSTimeCtr>(SysTick->VAL);
+  } else {
+    // The rollover occured, but the SysTick_ISR did not run yet.
+    return QS_tickTime_ + QS_tickPeriod_
+             - static_cast<QSTimeCtr>(SysTick->VAL);
+  }
+}
+//............................................................................
+void QP::QS::onFlush(void) {
+  // Tx FIFO depth.
+  uint16_t lFIFOPtr = UART_TXFIFO_DEPTH;
+  uint8_t const *lBlockPtr = nullptr;
+
+  QF_INT_DISABLE();
+  while ((lBlockPtr = QS::getBlock(&lFIFOPtr)) != nullptr) {
+    QF_INT_ENABLE();
+    // Busy-wait until TX FIFO empty.
+    while (!UARTSpaceAvail(UART0_BASE)) {
+    }
+
+    // Any bytes in the block?
+    while (lFIFOPtr-- != 0U) {
+      // Put into the TX FIFO.
+      UARTCharPut(UART0_BASE, *lBlockPtr++);
+    }
+
+    // Re-load the Tx FIFO depth.
+    lFIFOPtr = UART_TXFIFO_DEPTH;
+    QF_INT_DISABLE();
+  }
+  QF_INT_ENABLE();
+}
+//............................................................................
+//! callback function to reset the target (to be implemented in the BSP)
+void QP::QS::onReset(void) {
+  NVIC_SystemReset();
+}
+//............................................................................
+//! callback function to execute a user command (to be implemented in BSP)
+void QP::QS::onCommand(uint8_t aCmdId, uint32_t aParam) {
+    (void)aCmdId;
+    (void)aParam;
+    //TBD
+}
+
+#endif // Q_SPY
+//--------------------------------------------------------------------------*/
 
 static void EtherLEDInit(void) {
   // GPIO for Ethernet LEDs.
@@ -375,14 +570,14 @@ void QP::QF::onCleanup(void) {
 }
 
 
-extern "C" void Q_onAssert(char const *module, int loc) {
-    //
-    // NOTE: add here your application-specific error handling
-    //
-    (void)module;
-    (void)loc;
-    //QS_ASSERTION(module, loc, static_cast<uint32_t>(10000U));
-    //NVIC_SystemReset();
+extern "C" void Q_onAssert(char const *aModuleStr, int aLocation) {
+  //
+  // NOTE: add here your application-specific error handling
+  //
+  (void)aModuleStr;
+  (void)aLocation;
+  QS_ASSERTION(aModuleStr, aLocation, static_cast<uint32_t>(10000U));
+  //NVIC_SystemReset();
 }
 
 
@@ -415,14 +610,24 @@ extern "C" {
 void SysTick_Handler(void);
 void SysTick_Handler(void) {
 
+#ifdef Q_SPY
+  {
+    // Clear SysTick_CTRL_COUNTFLAG.
+    // Account for the clock rollover.
+    uint32_t volatile lTmp = SysTick->CTRL;
+    (void)lTmp;
+    QS_tickTime_ += QS_tickPeriod_;
+  }
+#endif // Q_SPY
+
   // Call QF Tick function.
-  QP::QF::TICK_X(0U, &l_SysTick_Handler);
+  QP::QF::TICK_X(0U, &sSysTick_Handler);
 
   // Uncomment those line if need to publish every single tick.
   // Process time events for rate 0.
   // Publish to suscribers.
-  //static QP::QEvt const sTickEvt = { SIG_TIME_TICK, 0U, 0U };
-  //QP::QF::PUBLISH(&sTickEvt, &l_SysTick_Handler);
+  //static QP::QEvt const sTickEvt(SIG_TIME_TICK);
+  //QP::QF::PUBLISH(&sTickEvt, &sSysTick_Handler);
 }
 
 
@@ -451,8 +656,8 @@ void GPIOPortC_IRQHandler(void) {
   unsigned int lPin = sManualFeedGPIOPtr->GetPin();
   if (lPin & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTC_BASE, lPin);
-    static BFHManualFeedCmdEvt sOnEvt  = { SIG_FEED_MGR_MANUAL_FEED_CMD, true };
-    static BFHManualFeedCmdEvt sOffEvt = { SIG_FEED_MGR_MANUAL_FEED_CMD, false };
+    static BFHManualFeedCmdEvt sOnEvt(SIG_FEED_MGR_MANUAL_FEED_CMD, true);
+    static BFHManualFeedCmdEvt sOffEvt(SIG_FEED_MGR_MANUAL_FEED_CMD, false);
     if (Button::PRESSED == sManualFeedButtonPtr->GetGPIOPinState()) {
       BFHMgr_AO::AOInstance().POST(&sOnEvt, 0);
     } else {
@@ -474,7 +679,7 @@ void GPIOPortD_IRQHandler(void) {
     GPIOPinIntClear(GPIO_PORTD_BASE, lPin);
     // Only interested in the pin coming high.
     if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
-      static BFHTimedFeedCmdEvt sEvt = { SIG_FEED_MGR_TIMED_FEED_CMD, 0 };
+      static BFHTimedFeedCmdEvt sEvt(SIG_FEED_MGR_TIMED_FEED_CMD, 0);
       BFHMgr_AO::AOInstance().POST(&sEvt, 0);
     }
   }
@@ -492,18 +697,104 @@ void GPIOPortF_IRQHandler(void) {
   if (lPin & lIntStatus) {
     GPIOPinIntClear(GPIO_PORTF_BASE, lPin);
     // Only interested in the pin coming high.
-    if (Button::PRESSED == sTimedFeedButtonPtr->GetGPIOPinState()) {
-      static QP::QEvt sEvt = { SIG_DISPLAY_REFRESH, 0 };
+    if (Button::PRESSED == sSelectButtonPtr->GetGPIOPinState()) {
+      static QP::QEvt sEvt(SIG_DISPLAY_REFRESH);
       DisplayMgr_AO::AOInstance().POST(&sEvt, 0);
     }
   }
 }
 
 
+void UART0_IRQHandler(void);
+#ifdef Q_SPY
+// ISR for receiving bytes from the QSPY Back-End
+// NOTE: This ISR is "QF-unaware" meaning that it does not interact with
+// the QF/QK and is not disabled.
+// Such ISRs don't need to call QK_ISR_ENTRY/QK_ISR_EXIT
+// and they cannot post or publish events.
+//
+void UART0_IRQHandler(void) {
+
+  // Get the raw interrupt status.
+  // Clear the asserted interrupts.
+  unsigned long lStatus = UARTIntStatus(UART0_BASE, true);
+  UARTIntStatus(UART0_BASE, lStatus);
+
+  // While RX FIFO NOT empty.
+  while (UARTCharsAvail(UART0_BASE)) {
+    unsigned long lLongByte = UARTCharGet(UART0_BASE);
+    uint8_t lByte = static_cast<uint8_t>(lLongByte);
+    QP::QS::rxPut(lByte);
+  }
+}
+
+#else // Q_SPY
+void UART0_IRQHandler(void) {
+  // Intentional empty function body.
+}
+#endif // Q_SPY
+
+
 void Ethernet_IRQHandler(void);
 void Ethernet_IRQHandler(void) {
   ISR_Ethernet();
 }
+
+
+DSTATUS disk_initialize(BYTE pdrv) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->DiskInit();
+  } else {
+    return RES_PARERR;
+  }
+}
+
+
+DSTATUS disk_status(BYTE pdrv) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->GetDiskStatus();
+  } else {
+    return RES_PARERR;
+  }
+}
+
+
+DRESULT disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->DiskRd(buff, sector, count);
+  } else {
+    return RES_PARERR;
+  }
+}
+
+
+#if (FF_FS_READONLY == 0)
+DRESULT disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count) {
+  // Only drive 0 is supported in this application.
+  if (0 == pdrv) {
+    return sDrive0Ptr->DiskWr(buff, sector, count);
+  } else {
+    return RES_PARERR;
+  }
+}
+#endif // FF_FS_READONLY
+
+
+#if (FF_FS_READONLY == 0)
+DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff) {
+  return (DRESULT)0;
+}
+#endif // FF_FS_READONLY
+
+
+#if !FF_FS_READONLY && !FF_FS_NORTC
+DWORD get_fattime(void) {
+  return 0;
+}
+#endif
 
 } // extern C
 

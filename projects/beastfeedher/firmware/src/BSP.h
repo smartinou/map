@@ -34,6 +34,7 @@
 enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
   SIG_DUMMY = QP::Q_USER_SIG,
   SIG_TIME_TICK,
+  SIG_LOG,
 
   // RTCC signals.
   SIG_RTCC_INTERRUPT,
@@ -42,17 +43,20 @@ enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
   SIG_RTCC_SAVE_TO_NV_MEM,
   SIG_RTCC_SET_TIME,
   SIG_RTCC_SET_DATE,
+  SIG_RTCC_LOG,
 
   // Feed manager signals.
   SIG_FEED_MGR_TIMED_FEED_CMD,
   SIG_FEED_MGR_MANUAL_FEED_CMD,
   SIG_FEED_MGR_TIMEOUT,
+  SIG_FEED_MGR_LOG,
 
   // LwIP manager signals.
-  LWIP_SLOW_TICK_SIG,
-  LWIP_RX_READY_SIG,
-  LWIP_TX_READY_SIG,
-  LWIP_RX_OVERRUN_SIG,
+  SIG_LWIP_SLOW_TICK,
+  SIG_LWIP_RX_READY,
+  SIG_LWIP_TX_READY,
+  SIG_LWIP_RX_OVERRUN,
+  SIG_LWIP_MGR_LOG,
 
   // Display signals.
   SIG_DISPLAY_TIMEOUT,
@@ -99,6 +103,7 @@ void BSP_Init(void);
 
 CoreLink::SPIDev *BSP_InitSPIDev(void);
 SSD1329          *BSP_InitOLEDDisplay(void);
+bool              BSP_InitFS(void);
 
 unsigned int BSP_GPIOPortToInt(unsigned long aGPIOPort);
 

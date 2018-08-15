@@ -14,7 +14,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -64,6 +64,7 @@ extern "C" {
 #include "BSP.h"
 #include "DBRec.h"
 #include "DisplayMgr_Evt.h"
+#include "Logger.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "NetIFRec.h"
@@ -95,13 +96,15 @@ Q_DEFINE_THIS_FILE
 // The single instance of LwIPMgr_AO.
 LwIPMgr_AO *LwIPMgr_AO::mInstancePtr = nullptr;
 
+static char const sLogCategory[] = "LwIP manager";
+
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 LwIPMgr_AO::LwIPMgr_AO() :
   QActive(Q_STATE_CAST(&LwIPMgr_AO::Initial))
-  , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
+  , mSlowTickTimer(this, SIG_LWIP_SLOW_TICK, 0U)
   //, mEthDrvPtr(0)
   , mNetIFPtr(nullptr)
   , mIPAddr(IPADDR_ANY)
@@ -201,19 +204,23 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
     lCallbackInit();
   }
 
-#if 0
-  QS_OBJ_DICTIONARY(&l_lwIPMgr);
-  QS_OBJ_DICTIONARY(&l_lwIPMgr.mSlowTickTimer);
-  QS_FUN_DICTIONARY(&QP::QHsm_top);
+  // Set logging category.
+  LOGGER.AddCategory(SIG_LWIP_MGR_LOG, &sLogCategory[0]);
+
+  // Object dictionary for RTCC_AO object.
+  static LwIPMgr_AO const * const sLwIPMgrPtr = reinterpret_cast<LwIPMgr_AO const * const>(me);
+  QS_OBJ_DICTIONARY(sLwIPMgrPtr);
+  QS_OBJ_DICTIONARY(&sLwIPMgrPtr->mSlowTickTimer);
+
+  // Function dictionaries for LwIPMgr_AO state handlers.
   QS_FUN_DICTIONARY(&LwIPMgr_AO::Initial);
   QS_FUN_DICTIONARY(&LwIPMgr_AO::Running);
 
-  QS_SIG_DICTIONARY(SEND_UDP_SIG,        static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_SLOW_TICK_SIG,  static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_RX_READY_SIG,   static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_TX_READY_SIG,   static_cast<QP::QActive *>(me));
-  QS_SIG_DICTIONARY(LWIP_RX_OVERRUN_SIG, static_cast<QP::QActive *>(me));
-#endif
+  // Locally consumed signals.
+  QS_SIG_DICTIONARY(SIG_LWIP_SLOW_TICK, sLwIPMgrPtr);//static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(SIG_LWIP_RX_READY,  sLwIPMgrPtr);//static_cast<QP::QActive *>(me));
+  QS_SIG_DICTIONARY(SIG_LWIP_TX_READY,  sLwIPMgrPtr);//static_cast<QP::QActive *>(me));
+
   return Q_TRAN(&LwIPMgr_AO::Running);
 }
 
@@ -233,28 +240,33 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  case LWIP_RX_READY_SIG: {
+  case SIG_LWIP_RX_READY: {
     eth_driver_read();
     //me->mEthDrvPtr->Rd();
     return Q_HANDLED();
   }
 
-  case LWIP_TX_READY_SIG: {
+  case SIG_LWIP_TX_READY: {
     eth_driver_write();
     //me->mEthDrvPtr->Wr();
     return Q_HANDLED();
   }
 
-  case LWIP_SLOW_TICK_SIG: {
+  case SIG_LWIP_SLOW_TICK: {
     // Has IP address changed?
     if (me->mIPAddr != me->mNetIFPtr->ip_addr.addr) {
       // IP address in the network byte order.
       // Save the IP addr.
       me->mIPAddr = me->mNetIFPtr->ip_addr.addr;
       uint32_t lIPAddrNet = ntohl(me->mIPAddr);
+      LOG_INFO(&sLogCategory[0], "New IP address.");
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
-      DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt, SIG_DISPLAY_TEXT);
+      DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt,
+                                                 SIG_DISPLAY_TEXT,
+                                                 0 * 6,
+                                                 0 * 8,
+                                                 12);
       snprintf(&lTextEvtPtr->mStr[0],
                Q_DIM(lTextEvtPtr->mStr),
                "IP: %u.%u.%u.%u    ",
@@ -262,10 +274,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
                static_cast<unsigned int>((lIPAddrNet) >> 16) & 0xFF,
                static_cast<unsigned int>((lIPAddrNet) >>  8) & 0xFF,
                static_cast<unsigned int>((lIPAddrNet) >>  0) & 0xFF);
-      lTextEvtPtr->mPosX   = 0 * 6;
-      lTextEvtPtr->mPosY   = 0 * 8;
-      lTextEvtPtr->mGreyLvl = 12;
-      QP::QF::PUBLISH(static_cast<QP::QEvt *>(lTextEvtPtr), me);
+      QP::QF::PUBLISH(lTextEvtPtr, me);
     }
 
 #if LWIP_TCP
@@ -304,7 +313,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
     return Q_HANDLED();
   }
 
-  case LWIP_RX_OVERRUN_SIG: {
+  case SIG_LWIP_RX_OVERRUN: {
     LINK_STATS_INC(link.err);
     return Q_HANDLED();
   }
