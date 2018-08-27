@@ -19,7 +19,7 @@ The reasons why I wanted to do this project (beside the obvious utility to feed 
 
 ### Design Documents
 
-*  [Architecture](./bfh_architecture)
+*  [Architecture](./bfh_electronics)
 *  [Firmware](./bfh_firmware)
-*  [software])./bfh_software)
+*  [software](./bfh_software)
 
