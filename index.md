@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Welcome to Martin's Awesome Project (MAP) page. Enter my lair!
+# Welcome to Martin's Awesome Project page. Enter my lair!
 
 This is GitHub page page to describe the various projects done in that repo.
 
