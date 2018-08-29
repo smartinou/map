@@ -83,7 +83,6 @@ Cat Feed Pad is done with a momentary capacitive touch sensor from AdaFruit. It 
 The DC/Stepper motor controller breakout board is the one from AdaFruit. It can control two motors. It is build around TB6612 motor driver. Only  motor controller half 'A' is used.
 
 <img src="./images/adafruit_tb6612.jpg" alt="adafruit tb6612" height="100" width="150">
-
 <https://www.adafruit.com/product/2448>
 
 ### RTCC
@@ -92,19 +91,16 @@ The RTCC breakout board is from SparkFun. It is build on the DS3234.
 It was selected because of its accuracy (temperature compensated), alarm capabilities and its battery-backup'ed RAM. It is used by FW to store settings
 
 <img src="./images/sparkfun_ds3234.jpg" alt="sparkfun ds3234" height="100" width="150">
-
 <https://www.sparkfun.com/products/10160>
 
 ### RFID Detector
 The RFID controller from AdaFruit is installed remotely of the board using a connector.
 
 <img src="./images/adafruit_rfid.jpg" alt="adafruit rfid" height="100" width="150">
-
 <https://www.adafruit.com/product/789>
 
 ### Bluetooth Low Energy (BLE)
 The BLE board is from Adafruit. This version uses an SPI interface to communicate with the MCU.
 
 <img src="./images/adafruit_ble_spi.jpg" alt="adafruit ble" height="100" width="150">
-
 <https://www.adafruit.com/product/2633>
