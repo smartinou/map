@@ -67,8 +67,31 @@ TODO:
 ### Touch sensors
 Manual Feed Pad is done with a toggle  capacitive touch sensor from AdaFruit. It is based on AT42QT1012.
 
-![adafruit at42qt1012](./images/adafruit_at42qt1012.jpg) https://www.adafruit.com/product/1375
+<img src="./images/adafruit_at42qt1012.jpg" alt="adafruit at42qt1012" height="100" width="150">
+https://www.adafruit.com/product/1375
 
 Cat Feed Pad is done with a momentary capacitive touch sensor from AdaFruit. It is based on AT42QT1010. It is installed away from the main board, linked to it via a connector.
 
-![adafruit at42qt1010](./images/adafruit_at42qt1010.jpg) https://www.adafruit.com/?q=at42qt1010
+<img src="./images/adafruit_at42qt1010.jpg" alt="adafruit at42qt1010" height="100" width="150">
+https://www.adafruit.com/?q=at42qt1010
+
+### PWM motor controller
+The DC/Stepper motor controller breakout board is the one from AdaFruit. It can control two motors. It is build around TB6612 motor driver. Only  motor controller half 'A' is used.
+
+<img src="./images/adafruit_tb6612.jpg" alt="adafruit tb6612" height="100" width="150">
+
+### RTCC
+The RTCC breakout board is from SparkFun. It is build on the DS3234.
+
+It was selected because of its accuracy, alarm capabitlies its battery-backup'ed RAM. It is used by FW to store settings
+
+<img src="./images/sparkfun_ds3234.jpg" alt="sparkfun ds3234" height="100" width="150">
+
+https://www.sparkfun.com/products/10160
+
+### RFID Detector
+The RFID controller from AdaFruit is installed remotely of the board using a connector.
+
+<img src="./images/adafruit_rfid.jpg" alt="adafruit rfid" height="100" width="150">
+
+https://www.adafruit.com/product/789
