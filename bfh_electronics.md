@@ -59,8 +59,12 @@ The following tables show the allocated usage for each breakout connectors.
 
 ## Adapter Board
 
+An adapter board has to be build for interfacing the MCU dev board with all the various 3rd-party extension/breakout boards.
+
+![BFH board](./images/BFH.png)
+
 TODO:
-*  Schematics and construction
+*  Construction
 
 ## 3rd-Party Extension/Breakout Boards
 
