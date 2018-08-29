@@ -83,7 +83,7 @@ The DC/Stepper motor controller breakout board is the one from AdaFruit. It can 
 ### RTCC
 The RTCC breakout board is from SparkFun. It is build on the DS3234.
 
-It was selected because of its accuracy, alarm capabitlies its battery-backup'ed RAM. It is used by FW to store settings
+It was selected because of its accuracy (temperature compensated), alarm capabitlies its battery-backup'ed RAM. It is used by FW to store settings
 
 <img src="./images/sparkfun_ds3234.jpg" alt="sparkfun ds3234" height="100" width="150">
 
@@ -95,3 +95,10 @@ The RFID controller from AdaFruit is installed remotely of the board using a con
 <img src="./images/adafruit_rfid.jpg" alt="adafruit rfid" height="100" width="150">
 
 https://www.adafruit.com/product/789
+
+### Bluetooth Low Energy (BLE)
+The BLE board is from Adafruit. This version uses an SPI interface to communicate with the MCU.
+
+<img src="./images/adafruit_ble_spi.jpg" alt="adafruit ble" height="100" width="150">
+
+https://www.adafruit.com/product/2633
