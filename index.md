@@ -23,7 +23,8 @@ The reasons why I wanted to do this project (beside the obvious utility to feed 
 
 ### Design Documents
 
-*  [Architecture](./bfh_electronics)
+*  [Electronics](./bfh_electronics)
+   * [Adapter board construction](./bfh_adapter)
 *  [Firmware](./bfh_firmware)
 *  [software](./bfh_software)
 
