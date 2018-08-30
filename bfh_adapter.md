@@ -21,6 +21,8 @@ The main board is the PowerBoard-U3 (part #POWU3).
 
 I also required a small bit of StripBoard-U3 (part #STU3). I'll explain why with the pictures.
 
+<img src="./images/proto_boards.JPG" alt="bsp proto boards " height="300" width="400">
+
 ### Back Side
 
 This is a picture of the backside.
@@ -37,5 +39,27 @@ The challenge is to keep the holes spread 0.1" apart. Using male IDC connectors 
 ![seam zoomin](./images/adapter_board_seam_zoomin.JPG)
 
 ### Front Side
+
+The font side holds all the connectors, components and wire to connect each components to each other.
+
+The picture shows the strip of stripboard that is glued over the seam. With the coper side on top,
+it is possible to connect the back side traces over the seam by soldering a piece of wire between sides.
+
+After the epoxy glue dried, it was necessary to re-drill some of the wholes. This was an easy job using the proper drill bit.
+
+![front side](./images/adapter_board_front.JPG)
+
+### Populated Board
+
+This picture shows the board when populated with the majority of the components.
+
+![populated board](./images/adapter_board_with_components.JPG)
+
+*  Bottom left corner: +5V/+12V power connector; connector for cat feeding pad.
+*  Top left corner: RTCC.
+*  Center: LM3S6965-EK dev board.
+*  Top right corner: TB6612 DC motor controller.
+*  Bottom right corner: Manual feeding pad button (toggle touch sensor).
+
 
 
