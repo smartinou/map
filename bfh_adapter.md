@@ -12,7 +12,7 @@ and connectors to power and some cable harness to remote 3rd-party boards.
 I chose _BPS (Busboard Prototype Systems)_ for holding the various components and connectors.
 I just love the FR4 glass-epoxy substrate that they offer. Way better than those brown bakelite boards!
 
-[BPS web site](www.BusBoard.com)
+[BPS web site](http://www.busboard.com)
 
 *  Both boards 100 x 160mm (6.3 x 3.9"), single height (3U) Eurocard.
 *  The grid is 38 by 62 holes, drilled 0.100" on centers.
