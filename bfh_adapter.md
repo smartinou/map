@@ -27,6 +27,7 @@ I also required a small bit of StripBoard-U3 (part #STU3). I'll explain why with
 
 This is a picture of the backside.
 The board had to be cut and glued back together in order for the IDC connectors of the MCU board to fall on the right strips.
+
 I performed this operation on my table saw, with a cross-cut sled. FR4 material is cut very nicely with clean edges.
 
 The outer strips are used for ground and power rails (3.3V, 5V, 12V).
@@ -40,12 +41,14 @@ The challenge is to keep the holes spread 0.1" apart. Using male IDC connectors 
 
 ### Front Side
 
-The font side holds all the connectors, components and wire to connect each components to each other.
+The font side holds all the connectors, components and wires to connect each components to each other.
 
 The picture shows the strip of stripboard that is glued over the seam. With the coper side on top,
 it is possible to connect the back side traces over the seam by soldering a piece of wire between sides.
 
 After the epoxy glue dried, it was necessary to re-drill some of the wholes. This was an easy job using the proper drill bit.
+
+Overall, the cutting, gluing and re-drilling of the adapter board took no more than an evening! No need to say that it took way more time to solder the wiring and connectors...
 
 ![front side](./images/adapter_board_front.JPG)
 
@@ -55,11 +58,11 @@ This picture shows the board when populated with the majority of the components.
 
 ![populated board](./images/adapter_board_with_components.JPG)
 
-*  Bottom left corner: +5V/+12V power connector; connector for cat feeding pad.
-*  Top left corner: RTCC.
-*  Center: LM3S6965-EK dev board.
-*  Top right corner: TB6612 DC motor controller.
-*  Bottom right corner: Manual feeding pad button (toggle touch sensor).
+*  __Bottom left corner__: +5V/+12V power connector; connector for cat feeding pad.
+*  __Top left corner__: RTCC.
+*  __Center__: LM3S6965-EK dev board.
+*  __Top right corner__: TB6612 DC motor controller.
+*  __Bottom right corner__: Manual feeding pad button (toggle touch sensor).
 
 
 
