@@ -75,8 +75,7 @@ An adapter board has to be build for interfacing the MCU dev board with all the 
 
 ![BFH board](./images/BFH.png)
 
-TODO:
-*  Construction
+[Adapter board construction](./bfh_adapter)
 
 ## 3rd-Party Extension/Breakout Boards
 
