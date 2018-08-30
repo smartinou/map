@@ -13,8 +13,8 @@ Based on EKI-LM3S6965 dev board (ARM Cortex-M3), now owned by TI: [link](http://
 ![lm3s6965](./images/LM3S6965.jpg)
 ![lm3s6965_kit](./images/lm3s6965_kit.jpg)
 
-    > __Not recommended for new designs__
-    >
+ __Not recommended for new designs!!!__
+ 
     > This MCU is obsoleted and not recommended for new designs.
     >
     > This board was chosen because I had one sleeping on my desk.
