@@ -6,7 +6,7 @@ layout: default
 
 These pages describe the firmware architecture.
 
-*  [class diagrams](./bfh_fw_classes)
+*  [class diagrams](./bfh_class_diagrams)
 *  [state machines](./bfh_fw_sm)
 
 ## QP
