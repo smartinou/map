@@ -10,6 +10,13 @@ Class diagrams for modules, and overall applications.
 
 These are the Active Objects, derived from QP::Active base class from QP's framework.
 
+    > QM is a GUI modeling tool that it used to draw UML state diagrams,
+    > and generates code that represent the state machine.
+    > When used so, the Active Objects are derived from QP::QMActive.
+    >
+    > In this project, I coded the Active Objects by hand, 
+    > so they are derived from QP::QActive.
+
 ### RTCC AO
 
 This is the Active Object for the Real-Time Clock and Calendar (RTCC).
