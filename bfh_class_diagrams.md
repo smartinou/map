@@ -36,7 +36,13 @@ This AO manages all events sent to the display.
 
 This is a collection of classes to handle database records.
 
-### DBRec
+![db class diagram](./images/db_interfaces_and_classes.png)
+
+IDB is the main interfaces for all concrete classes.
+*  DBRec is the concrete class used to derived specific record objects.
+*  DB is a class used to hold a list of records.
+
+### Derived DBRec
 
 An abstract class that provides an interface to implement for each derived DB rec.
 
