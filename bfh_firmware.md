@@ -31,6 +31,7 @@ I was more and more convinced I had to try this on a specific project.
 
 Later on I bought the 2nd edition of the book. QP framework never quite left my mind since the day I first learned about it,
 waiting for the proper opportunity to use it in my work.
+
 Unfortunately, this never happened. Somehow, there's never time to experiment with new development methods,
 and the only way to sell such paradigm change to management is to develop something on personal time and try to sell it
 once done.
@@ -55,5 +56,9 @@ so much that there's an [application note](https://www.state-machine.com/doc/AN_
 LwIP is actively maintained. It's very well suited to embedded development with its small footprint.
 It is hosted at: [http://savannah.nongnu.org/projects/lwip/](http://savannah.nongnu.org/projects/lwip/)
 
-### FatFS
+## FatFS
+
+FatFS is an open-source FAT-based file system.
+
+It is used in this project to write logging files onto a micro SD Card.
 
