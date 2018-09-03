@@ -26,5 +26,7 @@ The reasons why I wanted to do this project (beside the obvious utility to feed 
 *  [Electronics](./bfh_electronics)
    * [Adapter board construction](./bfh_adapter)
 *  [Firmware](./bfh_firmware)
+   * [class diagrams](./bfh_class_diagrams)
+   * [state machines](./bfh_state_machines)
 *  [software](./bfh_software)
 
