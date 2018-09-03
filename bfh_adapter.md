@@ -4,7 +4,7 @@ layout: default
 
 # Adapter Board
 
-And adapter board is required to host the main MCU development board, all the 3rd-party boards, \
+An adapter board is required to host the main MCU development board, all the 3rd-party boards,
 and connectors to power and some cable harness to remote 3rd-party boards.
 
 ## Construction
