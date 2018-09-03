@@ -65,7 +65,7 @@ The state machine responsible for handling the various feeding and alarm events.
 
 ### Diagram
 
-![bfh_ao_sm](./images/bfh_manager_ao_state_machine.png)
+![bfh_mgr_ao_sm](./images/bfh_manager_ao_state_machine.png)
 
 ### Signal List
 
@@ -76,3 +76,20 @@ The state machine responsible for handling the various feeding and alarm events.
 | SIG_FEED_MGR_TIMED_FEED_CMD | In | Feeding time | Triggers a timed feeding. From Pet Touch Pad or other. |
 | SIG_FEED_MGR_TIMEOUT | In | None | Feeding timeout, Maximum security feeding timeout or debouncing timeout. |
 
+## DisplayMgr_AO
+
+The display manager's AO job is to answer text events and display them on the OLED display.
+
+The message display time is also managed by this AOto avoid wearing off the display.
+
+### Diagram
+
+![display_mgr_ao_sm](./images/display_manager_ao_state_machine.png)
+
+### Signal List
+
+| Signal Name | Direction | Parameter | Comments |
+|:------------|:----------|:----------|:---------|
+| SIG_DISPLAY_TEXT | In | Text | string to display. Triggers a 5s-time delay to keep the OLED display on. |
+| SIG_DISPLAY_TIMEOUT | In | None | Turn the OLED display off to save matrix. |
+| SIG_DISPLAY_REFRESH | In | None | Turn the OLED display on back again for a timed period. |
