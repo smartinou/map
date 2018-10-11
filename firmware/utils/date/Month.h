@@ -1,10 +1,9 @@
-#ifndef MONTH_H_
-#define MONTH_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils.
 //
-// Module: Module in the larger project scope.
+// Module: Month class.
 //
 // *******************************************************************************
 
@@ -12,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -58,13 +56,18 @@ class Month : public Limit {
  public:
   explicit Month(unsigned int aMonth);
   explicit Month(Name aMonthName = Name::January);
+  ~Month() {}
 
-  Name GetName(void) const;
+  unsigned int Get(void) const override;
+  Name ToName(void) const;
 
   static unsigned int NameToUI(Name aMonthName);
   static Name         UIToName(unsigned int aMonth);
 
  private:
+  // Disable default and copy ctor.
+  //Month();
+  Month(const Month &) = delete;
 };
 
 // ******************************************************************************
@@ -82,4 +85,3 @@ class Month : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // MONTH_H_
