@@ -1,7 +1,7 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Utils.
+// Project: Utils\Date.
 //
 // Module: Month class.
 //
@@ -34,7 +34,8 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class Month : public Limit {
+class Month
+  : public Limit {
  public:
   enum class Name : unsigned int {
     January = 1,

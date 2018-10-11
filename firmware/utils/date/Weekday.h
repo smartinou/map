@@ -1,7 +1,7 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Utils.
+// Project: Utils\Date.
 //
 // Module: Weekday class.
 //
@@ -34,7 +34,8 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class Weekday : public Limit {
+class Weekday
+  : public Limit {
  public:
   enum class Name : unsigned int {
     Sunday    = 1,
