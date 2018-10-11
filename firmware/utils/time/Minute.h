@@ -1,21 +1,19 @@
-#ifndef MINUTE_H_
-#define MINUTE_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils\Time.
 //
-// Module: Module in the larger project scope.
+// Module: Minute class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple minute class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,16 +31,13 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Minute : public Limit {
+//! \brief Minute class.
+class Minute
+  : public Limit {
  public:
   explicit Minute(unsigned int aVal = 0)
     : Limit(0, 59, aVal) {}
   ~Minute() {}
-
- private:
 };
 
 // ******************************************************************************
@@ -60,4 +55,3 @@ class Minute : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // MINUTE_H_
