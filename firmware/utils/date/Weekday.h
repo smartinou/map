@@ -8,8 +8,8 @@
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Simple weekday class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
@@ -31,9 +31,7 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Weekday class.
 class Weekday
   : public Limit {
  public:

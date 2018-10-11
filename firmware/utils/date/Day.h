@@ -8,8 +8,8 @@
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Simple day class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
@@ -31,9 +31,7 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Day class.
 class Day
   : public Limit {
  public:

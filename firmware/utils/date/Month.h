@@ -8,8 +8,8 @@
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Simple month class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
@@ -31,9 +31,7 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Month class.
 class Month
   : public Limit {
  public:
