@@ -1,10 +1,9 @@
-#ifndef WEEKDAY_H_
-#define WEEKDAY_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils.
 //
-// Module: Module in the larger project scope.
+// Module: Weekday class.
 //
 // *******************************************************************************
 
@@ -12,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -51,17 +49,15 @@ class Weekday : public Limit {
   };
 
  public:
-  explicit Weekday(unsigned int aVal)
-    : Limit(1, 7, aVal) {}
+  explicit Weekday(unsigned int aVal);
   explicit Weekday(Name aWeekdayName = Name::Sunday);
   ~Weekday() {}
 
-  Name GetName(void) const;
+  unsigned int Get(void) const;
+  Weekday ToName(void) const;
 
   static unsigned int NameToUI(Name aWeekdayName);
   static Name         UIToName(unsigned int aWeekday);
-
- private:
 };
 
 // ******************************************************************************
@@ -79,4 +75,3 @@ class Weekday : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // WEEKDAY_H_

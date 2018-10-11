@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
-// Project: <Larger project scope.>
+// Project: Utils.
 //
-// Module: <Module in the larger project scope.>
+// Module: Weekday class.
 //
 // *****************************************************************************
 
@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,15 +42,28 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
+Weekday(unsigned int aVal)
+  : Limit(Weekday::NameToUI(Name::Min),
+          Weekday::NameToUI(Name::Max),
+          aVal) {
+  // Ctor body left intentionally empty.
+}
+
+
 Weekday::Weekday(Name aWeekdayName)
-  : Limit(1, 7) {
+  : Limit(Weekday::NameToUI(Name::Min),
+          Weekday::NameToUI(Name::Max)) {
 
   unsigned int lWeekdayToUI = NameToUI(aWeekdayName);
   Set(lWeekdayToUI);
 }
 
+unsigned int Weekday::Get(void) const {
+  return Get();
+}
 
-Weekday::Name Weekday::GetName(void) const {
+
+Weekday Weekday::ToName(void) const {
 
   unsigned int lWeekdayUI = Get();
   return UIToName(lWeekdayUI);
@@ -58,34 +71,13 @@ Weekday::Name Weekday::GetName(void) const {
 
 
 unsigned int Weekday::NameToUI(Name aWeekdayName) {
-
-  unsigned int lWeekdayUI = 0;
-  switch (aWeekdayName) {
-  case Name::Sunday:    lWeekdayUI = 1; break;
-  case Name::Monday:    lWeekdayUI = 2; break;
-  case Name::Tuesday:   lWeekdayUI = 3; break;
-  case Name::Wednesday: lWeekdayUI = 4; break;
-  case Name::Thursday:  lWeekdayUI = 5; break;
-  case Name::Friday:    lWeekdayUI = 6; break;
-  case Name::Saturday:  lWeekdayUI = 7; break;
-  }
-
+  unsigned int lWeekdayUI = static_cast<unsigned int>(aWeekdayName);
   return lWeekdayUI;
 }
 
 
 Weekday::Name Weekday::UIToName(unsigned int aWeekday) {
-
-  switch (aWeekday) {
-  default:
-  case 1: return Name::Sunday;    break;
-  case 2: return Name::Monday;    break;
-  case 3: return Name::Tuesday;   break;
-  case 4: return Name::Wednesday; break;
-  case 5: return Name::Thursday;  break;
-  case 6: return Name::Friday;    break;
-  case 7: return Name::Saturday;  break;
-  }
+  return static_cast<Name>(aWeekday);
 }
 
 // *****************************************************************************
