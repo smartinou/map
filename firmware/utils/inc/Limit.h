@@ -8,8 +8,8 @@
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Limit class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
@@ -29,7 +29,7 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
+//! \brief Limit class.
 class Limit {
  public:
   explicit Limit(unsigned int aLowerLimit,
