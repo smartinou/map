@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
-// Project: <Larger project scope.>
+// Project: Utils.
 //
-// Module: <Module in the larger project scope.>
+// Module: Limit base class.
 //
 // *****************************************************************************
 
@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,11 +42,24 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Limit::Limit(unsigned int aLowerLimit, unsigned int aUpperLimit, unsigned int aVal)
-    : mLowerLimit(aLowerLimit),
-    mUpperLimit(aUpperLimit),
-    mVal(aVal) {
+Limit::Limit(unsigned int aLowerLimit,
+	     unsigned int aUpperLimit)
+  : mLowerLimit(aLowerLimit)
+  , mUpperLimit(aUpperLimit)
+  , mVal(aLowerLimit) {
 
+  // Ctor body left intentionally empty.
+}
+
+
+Limit::Limit(unsigned int aLowerLimit,
+	     unsigned int aUpperLimit,
+	     unsigned int aVal)
+  : mLowerLimit(aLowerLimit)
+  , mUpperLimit(aUpperLimit)
+  , mVal(aVal) {
+
+  // Ctor body left intentionally empty.
   Set(aVal);
 }
 
@@ -59,6 +72,50 @@ void Limit::Set(unsigned int aVal) {
   } else if (mUpperLimit < mVal) {
     mVal = mUpperLimit;
   }    
+}
+
+
+// Prefix ++.
+Limit& Limit::operator++ () {
+  ++mVal;
+  if (mVal > mUpperLimit) {
+    mVal = mLowerLimit;
+  }
+
+  return *this;
+}
+
+
+// Postfix ++
+Limit Limit::operator++ (int) {
+
+  // make a copy for result.
+  // Now use the prefix version to do the work.
+  // return the copy (the old) value.
+  Limit result(*this);
+  ++(*this);
+  return result;
+}
+
+Limit& Limit::operator-- () {
+  if (mVal <= mLowerLimit) {
+    mVal = mUpperLimit;
+  } else {
+    --mVal;
+  }
+
+  return *this;
+}
+
+
+Limit Limit::operator-- (int) {
+
+  // make a copy for result.
+  // Now use the prefix version to do the work.
+  // return the copy (the old) value.
+  Limit result(*this);
+  --(*this);
+  return result;
 }
 
 // *****************************************************************************

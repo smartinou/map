@@ -1,10 +1,9 @@
-#ifndef LIMIT_H_
-#define LIMIT_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Limit base class.
+// Project: Utils.
 //
-// Module: Module in the larger project scope.
+// Module: Limit base class.
 //
 // *******************************************************************************
 
@@ -12,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,21 +30,24 @@
 // ******************************************************************************
 
 //! \brief Brief description.
-//! Details follow...
-//! ...here.
 class Limit {
  public:
-  explicit Limit(unsigned int aLowerLimit, unsigned int aUpperLimit)
-    : mLowerLimit(aLowerLimit),
-    mUpperLimit(aUpperLimit),
-    mVal(aLowerLimit) {}
-
-  explicit Limit(unsigned int aLowerLimit, unsigned int aUpperLimit, unsigned int aVal);
+  explicit Limit(unsigned int aLowerLimit,
+		 unsigned int aUpperLimit);
+  explicit Limit(unsigned int aLowerLimit,
+		 unsigned int aUpperLimit,
+		 unsigned int aVal);
 
   virtual ~Limit() {};
 
   virtual unsigned int Get(void) const { return mVal; }
   virtual void Set(unsigned int mVal);
+
+  Limit& operator++ ();
+  Limit  operator++ (int);
+
+  Limit& operator-- ();
+  Limit  operator-- (int);
 
  private:
   unsigned int mLowerLimit;
@@ -69,4 +70,3 @@ class Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // LIMIT_H_
