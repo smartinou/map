@@ -1,10 +1,9 @@
-#ifndef YEAR_H_
-#define YEAR_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils.
 //
-// Module: Module in the larger project scope.
+// Module: Day class.
 //
 // *******************************************************************************
 
@@ -12,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -36,13 +34,12 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class Year : public Limit {
+class Day
+  : public Limit {
  public:
-  explicit Year(unsigned int aVal = 2000)
-    : Limit(0, 2100, aVal) {}
-  ~Year() {}
-
- private:
+  explicit Day(unsigned int aVal = 1)
+    : Limit(1, 31, aVal) {}
+  ~Day() {}
 };
 
 // ******************************************************************************
@@ -60,4 +57,3 @@ class Year : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // YEAR_H_
