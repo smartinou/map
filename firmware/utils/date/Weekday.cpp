@@ -42,7 +42,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Weekday(unsigned int aVal)
+Weekday::Weekday(unsigned int aVal)
   : Limit(Weekday::NameToUI(Name::Min),
           Weekday::NameToUI(Name::Max),
           aVal) {
@@ -63,7 +63,7 @@ unsigned int Weekday::Get(void) const {
 }
 
 
-Weekday Weekday::ToName(void) const {
+Weekday::Name Weekday::ToName(void) const {
 
   unsigned int lWeekdayUI = Get();
   return UIToName(lWeekdayUI);

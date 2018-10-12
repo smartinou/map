@@ -53,7 +53,7 @@ class Weekday
   ~Weekday() {}
 
   unsigned int Get(void) const;
-  Weekday ToName(void) const;
+  Name ToName(void) const;
 
   static unsigned int NameToUI(Name aWeekdayName);
   static Name         UIToName(unsigned int aWeekday);
