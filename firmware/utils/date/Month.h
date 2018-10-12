@@ -62,11 +62,6 @@ class Month
 
   static unsigned int NameToUI(Name aMonthName);
   static Name         UIToName(unsigned int aMonth);
-
- private:
-  // Disable default and copy ctor.
-  //Month();
-  Month(const Month &) = delete;
 };
 
 // ******************************************************************************
