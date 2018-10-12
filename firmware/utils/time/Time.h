@@ -1,17 +1,15 @@
-#ifndef TIME_H_
-#define TIME_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Utilities.
+// Project: Utilities\Time.
 //
 // Module: Time class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Class used for representation of time.
+//! \ingroup utils
 
 // ******************************************************************************
 //
@@ -35,10 +33,32 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Time {
+class ITime {
+ public:
+  virtual unsigned int GetHours(void)   const = 0;
+  virtual unsigned int GetMinutes(void) const = 0;
+  virtual unsigned int GetSeconds(void) const = 0;
+
+  virtual bool Is24H(void) const = 0;
+  virtual bool IsPM(void)  const = 0;
+};
+
+
+class ITimeBuilder
+  : public ITime {
+ public:
+  virtual void SetHours(  unsigned int aHours) = 0;
+  virtual void SetMinutes(unsigned int aMinutes) = 0;
+  virtual void SetSeconds(unsigned int aSeconds) = 0;
+
+  virtual void SetIs24H(bool aIs24H) = 0;
+  virtual void SetIsPM( bool aIsPM) = 0;
+};
+
+
+//! \brief Time class, as an aggregate of other classes.
+class Time
+  : public ITimeBuilder {
  public:
   Time();
   explicit Time(Hour   aHours,
@@ -53,6 +73,7 @@ class Time {
                 bool         aIsPM  = false);
   ~Time();
 
+  // ITime.
   unsigned int GetHours(void)   const;
   unsigned int GetMinutes(void) const;
   unsigned int GetSeconds(void) const;
@@ -60,6 +81,7 @@ class Time {
   bool Is24H(void) const;
   bool IsPM(void)  const;
 
+  // ITimeBuilder.
   void SetHours(  unsigned int aHours);
   void SetMinutes(unsigned int aMinutes);
   void SetSeconds(unsigned int aSeconds);
@@ -99,4 +121,3 @@ char const *ToStr(Time &aTime, char * const aInStr);
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // TIME_H_

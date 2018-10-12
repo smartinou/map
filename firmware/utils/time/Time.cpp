@@ -7,8 +7,8 @@
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Class used for representation of time.
+//! \ingroup utils
 
 // *****************************************************************************
 //
