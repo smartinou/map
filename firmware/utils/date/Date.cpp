@@ -7,8 +7,8 @@
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Class to represent date of the day.
+//! \ingroup utils
 
 // *****************************************************************************
 //
@@ -84,12 +84,12 @@ unsigned int Date::GetWeekday(void) const {
 
 
 Month::Name Date::GetMonthName(void) const {
-  return mMonth.GetName();
+  return mMonth.ToName();
 }
 
 
 Weekday::Name Date::GetWeekdayName(void) const {
-  return mWeekday.GetName();
+  return mWeekday.ToName();
 }
 
 
