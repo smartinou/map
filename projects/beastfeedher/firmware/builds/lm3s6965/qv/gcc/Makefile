@@ -82,7 +82,9 @@ VPATH = \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
+        $(FIRMWARE_PATH)/utils/date \
         $(FIRMWARE_PATH)/utils/src \
+        $(FIRMWARE_PATH)/utils/time \
         $(STELLARIS_LIB)/inc \
         $(QPCPP)/source \
         $(QP_PORT_DIR) \
@@ -105,7 +107,9 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
+        -I$(FIRMWARE_PATH)/utils/date \
         -I$(FIRMWARE_PATH)/utils/inc \
+        -I$(FIRMWARE_PATH)/utils/time \
         -I$(STELLARIS_LIB) \
         -I$(STELLARIS_LIB)/inc \
         -I$(STELLARIS_LIB)/driverlib \
