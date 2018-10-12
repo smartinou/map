@@ -1,21 +1,19 @@
-#ifndef DAY_H_
-#define DAY_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils.
 //
-// Module: Module in the larger project scope.
+// Module: Day class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple day class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,16 +31,13 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Day : public Limit {
+//! \brief Day class.
+class Day
+  : public Limit {
  public:
   explicit Day(unsigned int aVal = 1)
     : Limit(1, 31, aVal) {}
   ~Day() {}
-
- private:
 };
 
 // ******************************************************************************
@@ -60,4 +55,3 @@ class Day : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // DAY_H_

@@ -1,21 +1,19 @@
-#ifndef SECOND_H_
-#define SECOND_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils\Time.
 //
-// Module: Module in the larger project scope.
+// Module: Hour class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple hour class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,16 +31,13 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Second : public Limit {
+//! \brief Hour class.
+class Hour
+  : public Limit {
  public:
-  explicit Second(unsigned int aVal = 0)
-    : Limit(0, 59, aVal) {}
-  ~Second() {}
-
- private:
+  explicit Hour(unsigned int aVal = 0)
+    : Limit(0, 23, aVal) {}
+  ~Hour() {}
 };
 
 // ******************************************************************************
@@ -60,4 +55,3 @@ class Second : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // SECOND_H_

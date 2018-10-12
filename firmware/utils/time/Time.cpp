@@ -1,18 +1,18 @@
 // *****************************************************************************
 //
-// Project: <Larger project scope.>
+// Project: Utilities.
 //
-// Module: <Module in the larger project scope.>
+// Module: Time class.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Class used for representation of time.
+//! \ingroup utils
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,9 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include "Weekday.h"
+#include "stdio.h"
+
+#include "Time.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -42,50 +44,115 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Weekday::Weekday(Name aWeekdayName)
-  : Limit(1, 7) {
+Time::Time()
+  : mHours(0)
+  , mMinutes(0)
+  , mSeconds(0)
+  , mIs24H(true)
+  , mIsPM(false) {
 
-  unsigned int lWeekdayToUI = NameToUI(aWeekdayName);
-  Set(lWeekdayToUI);
+  // Ctor intentionally empty.
 }
 
 
-Weekday::Name Weekday::GetName(void) const {
+Time::Time(Hour   aHours,
+           Minute aMinutes,
+           Second aSeconds,
+           bool   aIs24H,
+           bool   aIsPM)
+  : mHours(aHours)
+  , mMinutes(aMinutes)
+  , mSeconds(aSeconds)
+  , mIs24H(aIs24H)
+  , mIsPM(aIsPM) {
 
-  unsigned int lWeekdayUI = Get();
-  return UIToName(lWeekdayUI);
+  // Ctor intentionally empty.
 }
 
 
-unsigned int Weekday::NameToUI(Name aWeekdayName) {
+Time::Time(unsigned int aHours,
+           unsigned int aMinutes,
+           unsigned int aSeconds,
+           bool         aIs24H,
+           bool         aIsPM)
+    : mHours(aHours)
+    , mMinutes(aMinutes)
+    , mSeconds(aSeconds)
+    , mIs24H(aIs24H)
+    , mIsPM(aIsPM) {
 
-  unsigned int lWeekdayUI = 0;
-  switch (aWeekdayName) {
-  case Name::Sunday:    lWeekdayUI = 1; break;
-  case Name::Monday:    lWeekdayUI = 2; break;
-  case Name::Tuesday:   lWeekdayUI = 3; break;
-  case Name::Wednesday: lWeekdayUI = 4; break;
-  case Name::Thursday:  lWeekdayUI = 5; break;
-  case Name::Friday:    lWeekdayUI = 6; break;
-  case Name::Saturday:  lWeekdayUI = 7; break;
+  // Ctor intentionally empty.
+}
+
+
+Time::~Time() {
+
+  // Dtor intentionally empty.
+}
+
+
+unsigned int Time::GetHours(void) const {
+  return mHours.Get();
+}
+
+
+unsigned int Time::GetMinutes(void) const {
+  return mMinutes.Get();
+}
+
+
+unsigned int Time::GetSeconds(void) const {
+  return mSeconds.Get();
+}
+
+
+bool Time::Is24H(void) const {
+  return mIs24H;
+}
+
+
+bool Time::IsPM(void) const {
+  return mIsPM;
+}
+
+
+void Time::SetHours(unsigned int aHours) {
+    mHours.Set(aHours);
+}
+
+
+void Time::SetMinutes(unsigned int aMinutes) {
+  mMinutes.Set(aMinutes);
+}
+
+
+void Time::SetSeconds(unsigned int aSeconds) {
+  mSeconds.Set(aSeconds);
+}
+
+
+void Time::SetIs24H(bool aIs24H) {
+  mIs24H = aIs24H;
+}
+
+
+void Time::SetIsPM(bool aIsPM) {
+  mIsPM = aIsPM;
+}
+
+
+// TimeHelper functions.
+char const *TimeHelper::ToStr(Time &aTime, char * const aInStr) {
+
+  if (aTime.Is24H()) {
+    snprintf(aInStr, 5 + 1, "%02d:%02d", aTime.GetHours(), aTime.GetMinutes());
+  } else if (aTime.IsPM()) {
+    snprintf(aInStr, 8 + 1, "%02d:%02d PM", aTime.GetHours(), aTime.GetMinutes());
+  } else {
+    snprintf(aInStr, 8 + 1, "%02d:%02d AM", aTime.GetHours(), aTime.GetMinutes());
   }
 
-  return lWeekdayUI;
-}
-
-
-Weekday::Name Weekday::UIToName(unsigned int aWeekday) {
-
-  switch (aWeekday) {
-  default:
-  case 1: return Name::Sunday;    break;
-  case 2: return Name::Monday;    break;
-  case 3: return Name::Tuesday;   break;
-  case 4: return Name::Wednesday; break;
-  case 5: return Name::Thursday;  break;
-  case 6: return Name::Friday;    break;
-  case 7: return Name::Saturday;  break;
-  }
+  return aInStr;
 }
 
 // *****************************************************************************

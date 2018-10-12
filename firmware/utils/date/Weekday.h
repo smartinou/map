@@ -1,17 +1,15 @@
-#ifndef DATE_H_
-#define DATE_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Utilities.
+// Project: Utils\Date.
 //
-// Module: Date class.
+// Module: Weekday class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple weekday class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
@@ -23,10 +21,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "Day.h"
-#include "Month.h"
-#include "Year.h"
-#include "Weekday.h"
+#include "Limit.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -36,47 +31,33 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Date {
+//! \brief Weekday class.
+class Weekday
+  : public Limit {
  public:
-  explicit Date(unsigned int  aYear    = 2000,
-                Month::Name   aMonth   = Month::Name::January,
-                unsigned int  aDate    = 1,
-                Weekday::Name aWeekday = Weekday::Name::Saturday);
-  ~Date();
+  enum class Name : unsigned int {
+    Sunday    = 1,
+    Monday    = 2,
+    Tuesday   = 3,
+    Wednesday = 4,
+    Thursday  = 5,
+    Friday    = 6,
+    Saturday  = 7,
+    Min       = Sunday,
+    Max       = Saturday,
+  };
 
-  unsigned int GetYear(void)    const;
-  unsigned int GetMonth(void)   const;
-  unsigned int GetDate(void)    const;
-  unsigned int GetWeekday(void) const;
+ public:
+  explicit Weekday(unsigned int aVal);
+  explicit Weekday(Name aWeekdayName = Name::Sunday);
+  ~Weekday() {}
 
-  Month::Name   GetMonthName(void)   const;
-  Weekday::Name GetWeekdayName(void) const;
+  unsigned int Get(void) const;
+  Name ToName(void) const;
 
-  void SetYear( unsigned int aYear);
-  void SetMonth(unsigned int aMonth);
-  void SetDate( unsigned int aDate);
-  void SetWeekday(unsigned int aWeekday);
-
-  void SetMonth(Month::Name     aMonthName);
-  void SetWeekday(Weekday::Name aWeekday);
-
- private:
-  Year    mYear;
-  Month   mMonth;
-  Day     mDate;
-  Weekday mWeekday;
+  static unsigned int NameToUI(Name aWeekdayName);
+  static Name         UIToName(unsigned int aWeekday);
 };
-
-
-// Helper functions.
-namespace DateHelper {
-
-char const *ToStr(Date &aDate, char * const aInStr);
-
-} // namespace DateHelper
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -93,4 +74,3 @@ char const *ToStr(Date &aDate, char * const aInStr);
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // DATE_H_

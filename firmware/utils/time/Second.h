@@ -1,21 +1,19 @@
-#ifndef YEAR_H_
-#define YEAR_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils\Time.
 //
-// Module: Module in the larger project scope.
+// Module: Second class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple second class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,16 +31,13 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Year : public Limit {
+//! \brief Second class.
+class Second
+  : public Limit {
  public:
-  explicit Year(unsigned int aVal = 2000)
-    : Limit(0, 2100, aVal) {}
-  ~Year() {}
-
- private:
+  explicit Second(unsigned int aVal = 0)
+    : Limit(0, 59, aVal) {}
+  ~Second() {}
 };
 
 // ******************************************************************************
@@ -60,4 +55,3 @@ class Year : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // YEAR_H_

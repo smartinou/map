@@ -2,13 +2,13 @@
 //
 // Project: Utilities.
 //
-// Module: Time class.
+// Module: Date class.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Class to represent date of the day.
+//! \ingroup utils
 
 // *****************************************************************************
 //
@@ -22,7 +22,7 @@
 
 #include "stdio.h"
 
-#include "Time.h"
+#include "Date.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -44,113 +44,98 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Time::Time()
-  : mHours(0)
-  , mMinutes(0)
-  , mSeconds(0)
-  , mIs24H(true)
-  , mIsPM(false) {
+Date::Date(unsigned int  aYear,
+           Month::Name   aMonth,
+           unsigned int  aDate,
+           Weekday::Name aWeekday)
+    : mYear(aYear)
+    , mMonth(aMonth)
+    , mDate(aDate)
+    , mWeekday(aWeekday) {
 
   // Ctor intentionally empty.
 }
 
 
-Time::Time(Hour   aHours,
-           Minute aMinutes,
-           Second aSeconds,
-           bool   aIs24H,
-           bool   aIsPM)
-  : mHours(aHours)
-  , mMinutes(aMinutes)
-  , mSeconds(aSeconds)
-  , mIs24H(aIs24H)
-  , mIsPM(aIsPM) {
-
-  // Ctor intentionally empty.
-}
-
-
-Time::Time(unsigned int aHours,
-           unsigned int aMinutes,
-           unsigned int aSeconds,
-           bool         aIs24H,
-           bool         aIsPM)
-    : mHours(aHours)
-    , mMinutes(aMinutes)
-    , mSeconds(aSeconds)
-    , mIs24H(aIs24H)
-    , mIsPM(aIsPM) {
-
-  // Ctor intentionally empty.
-}
-
-
-Time::~Time() {
+Date::~Date() {
 
   // Dtor intentionally empty.
 }
 
 
-unsigned int Time::GetHours(void) const {
-  return mHours.Get();
+unsigned int Date::GetYear(void) const {
+  return mYear.Get();
 }
 
 
-unsigned int Time::GetMinutes(void) const {
-  return mMinutes.Get();
+unsigned int Date::GetMonth(void) const {
+  return mMonth.Get();
 }
 
 
-unsigned int Time::GetSeconds(void) const {
-  return mSeconds.Get();
+unsigned int Date::GetDate(void) const {
+  return mDate.Get();
 }
 
 
-bool Time::Is24H(void) const {
-  return mIs24H;
+unsigned int Date::GetWeekday(void) const {
+  return mWeekday.Get();
 }
 
 
-bool Time::IsPM(void) const {
-  return mIsPM;
+Month::Name Date::GetMonthName(void) const {
+  return mMonth.ToName();
 }
 
 
-void Time::SetHours(unsigned int aHours) {
-    mHours.Set(aHours);
+Weekday::Name Date::GetWeekdayName(void) const {
+  return mWeekday.ToName();
 }
 
 
-void Time::SetMinutes(unsigned int aMinutes) {
-  mMinutes.Set(aMinutes);
+void Date::SetYear( unsigned int aYear) {
+  mYear.Set(aYear);
 }
 
 
-void Time::SetSeconds(unsigned int aSeconds) {
-  mSeconds.Set(aSeconds);
+void Date::SetMonth(unsigned int aMonth) {
+  mMonth.Set(aMonth);
 }
 
 
-void Time::SetIs24H(bool aIs24H) {
-  mIs24H = aIs24H;
+void Date::SetDate( unsigned int aDate) {
+  mDate.Set(aDate);
 }
 
 
-void Time::SetIsPM(bool aIsPM) {
-  mIsPM = aIsPM;
+void Date::SetWeekday(unsigned int aWeekday) {
+  mWeekday.Set(aWeekday);
+}
+
+
+void Date::SetMonth(Month::Name aMonthName) {
+
+  unsigned int lMonthUI = Month::NameToUI(aMonthName);
+  mMonth.Set(lMonthUI);
+}
+
+
+void Date::SetWeekday(Weekday::Name aWeekday) {
+
+  unsigned int lWeekdayUI = Weekday::NameToUI(aWeekday);
+  mWeekday.Set(lWeekdayUI);
 }
 
 
 // TimeHelper functions.
-char const *TimeHelper::ToStr(Time &aTime, char * const aInStr) {
+char const *DateHelper::ToStr(Date &aDate, char * const aInStr) {
 
-  if (aTime.Is24H()) {
-    snprintf(aInStr, 5 + 1, "%02d:%02d", aTime.GetHours(), aTime.GetMinutes());
-  } else if (aTime.IsPM()) {
-    snprintf(aInStr, 8 + 1, "%02d:%02d PM", aTime.GetHours(), aTime.GetMinutes());
-  } else {
-    snprintf(aInStr, 8 + 1, "%02d:%02d AM", aTime.GetHours(), aTime.GetMinutes());
-  }
+  snprintf(aInStr,
+           10 + 1,
+           "%04d-%02d-%02d",
+           aDate.GetYear(),
+           aDate.GetMonth(),
+           aDate.GetDate());
 
   return aInStr;
 }

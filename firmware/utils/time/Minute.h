@@ -1,21 +1,19 @@
-#ifndef MONTH_H_
-#define MONTH_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils\Time.
 //
-// Module: Module in the larger project scope.
+// Module: Minute class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple minute class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,38 +31,13 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Month : public Limit {
+//! \brief Minute class.
+class Minute
+  : public Limit {
  public:
-  enum class Name : unsigned int {
-    January = 1,
-    February,
-    March,
-    April,
-    May,
-    June,
-    July,
-    August,
-    September,
-    October,
-    November,
-    December,
-    Min = January,
-    Max = December
-  };
-
- public:
-  explicit Month(unsigned int aMonth);
-  explicit Month(Name aMonthName = Name::January);
-
-  Name GetName(void) const;
-
-  static unsigned int NameToUI(Name aMonthName);
-  static Name         UIToName(unsigned int aMonth);
-
- private:
+  explicit Minute(unsigned int aVal = 0)
+    : Limit(0, 59, aVal) {}
+  ~Minute() {}
 };
 
 // ******************************************************************************
@@ -82,4 +55,3 @@ class Month : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // MONTH_H_

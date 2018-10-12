@@ -1,14 +1,14 @@
 // *****************************************************************************
 //
-// Project: Utilities.
+// Project: Utils\Date.
 //
-// Module: Date class.
+// Module: Month class.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Simple month class.
+//! \ingroup utils
 
 // *****************************************************************************
 //
@@ -20,9 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include "stdio.h"
-
-#include "Date.h"
+#include "Month.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -44,100 +42,43 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Date::Date(unsigned int  aYear,
-           Month::Name   aMonth,
-           unsigned int  aDate,
-           Weekday::Name aWeekday)
-    : mYear(aYear)
-    , mMonth(aMonth)
-    , mDate(aDate)
-    , mWeekday(aWeekday) {
-
-  // Ctor intentionally empty.
+Month::Month(unsigned int aMonth)
+  : Limit(Month::NameToUI(Name::Min),
+          Month::NameToUI(Name::Max),
+          aMonth) {
+  // Ctor body left intentionally empty.
 }
 
 
-Date::~Date() {
+Month::Month(Month::Name aMonthName)
+  : Limit(Month::NameToUI(Name::Min),
+          Month::NameToUI(Name::Max)) {
 
-  // Dtor intentionally empty.
+  unsigned int lMonthUI = NameToUI(aMonthName);
+  Set(lMonthUI);
 }
 
 
-unsigned int Date::GetYear(void) const {
-  return mYear.Get();
+unsigned int Month::Get(void) const {
+  return Limit::Get();
 }
 
 
-unsigned int Date::GetMonth(void) const {
-  return mMonth.Get();
+Month::Name Month::ToName(void) const {
+
+  unsigned int lMonthUI = Limit::Get();
+  return UIToName(lMonthUI);
 }
 
 
-unsigned int Date::GetDate(void) const {
-  return mDate.Get();
+unsigned int Month::NameToUI(Name aMonthName) {
+  unsigned int lMonthUI = static_cast<unsigned int>(aMonthName);
+  return lMonthUI;
 }
 
 
-unsigned int Date::GetWeekday(void) const {
-  return mWeekday.Get();
-}
-
-
-Month::Name Date::GetMonthName(void) const {
-  return mMonth.GetName();
-}
-
-
-Weekday::Name Date::GetWeekdayName(void) const {
-  return mWeekday.GetName();
-}
-
-
-void Date::SetYear( unsigned int aYear) {
-  mYear.Set(aYear);
-}
-
-
-void Date::SetMonth(unsigned int aMonth) {
-  mMonth.Set(aMonth);
-}
-
-
-void Date::SetDate( unsigned int aDate) {
-  mDate.Set(aDate);
-}
-
-
-void Date::SetWeekday(unsigned int aWeekday) {
-  mWeekday.Set(aWeekday);
-}
-
-
-void Date::SetMonth(Month::Name aMonthName) {
-
-  unsigned int lMonthUI = Month::NameToUI(aMonthName);
-  mMonth.Set(lMonthUI);
-}
-
-
-void Date::SetWeekday(Weekday::Name aWeekday) {
-
-  unsigned int lWeekdayUI = Weekday::NameToUI(aWeekday);
-  mWeekday.Set(lWeekdayUI);
-}
-
-
-// TimeHelper functions.
-char const *DateHelper::ToStr(Date &aDate, char * const aInStr) {
-
-  snprintf(aInStr,
-           10 + 1,
-           "%04d-%02d-%02d",
-           aDate.GetYear(),
-           aDate.GetMonth(),
-           aDate.GetDate());
-
-  return aInStr;
+Month::Name Month::UIToName(unsigned int aMonth) {
+  return static_cast<Name>(aMonth);
 }
 
 // *****************************************************************************

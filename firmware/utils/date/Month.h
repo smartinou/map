@@ -1,21 +1,19 @@
-#ifndef HOUR_H_
-#define HOUR_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Larger project scope.
+// Project: Utils\Date.
 //
-// Module: Module in the larger project scope.
+// Module: Month class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Simple month class.
+//! \ingroup utils
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,16 +31,37 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class Hour : public Limit {
+//! \brief Month class.
+class Month
+  : public Limit {
  public:
-  explicit Hour(unsigned int aVal = 0)
-    : Limit(0, 23, aVal) {}
-  ~Hour() {}
+  enum class Name : unsigned int {
+    January = 1,
+    February,
+    March,
+    April,
+    May,
+    June,
+    July,
+    August,
+    September,
+    October,
+    November,
+    December,
+    Min = January,
+    Max = December
+  };
 
- private:
+ public:
+  explicit Month(unsigned int aMonth);
+  explicit Month(Name aMonthName = Name::January);
+  ~Month() {}
+
+  unsigned int Get(void) const override;
+  Name ToName(void) const;
+
+  static unsigned int NameToUI(Name aMonthName);
+  static Name         UIToName(unsigned int aMonth);
 };
 
 // ******************************************************************************
@@ -60,4 +79,3 @@ class Hour : public Limit {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // HOUR_H_
