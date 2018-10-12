@@ -43,7 +43,7 @@
 // *****************************************************************************
 
 Limit::Limit(unsigned int aLowerLimit,
-	     unsigned int aUpperLimit)
+             unsigned int aUpperLimit)
   : mLowerLimit(aLowerLimit)
   , mUpperLimit(aUpperLimit)
   , mVal(aLowerLimit) {
@@ -53,8 +53,8 @@ Limit::Limit(unsigned int aLowerLimit,
 
 
 Limit::Limit(unsigned int aLowerLimit,
-	     unsigned int aUpperLimit,
-	     unsigned int aVal)
+             unsigned int aUpperLimit,
+             unsigned int aVal)
   : mLowerLimit(aLowerLimit)
   , mUpperLimit(aUpperLimit)
   , mVal(aVal) {

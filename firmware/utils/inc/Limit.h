@@ -33,10 +33,10 @@
 class Limit {
  public:
   explicit Limit(unsigned int aLowerLimit,
-		 unsigned int aUpperLimit);
+                 unsigned int aUpperLimit);
   explicit Limit(unsigned int aLowerLimit,
-		 unsigned int aUpperLimit,
-		 unsigned int aVal);
+                 unsigned int aUpperLimit,
+                 unsigned int aVal);
 
   virtual ~Limit() {};
 
