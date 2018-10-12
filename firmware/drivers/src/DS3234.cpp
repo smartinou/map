@@ -556,7 +556,7 @@ void DS3234::FillAlarmStruct(rtcc_alarm_t   &aAlarmRef,
                              Weekday const  &aWeekdayRef) {
 
   FillAlarmTimeStruct(aAlarmRef, aTimeRef);
-  aAlarmRef.mDayDate = Weekday::NameToUI(aWeekdayRef.GetName());
+  aAlarmRef.mDayDate = Weekday::NameToUI(aWeekdayRef.ToName());
 }
 
 
