@@ -96,13 +96,10 @@ typedef enum {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Log generation class.
 class Logger {
  public:
   static Logger &Instance();
-  //Logger(char const *aName, char const *aConfiguration = NULL) {}
   virtual ~Logger();
   void *operator new(size_t aSize) { return &(Instance()); }
   void  operator delete(void *aLoggerPtr) {}
@@ -112,18 +109,22 @@ class Logger {
   unsigned int GetEvtSignal(char const * const aCategoryStr) const;
 
   void SetLogLevel(LogLevel_t const aLevel);
-  bool AddCategory(unsigned int const aEvtSignal,
-                   char const * const aCategoryStr,
-                   LogLevel_t   const aLevel = PRI_ERR);
+  bool AddCategory(
+    unsigned int const aEvtSignal,
+    char const * const aCategoryStr,
+    LogLevel_t   const aLevel = PRI_ERR);
 
-  bool Log(LogLevel_t   const         aLevel,
-           char         const * const aFileStr,
-           unsigned int const         aLine,
-           char         const * const aFunctionStr,
-           char         const * const aCategoryStr,
-           char         const * const aFormatStr,
-           ...);
+  bool Log(
+    LogLevel_t   const aLevel,
+    char const * const aFileStr,
+    unsigned int const aLine,
+    char const * const aFunctionStr,
+    char const * const aCategoryStr,
+    char const * const aFormatStr,
+    ...);
   static char const *LogLevelToStr(LogLevel_t const aLevel);
+
+  void AddSink(QP::QActive * const aMePtr, char const * const aCategoryStr);
 
  private:
   // Disable default constructor/copy/assign
@@ -131,8 +132,9 @@ class Logger {
   Logger(Logger const&);
   void operator=(Logger const&);
 
-  static int CompareStr(void const * const aFirstStr,
-                        void const * const aSecondStr);
+  static int CompareStr(
+    void const * const aFirstStr,
+    void const * const aSecondStr);
 
   static unsigned int const sMaxLogCategories  = 32;
   static unsigned int const sMaxLogCategoryLen = 32;

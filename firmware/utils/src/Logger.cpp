@@ -61,12 +61,12 @@ class LogEvt : public QP::QEvt {
   }
 
  public:
-  LogLevel_t   const   mLevel;
-  char         const  *mFileStr;
-  unsigned int const   mLine;
-  char         const  *mFunctionStr;
-  char         const  *mCategoryStr;
-  char         const  *mMsgStr;
+  LogLevel_t   const  mLevel;
+  char         const *mFileStr;
+  unsigned int const  mLine;
+  char         const *mFunctionStr;
+  char         const *mCategoryStr;
+  char         const *mMsgStr;
 };
 
 
@@ -99,9 +99,7 @@ Logger::Logger()
 
 
 Logger::~Logger() {
-  // You would think we want to MutexDestroy(mMutex) but actually not
-  // since we override new and delete to do nothing to preserve the
-  // singleton nature.
+  // Dtor body left intentionally empty.
 }
 
 
@@ -137,9 +135,10 @@ void Logger::SetLogLevel(LogLevel_t const aLevel) {
 }
 
 
-bool Logger::AddCategory(unsigned int const aEvtSignal,
-                         char const * const aCategoryStr,
-                         LogLevel_t   const aLevel) {
+bool Logger::AddCategory(
+  unsigned int const aEvtSignal,
+  char const * const aCategoryStr,
+  LogLevel_t   const aLevel) {
 
   if (mCategoryQty >= sMaxLogCategories) {
     return false;
@@ -147,13 +146,14 @@ bool Logger::AddCategory(unsigned int const aEvtSignal,
 
   if (mCategoryQty > 0) {
     LogCategory_t * const lCategoryStr =
-      static_cast<LogCategory_t * const>(bsearch(aCategoryStr,
-                                                 mCategories,
-                                                 mCategoryQty,
-                                                 sizeof(LogCategory_t),
-                                                 Logger::CompareStr));
+      static_cast<LogCategory_t * const>(bsearch(
+        aCategoryStr,
+        mCategories,
+        mCategoryQty,
+        sizeof(LogCategory_t),
+        Logger::CompareStr));
     if (nullptr != lCategoryStr) {
-      lCategoryStr->mEvtSignal = aEvtSignal;
+      //lCategoryStr->mEvtSignal = aEvtSignal;
       lCategoryStr->mLevel = aLevel;
       return true;
     }
@@ -174,13 +174,14 @@ bool Logger::AddCategory(unsigned int const aEvtSignal,
 }
 
 
-bool Logger::Log(LogLevel_t    const aLevel,
-                 char  const * const aFileStr,
-                 unsigned int  const aLine,
-                 char  const * const aFunctionStr,
-                 char  const * const aCategoryStr,
-                 char  const * const aFormatStr,
-                 ...) {
+bool Logger::Log(
+  LogLevel_t   const aLevel,
+  char const * const aFileStr,
+  unsigned int const aLine,
+  char const * const aFunctionStr,
+  char const * const aCategoryStr,
+  char const * const aFormatStr,
+  ...) {
 
   // Check for log level threshold (global and per category).
   LogLevel_t lCategoryLevel = GetLogLevel(aCategoryStr);
@@ -200,14 +201,15 @@ bool Logger::Log(LogLevel_t    const aLevel,
   va_end(lArgs);
 
   // Create the Log event and publish it to all!
-  LogEvt * const lLogEvt = Q_NEW(LogEvt,
-                                 GetEvtSignal(aCategoryStr),
-                                 aLevel,
-                                 aFileStr,
-                                 aLine,
-                                 aFunctionStr,
-                                 aCategoryStr,
-                                 &lMsgBuf[0]);
+  LogEvt * const lLogEvt = Q_NEW(
+    LogEvt,
+    GetEvtSignal(aCategoryStr),
+    aLevel,
+    aFileStr,
+    aLine,
+    aFunctionStr,
+    aCategoryStr,
+    &lMsgBuf[0]);
 
   QP::QF::PUBLISH(lLogEvt, this);
   return true;
@@ -224,6 +226,12 @@ char const *Logger::LogLevelToStr(LogLevel_t const aLevel) {
 #undef _
 #undef X_DEBUG_LEVELS
 
+
+void Logger::AddSink(QP::QActive * const aMePtr, char const * const aCategoryStr) {
+  unsigned int lEvtSig = GetEvtSignal(aCategoryStr);
+  aMePtr->subscribe(lEvtSig);
+}
+
 // ******************************************************************************
 //                              LOCAL FUNCTIONS
 // ******************************************************************************
@@ -234,18 +242,20 @@ Logger::LogCategory_t *Logger::FindCategory(char const * const aCategoryStr) con
     return nullptr;
   }
 
-  LogCategory_t * const lCategoryStr =
-    static_cast<LogCategory_t * const>(bsearch(aCategoryStr,
-                                               mCategories,
-                                               mCategoryQty,
-                                               sizeof(LogCategory_t),
-                                               Logger::CompareStr));
+  LogCategory_t * const lCategoryStr = static_cast<LogCategory_t * const>(
+    bsearch(
+      aCategoryStr,
+      mCategories,
+      mCategoryQty,
+      sizeof(LogCategory_t),
+      Logger::CompareStr));
   return lCategoryStr;
 }
 
 
-int Logger::CompareStr(void const * const aFirstStr,
-                       void const * const aSecondStr) {
+int Logger::CompareStr(
+  void const * const aFirstStr,
+  void const * const aSecondStr) {
 
   return strcmp(static_cast<LogCategory_t const * const>(aFirstStr)->mName,
                 static_cast<LogCategory_t const * const>(aSecondStr)->mName);
