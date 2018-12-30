@@ -63,6 +63,10 @@ enum BSP_BEAST_MGR_SIGS_ENUM_TAG {
   SIG_DISPLAY_REFRESH,
   SIG_DISPLAY_TEXT,
 
+  // Log event generation/sinks.
+  LOG_EVT_SIG,
+  LOG_TIMER_SIG,
+
   SIG_TERMINATE,
   SIG_QTY
 };

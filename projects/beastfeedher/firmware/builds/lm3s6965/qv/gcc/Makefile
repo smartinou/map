@@ -82,6 +82,7 @@ VPATH = \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
+        $(FIRMWARE_PATH)/qp_ao/model/src \
         $(FIRMWARE_PATH)/utils/date \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
@@ -107,6 +108,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
+        -I$(FIRMWARE_PATH)/qp_ao/model/inc \
         -I$(FIRMWARE_PATH)/utils/date \
         -I$(FIRMWARE_PATH)/utils/inc \
         -I$(FIRMWARE_PATH)/utils/time \
@@ -164,8 +166,10 @@ CPP_SRCS := \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \
+        FileLogSink_AO.cpp \
         GPIOs.cpp \
         Limit.cpp \
+        LogEvt.cpp \
         Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \

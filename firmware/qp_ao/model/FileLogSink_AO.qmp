@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package name="FileLogSink_AO" stereotype="0x02">
+ <class name="FileLogSink_AO" superclass="qpcpp::QMActive">
+  <documentation>Main state machine for SDC log sink.</documentation>
+  <attribute name="mTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
+   <documentation>Timer for flushing queue of log events.</documentation>
+  </attribute>
+  <attribute name="mLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
+   <documentation>Log level threshold/filter.</documentation>
+  </attribute>
+  <operation name="FileLogSink_AO" type="" visibility="0x00" properties="0x00">
+   <documentation>Ctor.</documentation>
+   <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
+   <code>  : QMActive(Q_STATE_CAST(&amp;FileLogSink_AO::initial))
+  , mTimer(this, LOG_EVT_SIG, 0U)
+  , mLogLevel(aLogLevelThreshold)
+
+
+// Ctor body.</code>
+  </operation>
+  <operation name="~FileLogSink_AO" type="" visibility="0x02" properties="0x00">
+   <documentation>Dtor.</documentation>
+   <code>// Dtor body.</code>
+  </operation>
+  <operation name="SetLogLevel" type="void" visibility="0x02" properties="0x00">
+   <documentation>Sets the new log level threshold to filter log events.</documentation>
+   <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
+   <code>mLogLevel = aLogLevelThreshold;</code>
+  </operation>
+  <statechart>
+   <initial target="../1">
+    <initial_glyph conn="8,8,5,0,20,4">
+     <action box="0,-2,10,2"/>
+    </initial_glyph>
+   </initial>
+   <state name="Running">
+    <documentation>Main running state.</documentation>
+    <entry brief="TimerStart();">me-&gt;mTimer.armX(BSP_TICKS_PER_SEC/10,
+  BSP_TICKS_PER_SEC/10);</entry>
+    <exit brief="TimerStop();">me-&gt;mTimer.disarm();</exit>
+    <tran trig="LOG_TIMER">
+     <action brief="FlushLogQueue();"/>
+     <tran_glyph conn="22,26,3,-1,42">
+      <action box="0,-2,36,3"/>
+     </tran_glyph>
+    </tran>
+    <tran trig="LOG_EVT">
+     <action brief="WriteEvt();"/>
+     <tran_glyph conn="22,34,3,-1,42">
+      <action box="0,-2,27,4"/>
+     </tran_glyph>
+    </tran>
+    <state_glyph node="22,12,50,30">
+     <entry box="1,2,15,3"/>
+     <exit box="1,5,16,3"/>
+    </state_glyph>
+   </state>
+   <state_diagram size="80,50"/>
+  </statechart>
+ </class>
+</package>
