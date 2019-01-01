@@ -57,6 +57,10 @@ typedef enum {
 #undef _
 
 
+namespace LogLevel {
+char const *ToStr(LogLevel_t const aLevel);
+} // namespace LogLevel
+
 $declare(Events::LogEvt)
 </text>
    </file>
@@ -64,6 +68,22 @@ $declare(Events::LogEvt)
   <directory name="src">
    <file name="LogEvt.cpp">
     <text>#include &quot;LogEvt.h&quot;
+
+
+namespace LogLevel {
+
+#define _(enum, str) case enum: return str;
+char const *ToStr(LogLevel_t const aLevel) {
+  switch (aLevel) {
+    X_LOG_LEVELS
+  }
+  return &quot;&quot;;
+}
+#undef _
+#undef X_LOG_LEVELS
+
+} // namespace LogLevel
+
 
 $define(Events::LogEvt)
 </text>
@@ -76,6 +96,7 @@ $define(Events::LogEvt)
    <file name="FileLogSink_AO.h">
     <text>#pragma once
 
+#include &quot;ff.h&quot;
 #include &quot;Logger.h&quot;
 
 // Forward declarations.
@@ -220,7 +241,6 @@ class Logger {
     char const * const aCategoryStr,
     char const * const aFormatStr,
     ...);
-  static char const *LogLevelToStr(LogLevel_t const aLevel);
 
   void AddSink(QP::QActive * const aMePtr, char const * const aCategoryStr);
 
@@ -461,17 +481,6 @@ bool Logger::Log(
   QP::QF::PUBLISH(lLogEvt, this);
   return true;
 }
-
-
-#define _(enum, str) case enum: return str;
-char const *Logger::LogLevelToStr(LogLevel_t const aLevel) {
-  switch (aLevel) {
-    X_LOG_LEVELS
-  }
-  return &quot;&quot;;
-}
-#undef _
-#undef X_LOG_LEVELS
 
 
 void Logger::AddSink(QP::QActive * const aMePtr, char const * const aCategoryStr) {

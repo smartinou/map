@@ -8,17 +8,27 @@
   <attribute name="mLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
    <documentation>Log level threshold/filter.</documentation>
   </attribute>
+  <attribute name="mFile" type="FIL" visibility="0x02" properties="0x00">
+   <documentation>The log file.</documentation>
+  </attribute>
+  <attribute name="mWrErr" type="unsigned int" visibility="0x02" properties="0x00">
+   <documentation>Number of write errors.  </documentation>
+  </attribute>
+  <attribute name="mLineOverflow" type="unsigned int" visibility="0x02" properties="0x00">
+   <documentation>Number of lines that overflowed from allowed max char per line.</documentation>
+  </attribute>
   <operation name="FileLogSink_AO" type="" visibility="0x00" properties="0x00">
    <documentation>Ctor.</documentation>
    <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
    <code>  : QMActive(Q_STATE_CAST(&amp;FileLogSink_AO::initial))
-  , mTimer(this, LOG_EVT_SIG, 0U)
+  , mTimer(this, LOG_TIMER_SIG, 0U)
   , mLogLevel(aLogLevelThreshold)
-
+  , mWrErr(0)
+  , mLineOverflow(0)
 
 // Ctor body.</code>
   </operation>
-  <operation name="~FileLogSink_AO" type="" visibility="0x02" properties="0x00">
+  <operation name="~FileLogSink_AO" type="" visibility="0x00" properties="0x00">
    <documentation>Dtor.</documentation>
    <code>// Dtor body.</code>
   </operation>
@@ -29,15 +39,23 @@
   </operation>
   <statechart>
    <initial target="../1">
+    <action brief="OpenFile();">BSP_InitFS();
+FRESULT lResult = f_open(&amp;me-&gt;mFile, &quot;Log.txt&quot;, FA_OPEN_APPEND | FA_WRITE | FA_READ);
+if (FR_OK != lResult) {
+  // Error.
+}
+</action>
     <initial_glyph conn="8,8,5,0,20,4">
-     <action box="0,-2,10,2"/>
+     <action box="0,-2,14,4"/>
     </initial_glyph>
    </initial>
    <state name="Running">
     <documentation>Main running state.</documentation>
-    <entry brief="TimerStart();">me-&gt;mTimer.armX(BSP_TICKS_PER_SEC/10,
-  BSP_TICKS_PER_SEC/10);</entry>
-    <exit brief="TimerStop();">me-&gt;mTimer.disarm();</exit>
+    <entry brief="TimerStart();">static unsigned int sPeriod = 5 * 60;
+me-&gt;mTimer.armX(BSP_TICKS_PER_SEC * sPeriod,
+  BSP_TICKS_PER_SEC * sPeriod);</entry>
+    <exit brief="TimerStop();">me-&gt;mTimer.disarm();
+f_close(&amp;me-&gt;mFile);</exit>
     <tran trig="LOG_TIMER">
      <action brief="FlushLogQueue();"/>
      <tran_glyph conn="22,26,3,-1,42">
@@ -45,8 +63,48 @@
      </tran_glyph>
     </tran>
     <tran trig="LOG_EVT">
-     <action brief="WriteEvt();"/>
-     <tran_glyph conn="22,34,3,-1,42">
+     <action brief="ParseEvt();">LogEvt const * const lLogEvt = static_cast&lt;LogEvt const * const&gt;(e);</action>
+     <choice>
+      <guard brief="Level &gt;= Threshold">lLogEvt-&gt;mLogLevel &gt;= me-&gt;mLogLevel</guard>
+      <action brief="WriteEvt();">static unsigned int const sLineMax = 1024;
+char lLine[sLineMax];
+int lLen = snprintf(
+  &amp;lLine[0],
+  sLineMax,
+  &quot;%s in file %s, function %s at line %d. %s::%s\n&quot;,
+  LogLevel::ToStr(lLogEvt-&gt;mLogLevel),
+  lLogEvt-&gt;mFileStr,
+  lLogEvt-&gt;mFunctionStr,
+  lLogEvt-&gt;mLine,
+  lLogEvt-&gt;mCategoryStr,
+  lLogEvt-&gt;mMsgStr);
+if (lLen &lt; 0) {
+  me-&gt;mWrErr++;
+}
+if (static_cast&lt;unsigned int&gt;(lLen) &gt; sLineMax) {
+  me-&gt;mLineOverflow++;
+}
+
+UINT lWritten = 0;
+FRESULT lResult = f_write(&amp;me-&gt;mFile, &amp;lLine[0], static_cast&lt;UINT&gt;(lLen), &amp;lWritten);
+if (FR_OK != lResult) {
+  me-&gt;mWrErr++;
+} else if (lWritten &lt; static_cast&lt;UINT&gt;(lLen)) {
+  me-&gt;mWrErr++;
+}
+</action>
+      <choice_glyph conn="44,34,5,-1,20">
+       <action box="1,-2,27,4"/>
+      </choice_glyph>
+     </choice>
+     <choice>
+      <guard brief="else"/>
+      <action brief="DiscardEvt();"/>
+      <choice_glyph conn="44,34,4,-1,4,20">
+       <action box="1,1,20,4"/>
+      </choice_glyph>
+     </choice>
+     <tran_glyph conn="22,34,3,-1,22">
       <action box="0,-2,27,4"/>
      </tran_glyph>
     </tran>
