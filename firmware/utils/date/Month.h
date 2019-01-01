@@ -57,7 +57,6 @@ class Month
   explicit Month(Name aMonthName = Name::January);
   ~Month() {}
 
-  unsigned int Get(void) const override;
   Name ToName(void) const;
 
   static unsigned int NameToUI(Name aMonthName);

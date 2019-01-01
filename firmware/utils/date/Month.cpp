@@ -59,11 +59,6 @@ Month::Month(Month::Name aMonthName)
 }
 
 
-unsigned int Month::Get(void) const {
-  return Limit::Get();
-}
-
-
 Month::Name Month::ToName(void) const {
 
   unsigned int lMonthUI = Limit::Get();

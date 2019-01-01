@@ -52,7 +52,6 @@ class Weekday
   explicit Weekday(Name aWeekdayName = Name::Sunday);
   ~Weekday() {}
 
-  unsigned int Get(void) const;
   Name ToName(void) const;
 
   static unsigned int NameToUI(Name aWeekdayName);
