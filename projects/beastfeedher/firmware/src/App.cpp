@@ -42,6 +42,7 @@
 #include "CalendarRec.h"
 #include "DisplayMgr_AO.h"
 #include "FeedCfgRec.h"
+#include "FileLogSink_AO.h"
 #include "FWVersionGenerated.h"
 #include "GPIOs.h"
 #include "LwIPMgr_AO.h"
@@ -249,13 +250,20 @@ tCGI const App::sCGIEntries[] = {
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-App::App() {
+App::App()
+  : mBFHMgr_AO(BFHMgr_AO::Instance())
+  , mFileLogSink_AO(nullptr)
+  , mLwIPMgr_AO(nullptr)
+  , mDisplayMgr_AO(nullptr) {
   // Ctor body left intentionally empty.
 }
 
 
 App::~App() {
-  // Dtor body left intentionally empty.
+  // Dtor body.
+  delete(mDisplayMgr_AO);
+  delete(mLwIPMgr_AO);
+  delete(mFileLogSink_AO);
 }
 
 
@@ -278,69 +286,80 @@ bool App::Init(void) {
   DB::AddRec(sFeedCfgRecPtr);
 
   unsigned long lIntNbr = BSP_GPIOPortToInt(BSP_gRTCCIntGPIOPtr->GetPort());
-  RTCCInitEvt const lRTCCInitEvt(SIG_DUMMY,
-                                 *lSPIDevPtr,
-                                 lIntNbr,
-                                 BSP_gRTCCCSnGPIOPtr,
-                                 BSP_gRTCCIntGPIOPtr,
-                                 App::sCalendarPtr);
+  RTCCInitEvt const lRTCCInitEvt(
+    SIG_DUMMY,
+    *lSPIDevPtr,
+    lIntNbr,
+    BSP_gRTCCCSnGPIOPtr,
+    BSP_gRTCCIntGPIOPtr,
+    App::sCalendarPtr);
 
-  static QP::QEvt const *sRTCCEvtQPtr[10];
   App::sRTCC_AOPtr = new RTCC_AO();
-  App::sRTCC_AOPtr->start(1U,
-                          sRTCCEvtQPtr,
-                          Q_DIM(sRTCCEvtQPtr),
-                          nullptr,
-                          0U,
-                          &lRTCCInitEvt);
+  App::sRTCC_AOPtr->start(
+    1U,
+    mRTCCEvtQPtr,
+    Q_DIM(mRTCCEvtQPtr),
+    nullptr,
+    0U,
+    &lRTCCInitEvt);
+
+  mFileLogSink_AO = new FileLogSink_AO(PRI_INFO);
+  mFileLogSink_AO->start(
+    2U,
+    mFileLogSinkEvtQPtr,
+    Q_DIM(mFileLogSinkEvtQPtr),
+    nullptr,
+    0U);
 
   // DB records are now deserialized, and fixed if required.
   // Create all other AOs.
-  BFHInitEvt const lBFHInitEvt(SIG_DUMMY,
-                               App::sFeedCfgRecPtr,
-                               BSP_gIn1GPIOPtr,
-                               BSP_gIn2GPIOPtr,
-                               BSP_gPWMGPIOPtr);
-  static QP::QEvt const *sBeastMgrEvtQPtr[5];
-  static BFHMgr_AO &sBFHMgr_AO = BFHMgr_AO::Instance();
-  sBFHMgr_AO.start(2U,
-                   sBeastMgrEvtQPtr,
-                   Q_DIM(sBeastMgrEvtQPtr),
-                   nullptr,
-                   0U,
-                   &lBFHInitEvt);
+  BFHInitEvt const lBFHInitEvt(
+    SIG_DUMMY,
+    App::sFeedCfgRecPtr,
+    BSP_gIn1GPIOPtr,
+    BSP_gIn2GPIOPtr,
+    BSP_gPWMGPIOPtr);
+  mBFHMgr_AO.start(
+    3U,
+    mBeastMgrEvtQPtr,
+    Q_DIM(mBeastMgrEvtQPtr),
+    nullptr,
+    0U,
+    &lBFHInitEvt);
 
-  LwIPInitEvt const lLwIPInitEvt(SIG_DUMMY,
-                                 App::sNetIFRecPtr,
-                                 App::NetCallbackInit);
-  static QP::QEvt const *sLwIPEvtQPtr[10];
-  static LwIPMgr_AO sLwIPMgr_AO;
-  sLwIPMgr_AO.start(3U,
-                    sLwIPEvtQPtr,
-                    Q_DIM(sLwIPEvtQPtr),
-                    nullptr,
-                    0U,
-                    &lLwIPInitEvt);
+  LwIPInitEvt const lLwIPInitEvt(
+    SIG_DUMMY,
+    App::sNetIFRecPtr,
+    App::NetCallbackInit);
+  mLwIPMgr_AO = new LwIPMgr_AO;
+  mLwIPMgr_AO->start(
+    4U,
+    mLwIPEvtQPtr,
+    Q_DIM(mLwIPEvtQPtr),
+    nullptr,
+    0U,
+    &lLwIPInitEvt);
 
   SSD1329 * const lOLEDDisplayPtr = BSP_InitOLEDDisplay();
   DisplayMgrInitEvt const lDisplayMgrInitEvt(SIG_DUMMY, 5);
-  static QP::QEvt const *sDisplayMgrEvtQPtr[5];
-  static DisplayMgr_AO lDisplayMgr_AO(*lOLEDDisplayPtr);
-  lDisplayMgr_AO.start(4U,
-                       sDisplayMgrEvtQPtr,
-                       Q_DIM(sDisplayMgrEvtQPtr),
-                       nullptr,
-                       0U,
-                       &lDisplayMgrInitEvt);
+  mDisplayMgr_AO = new DisplayMgr_AO(*lOLEDDisplayPtr);
+  mDisplayMgr_AO->start(
+    5U,
+    mDisplayMgrEvtQPtr,
+    Q_DIM(mDisplayMgrEvtQPtr),
+    nullptr,
+    0U,
+    &lDisplayMgrInitEvt);
 
   // Send signal dictionaries for globally published events...
   //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
 
   // Send object dictionaries for event queues...
-  QS_OBJ_DICTIONARY(sRTCCEvtQPtr);
-  QS_OBJ_DICTIONARY(sBeastMgrEvtQPtr);
-  QS_OBJ_DICTIONARY(sLwIPEvtQPtr);
-  QS_OBJ_DICTIONARY(sDisplayMgrEvtQPtr);
+  QS_OBJ_DICTIONARY(mRTCCEvtQPtr);
+  QS_OBJ_DICTIONARY(mBeastMgrEvtQPtr);
+  QS_OBJ_DICTIONARY(mLwIPEvtQPtr);
+  QS_OBJ_DICTIONARY(mDisplayMgrEvtQPtr);
+  QS_OBJ_DICTIONARY(mFileLogSinkEvtQPtr);
 
   return true;
 }

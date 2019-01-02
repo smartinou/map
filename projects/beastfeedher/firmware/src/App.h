@@ -34,6 +34,10 @@
 class CalendarRec;
 class NetIFRec;
 class FeedCfgRec;
+class BFHMgr_AO;
+class DisplayMgr_AO;
+class FileLogSink_AO;
+class LwIPMgr_AO;
 class RTCC_AO;
 class LwIPMgr_AO;
 
@@ -94,8 +98,19 @@ static char const *DispCfg(int   aIx,
   static NetIFRec    *sNetIFRecPtr;
   static FeedCfgRec  *sFeedCfgRecPtr;
 
+  // QP Event Queues.
+  QP::QEvt const *mRTCCEvtQPtr[10];
+  QP::QEvt const *mBeastMgrEvtQPtr[5];
+  QP::QEvt const *mFileLogSinkEvtQPtr[10];
+  QP::QEvt const *mLwIPEvtQPtr[10];
+  QP::QEvt const *mDisplayMgrEvtQPtr[5];
+
   // QP AOs.
-  static RTCC_AO     *sRTCC_AOPtr;
+  BFHMgr_AO         &mBFHMgr_AO;
+  FileLogSink_AO    *mFileLogSink_AO;
+  LwIPMgr_AO        *mLwIPMgr_AO;
+  DisplayMgr_AO     *mDisplayMgr_AO;
+  static RTCC_AO    *sRTCC_AOPtr;
 
 #if LWIP_HTTPD_SSI
   static char const *sSSITags[];
