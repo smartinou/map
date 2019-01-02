@@ -44,7 +44,7 @@ enum {
   // [31:12]: Reserved.
   // [11:8]: VHS (Host supplied voltage range). Set to '1'.
   // [7:0]: Check pattern.
-  L_CMD8_PARAM  = 0x000001A5UL,
+  L_CMD8_PARAM  = 0x000001AAUL,
 
   // [31:0]: Stuff bits.
   L_CMD58_PARAM = 0x00000000UL,
@@ -116,6 +116,12 @@ enum L_OCR_MASK_ENUM_TAG {
 #define CMD55   (55)            // APP_CMD
 #define CMD58   (58)            // READ_OCR
 
+#define REG32TOH(num)         \
+  ((num>>24)&0x000000ff) | \
+  ((num<<8)&0x00ff0000)  | \
+  ((num>>8)&0x0000ff00)  | \
+  ((num<<24)&0xff000000)
+
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
@@ -132,9 +138,10 @@ enum L_OCR_MASK_ENUM_TAG {
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-SDC::SDC(unsigned int           aDriveIx,
-         CoreLink::SPIDev      &aSPIDev,
-         CoreLink::SPISlaveCfg &aSPISlaveCfg)
+SDC::SDC(
+  unsigned int           aDriveIx,
+  CoreLink::SPIDev      &aSPIDev,
+  CoreLink::SPISlaveCfg &aSPISlaveCfg)
   : mMyDriveIx(aDriveIx)
   , mSPIDev(aSPIDev)
   , mSPISlaveCfg(aSPISlaveCfg)
@@ -158,7 +165,7 @@ DSTATUS SDC::DiskInit(void) {
   }
 
   // Set clock to Clock Frequency Identification Mode Max (400KHz).
-  mSPISlaveCfg.SetBitRate(400000);
+  mSPISlaveCfg.SetBitRate(L_CLK_FREQ_ID_MODE);
 
   // Send 80 dummy clocks, CSn de-asserted.
   mSPISlaveCfg.DeassertCSn();
@@ -167,18 +174,18 @@ DSTATUS SDC::DiskInit(void) {
   }
 
   // Put the card in SPI mode.
-  uint8_t lR1 = SendCmd(CMD0, L_CMD0_PARAM);
+  R1_RESPONSE_PKT lR1 = SendCmd(CMD0, L_CMD0_PARAM);
   if (L_R1_MASK_IN_IDLE_STATE == lR1) {
     R7_RESPONSE_PKT lR7 = {0};
-    lR1 = SendCmd(CMD8, L_CMD8_PARAM, &lR7, sizeof(R7_RESPONSE_PKT));
-    if (L_R1_MASK_IN_IDLE_STATE == lR1) {
+    lR7.mR1 = SendCmd(CMD8, L_CMD8_PARAM, reinterpret_cast<uint8_t *>(&lR7.mIFCond), sizeof(lR7.mIFCond));
+    if (L_R1_MASK_IN_IDLE_STATE == lR7.mR1) {
       // Ver2.00 or later memory card.
       // Valid response?
-      if (L_R7_RESPONSE == lR7.mIFCond) {
+      if (L_R7_RESPONSE == REG32TOH(lR7.mIFCond)) {
         // Compatible voltage range and check pattern correct.
         // Read OCR.
         R3_RESPONSE_PKT lR3 = {0};
-        lR1 = SendCmd(CMD58, L_CMD58_PARAM, &lR3, sizeof(R3_RESPONSE_PKT));
+        lR3.mR1 = SendCmd(CMD58, L_CMD58_PARAM, reinterpret_cast<uint8_t *>(&lR3.mOCR), sizeof(lR3.mOCR));
 
         // Compare with expected voltage range.
         if (IsExpectedVoltageRange()) {
@@ -189,8 +196,8 @@ DSTATUS SDC::DiskInit(void) {
             lR1 = SendCmd(ACMD41, L_ACMD41_PARAM);
           } while (0 != lR1);
 
-          lR1 = SendCmd(CMD58, L_CMD58_PARAM, &lR3, sizeof(R3_RESPONSE_PKT));
-          if (lR3.mOCR & L_OCR_MASK_CCS) {
+          lR3.mR1 = SendCmd(CMD58, L_CMD58_PARAM, reinterpret_cast<uint8_t *>(&lR3.mOCR), sizeof(lR3.mOCR));
+          if (REG32TOH(lR3.mOCR) & L_OCR_MASK_CCS) {
             // Ver2.00 or later High Capacity | Extended Capacity SD Memory Card.
             mCardType = CT_SD2 | CT_BLOCK;
           } else {
@@ -216,8 +223,8 @@ DSTATUS SDC::DiskInit(void) {
 
       // Read OCR.
       R3_RESPONSE_PKT lR3 = {0};
-      lR1 = SendCmd(CMD58, L_CMD58_PARAM, &lR3, sizeof(R3_RESPONSE_PKT));
-      if (L_R1_MASK_IN_IDLE_STATE == lR1) {
+      lR3.mR1 = SendCmd(CMD58, L_CMD58_PARAM, reinterpret_cast<uint8_t *>(&lR3.mOCR), sizeof(lR3.mOCR));
+      if (L_R1_MASK_IN_IDLE_STATE == lR3.mR1) {
         // Compare with expected voltage range.
         if (IsExpectedVoltageRange()) {
 
@@ -264,18 +271,20 @@ DSTATUS SDC::DiskInit(void) {
 }
 
 
-DRESULT SDC::DiskRd(uint8_t     *aBufPtr,
-                    uint32_t     aStartSector,
-                    unsigned int aSectorCount) {
+DRESULT SDC::DiskRd(
+  uint8_t     *aBufPtr,
+  uint32_t     aStartSector,
+  unsigned int aSectorCount) {
 
   return RES_OK;
 }
 
 
 #if (FF_FS_READONLY == 0)
-DRESULT SDC::DiskWr(uint8_t const *aBufPtr,
-                    uint32_t       aStartSector,
-                    unsigned int   aSectorCount) {
+DRESULT SDC::DiskWr(
+  uint8_t const *aBufPtr,
+  uint32_t       aStartSector,
+  unsigned int   aSectorCount) {
 
   return RES_OK;
 }
@@ -345,31 +354,23 @@ int SDC::RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen) {
 
 #if (FF_FS_READONLY == 0)
 int SDC::TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken) {
-
+  return 0;
 }
 #endif // FF_FS_READONLY
 
 
-uint8_t SDC::SendCmd(uint8_t aCmd, uint32_t aArg) {
-
-  uint8_t lR1 = {0};
-  return SendCmd(aCmd, aArg, &lR1, 1);
-}
-
-
-uint8_t SDC::SendCmd(uint8_t      aCmd,
-                     uint32_t     aArg,
-                     void        *aRegPtr,
-                     unsigned int aRegLen) {
-
-  uint8_t lR1 = 0;
+SDC::R1_RESPONSE_PKT SDC::SendCmd(
+  uint8_t      aCmd,
+  uint32_t     aArg,
+  uint8_t     *aRegPtr,
+  unsigned int aRegLen) {
 
   // Send a CMD55 prior to ACMD<n>.
   if (aCmd & 0x80) {
     aCmd &= 0x7F;
-    lR1 = SendCmd(CMD55, 0x00000000);
+    R1_RESPONSE_PKT lR1 = SendCmd(CMD55, 0x00000000);
     // Return if there's an error.
-    if ((lR1 & 1) && (lR1 & 1)) {
+    if (lR1 != L_R1_MASK_IN_IDLE_STATE) {
       return lR1;
     }
   }
@@ -382,7 +383,8 @@ uint8_t SDC::SendCmd(uint8_t      aCmd,
 
 
   // Send command packet: start + command.
-  mSPIDev.PushPullByte(aCmd | 0x40, mSPISlaveCfg);
+  static uint8_t const sTransmitBit = 0x40;
+  mSPIDev.PushPullByte(aCmd | sTransmitBit, mSPISlaveCfg);
   mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >> 24));
   mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >> 16));
   mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >>  8));
@@ -402,11 +404,17 @@ uint8_t SDC::SendCmd(uint8_t      aCmd,
 
   // Wait for response (10 bytes max).
   unsigned int lWaitCycles = 10;
+  R1_RESPONSE_PKT lR1 = 0;
   do {
     lR1 = mSPIDev.PushPullByte(0xFF);
   } while ((lR1 & L_R1_MASK_BUSY) && (lWaitCycles--));
 
   // Ici, il faut pousser le data dans le ptr de retour.
+  while (aRegLen > 0) {
+    *(static_cast<uint8_t *>(aRegPtr)) = mSPIDev.PushPullByte(0xFF);
+    aRegPtr++;
+    aRegLen--;
+  }
 
   // TODO: Deselect the card for certain commands (block reads)?
   mSPISlaveCfg.DeassertCSn();
