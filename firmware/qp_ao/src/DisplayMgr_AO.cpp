@@ -82,7 +82,8 @@ DisplayMgr_AO::DisplayMgr_AO(SSD1329 &aSSD1329Ptr)
   , mDisplay(aSSD1329Ptr)
   , mIsDisplayOn(false)
   , mDisplayTime(0) {
-  // Ctor body intentionally left empty.
+  // Ctor body.
+  mInstancePtr = this;
 }
 
 
