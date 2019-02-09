@@ -13,7 +13,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -135,7 +135,7 @@ void DS3234::IsValid(void) {
 
   // Here should make a distinction between 12H vs 24H mode.
   unsigned int lHours = mRegMap.mTime.mHours;
-  if (mRegMap.mTime.mHours & Hours::H12_24_n) {
+  if (mRegMap.mTime.mHours & HoursFields::H12_24_n) {
     if ((lHours < HOURS_12_MIN) || (HOURS_12_MAX < lHours)) {
       mRegMap.mTime.mHours = BinaryToBCD(HOURS_12_DEFAULT);
       lIsTimeInvalid = true;
@@ -163,7 +163,7 @@ void DS3234::IsValid(void) {
     lIsDateInvalid = true;
   }
 
-  unsigned int lMonth = BCDToBinary(mRegMap.mDate.mMonth & Month::CENTURY);
+  unsigned int lMonth = BCDToBinary(mRegMap.mDate.mMonth & MonthFields::CENTURY);
   if((lMonth < MONTH_MIN) || (MONTH_MAX < lMonth)) {
     mRegMap.mDate.mMonth = BinaryToBCD(MONTH_DEFAULT);
     lIsDateInvalid = true;
@@ -202,7 +202,7 @@ void DS3234::UpdateCachedVal(void) {
 }
 
 
-void DS3234::RdTime(Time &aTimeRef) {
+void DS3234::RdTime(Time &aTime) {
 
   // Read the Time portion of the RTC.
   // Update time ref.
@@ -210,11 +210,11 @@ void DS3234::RdTime(Time &aTimeRef) {
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t),
                     mSPICfgRef);
-  UpdateTime(aTimeRef);
+  UpdateTime(aTime);
 }
 
 
-void DS3234::RdDate(Date &aDateRef) {
+void DS3234::RdDate(Date &aDate) {
 
   // Read the date portion out of RTC.
   // Update date ref.
@@ -222,11 +222,11 @@ void DS3234::RdDate(Date &aDateRef) {
                     reinterpret_cast<uint8_t *>(&mRegMap.mDate),
                     sizeof(date_t),
                     mSPICfgRef);
-  UpdateDate(aDateRef);
+  UpdateDate(aDate);
 }
 
 
-void DS3234::RdTimeAndDate(Time &aTimeRef, Date &aDateRef) {
+void DS3234::RdTimeAndDate(Time &aTime, Date &aDate) {
 
   // Read the whole RTC into register map structure.
   // Update time ref.
@@ -236,16 +236,16 @@ void DS3234::RdTimeAndDate(Time &aTimeRef, Date &aDateRef) {
                     sizeof(time2_t) + sizeof(date_t),
                     mSPICfgRef);
 
-  UpdateTime(aTimeRef);
-  UpdateDate(aDateRef);
+  UpdateTime(aTime);
+  UpdateDate(aDate);
 }
 
 
-void DS3234::WrTime(Time const &aTimeRef) {
+void DS3234::WrTime(Time const &aTime) {
 
   // Fill time structure to write to RTC.
   // Send only the time portion of the structure to RTC.
-  FillTimeStruct(aTimeRef);
+  FillTimeStruct(aTime);
   mSPIDevRef.WrData(L_WR_ADDR(mTime),
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t),
@@ -253,11 +253,11 @@ void DS3234::WrTime(Time const &aTimeRef) {
 }
 
 
-void DS3234::WrDate(Date const &aDateRef) {
+void DS3234::WrDate(Date const &aDate) {
 
   // Fill date structure to write to RTC.
   // Send only the date portion of the structure to RTC.
-  FillDateStruct(aDateRef);
+  FillDateStruct(aDate);
   mSPIDevRef.WrData(L_WR_ADDR(mDate),
                     reinterpret_cast<uint8_t *>(&mRegMap.mDate),
                     sizeof(date_t),
@@ -265,13 +265,13 @@ void DS3234::WrDate(Date const &aDateRef) {
 }
 
 
-void DS3234::WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef) {
+void DS3234::WrTimeAndDate(Time const &aTime, Date const &aDate) {
 
   // Fill time structure to write to RTC.
   // Fill date structure to write to RTC.
   // Send time and date portion of the structure to RTC.
-  FillTimeStruct(aTimeRef);
-  FillDateStruct(aDateRef);
+  FillTimeStruct(aTime);
+  FillDateStruct(aDate);
   mSPIDevRef.WrData(L_WR_ADDR(mTime),
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t) + sizeof(date_t),
@@ -280,21 +280,21 @@ void DS3234::WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef) {
 
 
 void DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
-                     Time    const  &aTimeRef,
+                     Time    const  &aTime,
                      Weekday const  &aWeekdayRef,
                      enum ALARM_MODE aAlarmMode) {
 
   // Fill alarm structure to write to RTC.
   switch (aAlarmID) {
   case ALARM_ID::ALARM_ID_1:
-    mRegMap.mAlarm1Seconds = BinaryToBCD(aTimeRef.GetSeconds());
-    FillAlarmStruct(mRegMap.mAlarm1, aTimeRef, aWeekdayRef);
+    mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
+    FillAlarmStruct(mRegMap.mAlarm1, aTime, aWeekdayRef);
     FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
     mRegMap.mCtrl |= AEI1;
     break;
 
   case ALARM_ID::ALARM_ID_2:
-    FillAlarmStruct(mRegMap.mAlarm2, aTimeRef, aWeekdayRef);
+    FillAlarmStruct(mRegMap.mAlarm2, aTime, aWeekdayRef);
     FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
     mRegMap.mCtrl |= AEI2;
     break;
@@ -306,20 +306,20 @@ void DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
 
 
 void DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
-                     Time const     &aTimeRef,
-                     Date const     &aDateRef,
+                     Time const     &aTime,
+                     Date const     &aDate,
                      enum ALARM_MODE aAlarmMode) {
 
   // Fill alarm structure to write to RTC.
   switch (aAlarmID) {
   case ALARM_ID::ALARM_ID_1:
-    mRegMap.mAlarm1Seconds = BinaryToBCD(aTimeRef.GetSeconds());
-    FillAlarmStruct(mRegMap.mAlarm1, aTimeRef, aDateRef);
+    mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
+    FillAlarmStruct(mRegMap.mAlarm1, aTime, aDate);
     FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
     break;
 
   case ALARM_ID::ALARM_ID_2:
-    FillAlarmStruct(mRegMap.mAlarm2, aTimeRef, aDateRef);
+    FillAlarmStruct(mRegMap.mAlarm2, aTime, aDate);
     FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
     break;
   }
@@ -426,12 +426,12 @@ void DS3234::WrToNVMem(uint8_t const * const aDataPtr,
 }
 
 
-void DS3234::GetTimeAndDate(Time &aTimeRef, Date &aDateRef) {
+void DS3234::GetTimeAndDate(Time &aTime, Date &aDate) {
 
   // Update date ref.
   UpdateCachedVal();
-  UpdateTime(aTimeRef);
-  UpdateDate(aDateRef);
+  UpdateTime(aTime);
+  UpdateDate(aDate);
 }
 
 
@@ -465,7 +465,7 @@ float DS3234::GetTemperature(void) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void DS3234::UpdateTime(Time &aTimeRef) {
+void DS3234::UpdateTime(Time &aTime) {
 
   // Apply proper mask and convert where needed.
   unsigned int lSeconds = BCDToBinary(mRegMap.mTime.mSeconds);
@@ -473,50 +473,50 @@ void DS3234::UpdateTime(Time &aTimeRef) {
   bool lIs24H = true;
   bool lIsPM  = false;
   unsigned int lHours = 0;
-  if (mRegMap.mTime.mHours & Hours::H12_24_n) {
+  if (mRegMap.mTime.mHours & HoursFields::H12_24_n) {
     lIs24H = false;
-    if (mRegMap.mTime.mHours & Hours::PM_AM_n) {
+    if (mRegMap.mTime.mHours & HoursFields::PM_AM_n) {
       lIsPM = true;
     }
-    lHours = BCDToBinary(mRegMap.mTime.mHours & ~(Hours::H12_24_n | Hours::PM_AM_n));
+    lHours = BCDToBinary(mRegMap.mTime.mHours & ~(HoursFields::H12_24_n | HoursFields::PM_AM_n));
   } else {
-    lHours = BCDToBinary(mRegMap.mTime.mHours & ~Hours::H12_24_n);
+    lHours = BCDToBinary(mRegMap.mTime.mHours & ~HoursFields::H12_24_n);
   }
 
-  aTimeRef.SetSeconds(lSeconds);
-  aTimeRef.SetMinutes(lMinutes);
-  aTimeRef.SetHours(lHours);
-  aTimeRef.SetIs24H(lIs24H);
-  aTimeRef.SetIsPM(lIsPM);
+  // "Return" via copy ctor.
+  Time lTime(lHours, lMinutes, lSeconds, lIs24H, lIsPM);
+  aTime = lTime;
 }
 
 
-void DS3234::UpdateDate(Date &aDateRef) {
+void DS3234::UpdateDate(Date &aDate) {
 
   unsigned int lWeekday = BCDToBinary(mRegMap.mDate.mWeekday);
-  unsigned int lDate    = BCDToBinary(mRegMap.mDate.mDate);
-  unsigned int lMonth   = BCDToBinary(mRegMap.mDate.mMonth & ~Month::CENTURY);
+  unsigned int lDay     = BCDToBinary(mRegMap.mDate.mDate);
+  unsigned int lMonth   = BCDToBinary(mRegMap.mDate.mMonth & ~MonthFields::CENTURY);
   unsigned int lYear    = BCDToBinary(mRegMap.mDate.mYear);
-  if (mRegMap.mDate.mMonth & Month::CENTURY) {
+  if (mRegMap.mDate.mMonth & MonthFields::CENTURY) {
     mCentury += 100;
   }
 
-  aDateRef.SetWeekday(lWeekday);
-  aDateRef.SetDate(lDate);
-  aDateRef.SetMonth(lMonth);
-  aDateRef.SetYear(lYear + mBaseYear + mCentury);
+  Month::Name lMonthName = Month::UIToName(lMonth);
+  Weekday::Name lWeekdayName = Weekday::UIToName(lWeekday);
+
+  // "Return" via copy ctor.
+  Date lDate(lYear + mBaseYear + mCentury, lMonthName, lDay, lWeekdayName);
+  aDate = lDate;
 }
 
 
-void DS3234::FillTimeStruct(Time const &aTimeRef) {
+void DS3234::FillTimeStruct(Time const &aTime) {
 
-  unsigned int lSeconds = BinaryToBCD(aTimeRef.GetSeconds());
-  unsigned int lMinutes = BinaryToBCD(aTimeRef.GetMinutes());
-  unsigned int lHours   = BinaryToBCD(aTimeRef.GetHours());
-  if (!aTimeRef.Is24H()) {
-    lHours |= Hours::H12_24_n;
-    if (aTimeRef.IsPM()) {
-      lHours |= Hours::PM_AM_n;
+  unsigned int lSeconds = BinaryToBCD(aTime.GetSeconds());
+  unsigned int lMinutes = BinaryToBCD(aTime.GetMinutes());
+  unsigned int lHours   = BinaryToBCD(aTime.GetHours());
+  if (!aTime.Is24H()) {
+    lHours |= HoursFields::H12_24_n;
+    if (aTime.IsPM()) {
+      lHours |= HoursFields::PM_AM_n;
     }
   }
 
@@ -526,12 +526,12 @@ void DS3234::FillTimeStruct(Time const &aTimeRef) {
 }
 
 
-void DS3234::FillDateStruct(Date const &aDateRef) {
+void DS3234::FillDateStruct(Date const &aDate) {
 
-  unsigned int lWeekday = aDateRef.GetWeekday();
-  unsigned int lDate    = BinaryToBCD(aDateRef.GetDate());
-  unsigned int lMonth   = BinaryToBCD(aDateRef.GetMonth());
-  unsigned int lYear    = BinaryToBCD(aDateRef.GetYear()
+  unsigned int lWeekday = aDate.GetWeekday();
+  unsigned int lDate    = BinaryToBCD(aDate.GetDate());
+  unsigned int lMonth   = BinaryToBCD(aDate.GetMonth());
+  unsigned int lYear    = BinaryToBCD(aDate.GetYear()
                                       - mBaseYear
                                       - mCentury);
 
@@ -543,32 +543,32 @@ void DS3234::FillDateStruct(Date const &aDateRef) {
 
 
 void DS3234::FillAlarmStruct(rtcc_alarm_t &aAlarmRef,
-                             Time const   &aTimeRef,
-                             Date const   &aDateRef) {
+                             Time const   &aTime,
+                             Date const   &aDate) {
 
-  FillAlarmTimeStruct(aAlarmRef, aTimeRef);
-  aAlarmRef.mDayDate = BinaryToBCD(aDateRef.GetDate());
+  FillAlarmTimeStruct(aAlarmRef, aTime);
+  aAlarmRef.mDayDate = BinaryToBCD(aDate.GetDate());
 }
 
 
 void DS3234::FillAlarmStruct(rtcc_alarm_t   &aAlarmRef,
-                             Time    const  &aTimeRef,
+                             Time    const  &aTime,
                              Weekday const  &aWeekdayRef) {
 
-  FillAlarmTimeStruct(aAlarmRef, aTimeRef);
+  FillAlarmTimeStruct(aAlarmRef, aTime);
   aAlarmRef.mDayDate = Weekday::NameToUI(aWeekdayRef.ToName());
 }
 
 
 void DS3234::FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef,
-                                 Time const   &aTimeRef) {
+                                 Time const   &aTime) {
 
-  unsigned int lMinutes = BinaryToBCD(aTimeRef.GetMinutes());
-  unsigned int lHours   = BinaryToBCD(aTimeRef.GetHours());
-  if (!aTimeRef.Is24H()) {
-    lHours |= Hours::H12_24_n;
-    if (aTimeRef.IsPM()) {
-      lHours |= Hours::PM_AM_n;
+  unsigned int lMinutes = BinaryToBCD(aTime.GetMinutes());
+  unsigned int lHours   = BinaryToBCD(aTime.GetHours());
+  if (!aTime.Is24H()) {
+    lHours |= HoursFields::H12_24_n;
+    if (aTime.IsPM()) {
+      lHours |= HoursFields::PM_AM_n;
     }
   }
 

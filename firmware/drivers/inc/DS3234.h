@@ -1,5 +1,4 @@
-#ifndef DS3234_H_
-#define DS3234_H_
+#pragma once
 // *******************************************************************************
 //
 // Project: Component drivers.
@@ -15,7 +14,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -35,8 +34,6 @@ using namespace CoreLink;
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
-//class SPI;
-
 
 //! \brief Brief description.
 //! Details follow...
@@ -95,7 +92,7 @@ class DS3234 : public RTCC {
 
   struct L_ADDR_MAP_STRUCT_TAG {
     time2_t      mTime;
-    date_t      mDate;
+    date_t       mDate;
     rtcc_reg_t   mAlarm1Seconds;
     rtcc_alarm_t mAlarm1;
     rtcc_alarm_t mAlarm2;
@@ -158,16 +155,16 @@ class DS3234 : public RTCC {
   void UpdateCachedVal(void);
 
  private:
-  enum Hours : uint8_t {
+  enum HoursFields : uint8_t {
     H12_24_n = (0x1 << 6),
     PM_AM_n  = (0x1 << 5),
   };
 
-  enum Month : uint8_t {
+  enum MonthFields : uint8_t {
     CENTURY = (0x1 << 7),
   };
 
-  enum DayDate : uint8_t {
+  enum DayDateFields : uint8_t {
     DAY_DATE_n = (0x1 << 6),
     AnMx       = (0x1 << 7)
   };
@@ -226,8 +223,8 @@ class DS3234 : public RTCC {
   };
 
  private:
-  void UpdateTime(Time &aTimeRef);
-  void UpdateDate(Date &aDateRef);
+  void UpdateTime(Time &aTime);
+  void UpdateDate(Date &aDate);
 
   void FillTimeStruct(Time const &aTimeRef);
   void FillDateStruct(Date const &aDateRef);
@@ -268,4 +265,3 @@ class DS3234 : public RTCC {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // DS3234_H_
