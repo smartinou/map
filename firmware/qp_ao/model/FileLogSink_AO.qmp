@@ -5,11 +5,24 @@
   <attribute name="mTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
    <documentation>Timer for flushing queue of log events.</documentation>
   </attribute>
-  <attribute name="mLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
+  <attribute name="mSyncLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
    <documentation>Log level threshold/filter.</documentation>
+  </attribute>
+  <attribute name="mBufLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
+   <documentation>The log level required to write the log entry to the file.
+The file is sync'ed right away.</documentation>
+  </attribute>
+  <attribute name="mSyncTimerTicks" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+   <documentation>Sync timer ticks.</documentation>
   </attribute>
   <attribute name="mFile" type="FIL" visibility="0x02" properties="0x00">
    <documentation>The log file.</documentation>
+  </attribute>
+  <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
+   <documentation>Local copy of current date.</documentation>
+  </attribute>
+  <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
+   <documentation>Local copy of current time.</documentation>
   </attribute>
   <attribute name="mWrErr" type="unsigned int" visibility="0x02" properties="0x00">
    <documentation>Number of write errors.  </documentation>
@@ -19,10 +32,13 @@
   </attribute>
   <operation name="FileLogSink_AO" type="" visibility="0x00" properties="0x00">
    <documentation>Ctor.</documentation>
-   <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
    <code>  : QMActive(Q_STATE_CAST(&amp;FileLogSink_AO::initial))
   , mTimer(this, LOG_TIMER_SIG, 0U)
-  , mLogLevel(aLogLevelThreshold)
+  , mSyncLogLevel(PRI_CRIT)
+  , mBufLogLevel(PRI_INFO)
+  , mSyncTimerTicks(0)
+  , mDate()
+  , mTime()
   , mWrErr(0)
   , mLineOverflow(0)
 
@@ -32,10 +48,14 @@
    <documentation>Dtor.</documentation>
    <code>// Dtor body.</code>
   </operation>
-  <operation name="SetLogLevel" type="void" visibility="0x02" properties="0x00">
+  <operation name="SetSyncLogLevel" type="void" visibility="0x00" properties="0x00">
    <documentation>Sets the new log level threshold to filter log events.</documentation>
    <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
-   <code>mLogLevel = aLogLevelThreshold;</code>
+   <code>mSyncLogLevel = aLogLevelThreshold;</code>
+  </operation>
+  <operation name="SetBufLogLevel" type="void" visibility="0x00" properties="0x00">
+   <documentation>Sets the new log level threshold to filter log events.</documentation>
+   <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
   </operation>
   <statechart>
    <initial target="../1">
@@ -51,22 +71,21 @@ if (FR_OK != lResult) {
    </initial>
    <state name="Running">
     <documentation>Main running state.</documentation>
-    <entry brief="TimerStart();">static unsigned int sPeriod = 5 * 60;
-me-&gt;mTimer.armX(BSP_TICKS_PER_SEC * sPeriod,
-  BSP_TICKS_PER_SEC * sPeriod);</entry>
-    <exit brief="TimerStop();">me-&gt;mTimer.disarm();
+    <entry brief="TimerStart();">me-&gt;mTimer.armX(me-&gt;mSyncTimerTicks, me-&gt;mSyncTimerTicks);</entry>
+    <exit brief="TimerStop(); CloseFile();">me-&gt;mTimer.disarm();
 f_close(&amp;me-&gt;mFile);</exit>
     <tran trig="LOG_TIMER">
-     <action brief="FlushLogQueue();"/>
-     <tran_glyph conn="22,26,3,-1,42">
+     <action brief="SyncFile();">f_sync(&amp;me-&gt;mFile);</action>
+     <tran_glyph conn="22,24,3,-1,50">
       <action box="0,-2,36,3"/>
      </tran_glyph>
     </tran>
     <tran trig="LOG_EVT">
      <action brief="ParseEvt();">LogEvt const * const lLogEvt = static_cast&lt;LogEvt const * const&gt;(e);</action>
      <choice>
-      <guard brief="Level &gt;= Threshold">lLogEvt-&gt;mLogLevel &gt;= me-&gt;mLogLevel</guard>
-      <action brief="WriteEvt();">static unsigned int const sLineMax = 1024;
+      <guard brief="Level &gt;= SyncThreshold">lLogEvt-&gt;mLogLevel &gt;= me-&gt;mSyncLogLevel</guard>
+      <action brief="WriteEvt(); SyncFile();">#if 0
+static unsigned int const sLineMax = 1024;
 char lLine[sLineMax];
 int lLen = snprintf(
   &amp;lLine[0],
@@ -92,28 +111,52 @@ if (FR_OK != lResult) {
 } else if (lWritten &lt; static_cast&lt;UINT&gt;(lLen)) {
   me-&gt;mWrErr++;
 }
-</action>
-      <choice_glyph conn="44,34,5,-1,20">
-       <action box="1,-2,27,4"/>
+
+#else
+char lTmpStr[64];
+int lLen = f_printf(
+  &amp;me-&gt;mFile,
+  //sLineMax,
+  &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
+  DateHelper::ToStr(me-&gt;mDate, &amp;lTmpStr[0]),
+  TimeHelper::ToStr(me-&gt;mTime, &amp;lTmpStr[0]),
+  LogLevel::ToStr(lLogEvt-&gt;mLogLevel),
+  lLogEvt-&gt;mFileStr,
+  lLogEvt-&gt;mFunctionStr,
+  lLogEvt-&gt;mLine,
+  lLogEvt-&gt;mCategoryStr,
+  lLogEvt-&gt;mMsgStr);
+
+f_sync(&amp;me-&gt;mFile);
+#endif</action>
+      <choice_glyph conn="44,32,5,-1,28">
+       <action box="1,-2,29,5"/>
+      </choice_glyph>
+     </choice>
+     <choice>
+      <guard brief="Level &gt;= BufThreshold">lLogEvt-&gt;mLogLevel &gt;= me-&gt;mBufLogLevel</guard>
+      <action brief="WriteEvt();"/>
+      <choice_glyph conn="44,32,4,-1,8,28">
+       <action box="1,5,27,6"/>
       </choice_glyph>
      </choice>
      <choice>
       <guard brief="else"/>
-      <action brief="DiscardEvt();"/>
-      <choice_glyph conn="44,34,4,-1,4,20">
-       <action box="1,1,20,4"/>
+      <action brief="Discard();"/>
+      <choice_glyph conn="44,32,4,-1,16,28">
+       <action box="1,13,20,3"/>
       </choice_glyph>
      </choice>
-     <tran_glyph conn="22,34,3,-1,22">
+     <tran_glyph conn="22,32,3,-1,22">
       <action box="0,-2,27,4"/>
      </tran_glyph>
     </tran>
-    <state_glyph node="22,12,50,30">
+    <state_glyph node="22,12,58,38">
      <entry box="1,2,15,3"/>
-     <exit box="1,5,16,3"/>
+     <exit box="1,5,26,3"/>
     </state_glyph>
    </state>
-   <state_diagram size="80,50"/>
+   <state_diagram size="88,58"/>
   </statechart>
  </class>
 </package>

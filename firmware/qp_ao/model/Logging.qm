@@ -99,6 +99,9 @@ $define(Events::LogEvt)
 #include &quot;ff.h&quot;
 #include &quot;Logger.h&quot;
 
+#include &quot;Date.h&quot;
+#include &quot;Time.h&quot;
+
 // Forward declarations.
 
 

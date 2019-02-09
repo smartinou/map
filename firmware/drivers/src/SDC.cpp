@@ -117,10 +117,10 @@ enum L_OCR_MASK_ENUM_TAG {
 #define CMD58   (58)            // READ_OCR
 
 #define REG32TOH(num)         \
-  ((num>>24)&0x000000ff) | \
+  (((num>>24)&0x000000ff) | \
   ((num<<8)&0x00ff0000)  | \
   ((num>>8)&0x0000ff00)  | \
-  ((num<<24)&0xff000000)
+  ((num<<24)&0xff000000))
 
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES

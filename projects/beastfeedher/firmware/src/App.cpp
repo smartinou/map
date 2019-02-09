@@ -303,7 +303,7 @@ bool App::Init(void) {
     0U,
     &lRTCCInitEvt);
 
-  mFileLogSink_AO = new FileLogSink_AO(PRI_INFO);
+  mFileLogSink_AO = new FileLogSink_AO();
   mFileLogSink_AO->start(
     2U,
     mFileLogSinkEvtQPtr,
