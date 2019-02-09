@@ -80,7 +80,12 @@ Month::Name Month::UIToName(unsigned int aMonth) {
 
 
 char const * MonthHelper::ToStr(Month const &aMonth) {
-  switch (aMonth.Get()) {
+  return MonthHelper::ToStr(aMonth.Get());
+}
+
+
+char const * MonthHelper::ToStr(unsigned int aMonth) {
+  switch (aMonth) {
     case  1: return "Jan";
     case  2: return "Feb";
     case  3: return "Mar";
@@ -94,6 +99,8 @@ char const * MonthHelper::ToStr(Month const &aMonth) {
     case 11: return "Nov";
     case 12: return "Dec";
   }
+
+  return nullptr;
 }
 
 // *****************************************************************************

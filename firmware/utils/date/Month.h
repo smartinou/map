@@ -77,6 +77,7 @@ class Month
 
 namespace MonthHelper {
   char const * ToStr(Month const &aMonth);
+  char const * ToStr(unsigned int aMonth);
 }
 
 // ******************************************************************************
