@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,11 +32,13 @@
 //! \brief Limit class.
 class Limit {
  public:
-  explicit Limit(unsigned int aLowerLimit,
-                 unsigned int aUpperLimit);
-  explicit Limit(unsigned int aLowerLimit,
-                 unsigned int aUpperLimit,
-                 unsigned int aVal);
+  explicit Limit(
+    unsigned int aLowerLimit,
+    unsigned int aUpperLimit);
+  explicit Limit(
+    unsigned int aLowerLimit,
+    unsigned int aUpperLimit,
+    unsigned int aVal);
 
   virtual ~Limit() {};
 
@@ -48,6 +50,9 @@ class Limit {
 
   Limit& operator-- ();
   Limit  operator-- (int);
+
+  bool operator==(Limit const &rhs);
+  inline bool operator!=(Limit const &rhs) { return !(*this == rhs); }
 
  private:
   unsigned int mLowerLimit;

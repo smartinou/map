@@ -68,6 +68,9 @@ class Date
   Month::Name   GetMonthName(void)   const;
   Weekday::Name GetWeekdayName(void) const;
 
+  bool operator==(Date const &rhs);
+  inline bool operator!=(Date const &rhs){ return !(*this == rhs); }
+
  private:
   Year    mYear;
   Month   mMonth;

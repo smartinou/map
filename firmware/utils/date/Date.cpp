@@ -94,6 +94,18 @@ Weekday::Name Date::GetWeekdayName(void) const {
 }
 
 
+bool Date::operator==(Date const &rhs) {
+  if ((this->mYear == rhs.mYear) &&
+    (this->mMonth == rhs.mMonth) &&
+    (this->mDate == rhs.mDate) &&
+    (this->mWeekday == rhs.mWeekday)) {
+      return true;
+    }
+
+    return false;
+}
+
+
 // TimeHelper functions.
 char const *DateHelper::ToStr(Date const &aDate, char * const aInStr, size_t aStrSize) {
 
