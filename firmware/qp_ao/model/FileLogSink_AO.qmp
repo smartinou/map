@@ -57,6 +57,26 @@ The file is sync'ed right away.</documentation>
    <documentation>Sets the new log level threshold to filter log events.</documentation>
    <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
   </operation>
+  <operation name="WrEvt" type="void" visibility="0x02" properties="0x00">
+   <documentation>Common function to write event into file buffer.</documentation>
+   <parameter name="me" type="FileLogSink_AO * const"/>
+   <parameter name="aLogEvt" type="LogEvt const &amp;"/>
+   <code>char lTmpStr[64];
+int lLen = f_printf(
+  &amp;me-&gt;mFile,
+  &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
+  DateHelper::ToStr(me-&gt;mDate, &amp;lTmpStr[0]),
+  TimeHelper::ToStr(me-&gt;mTime, &amp;lTmpStr[0]),
+  LogLevel::ToStr(aLogEvt.mLogLevel),
+  aLogEvt.mFileStr,
+  aLogEvt.mFunctionStr,
+  aLogEvt.mLine,
+  aLogEvt.mCategoryStr,
+  aLogEvt.mMsgStr);
+
+// Do nothing with Len for now.
+(void)lLen;</code>
+  </operation>
   <statechart>
    <initial target="../1">
     <action brief="OpenFile();">BSP_InitFS();
@@ -65,7 +85,7 @@ if (FR_OK != lResult) {
   // Error.
 }
 </action>
-    <initial_glyph conn="8,8,5,0,20,4">
+    <initial_glyph conn="8,8,5,0,10,4">
      <action box="0,-2,14,4"/>
     </initial_glyph>
    </initial>
@@ -76,87 +96,68 @@ if (FR_OK != lResult) {
 f_close(&amp;me-&gt;mFile);</exit>
     <tran trig="LOG_TIMER">
      <action brief="SyncFile();">f_sync(&amp;me-&gt;mFile);</action>
-     <tran_glyph conn="22,24,3,-1,50">
-      <action box="0,-2,36,3"/>
+     <tran_glyph conn="12,24,3,-1,50">
+      <action box="0,-3,36,3"/>
      </tran_glyph>
     </tran>
     <tran trig="LOG_EVT">
      <action brief="ParseEvt();">LogEvt const * const lLogEvt = static_cast&lt;LogEvt const * const&gt;(e);</action>
      <choice>
       <guard brief="Level &gt;= SyncThreshold">lLogEvt-&gt;mLogLevel &gt;= me-&gt;mSyncLogLevel</guard>
-      <action brief="WriteEvt(); SyncFile();">#if 0
-static unsigned int const sLineMax = 1024;
-char lLine[sLineMax];
-int lLen = snprintf(
-  &amp;lLine[0],
-  sLineMax,
-  &quot;%s in file %s, function %s at line %d. %s::%s\n&quot;,
-  LogLevel::ToStr(lLogEvt-&gt;mLogLevel),
-  lLogEvt-&gt;mFileStr,
-  lLogEvt-&gt;mFunctionStr,
-  lLogEvt-&gt;mLine,
-  lLogEvt-&gt;mCategoryStr,
-  lLogEvt-&gt;mMsgStr);
-if (lLen &lt; 0) {
-  me-&gt;mWrErr++;
-}
-if (static_cast&lt;unsigned int&gt;(lLen) &gt; sLineMax) {
-  me-&gt;mLineOverflow++;
-}
-
-UINT lWritten = 0;
-FRESULT lResult = f_write(&amp;me-&gt;mFile, &amp;lLine[0], static_cast&lt;UINT&gt;(lLen), &amp;lWritten);
-if (FR_OK != lResult) {
-  me-&gt;mWrErr++;
-} else if (lWritten &lt; static_cast&lt;UINT&gt;(lLen)) {
-  me-&gt;mWrErr++;
-}
-
-#else
-char lTmpStr[64];
-int lLen = f_printf(
-  &amp;me-&gt;mFile,
-  //sLineMax,
-  &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
-  DateHelper::ToStr(me-&gt;mDate, &amp;lTmpStr[0]),
-  TimeHelper::ToStr(me-&gt;mTime, &amp;lTmpStr[0]),
-  LogLevel::ToStr(lLogEvt-&gt;mLogLevel),
-  lLogEvt-&gt;mFileStr,
-  lLogEvt-&gt;mFunctionStr,
-  lLogEvt-&gt;mLine,
-  lLogEvt-&gt;mCategoryStr,
-  lLogEvt-&gt;mMsgStr);
-
-f_sync(&amp;me-&gt;mFile);
-#endif</action>
-      <choice_glyph conn="44,32,5,-1,28">
-       <action box="1,-2,29,5"/>
+      <action brief="WriteEvt(); SyncFile();">me-&gt;WrEvt(me, *lLogEvt);
+f_sync(&amp;me-&gt;mFile);</action>
+      <choice_glyph conn="34,32,5,-1,54">
+       <action box="1,-3,46,4"/>
       </choice_glyph>
      </choice>
      <choice>
       <guard brief="Level &gt;= BufThreshold">lLogEvt-&gt;mLogLevel &gt;= me-&gt;mBufLogLevel</guard>
-      <action brief="WriteEvt();"/>
-      <choice_glyph conn="44,32,4,-1,8,28">
-       <action box="1,5,27,6"/>
+      <action brief="WriteEvt();">me-&gt;WrEvt(me, *lLogEvt);</action>
+      <choice_glyph conn="34,32,4,-1,8,54">
+       <action box="1,5,50,3"/>
       </choice_glyph>
      </choice>
      <choice>
       <guard brief="else"/>
-      <action brief="Discard();"/>
-      <choice_glyph conn="44,32,4,-1,16,28">
-       <action box="1,13,20,3"/>
+      <action brief="DiscardEvt();"/>
+      <choice_glyph conn="34,32,4,-1,16,54">
+       <action box="1,13,26,3"/>
       </choice_glyph>
      </choice>
-     <tran_glyph conn="22,32,3,-1,22">
-      <action box="0,-2,27,4"/>
+     <tran_glyph conn="12,32,3,-1,22">
+      <action box="0,-3,27,4"/>
      </tran_glyph>
     </tran>
-    <state_glyph node="22,12,58,38">
+    <tran trig="RTCC_TIME_TICK_ALARM">
+     <action brief="StoreDate();">RTCCTimeDateEvt const * const lEvt = reinterpret_cast&lt;RTCCTimeDateEvt const * const&gt;(e);
+
+me-&gt;mTime = lEvt-&gt;mTime;</action>
+     <choice>
+      <guard brief="NewMonth">// Check if new month.
+me-&gt;mDate != lEvt-&gt;mDate</guard>
+      <action brief="OpenNewLogFile();">me-&gt;mDate = lEvt-&gt;mDate;
+// Create a new log file.</action>
+      <choice_glyph conn="42,54,5,-1,46">
+       <action box="1,-3,41,3"/>
+      </choice_glyph>
+     </choice>
+     <choice>
+      <guard brief="else"/>
+      <action brief="DoNothing();"/>
+      <choice_glyph conn="42,54,4,-1,8,46">
+       <action box="1,5,27,4"/>
+      </choice_glyph>
+     </choice>
+     <tran_glyph conn="12,54,3,-1,30">
+      <action box="0,-3,27,5"/>
+     </tran_glyph>
+    </tran>
+    <state_glyph node="12,12,84,52">
      <entry box="1,2,15,3"/>
      <exit box="1,5,26,3"/>
     </state_glyph>
    </state>
-   <state_diagram size="88,58"/>
+   <state_diagram size="100,68"/>
   </statechart>
  </class>
 </package>

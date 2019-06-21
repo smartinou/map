@@ -119,6 +119,7 @@ $declare(AOs::FileLogSink_AO)
 
 #include &quot;BSP.h&quot;
 
+#include &quot;RTCC_Evt.h&quot;
 #include &quot;FileLogSink_AO.h&quot;
 
 

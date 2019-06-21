@@ -364,6 +364,22 @@ HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE
 
 BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
 
+QM_PATH := c:/apps/qm/bin
+QM_BIN := $(QM_PATH)/qmc.exe
+
+
+MODEL_IN_FILES := \
+  $(FIRMWARE_PATH)/qp_ao/model/Logging.qm
+
+MODEL_OUT_FILES := \
+  FileLogSink_AO.h \
+	FileLogSink_AO.cpp
+
+	#Logger.h \
+	#Logger.cpp \
+	#LogEvt.h \
+	#LogEvt.cpp
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -392,6 +408,11 @@ $(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
 
 $(BIN_OUTPUT_FILES):
 	cp $(WEB_INPUT_DIR)/$(notdir $@) $@
+
+
+
+$(MODEL_OUT_FILES): $(MODEL_IN_FILES)
+	$(QM_BIN) $?
 
 
 

@@ -111,9 +111,9 @@ class SDC {
   void PowerOn(void);
   void PowerOff(void);
 
-  int RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen);
+  bool RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen);
 #if (FF_FS_READONLY == 0)
-  int TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken);
+  bool TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken);
 #endif // FF_FS_READONLY
 
   //R1_RESPONSE_PKT SendCmd(uint8_t aCmd, uint32_t aArg);
@@ -130,6 +130,8 @@ class SDC {
 
   DSTATUS      mStatus;
   uint8_t      mCardType;
+
+  static unsigned int const sSectorSize = 512;
 };
 
 // ******************************************************************************

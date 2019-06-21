@@ -116,6 +116,11 @@ enum L_OCR_MASK_ENUM_TAG {
 #define CMD55   (55)            // APP_CMD
 #define CMD58   (58)            // READ_OCR
 
+#define L_DATA_TOKEN_CMD25 (0xFC)
+#define L_STOP_TOKEN_CMD25 (0xFD)
+#define L_DATA_TOKEN_OTHER (0xFE)
+
+
 #define REG32TOH(num)         \
   (((num>>24)&0x000000ff) | \
   ((num<<8)&0x00ff0000)  | \
@@ -276,6 +281,50 @@ DRESULT SDC::DiskRd(
   uint32_t     aStartSector,
   unsigned int aSectorCount) {
 
+  // Check parameter.
+  //if (drv || !aSectorCount) {
+  if (!aSectorCount) {
+    return RES_PARERR;
+  }
+
+  // Check if drive is ready.
+  if (mStatus & STA_NOINIT) {
+    return RES_NOTRDY;
+  }
+
+  if (!(mCardType & CT_BLOCK)) {
+    // LBA ot BA conversion (byte addressing cards).
+    aStartSector *= SDC::sSectorSize;
+  }
+
+  if (aSectorCount == 1) {
+    // Single sector read.
+    // READ_SINGLE_BLOCK.
+    if ((SendCmd(CMD17, aStartSector) == 0)
+	&& RxDataBlock(aBufPtr, SDC::sSectorSize)) {
+      aSectorCount = 0;
+    }
+  } else {
+    // Multiple sector read.
+    if (SendCmd(CMD18, aStartSector) == 0) {
+      // READ_MULTIPLE_BLOCK.
+      do {
+	if (!RxDataBlock(aBufPtr, SDC::sSectorSize)) {
+          break;
+        }
+	aBufPtr += SDC::sSectorSize;
+      } while (--aSectorCount);
+
+      // STOP_TRANSMISSION.
+      SendCmd(CMD12, 0);
+    }
+  }
+
+  Deselect();
+  if (aSectorCount) {
+    return RES_ERROR;
+  }
+
   return RES_OK;
 }
 
@@ -285,6 +334,56 @@ DRESULT SDC::DiskWr(
   uint8_t const *aBufPtr,
   uint32_t       aStartSector,
   unsigned int   aSectorCount) {
+
+  if (mStatus & STA_NOINIT) {
+    // Check drive status.
+    return RES_NOTRDY;
+  }
+
+  if (mStatus & STA_PROTECT) {
+    // Check write protect.
+    return RES_WRPRT;
+  }
+
+  if (!(mCardType & CT_BLOCK)) {
+    // LBA ==> BA conversion (byte addressing cards).
+    aStartSector *= SDC::sSectorSize;
+  }
+
+  if (aSectorCount == 1) {
+    // Single sector write.
+    // WRITE_BLOCK.
+    if ((SendCmd(CMD24, aStartSector) == 0)
+	&& TxDataBlock(aBufPtr, L_DATA_TOKEN_OTHER)) {
+      aSectorCount = 0;
+    }
+  } else {
+    // Multiple sector write.
+    if (mCardType & CT_SDC) {
+      // Predefine number of sectors.
+      SendCmd(ACMD23, aSectorCount);
+    }
+
+    // WRITE_MULTIPLE_BLOCK.
+    if (SendCmd(CMD25, aStartSector) == 0) {
+      do {
+	if (!TxDataBlock(aBufPtr, L_DATA_TOKEN_CMD25)) {
+          break;
+        }
+	aBufPtr += SDC::sSectorSize;
+      } while (--aSectorCount);
+
+      // STOP_TRAN token.
+      if (!TxDataBlock(nullptr, L_STOP_TOKEN_CMD25)) {
+        aSectorCount = 1;
+      }
+    }
+  }
+
+  Deselect();
+  if (aSectorCount) {
+    return RES_ERROR;
+  }
 
   return RES_OK;
 }
@@ -347,14 +446,61 @@ void SDC::PowerOff(void) {
 }
 
 
-int SDC::RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen) {
-  return 0;
+bool SDC::RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen) {
+
+  // Wait for DataStart token in timeout of 200ms.
+  uint8_t lToken = 0x00;
+  unsigned int Timer1 = 200;
+  do {
+    lToken = mSPIDev.PushPullByte(0xFF);
+    // This loop will take a time.
+    // Insert rot_rdq() here for multitask envilonment.
+  } while ((lToken == 0xFF) && Timer1);
+
+  if (lToken != L_DATA_TOKEN_OTHER) {
+    // Function fails if invalid DataStart token or timeout.
+    return false;
+  }
+
+  // Store trailing data to the buffer.
+  mSPIDev.RdData(aBufPtr, aBlockLen, mSPISlaveCfg);
+
+  // Discard CRC.
+  mSPIDev.PushPullByte(0xFF);
+  mSPIDev.PushPullByte(0xFF);
+
+  return true;
 }
 
 
 #if (FF_FS_READONLY == 0)
-int SDC::TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken) {
-  return 0;
+bool SDC::TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken) {
+
+  // Wait for card ready.
+  if (0) {//!wait_ready(500)) {
+    return false;
+  }
+
+  // Send token byte.
+  mSPIDev.PushPullByte(aToken);
+
+  // Send data if token is other than StopTran.
+  if (aToken != L_STOP_TOKEN_CMD25) {
+    // Data.
+    mSPIDev.WrData(aBufPtr, SDC::sSectorSize, mSPISlaveCfg);
+    // Dummy CRC.
+    mSPIDev.PushPullByte(0xFF);
+    mSPIDev.PushPullByte(0xFF);
+
+    // Receive data resp.
+    uint8_t lVal = mSPIDev.PushPullByte(0xFF);
+    if ((lVal & 0x1F) != 0x05) {
+      // Function fails if the data packet was not accepted.
+      return false;
+    }
+  }
+
+  return true;
 }
 #endif // FF_FS_READONLY
 
