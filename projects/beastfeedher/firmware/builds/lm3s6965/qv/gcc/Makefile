@@ -82,6 +82,7 @@ VPATH = \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
+        $(FIRMWARE_PATH)/qp_ao/model/src \
         $(FIRMWARE_PATH)/utils/date \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
@@ -107,6 +108,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
+        -I$(FIRMWARE_PATH)/qp_ao/model/inc \
         -I$(FIRMWARE_PATH)/utils/date \
         -I$(FIRMWARE_PATH)/utils/inc \
         -I$(FIRMWARE_PATH)/utils/time \
@@ -164,8 +166,10 @@ CPP_SRCS := \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \
+        FileLogSink_AO.cpp \
         GPIOs.cpp \
         Limit.cpp \
+        LogEvt.cpp \
         Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
@@ -360,6 +364,22 @@ HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE
 
 BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
 
+QM_PATH := c:/apps/qm/bin
+QM_BIN := $(QM_PATH)/qmc.exe
+
+
+MODEL_IN_FILES := \
+  $(FIRMWARE_PATH)/qp_ao/model/Logging.qm
+
+MODEL_OUT_FILES := \
+  FileLogSink_AO.h \
+	FileLogSink_AO.cpp
+
+	#Logger.h \
+	#Logger.cpp \
+	#LogEvt.h \
+	#LogEvt.cpp
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -388,6 +408,11 @@ $(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
 
 $(BIN_OUTPUT_FILES):
 	cp $(WEB_INPUT_DIR)/$(notdir $@) $@
+
+
+
+$(MODEL_OUT_FILES): $(MODEL_IN_FILES)
+	$(QM_BIN) $?
 
 
 

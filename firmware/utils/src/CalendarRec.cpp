@@ -1,18 +1,18 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: Utilities
 //
-// Module: Feeding calendar class.
+// Module: Calendar class.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Class used for storing time entries.
+//! \ingroup utils
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -51,8 +51,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CalendarRec::CalendarRec() :
-  DBRec() {
+CalendarRec::CalendarRec()
+  : DBRec() {
 
   // Ctor body left intentionally empty.
 }
@@ -124,10 +124,11 @@ void CalendarRec::ClrEntry(unsigned int aWeekday, Time const &aTimeRef) {
 }
 
 
-bool CalendarRec::GetNextEntry(Weekday  const &aWeekdayRef,
-                            Time     const &aTimeRef,
-                            Weekday        &aNextWeekdayRef,
-                            Time           &aNextTimeRef) {
+bool CalendarRec::GetNextEntry(
+  Weekday  const &aWeekdayRef,
+  Time     const &aTimeRef,
+  Weekday        &aNextWeekdayRef,
+  Time           &aNextTimeRef) {
 
   bool lIsEntryFound = false;
 
@@ -200,13 +201,8 @@ void CalendarRec::ResetDflt(void) {
   // Set time entries in whole week.
   // 8:00 and 17:00.
   ClrAllEntries();
-
-  Time lTime;
-  lTime.SetIs24H(true);
-  lTime.SetHours(8);
-  SetTimeEntry(lTime);
-  lTime.SetHours(17);
-  SetTimeEntry(lTime);
+  SetTimeEntry(Time(8, 0, 0, true));
+  SetTimeEntry(Time(17, 0, 0, true));
 
   mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
 

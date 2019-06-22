@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -44,31 +44,22 @@ class ITime {
 };
 
 
-class ITimeBuilder
+//! \brief Time class, as an aggregate of other classes.
+// This is a simple class, meant to represent time snapshots,
+// from an RTCC for example.
+// It will not properly overflow and keep time if two objects
+// are added together.
+class Time
   : public ITime {
  public:
-  virtual void SetHours(  unsigned int aHours) = 0;
-  virtual void SetMinutes(unsigned int aMinutes) = 0;
-  virtual void SetSeconds(unsigned int aSeconds) = 0;
-
-  virtual void SetIs24H(bool aIs24H) = 0;
-  virtual void SetIsPM( bool aIsPM) = 0;
-};
-
-
-//! \brief Time class, as an aggregate of other classes.
-class Time
-  : public ITimeBuilder {
- public:
-  Time();
   explicit Time(Hour   aHours,
                 Minute aMinutes,
                 Second aSeconds,
                 bool   aIs24H = true,
                 bool   aIsPM  = false);
-  explicit Time(unsigned int aHours,
-                unsigned int aMinutes,
-                unsigned int aSeconds,
+  explicit Time(unsigned int aHours = 0,
+                unsigned int aMinutes = 0,
+                unsigned int aSeconds = 0,
                 bool         aIs24H = true,
                 bool         aIsPM  = false);
   ~Time();
@@ -81,14 +72,6 @@ class Time
   bool Is24H(void) const;
   bool IsPM(void)  const;
 
-  // ITimeBuilder.
-  void SetHours(  unsigned int aHours);
-  void SetMinutes(unsigned int aMinutes);
-  void SetSeconds(unsigned int aSeconds);
-
-  void SetIs24H(bool aIs24H);
-  void SetIsPM( bool aIsPM);
-
  private:
   Hour   mHours;
   Minute mMinutes;
@@ -97,14 +80,6 @@ class Time
   bool   mIs24H;
   bool   mIsPM;
 };
-
-
-// Helper functions.
-namespace TimeHelper {
-
-char const *ToStr(Time &aTime, char * const aInStr);
-
-} // namespace TimeHelper
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -117,6 +92,13 @@ char const *ToStr(Time &aTime, char * const aInStr);
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
+
+// Helper functions.
+namespace TimeHelper {
+
+char const *ToStr(Time const &aTime, char * const aInStr);
+
+} // namespace TimeHelper
 
 // ******************************************************************************
 //                                END OF FILE

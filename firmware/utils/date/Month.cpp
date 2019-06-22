@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -43,24 +43,21 @@
 // *****************************************************************************
 
 Month::Month(unsigned int aMonth)
-  : Limit(Month::NameToUI(Name::Min),
-          Month::NameToUI(Name::Max),
-          aMonth) {
+  : Limit(
+      Month::NameToUI(Name::Min),
+      Month::NameToUI(Name::Max),
+      aMonth) {
   // Ctor body left intentionally empty.
 }
 
 
 Month::Month(Month::Name aMonthName)
-  : Limit(Month::NameToUI(Name::Min),
-          Month::NameToUI(Name::Max)) {
+  : Limit(
+      Month::NameToUI(Name::Min),
+      Month::NameToUI(Name::Max)) {
 
   unsigned int lMonthUI = NameToUI(aMonthName);
   Set(lMonthUI);
-}
-
-
-unsigned int Month::Get(void) const {
-  return Limit::Get();
 }
 
 
@@ -79,6 +76,31 @@ unsigned int Month::NameToUI(Name aMonthName) {
 
 Month::Name Month::UIToName(unsigned int aMonth) {
   return static_cast<Name>(aMonth);
+}
+
+
+char const * MonthHelper::ToStr(Month const &aMonth) {
+  return MonthHelper::ToStr(aMonth.Get());
+}
+
+
+char const * MonthHelper::ToStr(unsigned int aMonth) {
+  switch (aMonth) {
+    case  1: return "Jan";
+    case  2: return "Feb";
+    case  3: return "Mar";
+    case  4: return "Apr";
+    case  5: return "May";
+    case  6: return "June";
+    case  7: return "July";
+    case  8: return "Aug";
+    case  9: return "Sept";
+    case 10: return "Oct";
+    case 11: return "Nov";
+    case 12: return "Dec";
+  }
+
+  return nullptr;
 }
 
 // *****************************************************************************

@@ -58,10 +58,6 @@ Weekday::Weekday(Name aWeekdayName)
   Set(lWeekdayToUI);
 }
 
-unsigned int Weekday::Get(void) const {
-  return Get();
-}
-
 
 Weekday::Name Weekday::ToName(void) const {
 

@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include "stdio.h"
+#include <stdio.h>
 
 #include "Date.h"
 
@@ -44,10 +44,11 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Date::Date(unsigned int  aYear,
-           Month::Name   aMonth,
-           unsigned int  aDate,
-           Weekday::Name aWeekday)
+Date::Date(
+  unsigned int  aYear,
+  Month::Name   aMonth,
+  unsigned int  aDate,
+  Weekday::Name aWeekday)
     : mYear(aYear)
     , mMonth(aMonth)
     , mDate(aDate)
@@ -93,49 +94,42 @@ Weekday::Name Date::GetWeekdayName(void) const {
 }
 
 
-void Date::SetYear( unsigned int aYear) {
-  mYear.Set(aYear);
-}
+bool Date::operator==(Date const &rhs) {
+  if ((this->mYear == rhs.mYear) &&
+    (this->mMonth == rhs.mMonth) &&
+    (this->mDate == rhs.mDate) &&
+    (this->mWeekday == rhs.mWeekday)) {
+      return true;
+    }
 
-
-void Date::SetMonth(unsigned int aMonth) {
-  mMonth.Set(aMonth);
-}
-
-
-void Date::SetDate( unsigned int aDate) {
-  mDate.Set(aDate);
-}
-
-
-void Date::SetWeekday(unsigned int aWeekday) {
-  mWeekday.Set(aWeekday);
-}
-
-
-void Date::SetMonth(Month::Name aMonthName) {
-
-  unsigned int lMonthUI = Month::NameToUI(aMonthName);
-  mMonth.Set(lMonthUI);
-}
-
-
-void Date::SetWeekday(Weekday::Name aWeekday) {
-
-  unsigned int lWeekdayUI = Weekday::NameToUI(aWeekday);
-  mWeekday.Set(lWeekdayUI);
+    return false;
 }
 
 
 // TimeHelper functions.
-char const *DateHelper::ToStr(Date &aDate, char * const aInStr) {
+char const *DateHelper::ToStr(Date const &aDate, char * const aInStr, size_t aStrSize) {
 
-  snprintf(aInStr,
-           10 + 1,
-           "%04d-%02d-%02d",
-           aDate.GetYear(),
-           aDate.GetMonth(),
-           aDate.GetDate());
+  snprintf(
+    aInStr,
+    aStrSize,
+    "%04d-%02d-%02d",
+    aDate.GetYear(),
+    aDate.GetMonth(),
+    aDate.GetDate());
+
+  return aInStr;
+}
+
+
+char const *DateHelper::ToStr2(Date const &aDate, char * const aInStr, size_t aStrSize) {
+
+  snprintf(
+    aInStr,
+    aStrSize,
+    "%04d-%s-%02d",
+    aDate.GetYear(),
+    MonthHelper::ToStr(aDate.GetMonth()),
+    aDate.GetDate());
 
   return aInStr;
 }

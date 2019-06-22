@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -57,7 +57,6 @@ class Month
   explicit Month(Name aMonthName = Name::January);
   ~Month() {}
 
-  unsigned int Get(void) const override;
   Name ToName(void) const;
 
   static unsigned int NameToUI(Name aMonthName);
@@ -75,6 +74,11 @@ class Month
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
+
+namespace MonthHelper {
+  char const * ToStr(Month const &aMonth);
+  char const * ToStr(unsigned int aMonth);
+}
 
 // ******************************************************************************
 //                                END OF FILE

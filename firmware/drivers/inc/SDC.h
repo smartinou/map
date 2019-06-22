@@ -44,21 +44,24 @@ namespace CoreLink {
 //! ...here.
 class SDC {
  public:
-  SDC(unsigned int           aDriveIx,
-      CoreLink::SPIDev      &aSPIDev,
-      CoreLink::SPISlaveCfg &aSPISlaveCfg);
+  SDC(
+    unsigned int           aDriveIx,
+    CoreLink::SPIDev      &aSPIDev,
+    CoreLink::SPISlaveCfg &aSPISlaveCfg);
 
   //static SDC *GetInstancePtr(unsigned int aDriveIx);
 
   DSTATUS GetDiskStatus(void);
   DSTATUS DiskInit(void);
-  DRESULT DiskRd(uint8_t     *aBufPtr,
-                 uint32_t     aStartSector,
-                 unsigned int aSectorCount);
+  DRESULT DiskRd(
+    uint8_t     *aBufPtr,
+    uint32_t     aStartSector,
+    unsigned int aSectorCount);
 #if (FF_FS_READONLY == 0)
-  DRESULT DiskWr(uint8_t const *aBufPtr,
-                 uint32_t       aStartSector,
-                 unsigned int   aSectorCount);
+  DRESULT DiskWr(
+    uint8_t const *aBufPtr,
+    uint32_t       aStartSector,
+    unsigned int   aSectorCount);
 #endif // _DISKIO_WRITE
 
 #if _DISKIO_IOCTL
@@ -76,31 +79,27 @@ class SDC {
     CT_BLOCK = 0x08  // Block addressing.
   };
 
-  // Normal response.
-  struct R1_RESPONSE_PKT_STRUCT_TAG {
-    uint8_t mR1;
-  };
+  typedef uint8_t R1_RESPONSE_PKT;
+  typedef uint8_t R1B_RESPONSE_PKT;
 
   // CID, CSD register.
   struct R2_RESPONSE_PKT_STRUCT_TAG {
-    uint8_t mR1;
+    R1_RESPONSE_PKT mR1;
     uint8_t mR2;
   };
 
   // OCR register.
   struct R3_RESPONSE_PKT_STRUCT_TAG {
-    uint8_t  mR1;
+    R1_RESPONSE_PKT mR1;
     uint32_t mOCR;
   };
 
   // Card interface condition.
   struct R7_RESPONSE_PKT_STRUCT_TAG {
-    uint8_t  mR1;
+    R1_RESPONSE_PKT mR1;
     uint32_t mIFCond;
   };
 
-
-  typedef struct R1_RESPONSE_PKT_STRUCT_TAG R1_RESPONSE_PKT;
   typedef struct R2_RESPONSE_PKT_STRUCT_TAG R2_RESPONSE_PKT;
   typedef struct R3_RESPONSE_PKT_STRUCT_TAG R3_RESPONSE_PKT;
   typedef struct R7_RESPONSE_PKT_STRUCT_TAG R7_RESPONSE_PKT;
@@ -112,16 +111,17 @@ class SDC {
   void PowerOn(void);
   void PowerOff(void);
 
-  int RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen);
+  bool RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen);
 #if (FF_FS_READONLY == 0)
-  int TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken);
+  bool TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken);
 #endif // FF_FS_READONLY
 
-  uint8_t SendCmd(uint8_t aCmd, uint32_t aArg);
-  uint8_t SendCmd(uint8_t      aCmd,
-                  uint32_t     aArg,
-                  void        *aRegPtr,
-                  unsigned int aRegLen);
+  //R1_RESPONSE_PKT SendCmd(uint8_t aCmd, uint32_t aArg);
+  R1_RESPONSE_PKT SendCmd(
+    uint8_t      aCmd,
+    uint32_t     aArg,
+    uint8_t     *aRegPtr = nullptr,
+    unsigned int aRegLen = 0);
   bool IsExpectedVoltageRange(void);
 
   unsigned int           mMyDriveIx;
@@ -130,10 +130,8 @@ class SDC {
 
   DSTATUS      mStatus;
   uint8_t      mCardType;
-  //SDC         *mNextPtr;
 
-  //static SDC         *mHeadPtr;
-  //static unsigned int mInstanceCount;
+  static unsigned int const sSectorSize = 512;
 };
 
 // ******************************************************************************

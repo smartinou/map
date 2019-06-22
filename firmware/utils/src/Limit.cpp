@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,22 +42,24 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Limit::Limit(unsigned int aLowerLimit,
-             unsigned int aUpperLimit)
-  : mLowerLimit(aLowerLimit)
-  , mUpperLimit(aUpperLimit)
-  , mVal(aLowerLimit) {
+Limit::Limit(
+  unsigned int aLowerLimit,
+  unsigned int aUpperLimit)
+    : mLowerLimit(aLowerLimit)
+    , mUpperLimit(aUpperLimit)
+    , mVal(aLowerLimit) {
 
   // Ctor body left intentionally empty.
 }
 
 
-Limit::Limit(unsigned int aLowerLimit,
-             unsigned int aUpperLimit,
-             unsigned int aVal)
-  : mLowerLimit(aLowerLimit)
-  , mUpperLimit(aUpperLimit)
-  , mVal(aVal) {
+Limit::Limit(
+  unsigned int aLowerLimit,
+  unsigned int aUpperLimit,
+  unsigned int aVal)
+    : mLowerLimit(aLowerLimit)
+    , mUpperLimit(aUpperLimit)
+    , mVal(aVal) {
 
   // Ctor body left intentionally empty.
   Set(aVal);
@@ -116,6 +118,15 @@ Limit Limit::operator-- (int) {
   Limit result(*this);
   --(*this);
   return result;
+}
+
+
+bool Limit::operator==(Limit const &rhs) {
+  if (this->mVal == rhs.mVal) {
+    return true;
+  }
+
+  return false;
 }
 
 // *****************************************************************************

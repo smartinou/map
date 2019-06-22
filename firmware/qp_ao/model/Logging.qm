@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="3.3.0">
+ <framework name="qpcpp"/>
+ <package name="Events" stereotype="0x01">
+  <class name="LogEvt" superclass="qpcpp::QEvt">
+   <documentation>Event used to generate a log entry.</documentation>
+   <attribute name="mSig" type="QP::QSignal" visibility="0x00" properties="0x00"/>
+   <attribute name="mLogLevel" type="LogLevel_t" visibility="0x00" properties="0x00"/>
+   <attribute name="mFileStr" type="char const * const" visibility="0x00" properties="0x00"/>
+   <attribute name="mLine" type="unsigned int const" visibility="0x00" properties="0x00"/>
+   <attribute name="mFunctionStr" type="char const * const" visibility="0x00" properties="0x00"/>
+   <attribute name="mCategoryStr" type="char const * const" visibility="0x00" properties="0x00"/>
+   <attribute name="mMsgStr" type="char const * const" visibility="0x00" properties="0x00"/>
+   <operation name="LogEvt" type="" visibility="0x00" properties="0x00">
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aLogLevel" type="LogLevel_t const"/>
+    <parameter name="aFileStr" type="char const * const"/>
+    <parameter name="aLine" type="unsigned int const"/>
+    <parameter name="aFunctionStr" type="char const * const"/>
+    <parameter name="aCategoryStr" type="char const * const"/>
+    <parameter name="aMsgStr" type="char const * const"/>
+    <code>  : QP::QEvt(aSig)
+  , mLogLevel(aLogLevel)
+  , mFileStr(aFileStr)
+  , mLine(aLine)
+  , mFunctionStr(aFunctionStr)
+  , mCategoryStr(aCategoryStr)
+  , mMsgStr(aMsgStr)
+
+// Ctor body.</code>
+   </operation>
+   <operation name="~LogEvt" type="" visibility="0x02" properties="0x00">
+    <documentation>Dtor.</documentation>
+    <code>// Dtor body.</code>
+   </operation>
+  </class>
+  <directory name="inc">
+   <file name="LogEvt.h">
+    <text>#pragma once
+
+#include &quot;qpcpp.h&quot;
+
+// Debug levels.
+#define X_LOG_LEVELS         \
+  _(PRI_DBG,  &quot;DEBUG&quot;)       \
+  _(PRI_INFO, &quot;INFORMATION&quot;) \
+  _(PRI_WARN, &quot;WARNING&quot;)     \
+  _(PRI_ERR,  &quot;ERROR&quot;)       \
+  _(PRI_CRIT, &quot;CRITICAL&quot;)    \
+  _(PRI_DIS,  &quot;DISABLED&quot;)
+
+
+#define _(enum, str) enum,
+typedef enum {
+  X_LOG_LEVELS
+} LogLevel_t;
+#undef _
+
+
+namespace LogLevel {
+char const *ToStr(LogLevel_t const aLevel);
+} // namespace LogLevel
+
+$declare(Events::LogEvt)
+</text>
+   </file>
+  </directory>
+  <directory name="src">
+   <file name="LogEvt.cpp">
+    <text>#include &quot;LogEvt.h&quot;
+
+
+namespace LogLevel {
+
+#define _(enum, str) case enum: return str;
+char const *ToStr(LogLevel_t const aLevel) {
+  switch (aLevel) {
+    X_LOG_LEVELS
+  }
+  return &quot;&quot;;
+}
+#undef _
+#undef X_LOG_LEVELS
+
+} // namespace LogLevel
+
+
+$define(Events::LogEvt)
+</text>
+   </file>
+  </directory>
+ </package>
+ <package name="AOs" stereotype="0x02">
+  <package file="./FileLogSink_AO.qmp"/>
+  <directory name="inc">
+   <file name="FileLogSink_AO.h">
+    <text>#pragma once
+
+#include &quot;ff.h&quot;
+#include &quot;Logger.h&quot;
+
+#include &quot;Date.h&quot;
+#include &quot;Time.h&quot;
+
+// Forward declarations.
+
+
+// Expansion of QM classes.
+$declare(AOs::FileLogSink_AO)
+</text>
+   </file>
+  </directory>
+  <directory name="src">
+   <file name="FileLogSink_AO.cpp">
+    <text>#include &quot;qpcpp.h&quot;
+
+#include &quot;Logger.h&quot;
+#include &quot;ff.h&quot;
+
+#include &quot;BSP.h&quot;
+
+#include &quot;RTCC_Evt.h&quot;
+#include &quot;FileLogSink_AO.h&quot;
+
+
+$define(AOs::FileLogSink_AO)
+</text>
+   </file>
+  </directory>
+ </package>
+ <directory name="inc">
+  <file name="Logger.h">
+   <text>#pragma once
+// *******************************************************************************
+//
+// Project: Logging.
+//
+// Module: Logger class.
+//
+// *******************************************************************************
+
+//! \file
+//! \brief MyClass device class.
+//! \ingroup module_group
+
+
+// ******************************************************************************
+//
+//        Copyright (c) 2018, Pleora Technologies, All rights reserved.
+//
+// ******************************************************************************
+
+// ******************************************************************************
+//                              INCLUDE FILES
+// ******************************************************************************
+
+#include &lt;cstddef&gt;
+#include &lt;string&gt;
+
+#include &quot;LogEvt.h&quot;
+
+// ******************************************************************************
+//                       DEFINED CONSTANTS AND MACROS
+// ******************************************************************************
+
+#define LOGGER (Logger::Instance())
+
+// TODO: Verify that release builds with gcc define NDEBUG.
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define LOG_DEBUG(aCategory, ...) \
+  LOGGER.Log(                     \
+    PRI_DBG,                      \
+    __FILE__,                     \
+    __LINE__,                     \
+    __FUNCTION__,                 \
+    aCategory,                    \
+    __VA_ARGS__)
+#else
+#define LOG_DEBUG(aCategory, ...)
+#endif
+
+#define LOG_INFO(aCategory, ...) \
+  LOGGER.Log(                    \
+    PRI_INFO,                    \
+    __FILE__,                    \
+    __LINE__,                    \
+    __FUNCTION__,                \
+    aCategory,                   \
+    __VA_ARGS__)
+
+#define LOG_WARNING(aCategory, ...) \
+  LOGGER.Log(                       \
+    PRI_WARN,                       \
+    __FILE__,                       \
+    __LINE__,                       \
+    __FUNCTION__,                   \
+    aCategory,                      \
+    __VA_ARGS__)
+
+#define LOG_ERROR(aCategory, ...) \
+  LOGGER.Log(                     \
+    PRI_ERR,                      \
+    __FILE__,                     \
+    __LINE__,                     \
+    __FUNCTION__,                 \
+    aCategory,                    \
+    __VA_ARGS__)
+
+#define LOG_CRITICAL(aCategory, ...) \
+  LOGGER.Log(                        \
+    PRI_CRIT,                        \
+    __FILE__,                        \
+    __LINE__,                        \
+    __FUNCTION__,                    \
+    aCategory,                       \
+    __VA_ARGS__)
+
+// ******************************************************************************
+//                         TYPEDEFS AND STRUCTURES
+// ******************************************************************************
+
+//! \brief Log generation class.
+class Logger {
+ public:
+  static Logger &amp;Instance();
+  virtual ~Logger();
+  void *operator new(size_t aSize) { return &amp;(Instance()); }
+  void  operator delete(void *aLoggerPtr) {}
+
+  LogLevel_t GetLogLevel(void) const;
+  LogLevel_t GetLogLevel(char const * const aCategoryStr) const;
+  unsigned int GetEvtSignal(char const * const aCategoryStr) const;
+
+  void SetLogLevel(LogLevel_t const aLevel);
+  bool AddCategory(
+    unsigned int const aEvtSignal,
+    char const * const aCategoryStr,
+    LogLevel_t   const aLevel = PRI_ERR);
+
+  bool Log(
+    LogLevel_t   const aLevel,
+    char const * const aFileStr,
+    unsigned int const aLine,
+    char const * const aFunctionStr,
+    char const * const aCategoryStr,
+    char const * const aFormatStr,
+    ...);
+
+  void AddSink(QP::QActive * const aMePtr, char const * const aCategoryStr);
+
+ private:
+  // Disable default constructor/copy/assign
+  Logger();
+  Logger(Logger const&amp;);
+  void operator=(Logger const&amp;);
+
+  static int CompareStr(
+    void const * const aFirstStr,
+    void const * const aSecondStr);
+
+  static unsigned int const sMaxLogCategories  = 32;
+  static unsigned int const sMaxLogCategoryLen = 32;
+  static LogLevel_t   const sInvalidCategory = static_cast&lt;LogLevel_t&gt;(-1);
+  static unsigned int const sMsgBufLen = 1024;
+
+  typedef struct {
+    unsigned int mEvtSignal;
+    char         mName[sMaxLogCategoryLen];
+    LogLevel_t   mLevel;
+  } LogCategory_t;
+
+  LogCategory_t *FindCategory(char const * const aCategoryStr) const;
+
+  static LogCategory_t mCategories[sMaxLogCategories];
+  static size_t        mCategoryQty;
+
+  LogLevel_t mLogLevel;
+};
+
+// ******************************************************************************
+//                            EXPORTED VARIABLES
+// ******************************************************************************
+
+// ******************************************************************************
+//                                 EXTERNS
+// ******************************************************************************
+
+// ******************************************************************************
+//                            EXPORTED FUNCTIONS
+// ******************************************************************************
+
+// ******************************************************************************
+//                                END OF FILE
+// ******************************************************************************
+</text>
+  </file>
+ </directory>
+ <directory name="src">
+  <file name="Logger.cpp">
+   <text>// *******************************************************************************
+//
+// Project: Logging.
+//
+// Module: Logger class.
+//
+// *******************************************************************************
+
+//! \file
+//! \brief MyClass device class.
+//! \ingroup module_group
+
+
+// ******************************************************************************
+//
+//        Copyright (c) 2018, Pleora Technologies, All rights reserved.
+//
+// ******************************************************************************
+
+// ******************************************************************************
+//                              INCLUDE FILES
+// ******************************************************************************
+
+// Standard Libraries.
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdarg.h&gt;
+
+// QP-port.
+#include &quot;qpcpp.h&quot;
+
+#include &quot;BSP.h&quot;
+#include &quot;Logger.h&quot;
+
+// ******************************************************************************
+//                       DEFINED CONSTANTS AND MACROS
+// ******************************************************************************
+
+// ******************************************************************************
+//                         TYPEDEFS AND STRUCTURES
+// ******************************************************************************
+
+// ******************************************************************************
+//                            FUNCTION PROTOTYPES
+// ******************************************************************************
+
+// ******************************************************************************
+//                             GLOBAL VARIABLES
+// ******************************************************************************
+
+Logger::LogCategory_t Logger::mCategories[sMaxLogCategories] = {0};
+size_t Logger::mCategoryQty = 0;
+
+// ******************************************************************************
+//                            EXPORTED FUNCTIONS
+// ******************************************************************************
+
+Logger &amp; Logger::Instance() {
+  static Logger sLogger;
+  return sLogger;
+}
+
+
+Logger::Logger()
+  : mLogLevel(PRI_ERR) {
+
+  // Ctor body left intentionally empty.
+}
+
+
+Logger::~Logger() {
+  // Dtor body left intentionally empty.
+}
+
+
+LogLevel_t Logger::GetLogLevel(void) const {
+  return mLogLevel;
+}
+
+
+LogLevel_t Logger::GetLogLevel(char const * const aCategoryStr) const {
+
+  LogCategory_t const * const lCategoryStr = FindCategory(aCategoryStr);
+  if (nullptr != lCategoryStr) {
+    return lCategoryStr-&gt;mLevel;
+  }
+
+  return sInvalidCategory;
+}
+
+
+unsigned int Logger::GetEvtSignal(char const * const aCategoryStr) const {
+
+  LogCategory_t const * const lCategoryStr = FindCategory(aCategoryStr);
+  if (nullptr != lCategoryStr) {
+    return lCategoryStr-&gt;mEvtSignal;
+  }
+
+  return 0;
+}
+
+
+void Logger::SetLogLevel(LogLevel_t const aLevel) {
+  mLogLevel = aLevel;
+}
+
+
+bool Logger::AddCategory(
+  unsigned int const aEvtSignal,
+  char const * const aCategoryStr,
+  LogLevel_t   const aLevel) {
+
+  if (mCategoryQty &gt;= sMaxLogCategories) {
+    return false;
+  }
+
+  if (mCategoryQty &gt; 0) {
+    LogCategory_t * const lCategoryStr = static_cast&lt;LogCategory_t * const&gt;(
+      bsearch(
+        aCategoryStr,
+        mCategories,
+        mCategoryQty,
+        sizeof(LogCategory_t),
+        Logger::CompareStr));
+    if (nullptr != lCategoryStr) {
+      //lCategoryStr-&gt;mEvtSignal = aEvtSignal;
+      lCategoryStr-&gt;mLevel = aLevel;
+      return true;
+    }
+  }
+
+  strncpy(
+    mCategories[mCategoryQty].mName,
+    aCategoryStr,
+    sMaxLogCategoryLen);
+  mCategories[mCategoryQty].mLevel = aLevel;
+  mCategories[mCategoryQty].mEvtSignal = aEvtSignal;
+  mCategoryQty++;
+
+  qsort(
+    mCategories,
+    mCategoryQty,
+    sizeof(LogCategory_t),
+    Logger::CompareStr);
+  return true;
+}
+
+
+bool Logger::Log(
+  LogLevel_t   const aLevel,
+  char const * const aFileStr,
+  unsigned int const aLine,
+  char const * const aFunctionStr,
+  char const * const aCategoryStr,
+  char const * const aFormatStr,
+  ...) {
+
+  // Check for log level threshold (global and per category).
+  LogLevel_t lCategoryLevel = GetLogLevel(aCategoryStr);
+  if (lCategoryLevel != sInvalidCategory) {
+    if (aLevel &lt; lCategoryLevel) {
+      return false;
+    }
+  } else if (aLevel &lt; mLogLevel) {
+    return false;
+  }
+
+  // Concatenate variadics if any.
+  va_list lArgs;
+  va_start(lArgs, aFormatStr);
+  static char lMsgBuf[sMsgBufLen];
+  vsprintf(&amp;lMsgBuf[0], aFormatStr, lArgs);
+  va_end(lArgs);
+
+  // Create the Log event and publish it to all!
+  LogEvt * const lLogEvt = Q_NEW(
+    LogEvt,
+    GetEvtSignal(aCategoryStr),
+    aLevel,
+    aFileStr,
+    aLine,
+    aFunctionStr,
+    aCategoryStr,
+    &amp;lMsgBuf[0]);
+
+  QP::QF::PUBLISH(lLogEvt, this);
+  return true;
+}
+
+
+void Logger::AddSink(QP::QActive * const aMePtr, char const * const aCategoryStr) {
+  unsigned int lEvtSig = GetEvtSignal(aCategoryStr);
+  aMePtr-&gt;subscribe(lEvtSig);
+}
+
+// ******************************************************************************
+//                              LOCAL FUNCTIONS
+// ******************************************************************************
+
+Logger::LogCategory_t *Logger::FindCategory(char const * const aCategoryStr) const {
+
+  if ((0 == mCategoryQty) || (nullptr == aCategoryStr)) {
+    return nullptr;
+  }
+
+  LogCategory_t * const lCategoryStr = static_cast&lt;LogCategory_t * const&gt;(
+    bsearch(
+      aCategoryStr,
+      mCategories,
+      mCategoryQty,
+      sizeof(LogCategory_t),
+      Logger::CompareStr));
+  return lCategoryStr;
+}
+
+
+int Logger::CompareStr(
+  void const * const aFirstStr,
+  void const * const aSecondStr) {
+
+  return strcmp(
+    static_cast&lt;LogCategory_t const * const&gt;(aFirstStr)-&gt;mName,
+    static_cast&lt;LogCategory_t const * const&gt;(aSecondStr)-&gt;mName);
+}
+
+// ******************************************************************************
+//                                END OF FILE
+// ******************************************************************************
+</text>
+  </file>
+ </directory>
+</model>

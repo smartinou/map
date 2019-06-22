@@ -1,21 +1,20 @@
-#ifndef CALENDAR_REC_H_
-#define CALENDAR_REC_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: Utilities
 //
-// Module: Feeding calendar class.
+// Module: Calendar class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Class used for storing time entries.
+//! \ingroup utils
 
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -59,10 +58,11 @@ class CalendarRec : public DBRec {
   bool IsEntrySet(Time const &aTimeRef);
 
   // Gets the next set entry from current time.
-  bool GetNextEntry(Weekday const &aWeekdayRef,
-                    Time    const &aTimeRef,
-                    Weekday       &aNextWeekdayRef,
-                    Time          &aNextTimeRef);
+  bool GetNextEntry(
+    Weekday const &aWeekdayRef,
+    Time    const &aTimeRef,
+    Weekday       &aNextWeekdayRef,
+    Time          &aNextTimeRef);
 
   bool IsSane(void);
   bool IsDirty(void) const;
@@ -111,4 +111,3 @@ class CalendarRec : public DBRec {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // CALENDAR_REC_H_

@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include "stdio.h"
+#include <stdio.h>
 
 #include "Time.h"
 
@@ -43,17 +43,6 @@
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
-
-Time::Time()
-  : mHours(0)
-  , mMinutes(0)
-  , mSeconds(0)
-  , mIs24H(true)
-  , mIsPM(false) {
-
-  // Ctor intentionally empty.
-}
-
 
 Time::Time(Hour   aHours,
            Minute aMinutes,
@@ -116,33 +105,8 @@ bool Time::IsPM(void) const {
 }
 
 
-void Time::SetHours(unsigned int aHours) {
-    mHours.Set(aHours);
-}
-
-
-void Time::SetMinutes(unsigned int aMinutes) {
-  mMinutes.Set(aMinutes);
-}
-
-
-void Time::SetSeconds(unsigned int aSeconds) {
-  mSeconds.Set(aSeconds);
-}
-
-
-void Time::SetIs24H(bool aIs24H) {
-  mIs24H = aIs24H;
-}
-
-
-void Time::SetIsPM(bool aIsPM) {
-  mIsPM = aIsPM;
-}
-
-
 // TimeHelper functions.
-char const *TimeHelper::ToStr(Time &aTime, char * const aInStr) {
+char const *TimeHelper::ToStr(Time const &aTime, char * const aInStr) {
 
   if (aTime.Is24H()) {
     snprintf(aInStr, 5 + 1, "%02d:%02d", aTime.GetHours(), aTime.GetMinutes());
