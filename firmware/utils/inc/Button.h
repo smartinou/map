@@ -45,11 +45,11 @@ class Button : public GPIOs {
          unsigned long const aIntNbr,
          unsigned int  const aID);
 
-  unsigned int GetGPIOPinState(void);
+  unsigned int GetGPIOPinState(void) const;
 
-  void DisableInt(void);
-  void EnableInt(void);
-  void ClrInt(void);
+  void DisableInt(void) const;
+  void EnableInt(void) const;
+  void ClrInt(void) const;
 
   enum State {
     RELEASED = 0,

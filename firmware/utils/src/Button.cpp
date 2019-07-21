@@ -86,7 +86,7 @@ Button::Button(GPIOs         const &aGPIO,
 }
 
 
-unsigned int Button::GetGPIOPinState(void) {
+unsigned int Button::GetGPIOPinState(void) const {
 
   unsigned long lGPIOPin = GPIOPinRead(mPort, mPin);
   unsigned int  lState = RELEASED;
@@ -98,17 +98,17 @@ unsigned int Button::GetGPIOPinState(void) {
 }
 
 
-void Button::DisableInt(void) {
+void Button::DisableInt(void) const {
   IntDisable(mIntNbr);
 }
 
 
-void Button::EnableInt(void) {
+void Button::EnableInt(void) const {
   IntEnable(mIntNbr);
 }
 
 
-void Button::ClrInt(void) {
+void Button::ClrInt(void) const {
   GPIOPinIntClear(mPort, mPin);
 }
 
