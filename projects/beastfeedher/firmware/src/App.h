@@ -14,13 +14,17 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+// FatFS.
+#include "diskio.h"
+#include "ff.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -38,8 +42,30 @@ class BFHMgr_AO;
 class DisplayMgr_AO;
 class FileLogSink_AO;
 class LwIPMgr_AO;
+class IRTCC;
 class RTCC_AO;
-class LwIPMgr_AO;
+class GPIOs;
+class SDC;
+
+namespace RTCC {
+  namespace AO {
+    class RTCC_AO;
+  } // namespace AO
+} // namespace RTCC
+
+
+namespace CoreLink {
+  class SPIDev;
+  class SPISlaveCfg;
+}
+
+
+namespace RTCC {
+  namespace AO {
+    class RTCC_AO;
+  }
+}
+
 
 
 //! \brief Brief description.
@@ -52,73 +78,39 @@ class App {
 
   bool Init(void);
 
+  static SDC *GetSDCDrive(void) { return mSDCDrive0; }
+
  private:
   static void NetCallbackInit(void);
 
-#if LWIP_HTTPD_SSI
-  static uint16_t SSIHandler(int   aTagIx,
-                             char *aInsertPtr,
-                             int   aInsertStrLen);
-  static int SSIRadioButtonHandler(int                aTagIx,
-                                   char       * const aInsertStr,
-                                   int                aInsertStrLen,
-                                   char const * const aNameValStr,
-                                   bool               aIsChecked);
-  static int SSICalendarHandler(int          aTagIx,
-                                char * const aInsertStr,
-                                int          aInsertStrLen,
-                                unsigned int aHour);
-  static int SSINetworkHandler(int                aTagIx,
-                               char       * const aInsertStr,
-                               int                aInsertStrLen,
-                               char const * const aTagNameStr);
-  static int SSIStatsHandler(int          aTagIx,
-                             char * const aInsertStr,
-                             int          aInsertStrLen);
-
-  static char const *FindTagVal(char  const *aTagNameStr,
-                                int          aParamsQty,
-                                char * const aParamsVec[],
-                                char * const aValsVec[]);
-#endif // LWIP_HTTPD_SSI
-
-#if LWIP_HTTPD_CGI
-static char const *DispIndex(int   aIx,
-                             int   aParamsQty,
-                             char *aParamsVec[],
-                             char *aValsVec[]);
-static char const *DispCfg(int   aIx,
-                           int   aParamsQty,
-                           char *aParamsVec[],
-                           char *aValsVec[]);
-#endif // LWIP_HTTPD_CGI
-
   // DB records.
-  static CalendarRec *sCalendarPtr;
-  static NetIFRec    *sNetIFRecPtr;
-  static FeedCfgRec  *sFeedCfgRecPtr;
+  static CalendarRec *sCalendar;
+  static NetIFRec    *sNetIFRec;
+  static FeedCfgRec  *sFeedCfgRec;
 
   // QP Event Queues.
-  QP::QEvt const *mRTCCEvtQPtr[10];
-  QP::QEvt const *mBeastMgrEvtQPtr[5];
-  QP::QEvt const *mFileLogSinkEvtQPtr[10];
-  QP::QEvt const *mLwIPEvtQPtr[10];
-  QP::QEvt const *mDisplayMgrEvtQPtr[5];
+  QP::QEvt const *mRTCCEventQueue[10] = {nullptr};
+  QP::QEvt const *mBeastMgrEventQueue[5] = {nullptr};
+  QP::QEvt const *mFileLogSinkEventQueue[10] = {nullptr};
+  QP::QEvt const *mLwIPEventQueue[10] = {nullptr};
+  QP::QEvt const *mDisplayMgrEventQueue[5] = {nullptr};
 
+  CoreLink::SPIDev *mSPIDev;
+
+  static IRTCC *mRTCC;
+
+  GPIOs *mSDCCsPin = nullptr;
+  CoreLink::SPISlaveCfg *mSDCSlaveCfg = nullptr;
+  static SDC *mSDCDrive0;
+  
   // QP AOs.
-  BFHMgr_AO         &mBFHMgr_AO;
-  FileLogSink_AO    *mFileLogSink_AO;
-  LwIPMgr_AO        *mLwIPMgr_AO;
-  DisplayMgr_AO     *mDisplayMgr_AO;
-  static RTCC_AO    *sRTCC_AOPtr;
+  RTCC::AO::RTCC_AO *mRTCC_AO = nullptr;
+  BFHMgr_AO      &mBFHMgr_AO;
+  //FileLogSink_AO *mFileLogSink_AO = nullptr;
+  DisplayMgr_AO  *mDisplayMgr_AO = nullptr;
+  LwIPMgr_AO     *mLwIPMgr_AO = nullptr;
 
-#if LWIP_HTTPD_SSI
-  static char const *sSSITags[];
-#endif // LWIP_HTTPD_SSI
-
-#if LWIP_HTTPD_CGI
-  static tCGI const sCGIEntries[];
-#endif // LWIP_HTTPD_CGI
+  FATFS mFatFS = {0};
 };
 
 // ******************************************************************************
