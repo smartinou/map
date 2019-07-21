@@ -59,7 +59,7 @@ include $(LWIPDIR)/Filelists.mk
 
 # Location of the QP/C++ framework (if not provided in an environemnt var.)
 ifeq ($(QPCPP),)
-QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp
+QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp_6_5_1
 endif
 
 # QP port used in this project
@@ -83,11 +83,14 @@ VPATH = \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
         $(FIRMWARE_PATH)/qp_ao/model/src \
+        $(FIRMWARE_PATH)/qp_ao/model/codegen \
         $(FIRMWARE_PATH)/utils/date \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
         $(STELLARIS_LIB)/inc \
-        $(QPCPP)/source \
+        $(QPCPP)/src/qf \
+        $(QPCPP)/src/qs \
+        $(QPCPP)/src/qv \
         $(QP_PORT_DIR) \
         $(CMSIS_LIB)/lm3s \
         $(CMSIS_LIB)/lm3s/GCC \
@@ -109,6 +112,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
         -I$(FIRMWARE_PATH)/qp_ao/model/inc \
+        -I$(FIRMWARE_PATH)/qp_ao/model/codegen \
         -I$(FIRMWARE_PATH)/utils/date \
         -I$(FIRMWARE_PATH)/utils/inc \
         -I$(FIRMWARE_PATH)/utils/time \
@@ -116,7 +120,7 @@ INCLUDES  = \
         -I$(STELLARIS_LIB)/inc \
         -I$(STELLARIS_LIB)/driverlib \
         -I$(QPCPP)/include \
-        -I$(QPCPP)/source \
+        -I$(QPCPP)/src \
         -I$(QP_PORT_DIR) \
         -I$(CMSIS_LIB)/lm3s \
         -I$(CMSIS_LIB)/core \
@@ -166,7 +170,6 @@ CPP_SRCS := \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \
-        FileLogSink_AO.cpp \
         GPIOs.cpp \
         Limit.cpp \
         LogEvt.cpp \
@@ -174,9 +177,12 @@ CPP_SRCS := \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
         Month.cpp \
+        Net.cpp \
         NetIFRec.cpp \
         RTCC.cpp \
+        IRTCC.cpp \
         RTCC_AO.cpp \
+        RTCC_Events.cpp \
         SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
@@ -184,6 +190,8 @@ CPP_SRCS := \
         Time.cpp \
         Weekday.cpp
 
+#        BSP.cpp \
+#        FileLogSink_AO.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \
@@ -198,7 +206,8 @@ QP_SRCS := \
         qf_qeq.cpp \
         qf_qmact.cpp \
         qf_time.cpp \
-        qv.cpp
+        qv.cpp \
+        qv_port.cpp
 
 QP_ASMS :=
 QS_SRCS := \
@@ -373,8 +382,10 @@ MODEL_IN_FILES := \
 
 MODEL_OUT_FILES := \
   FileLogSink_AO.h \
-	FileLogSink_AO.cpp
+	FileLogSink_AO.cpp \
 
+
+         #RTCC_AO.cpp \
 	#Logger.h \
 	#Logger.cpp \
 	#LogEvt.h \
