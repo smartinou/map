@@ -68,6 +68,7 @@ extern "C" {
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "NetIFRec.h"
+#include "Signals.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -230,8 +231,8 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG: {
-    me->mSlowTickTimer.armX((LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000,
-                            (LWIP_SLOW_TICK_MS * BSP_TICKS_PER_SEC) / 1000);
+    me->mSlowTickTimer.armX((LWIP_SLOW_TICK_MS * BSP::TICKS_PER_SEC) / 1000,
+                            (LWIP_SLOW_TICK_MS * BSP::TICKS_PER_SEC) / 1000);
     return Q_HANDLED();
   }
 

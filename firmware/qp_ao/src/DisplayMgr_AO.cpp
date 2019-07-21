@@ -35,9 +35,10 @@
 #include "SSD1329.h"
 
 // This project.
+#include "BSP.h"
 #include "DisplayMgr_AO.h"
 #include "DisplayMgr_Evt.h"
-#include "BSP.h"
+#include "Signals.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -139,7 +140,7 @@ QP::QState DisplayMgr_AO::Running(DisplayMgr_AO  * const me,  //aMePtr,
   case Q_EXIT_SIG:
     me->mDisplayTimerEvt.disarm();
     DisplayOff(me);
-  case SIG_TERMINATE:
+  case TERMINATE_SIG:
     return Q_HANDLED();
   }
 
@@ -167,7 +168,7 @@ void DisplayMgr_AO::DisplayText(DisplayMgr_AO  * const me,
 
 void DisplayMgr_AO::DisplayOn(DisplayMgr_AO * const me) {
 
-  me->mDisplayTimerEvt.rearm(me->mDisplayTime * BSP_TICKS_PER_SEC);
+  me->mDisplayTimerEvt.rearm(me->mDisplayTime * BSP::TICKS_PER_SEC);
   if (!me->mIsDisplayOn) {
     me->mIsDisplayOn = true;
     me->mDisplay.DisplayOn();

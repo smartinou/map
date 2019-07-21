@@ -354,7 +354,10 @@ WrToNVMem();
  </package>
  <directory name="codegen">
   <file name="RTCC_Events.h">
-   <text>#include &quot;qpcpp.h&quot;
+   <text>#include &lt;qpcpp.h&gt;
+
+#include &lt;Time.h&gt;
+#include &lt;Date.h&gt;
 
 class CalendarRec;
 

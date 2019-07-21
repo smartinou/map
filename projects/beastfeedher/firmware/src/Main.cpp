@@ -34,6 +34,7 @@
 #include "BFHMgr_Evt.h"
 #include "BSP.h"
 #include "RTCC_Events.h"
+#include "Signals.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -75,7 +76,7 @@ int main(void) {
                    sizeof(sMediumPoolSto[0]));
 
   // Init publish-subscribe.
-  static QP::QSubscrList lSubsribeSto[SIG_QTY];
+  static QP::QSubscrList lSubsribeSto[QTY_SIG];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
   // Send object dictionaries for event pools...

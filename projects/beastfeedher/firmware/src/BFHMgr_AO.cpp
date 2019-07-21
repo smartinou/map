@@ -51,6 +51,7 @@
 #include "BFHMgr_AO.h"
 #include "BFHMgr_Evt.h"
 #include "BSP.h"
+#include "Signals.h"
 #include "TB6612.h"
 
 Q_DEFINE_THIS_FILE
@@ -131,10 +132,10 @@ QP::QState BFHMgr_AO::Initial(BFHMgr_AO      * const me,  //aMePtr,
   me->mFeedEvtQueue.init(me->mFeedEvtQueueSto, Q_DIM(me->mFeedEvtQueueSto));
 
   // Subscribe to signals if any.
-  me->subscribe(SIG_RTCC_CALENDAR_EVENT_ALARM);
+  me->subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
 
   // Set logging category.
-  LOGGER.AddCategory(SIG_FEED_MGR_LOG, &sLogCategory[0]);
+  LOGGER.AddCategory(FEED_MGR_LOG_SIG, &sLogCategory[0]);
 
   // Object dictionary for BFHMgr_AO object.
   static BFHMgr_AO const * const sBFHMgrAOPtr = reinterpret_cast<BFHMgr_AO const * const>(me);
@@ -152,10 +153,10 @@ QP::QState BFHMgr_AO::Initial(BFHMgr_AO      * const me,  //aMePtr,
   QS_FUN_DICTIONARY(&BFHMgr_AO::TimeCappedFeed);
 
   // Locally consumed signals.
-  QS_SIG_DICTIONARY(SIG_FEED_MGR_MANUAL_FEED_CMD,  sBFHMgrAOPtr);
-  QS_SIG_DICTIONARY(SIG_FEED_MGR_TIMEOUT,          sBFHMgrAOPtr);
-  QS_SIG_DICTIONARY(SIG_RTCC_CALENDAR_EVENT_ALARM, sBFHMgrAOPtr);
-  QS_SIG_DICTIONARY(SIG_FEED_MGR_TIMED_FEED_CMD,   sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(FEED_MGR_MANUAL_FEED_CMD_SIG,  sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(FEED_MGR_TIMEOUT_SIG,          sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(RTCC_CALENDAR_EVENT_ALARM_SIG, sBFHMgrAOPtr);
+  QS_SIG_DICTIONARY(FEED_MGR_TIMED_FEED_CMD_SIG,   sBFHMgrAOPtr);
 
   // Published signals.
 
@@ -187,13 +188,13 @@ QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
   case SIG_FEED_MGR_TIMEOUT:
     return Q_TRAN(&BFHMgr_AO::Waiting);
 
-  case SIG_RTCC_CALENDAR_EVENT_ALARM:
+  case RTCC_CALENDAR_EVENT_ALARM_SIG:
     //RTCCEvt const *lEvtPtr = static_cast<RTCCEvt const *>(e);
     LOG_INFO(&sLogCategory[0], "Timed feed event from calendar entry.");
     me->mFeedTime = me->mFeedCfgRecPtr->GetTimedFeedPeriod();
     return Q_TRAN(&BFHMgr_AO::TimedFeed);
 
-  case SIG_FEED_MGR_TIMED_FEED_CMD: {
+  case FEED_MGR_TIMED_FEED_CMD_SIG: {
     // FIXME: perform boundary check on value.
     BFHTimedFeedCmdEvt const * const lEvtPtr = reinterpret_cast<BFHTimedFeedCmdEvt const * const>(e);
     if (0 != lEvtPtr->mTime) {
@@ -208,7 +209,7 @@ QP::QState BFHMgr_AO::FeedingMgr(BFHMgr_AO      * const me,  //aMePtr,
   case Q_EXIT_SIG:
     return Q_HANDLED();
 
-  case SIG_TERMINATE:
+  case TERMINATE_SIG:
     // Exit application gracefully.
     // Could also transition to a "Final" state.
     // BSP_Exit();
@@ -237,11 +238,11 @@ QP::QState BFHMgr_AO::TimedFeed(BFHMgr_AO      * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(me->mFeedTime * BSP_TICKS_PER_SEC);
+    me->mFeedTimerEvt.armX(me->mFeedTime * BSP::TICKS_PER_SEC);
     me->StartFeeding();
     return Q_HANDLED();
 
-  case SIG_RTCC_CALENDAR_EVENT_ALARM:
+  case RTCC_CALENDAR_EVENT_ALARM_SIG:
     // Cast event, log(Time, Date);
     me->defer(&me->mFeedEvtQueue, e);
     return Q_HANDLED();
@@ -271,7 +272,7 @@ QP::QState BFHMgr_AO::ManualFeed(BFHMgr_AO      * const me,  //aMePtr,
     // Go into default nested state.
     return Q_TRAN(&BFHMgr_AO::WaitPeriod);
 
-  case SIG_RTCC_CALENDAR_EVENT_ALARM:
+  case RTCC_CALENDAR_EVENT_ALARM_SIG:
     // Cast event, log(Time, Date);
     me->defer(&me->mFeedEvtQueue, e);
     return Q_HANDLED();
@@ -301,7 +302,7 @@ QP::QState BFHMgr_AO::WaitPeriod(BFHMgr_AO      * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(TIME_CAPPED_DEBOUNCE * BSP_TICKS_PER_SEC);
+    me->mFeedTimerEvt.armX(TIME_CAPPED_DEBOUNCE * BSP::TICKS_PER_SEC);
     return Q_HANDLED();
 
   case SIG_FEED_MGR_TIMEOUT:
@@ -320,7 +321,7 @@ QP::QState BFHMgr_AO::TimeCappedFeed(BFHMgr_AO      * const me,  //aMePtr,
 
   switch (e->sig) {
   case Q_ENTRY_SIG:
-    me->mFeedTimerEvt.armX(TIME_CAPPED_TIMEOUT * BSP_TICKS_PER_SEC);
+    me->mFeedTimerEvt.armX(TIME_CAPPED_TIMEOUT * BSP::TICKS_PER_SEC);
     me->StartFeeding();
     return Q_HANDLED();
 
