@@ -1,14 +1,14 @@
 // *****************************************************************************
 //
-// Project: Component drivers.
+// Project: Drivers.
 //
 // Module: DS3234 RTCC.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief DS3234 RTCC.
+//! \ingroup ext_peripherals
 
 
 // *****************************************************************************
@@ -22,6 +22,11 @@
 // *****************************************************************************
 
 #include <stddef.h>
+
+// TI Library.
+#include "hw_types.h"
+#include "gpio.h"
+#include "interrupt.h"
 
 #include "DS3234.h"
 
@@ -78,15 +83,41 @@ enum L_LIMITS {
 // *****************************************************************************
 
 // Ctor.
-DS3234::DS3234(unsigned int aBaseYear,
-               SPIDev      &aSPIDevRef,
-               SPISlaveCfg &aSPICfgRef)
-  : RTCC(aBaseYear)
-  , mSPIDevRef(aSPIDevRef)
-  , mSPICfgRef(aSPICfgRef)
-  , mRegMap{0} {
+DS3234::DS3234(
+  unsigned int aBaseYear,
+  unsigned long aInterruptNumber,
+  GPIOs const &aInterruptGPIO,
+  CoreLink::SPIDev      &aSPIDev,
+  CoreLink::SPISlaveCfg aSPICfg)
+  : mBaseYear(aBaseYear)
+  , mSPIDev(aSPIDev)
+  , mSPICfg(aSPICfg)
+  , mInterruptNumber(aInterruptNumber)
+  , mInterruptGPIO(aInterruptGPIO)
+    //, mRegMap{0}
+{
 
   // Ctor body intentionally left empty.
+}
+
+
+DS3234::DS3234(
+  unsigned int aBaseYear,
+  unsigned long aInterruptNumber,
+  GPIOs const &aInterruptPin,
+  CoreLink::SPIDev &aSPIDev,
+  GPIOs const &aCsPin)
+  : mBaseYear(aBaseYear)
+  , mSPIDev(aSPIDev)
+  , mSPICfg()
+  , mInterruptNumber(aInterruptNumber)
+  , mInterruptGPIO(aInterruptPin) {
+
+  // Create an SPI slave to operate at maximum device speed.
+  mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::MOTO_1);
+  mSPICfg.SetBitRate(4000000);
+  mSPICfg.SetDataWidth(8);
+  mSPICfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
 }
 
 
@@ -109,10 +140,10 @@ void DS3234::Init(uint8_t aCtrlReg) {
 
   // Disable all and clear all flags in status regiser.
   mRegMap.mStatus = 0x00;
-  mSPIDevRef.WrData(L_WR_ADDR(mCtrl),
+  mSPIDev.WrData(L_WR_ADDR(mCtrl),
                     const_cast<uint8_t *>(&mRegMap.mCtrl),
                     2 * sizeof(rtcc_reg_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
 // TODO: CONSIDER REMOVING.
@@ -189,14 +220,40 @@ void DS3234::IsValid(void) {
 #endif
 
 
+void DS3234::SetInterrupt(bool aEnable) {
+
+  Time lTime;
+  Date lDate;
+  WrAlarm(DS3234::ALARM_ID::ALARM_ID_1,
+          lTime,
+          lDate); //DS3234::ALARM_MODE::ONCE_PER_SEC);
+
+  // TODO: do something with the argument.
+  // TODO: This should be handled by an InterruptGPIO class,
+  // derived from GPIO.
+  IntDisable(mInterruptNumber);
+  GPIOPinTypeGPIOInput(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+  GPIOIntTypeSet(mInterruptGPIO.GetPort(),
+                 mInterruptGPIO.GetPin(),
+                 GPIO_FALLING_EDGE);
+  GPIOPadConfigSet(mInterruptGPIO.GetPort(),
+                   mInterruptGPIO.GetPin(),
+                   GPIO_STRENGTH_2MA,
+                   GPIO_PIN_TYPE_STD);
+  GPIOPinIntEnable(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+  // [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
+  //GPIOPinIntClear(mInterrupt->GetPort(), lGPIOInitEvtPtr->mIRQGPIOPin);
+}
+
+
 void DS3234::UpdateCachedVal(void) {
 
   if (IsImpure()) {
     // Read the whole RTC.
-    mSPIDevRef.RdData(0,
+    mSPIDev.RdData(0,
                       reinterpret_cast<uint8_t *>(&mRegMap),
                       sizeof(rtcc_reg_map_t),
-                      mSPICfgRef);
+                      mSPICfg);
     mIsImpure = false;
   }
 }
@@ -206,10 +263,10 @@ void DS3234::RdTime(Time &aTime) {
 
   // Read the Time portion of the RTC.
   // Update time ref.
-  mSPIDevRef.RdData(L_RD_ADDR(mTime),
+  mSPIDev.RdData(L_RD_ADDR(mTime),
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t),
-                    mSPICfgRef);
+                    mSPICfg);
   UpdateTime(aTime);
 }
 
@@ -218,10 +275,10 @@ void DS3234::RdDate(Date &aDate) {
 
   // Read the date portion out of RTC.
   // Update date ref.
-  mSPIDevRef.RdData(L_RD_ADDR(mDate),
+  mSPIDev.RdData(L_RD_ADDR(mDate),
                     reinterpret_cast<uint8_t *>(&mRegMap.mDate),
                     sizeof(date_t),
-                    mSPICfgRef);
+                    mSPICfg);
   UpdateDate(aDate);
 }
 
@@ -231,10 +288,10 @@ void DS3234::RdTimeAndDate(Time &aTime, Date &aDate) {
   // Read the whole RTC into register map structure.
   // Update time ref.
   // Update date ref.
-  mSPIDevRef.RdData(L_RD_ADDR(mTime),
+  mSPIDev.RdData(L_RD_ADDR(mTime),
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t) + sizeof(date_t),
-                    mSPICfgRef);
+                    mSPICfg);
 
   UpdateTime(aTime);
   UpdateDate(aDate);
@@ -246,10 +303,10 @@ void DS3234::WrTime(Time const &aTime) {
   // Fill time structure to write to RTC.
   // Send only the time portion of the structure to RTC.
   FillTimeStruct(aTime);
-  mSPIDevRef.WrData(L_WR_ADDR(mTime),
+  mSPIDev.WrData(L_WR_ADDR(mTime),
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
 
@@ -258,10 +315,10 @@ void DS3234::WrDate(Date const &aDate) {
   // Fill date structure to write to RTC.
   // Send only the date portion of the structure to RTC.
   FillDateStruct(aDate);
-  mSPIDevRef.WrData(L_WR_ADDR(mDate),
+  mSPIDev.WrData(L_WR_ADDR(mDate),
                     reinterpret_cast<uint8_t *>(&mRegMap.mDate),
                     sizeof(date_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
 
@@ -272,18 +329,65 @@ void DS3234::WrTimeAndDate(Time const &aTime, Date const &aDate) {
   // Send time and date portion of the structure to RTC.
   FillTimeStruct(aTime);
   FillDateStruct(aDate);
-  mSPIDevRef.WrData(L_WR_ADDR(mTime),
+  mSPIDev.WrData(L_WR_ADDR(mTime),
                     reinterpret_cast<uint8_t *>(&mRegMap.mTime),
                     sizeof(time2_t) + sizeof(date_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
 
-void DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
-                     Time    const  &aTime,
-                     Weekday const  &aWeekdayRef,
-                     enum ALARM_MODE aAlarmMode) {
+void DS3234::GetTimeAndDate(Time &aTime, Date &aDate) {
 
+  // Update date ref.
+  UpdateCachedVal();
+  UpdateTime(aTime);
+  UpdateDate(aDate);
+}
+
+
+float DS3234::GetTemperature(void) {
+
+  // Return temperature field.
+  // Convert temperature MSB and LSB to float.
+  UpdateCachedVal();
+  float lTempFloat = 0.25 * (mRegMap.mTempLSB >> 6);
+  lTempFloat += static_cast<float>(mRegMap.mTempMSB);
+  return lTempFloat;
+}
+
+
+bool DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
+                     Time const     &aTime,
+                     Date const     &aDate) {//,enum ALARM_MODE aAlarmMode) {
+  enum ALARM_MODE aAlarmMode =  ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH;
+  // Fill alarm structure to write to RTC.
+  switch (aAlarmID) {
+  case ALARM_ID::ALARM_ID_1:
+    mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
+    FillAlarmStruct(mRegMap.mAlarm1, aTime, aDate);
+    FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
+    break;
+
+  case ALARM_ID::ALARM_ID_2:
+    FillAlarmStruct(mRegMap.mAlarm2, aTime, aDate);
+    FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
+    break;
+
+  default:
+    return false;
+  }
+
+  // Send alarm and control portion of the structure to the RTC.
+  SetAlarm(aAlarmID);
+  TxAlarmStruct(aAlarmID);
+  return true;
+}
+
+
+bool DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
+                     Time    const  &aTime,
+                     Weekday const  &aWeekdayRef) {//,enum ALARM_MODE aAlarmMode) {
+  enum ALARM_MODE aAlarmMode =  ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
   // Fill alarm structure to write to RTC.
   switch (aAlarmID) {
   case ALARM_ID::ALARM_ID_1:
@@ -298,44 +402,36 @@ void DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
     FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
     mRegMap.mCtrl |= AEI2;
     break;
+
+  default:
+    return false;
   }
 
   // Send alarm and control portion of the structure to the RTC.
   TxAlarmStruct(aAlarmID);
+  return true;
 }
 
 
-void DS3234::WrAlarm(enum ALARM_ID   aAlarmID,
-                     Time const     &aTime,
-                     Date const     &aDate,
-                     enum ALARM_MODE aAlarmMode) {
+bool DS3234::IsAlarmOn(enum ALARM_ID aAlarmID) {
 
-  // Fill alarm structure to write to RTC.
   switch (aAlarmID) {
   case ALARM_ID::ALARM_ID_1:
-    mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
-    FillAlarmStruct(mRegMap.mAlarm1, aTime, aDate);
-    FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
-    break;
+    if ((DS3234::AF1  & GetStatus()) && (DS3234::AEI1 & GetCtrl())) {
+      return true;
+    }
+    return false;
 
-  case ALARM_ID::ALARM_ID_2:
-    FillAlarmStruct(mRegMap.mAlarm2, aTime, aDate);
-    FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
-    break;
-  }
-
-  // Send alarm and control portion of the structure to the RTC.
-  SetAlarm(aAlarmID);
-  TxAlarmStruct(aAlarmID);
-}
-
-
-void DS3234::SetAlarm(enum ALARM_ID aAlarmID) {
-
-  switch (aAlarmID) {
-  case ALARM_ID::ALARM_ID_1: mRegMap.mCtrl |= AEI1; break;
   case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl |= AEI2; break;
+    if ((DS3234::AF2  & GetStatus()) && (DS3234::AEI2 & GetCtrl())) {
+      return true;
+    }
+    // Intentional fallthrough.
+  default:
+    return false;
   }
+
+  return false;
 }
 
 
@@ -349,10 +445,10 @@ void DS3234::DisableAlarm(enum ALARM_ID aAlarmID) {
   case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl &= ~AEI2; break;
   }
 
-  mSPIDevRef.WrData(L_WR_ADDR(mCtrl),
+  mSPIDev.WrData(L_WR_ADDR(mCtrl),
                     const_cast<uint8_t const *>(&mRegMap.mCtrl),
                     sizeof(rtcc_reg_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
 
@@ -366,15 +462,10 @@ void DS3234::ClrAlarmFlag(enum ALARM_ID aAlarmID) {
   case ALARM_ID::ALARM_ID_2: mRegMap.mStatus &= ~AF2; break;
   }
 
-  mSPIDevRef.WrData(L_WR_ADDR(mStatus),
+  mSPIDev.WrData(L_WR_ADDR(mStatus),
                     const_cast<uint8_t const *>(&mRegMap.mStatus),
                     sizeof(rtcc_reg_t),
-                    mSPICfgRef);
-}
-
-
-unsigned int DS3234::GetNVMemSize(void) const {
-  return mNVMemSize;
+                    mSPICfg);
 }
 
 
@@ -385,20 +476,20 @@ void DS3234::RdFromNVMem(uint8_t * const aDataPtr,
   // Write SRAM address register.
   // Cap size.
   // Loop into data register.
-  mSPIDevRef.WrData(L_WR_ADDR(mSRAMAddr),
+  mSPIDev.WrData(L_WR_ADDR(mSRAMAddr),
                     reinterpret_cast<uint8_t *>(aOffset),
                     sizeof(rtcc_reg_t),
-                    mSPICfgRef);
+                    mSPICfg);
 
   unsigned int lMaxSize = mNVMemSize - aOffset;
   if (aSize > lMaxSize) {
     aSize = lMaxSize;
   }
 
-  mSPIDevRef.RdData(L_RD_ADDR(mSRAMData),
+  mSPIDev.RdData(L_RD_ADDR(mSRAMData),
                     reinterpret_cast<uint8_t *>(aDataPtr),
                     aSize * sizeof(rtcc_reg_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
 
@@ -409,57 +500,22 @@ void DS3234::WrToNVMem(uint8_t const * const aDataPtr,
   // Write SRAM address register.
   // Cap size.
   // Loop into data register.
-  mSPIDevRef.WrData(L_WR_ADDR(mSRAMAddr),
+  mSPIDev.WrData(L_WR_ADDR(mSRAMAddr),
                     reinterpret_cast<uint8_t *>(aOffset),
                     sizeof(rtcc_reg_t),
-                    mSPICfgRef);
+                    mSPICfg);
 
   unsigned int lMaxSize = mNVMemSize - aOffset;
   if (aSize > lMaxSize) {
     aSize = lMaxSize;
   }
 
-  mSPIDevRef.WrData(L_WR_ADDR(mSRAMData),
+  mSPIDev.WrData(L_WR_ADDR(mSRAMData),
                     reinterpret_cast<uint8_t const *>(aDataPtr),
                     aSize * sizeof(rtcc_reg_t),
-                    mSPICfgRef);
+                    mSPICfg);
 }
 
-
-void DS3234::GetTimeAndDate(Time &aTime, Date &aDate) {
-
-  // Update date ref.
-  UpdateCachedVal();
-  UpdateTime(aTime);
-  UpdateDate(aDate);
-}
-
-
-uint8_t DS3234::GetCtrl(void) {
-
-  // Return status field.
-  UpdateCachedVal();
-  return mRegMap.mCtrl;
-}
-
-
-uint8_t DS3234::GetStatus(void) {
-
-  // Return status field.
-  UpdateCachedVal();
-  return mRegMap.mStatus;
-}
-
-
-float DS3234::GetTemperature(void) {
-
-  // Return temperature field.
-  // Convert temperature MSB and LSB to float.
-  UpdateCachedVal();
-  float lTempFloat = 0.25 * (mRegMap.mTempLSB >> 6);
-  lTempFloat += static_cast<float>(mRegMap.mTempMSB);
-  return lTempFloat;
-}
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
@@ -616,27 +672,53 @@ void DS3234::TxAlarmStruct(enum ALARM_ID aAlarmID) {
 
   switch (aAlarmID) {
   case ALARM_ID::ALARM_ID_1:
-    mSPIDevRef.WrData(L_WR_ADDR(mAlarm1Seconds),
+    mSPIDev.WrData(L_WR_ADDR(mAlarm1Seconds),
                       const_cast<uint8_t const *>(&mRegMap.mAlarm1Seconds),
                       sizeof(rtcc_reg_t) + sizeof(rtcc_alarm_t),
-                      mSPICfgRef);
+                      mSPICfg);
 
     // Control register needs to be written after alarm 1 registers.
-    mSPIDevRef.WrData(L_WR_ADDR(mCtrl),
+    mSPIDev.WrData(L_WR_ADDR(mCtrl),
                       const_cast<uint8_t const *>(&mRegMap.mCtrl),
                       sizeof(rtcc_reg_t),
-                      mSPICfgRef);
+                      mSPICfg);
     break;
 
   case ALARM_ID::ALARM_ID_2:
     // Control register follows alarm 2 registers.
-    mSPIDevRef.WrData(L_WR_ADDR(mAlarm2),
+    mSPIDev.WrData(L_WR_ADDR(mAlarm2),
                       reinterpret_cast<uint8_t const *>(&mRegMap.mAlarm2),
                       sizeof(rtcc_alarm_t) + sizeof(rtcc_reg_t),
-                      mSPICfgRef);
+                      mSPICfg);
     break;
   }
 }
+
+
+void DS3234::SetAlarm(enum ALARM_ID aAlarmID) {
+
+  switch (aAlarmID) {
+  case ALARM_ID::ALARM_ID_1: mRegMap.mCtrl |= AEI1; break;
+  case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl |= AEI2; break;
+  }
+}
+
+
+uint8_t DS3234::GetCtrl(void) {
+
+  // Return status field.
+  UpdateCachedVal();
+  return mRegMap.mCtrl;
+}
+
+
+uint8_t DS3234::GetStatus(void) {
+
+  // Return status field.
+  UpdateCachedVal();
+  return mRegMap.mStatus;
+}
+
 
 // *****************************************************************************
 //                                END OF FILE

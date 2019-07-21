@@ -1,18 +1,18 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: Drivers.
 //
-// Module: Main entry point.
+// Module: RTCC.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief RTCC base class.
+//! \ingroup ext_peripherals
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,22 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// QP Library.
-#include "qpcpp.h"
-
-// TI Library.
-//#include "uartstdio.h"
-
-// Common Library.
-#include "SPI.h"
-
-// This application.
-#include "App.h"
-#include "BFHMgr_Evt.h"
-#include "BSP.h"
-#include "RTCC_Events.h"
-
-Q_DEFINE_THIS_FILE
+#include "IRTCC.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -46,7 +31,7 @@ Q_DEFINE_THIS_FILE
 // *****************************************************************************
 
 // *****************************************************************************
-//                         TYPEDEFS AND STRUCTURES
+//                            FUNCTION PROTOTYPES
 // *****************************************************************************
 
 // *****************************************************************************
@@ -57,51 +42,36 @@ Q_DEFINE_THIS_FILE
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-int main(void) {
-
-  // Initialize the framework and the underlying RT kernel.
-  QP::QF::init();
-
-  // Initialize event pool.
-  // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(BFHManualFeedCmdEvt) sSmallPoolSto[20];
-  QP::QF::poolInit(sSmallPoolSto,
-                   sizeof(sSmallPoolSto),
-                   sizeof(sSmallPoolSto[0]));
-
-  static QF_MPOOL_EL(RTCC::Event::TimeAndDate) sMediumPoolSto[10];
-  QP::QF::poolInit(sMediumPoolSto,
-                   sizeof(sMediumPoolSto),
-                   sizeof(sMediumPoolSto[0]));
-
-  // Init publish-subscribe.
-  static QP::QSubscrList lSubsribeSto[SIG_QTY];
-  QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
-
-  // Send object dictionaries for event pools...
-  QS_OBJ_DICTIONARY(sSmallPoolSto);
-  QS_OBJ_DICTIONARY(sMediumPoolSto);
-
-  QS_FUN_DICTIONARY(&QP::QHsm::top);
-
-  // Start master record.
-  // Contains all AOs.
-  App *lAppPtr = new App();
-  bool lInitGood = lAppPtr->Init();
-
-  // Run the QF application.
-  if (lInitGood) {
-    //UARTprintf("QF version: %s", QP::QF::getVersion());
-    return QP::QF::run();
-  }
-
-  while (1);
-  return 1;
-}
-
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+unsigned int IRTCC::BinaryToBCD(unsigned int aBinVal) {
+
+  unsigned int lBCDVal = 0;
+
+  if (aBinVal > 10) {
+    lBCDVal   = BinaryToBCD(aBinVal / 10);
+    lBCDVal <<= 4;
+    lBCDVal  |= (aBinVal % 10);
+  } else {
+    lBCDVal = aBinVal;
+  }
+
+  return lBCDVal;
+}
+
+
+unsigned int IRTCC::BCDToBinary(unsigned int aBCDVal) {
+
+  unsigned int lBinVal = aBCDVal & 0x0F;
+  aBCDVal >>= 4;
+  if (0 != aBCDVal) {
+    lBinVal += (10 * BCDToBinary(aBCDVal));
+  }
+
+  return lBinVal;
+}
 
 // *****************************************************************************
 //                                END OF FILE

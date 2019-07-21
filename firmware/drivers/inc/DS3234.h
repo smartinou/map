@@ -1,14 +1,14 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Component drivers.
+// Project: Drivers.
 //
 // Module: DS3234 RTCC.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief RTC base class.
+//! \brief DS3234 RTCC.
 //! \ingroup ext_peripherals
 
 
@@ -22,10 +22,9 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "RTCC.h"
+#include "IRTCC.h"
 #include "SPI.h"
-
-using namespace CoreLink;
+#include "GPIOs.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -38,13 +37,56 @@ using namespace CoreLink;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class DS3234 : public RTCC {
- public:
-  enum class ALARM_ID {
-    ALARM_ID_1 = 0,
-    ALARM_ID_2,
-  };
+class DS3234
+  : public IRTCC {
 
+ public:
+  DS3234(unsigned int aBaseYear,
+         unsigned long aInterruptNumber,
+         GPIOs const &aInterruptGPIO,
+         CoreLink::SPIDev      &aSPIDev,
+         CoreLink::SPISlaveCfg  aSPICfg);
+  DS3234(unsigned int aBaseYear,
+         unsigned long aInterruptNumber,
+         GPIOs const &aInterruptPin,
+         CoreLink::SPIDev &aSPIDev,
+         GPIOs const &aCsPin);
+  ~DS3234();
+
+  // RTCC Interface.
+  void SetInterrupt(bool aEnable) override;
+  void SetImpure(void) override { mIsImpure = true; }
+
+  // Polled API.
+  void RdTime(Time &aTime) override;
+  void RdDate(Date &aDate) override;
+  void RdTimeAndDate(Time &aTime, Date &aDate) override;
+
+  void WrTime(Time const &aTime) override;
+  void WrDate(Date const &aDate) override;
+  void WrTimeAndDate(Time const &aTime, Date const &aDate) override;
+  void GetTimeAndDate(Time &aTime, Date &aDate) override;
+  float GetTemperature(void) override;
+
+  unsigned int GetNumberOfAlarms(void) const override { return 2; }
+  bool WrAlarm(enum ALARM_ID   aAlarmID,
+               Time const     &aTime,
+               Date const     &aDate) override;
+  bool WrAlarm(enum ALARM_ID   aAlarmID,
+               Time    const  &aTime,
+               Weekday const  &aWeekday) override;
+  bool IsAlarmOn(enum ALARM_ID aAlarmID) override;
+  void DisableAlarm(enum ALARM_ID aAlarmID) override;
+  void ClrAlarmFlag(enum ALARM_ID aAlarmID) override;
+
+  unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
+  void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
+  void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
+
+  // Local API.
+  void Init(uint8_t aCtrlRef);
+
+ private:
   enum class ALARM_MODE {
     ONCE_PER_SEC = 0,
     WHEN_SECS_MATCH,
@@ -59,8 +101,6 @@ class DS3234 : public RTCC {
     WHEN_DATE_HOURS_MINS_MATCH = WHEN_DATE_HOURS_MINS_SECS_MATCH
   };
 
-
- private:
 
   typedef uint8_t volatile rtcc_reg_t;
 
@@ -109,52 +149,6 @@ class DS3234 : public RTCC {
 
   typedef struct L_ADDR_MAP_STRUCT_TAG rtcc_reg_map_t;
 
- public:
-  DS3234(unsigned int aBaseYear,
-         SPIDev      &aSPIDevRef,
-         SPISlaveCfg &aSPICfgRef);
-  ~DS3234();
-
-  void Init(uint8_t aCtrlRef);
-
-  // Polled API.
-  void RdTime(Time &aTimeRef);
-  void RdDate(Date &aDateRef);
-  void RdTimeAndDate(Time &aTimeRef, Date &aDateRef);
-
-  void WrTime(Time const &aTimeRef);
-  void WrDate(Date const &aDateRef);
-  void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef);
-  void WrAlarm(enum ALARM_ID   aAlarmID,
-               Time const     &aTimeRef,
-               Date const     &aDateRef,
-               enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH);
-  void WrAlarm(enum ALARM_ID   aAlarmID,
-               Time    const  &aTimeRef,
-               Weekday const  &aWeekdayRef,
-               enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH);
-  void DisableAlarm(enum ALARM_ID aAlarmID);
-  void ClrAlarmFlag(enum ALARM_ID aAlarmID);
-
-  unsigned int GetNVMemSize(void) const;
-
-  void RdFromNVMem(uint8_t * const aDataPtr,
-                   unsigned int    aOffset,
-                   unsigned int    aSize);
-  void WrToNVMem(uint8_t const * const aDataPtr,
-                 unsigned int          aOffset,
-                 unsigned int          aSize);
-
-  // Interrupt-based/cached API.
-  void    GetTimeAndDate(Time &aTimeRef, Date &aDateRef);
-  uint8_t GetCtrl(void);
-  uint8_t GetStatus(void);
-  float   GetTemperature(void);
-
- protected:
-  void UpdateCachedVal(void);
-
- private:
   enum HoursFields : uint8_t {
     H12_24_n = (0x1 << 6),
     PM_AM_n  = (0x1 << 5),
@@ -173,7 +167,7 @@ class DS3234 : public RTCC {
     WR_BASE_ADDR = 0x80
   };
 
- public:
+  // public:
   /* -------------------------------------------------------------------------
    Control Register : 0x0E/8Eh
    Name    Value       Description
@@ -223,8 +217,10 @@ class DS3234 : public RTCC {
   };
 
  private:
+  void UpdateCachedVal(void);
   void UpdateTime(Time &aTime);
   void UpdateDate(Date &aDate);
+  bool IsImpure(void) const { return mIsImpure; }
 
   void FillTimeStruct(Time const &aTimeRef);
   void FillDateStruct(Date const &aDateRef);
@@ -242,10 +238,21 @@ class DS3234 : public RTCC {
 
   void SetAlarm(enum ALARM_ID aAlarmID);
 
-  CoreLink::SPIDev      &mSPIDevRef;
-  CoreLink::SPISlaveCfg &mSPICfgRef;
+  uint8_t GetCtrl(void);
+  uint8_t GetStatus(void);
 
-  rtcc_reg_map_t mRegMap;
+  unsigned int mBaseYear = 0;
+  unsigned int mCentury = 0;
+
+  CoreLink::SPIDev      &mSPIDev;
+  CoreLink::SPISlaveCfg  mSPICfg;
+
+  unsigned long mInterruptNumber = 0;
+  GPIOs const &mInterruptGPIO;
+
+  rtcc_reg_map_t mRegMap = {0};
+
+  bool         mIsImpure = true;
 
   static unsigned int const mNVMemSize = 256;
 };

@@ -51,7 +51,6 @@
 #include "BFHMgr_AO.h"
 #include "BFHMgr_Evt.h"
 #include "BSP.h"
-#include "RTCC_Evt.h"
 #include "TB6612.h"
 
 Q_DEFINE_THIS_FILE
