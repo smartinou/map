@@ -77,7 +77,7 @@ int lLen = f_printf(
 // Do nothing with Len for now.
 (void)lLen;</code>
   </operation>
-  <statechart>
+  <statechart properties="0x01">
    <initial target="../1">
     <action brief="OpenFile();">BSP_InitFS();
 FRESULT lResult = f_open(&amp;me-&gt;mFile, &quot;Log.txt&quot;, FA_OPEN_APPEND | FA_WRITE | FA_READ);
