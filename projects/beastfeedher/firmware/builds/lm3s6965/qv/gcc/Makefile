@@ -77,6 +77,7 @@ CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 VPATH = \
         ../../ \
         $(PROJECT_FW_DIR)/src \
+        $(PROJECT_FW_DIR)/src/models/codegen \
         $(PROJECT_FW_DIR)/src/lwip_port/arch \
         $(PROJECT_FW_DIR)/src/lwip_port/netif \
         $(FIRMWARE_PATH)/corelink/src \
@@ -107,6 +108,7 @@ INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
+        -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
         -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
@@ -179,6 +181,8 @@ CPP_SRCS := \
         Month.cpp \
         Net.cpp \
         NetIFRec.cpp \
+        PFPP_AOs.cpp \
+        PFPP_Events.cpp \
         RTCC.cpp \
         IRTCC.cpp \
         RTCC_AO.cpp \

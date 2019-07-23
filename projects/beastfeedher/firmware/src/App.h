@@ -67,6 +67,12 @@ namespace RTCC {
 }
 
 
+namespace PFPP {
+  namespace AO {
+    class Mgr_AO;
+  }
+}
+
 
 //! \brief Brief description.
 //! Details follow...
@@ -90,7 +96,7 @@ class App {
 
   // QP Event Queues.
   QP::QEvt const *mRTCCEventQueue[10] = {nullptr};
-  QP::QEvt const *mBeastMgrEventQueue[5] = {nullptr};
+  QP::QEvt const *mPFPPMgrEventQueue[5] = {nullptr};
   QP::QEvt const *mFileLogSinkEventQueue[10] = {nullptr};
   QP::QEvt const *mLwIPEventQueue[10] = {nullptr};
   QP::QEvt const *mDisplayMgrEventQueue[5] = {nullptr};
@@ -105,7 +111,7 @@ class App {
   
   // QP AOs.
   RTCC::AO::RTCC_AO *mRTCC_AO = nullptr;
-  BFHMgr_AO      &mBFHMgr_AO;
+  PFPP::AO::Mgr_AO *mPFPPMgr_AO = nullptr;
   //FileLogSink_AO *mFileLogSink_AO = nullptr;
   DisplayMgr_AO  *mDisplayMgr_AO = nullptr;
   LwIPMgr_AO     *mLwIPMgr_AO = nullptr;

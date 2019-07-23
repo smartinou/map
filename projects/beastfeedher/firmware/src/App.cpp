@@ -36,7 +36,7 @@
 
 // This project.
 #include "App.h"
-#include "BFHMgr_AO.h"
+#include "PFPP_AOs.h"
 #include "BSP.h"
 #include "CalendarRec.h"
 #include "DisplayMgr_AO.h"
@@ -81,12 +81,12 @@ SDC *App::mSDCDrive0 = nullptr;
 // *****************************************************************************
 
 App::App()
-  : mBFHMgr_AO(BFHMgr_AO::Instance())
+//: mBFHMgr_AO(BFHMgr_AO::Instance())
     //, mFileLogSink_AO(nullptr)
-  , mDisplayMgr_AO(nullptr)
-  , mLwIPMgr_AO(nullptr) {
+//, mDisplayMgr_AO(nullptr)
+//, mLwIPMgr_AO(nullptr) {
   // Ctor body left intentionally empty.
-}
+{}
 
 
 App::~App() {
@@ -167,6 +167,14 @@ bool App::Init(void) {
     nullptr,
     0U,
     &lBFHInitEvt);
+#else
+  mPFPPMgr_AO = new PFPP::AO::Mgr_AO(*App::sFeedCfgRec);
+  mPFPPMgr_AO->start(
+    3U,
+    mPFPPMgrEventQueue,
+    Q_DIM(mPFPPMgrEventQueue),
+    nullptr,
+    0U);
 #endif
 #if 0
   // Network makes sense in the following cases:
@@ -202,7 +210,7 @@ bool App::Init(void) {
 
   // Send object dictionaries for event queues...
   QS_OBJ_DICTIONARY(mRTCCEventQueue);
-  QS_OBJ_DICTIONARY(mBeastMgrEventQueue);
+  QS_OBJ_DICTIONARY(mPFPPMgrEventQueue);
   QS_OBJ_DICTIONARY(mLwIPEventQueue);
   QS_OBJ_DICTIONARY(mDisplayMgrEventQueue);
   QS_OBJ_DICTIONARY(mFileLogSinkEventQueue);
