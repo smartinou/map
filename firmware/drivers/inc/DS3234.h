@@ -252,7 +252,7 @@ class DS3234
 
   rtcc_reg_map_t mRegMap = {0};
 
-  bool         mIsImpure = true;
+  bool mIsImpure = true;
 
   static unsigned int const mNVMemSize = 256;
 };

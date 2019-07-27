@@ -298,4 +298,5 @@ $define${project::Events::TimedFeedCmd}
    </file>
   </directory>
  </package>
+ <package file="./../../../../../firmware/qp_ao/model/Display.qmp"/>
 </model>

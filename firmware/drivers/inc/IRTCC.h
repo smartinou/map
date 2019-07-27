@@ -8,7 +8,7 @@
 // *******************************************************************************
 
 //! \file
-//! \brief RTCC base class.
+//! \brief RTCC interface class.
 //! \ingroup ext_peripherals
 
 

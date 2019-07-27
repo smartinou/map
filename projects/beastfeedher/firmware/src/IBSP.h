@@ -32,8 +32,8 @@
 
 // Forward declaration.
 class IRTCC;
-class IDisplay;
 class IFS;
+class ILCD;
 class GPIOs;
 class SDC;
 
@@ -54,7 +54,7 @@ class IBSPFactory {
 
   virtual IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) = 0;
 
-  virtual IDisplay * CreateDisplay(CoreLink::SPIDev * const aSPIDev) = 0;
+  virtual ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) = 0;
   virtual IFS * CreateFS(CoreLink::SPIDev * const aSPIDev) = 0;
 
   virtual GPIOs * CreateSDCCsPin(void) = 0;

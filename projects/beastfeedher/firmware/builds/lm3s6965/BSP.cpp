@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,6 +42,7 @@
 #include "DS3234.h"
 #include "GPIOs.h"
 #include "Button.h"
+#include "SSD1329.h"
 
 #include "BFHMgr_Evt.h"
 #include "Signals.h"
@@ -58,10 +59,10 @@
 // DO NOT LEAVE THE ISR PRIORITIES AT THE DEFAULT VALUE!
 // See NOTE00
 enum KernelUnawareISRs {
-  UART0_PRIO,
-  // ...
-  // Keep always last.
-  MAX_KERNEL_UNAWARE_CMSIS_PRI
+    UART0_PRIO,
+    // ...
+    // Keep always last.
+    MAX_KERNEL_UNAWARE_CMSIS_PRI
 };
 
 
@@ -70,13 +71,13 @@ Q_ASSERT_COMPILE(MAX_KERNEL_UNAWARE_CMSIS_PRI <= QF_AWARE_ISR_CMSIS_PRI);
 
 // See NOTE00.
 enum KernelAwareISRs {
-  SYSTICK_PRIO = QF_AWARE_ISR_CMSIS_PRI,
-  GPIOPORTA_PRIO,
-  GPIOPORTE_PRIO,
-  GPIOPORTF_PRIO,
-  // ...
-  // Keep always last.
-  MAX_KERNEL_AWARE_CMSIS_PRI
+    SYSTICK_PRIO = QF_AWARE_ISR_CMSIS_PRI,
+    GPIOPORTA_PRIO,
+    GPIOPORTE_PRIO,
+    GPIOPORTF_PRIO,
+    // ...
+    // Keep always last.
+    MAX_KERNEL_AWARE_CMSIS_PRI
 };
 
 // "kernel-aware" interrupts should not overlap the PendSV priority.
@@ -98,111 +99,124 @@ namespace BSP {
 
 
 class SSI0PinCfg
-  : public CoreLink::SSIPinCfg {
+    : public CoreLink::SSIPinCfg {
 
 public:
-  SSI0PinCfg() : CoreLink::SSIPinCfg(0) {}
-  ~SSI0PinCfg() {}
+    SSI0PinCfg() : CoreLink::SSIPinCfg(0) {}
+    ~SSI0PinCfg() {}
 
-  void SetPins(void) const {
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    GPIOPinTypeSSI(
-      sSSIPins.mPort,
-      sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin);
+    void SetPins(void) const {
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+        GPIOPinTypeSSI(
+            sSSIPins.mPort,
+            sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin
+        );
 
-    GPIOPadConfigSet(
-      sSSIPins.mPort,
-      sSSIPins.mClkPin | sSSIPins.mTxPin,
-      GPIO_STRENGTH_2MA,
-      GPIO_PIN_TYPE_STD);
-  }
+        GPIOPadConfigSet(
+            sSSIPins.mPort,
+            sSSIPins.mClkPin | sSSIPins.mTxPin,
+            GPIO_STRENGTH_2MA,
+            GPIO_PIN_TYPE_STD
+        );
+    }
 
 private:
-  // PA2: SSI0CLK
-  // PA4: SSI0RX
-  // PA5: SSI0TX
-  static struct SSIGPIO {
-    unsigned long mPort;
-    unsigned int  mClkPin;
-    unsigned int  mRxPin;
-    unsigned int  mTxPin;
-  } constexpr sSSIPins = {
-    GPIO_PORTA_BASE,
-    GPIO_PIN_2, // Clk.
-    GPIO_PIN_4, // Rx.
-    GPIO_PIN_5  // Tx.
-  };
+    // PA2: SSI0CLK
+    // PA4: SSI0RX
+    // PA5: SSI0TX
+    static struct SSIGPIO {
+        unsigned long mPort;
+        unsigned int  mClkPin;
+        unsigned int  mRxPin;
+        unsigned int  mTxPin;
+    } constexpr sSSIPins = {
+        GPIO_PORTA_BASE,
+        GPIO_PIN_2, // Clk.
+        GPIO_PIN_4, // Rx.
+        GPIO_PIN_5  // Tx.
+    };
 };
 
 
 class Factory
-  : public IBSPFactory {
+    : public IBSPFactory {
 
 public:
-  Factory()
-    : mRTCCCsPin(GPIO_PORTA_BASE, GPIO_PIN_7)
-    , mSDCCsPin(GPIO_PORTD_BASE, GPIO_PIN_0)
-    , mIn1Pin(GPIO_PORTB_BASE, GPIO_PIN_6)
-    , mIn2Pin(GPIO_PORTB_BASE, GPIO_PIN_5)
-    , mPWMPin(GPIO_PORTB_BASE, GPIO_PIN_0)
-    , mDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7)
-    , mEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6)
-    , mOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3) {
+    Factory()
+        : mRTCCCsPin(GPIO_PORTA_BASE, GPIO_PIN_7)
+        , mSDCCsPin(GPIO_PORTD_BASE, GPIO_PIN_0)
+        , mIn1Pin(GPIO_PORTB_BASE, GPIO_PIN_6)
+        , mIn2Pin(GPIO_PORTB_BASE, GPIO_PIN_5)
+        , mPWMPin(GPIO_PORTB_BASE, GPIO_PIN_0)
+        , mDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7)
+        , mEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6)
+        , mOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3) {
 
-    // Empty Ctor.
-  }
-
-
-  virtual ~Factory() {
-    delete [] mSSIPinCfg;
-  }
-
-  // IBSPFactory Interface.
-  CoreLink::SPIDev * CreateSPIDev() override {
-    return CreateSPIDev(0);
-  }
+        // Empty Ctor.
+    }
 
 
-  IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) override {
-    // This BSP creates a DS3234 RTCC.
-    // Calls the Ctor that uses default SPI slave configuration,
-    // with specified Cs pin.
-    // TODO: CHECK CLEAN CODE BOOK TO FIND ALTERNATIVE TO INDENTATION OF
-    // PARAMETERS.
-    unsigned long lInterruptNumber = INT_GPIOA;
-    IRTCC *const lRTCC = new DS3234(
-    2000,
-    lInterruptNumber,
-    mRTCCInterruptPin,
-    aSPIDev,
-    mRTCCCsPin);
+    virtual ~Factory() {
+        delete [] mSSIPinCfg;
+    }
 
-    return lRTCC;
-  }
+    // IBSPFactory Interface.
+    CoreLink::SPIDev * CreateSPIDev() override {
+        return CreateSPIDev(0);
+    }
 
 
-  GPIOs * CreateSDCCsPin(void) override {
-    return new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_0);
-  }
+    IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) override {
+        // This BSP creates a DS3234 RTCC.
+        // Calls the Ctor that uses default SPI slave configuration,
+        // with specified Cs pin.
+        // TODO: CHECK CLEAN CODE BOOK TO FIND ALTERNATIVE TO INDENTATION OF
+        // PARAMETERS.
+        unsigned long lInterruptNumber = INT_GPIOA;
+        IRTCC * const lRTCC = new DS3234(
+            2000,
+            lInterruptNumber,
+            mRTCCInterruptPin,
+            aSPIDev,
+            mRTCCCsPin
+        );
+
+        return lRTCC;
+    }
 
 
-  SDC * CreateSDC(
-    CoreLink::SPIDev &aSPIDev,
-    CoreLink::SPISlaveCfg &aSlaveCfg,
-    GPIOs const &aCsPin) override {
-
-    aSlaveCfg.SetBitRate(400000);
-    aSlaveCfg.SetDataWidth(8);
-    aSlaveCfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
-
-    SDC * const lSDC = new SDC(0, aSPIDev, aSlaveCfg);
-    return lSDC;
-  }
+    GPIOs * CreateSDCCsPin(void) override {
+        return new GPIOs(GPIO_PORTD_BASE, GPIO_PIN_0);
+    }
 
 
-  IDisplay * CreateDisplay(CoreLink::SPIDev * const aSPIDev) override {
-    return nullptr;
-  }
+    SDC * CreateSDC(
+        CoreLink::SPIDev &aSPIDev,
+        CoreLink::SPISlaveCfg &aSlaveCfg,
+        GPIOs const &aCsPin) override {
+
+        aSlaveCfg.SetBitRate(400000);
+        aSlaveCfg.SetDataWidth(8);
+        aSlaveCfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
+
+        SDC * const lSDC = new SDC(0, aSPIDev, aSlaveCfg);
+        return lSDC;
+    }
+
+
+    ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) override {
+        static unsigned int const sDisplayWidth = 128;
+        static unsigned int const sDisplayHeight = 96;
+        ILCD *lLCD = new SSD1329(
+            aSPIDev,
+            mOLEDCSnPin,
+            mDCnPin,
+            mEn15VPin,
+            sDisplayWidth,
+            sDisplayHeight
+        );
+        return lLCD;
+    }
 
   IFS * CreateFS(CoreLink::SPIDev * const aSPIDev) override {
     return nullptr;
@@ -719,7 +733,7 @@ void GPIOPortF_IRQHandler(void) {
     GPIOPinIntClear(GPIO_PORTF_BASE, lPin);
     // Only interested in the pin coming high.
     if (Button::PRESSED == BSP::mSelectButton.GetGPIOPinState()) {
-      static QP::QEvt const sEvt(SIG_DISPLAY_REFRESH);
+      static QP::QEvt const sEvt(DISPLAY_REFRESH_SIG);
       //DisplayMgr_AO::AOInstance().POST(&sEvt, 0);
       QP::QF::PUBLISH(&sEvt, 0);
     }

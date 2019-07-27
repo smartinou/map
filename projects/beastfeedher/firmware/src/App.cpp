@@ -39,11 +39,12 @@
 #include "PFPP_AOs.h"
 #include "BSP.h"
 #include "CalendarRec.h"
-#include "DisplayMgr_AO.h"
+#include "DisplayMgr_AOs.h"
 #include "FeedCfgRec.h"
 #include "FileLogSink_AO.h"
 #include "FWVersionGenerated.h"
 #include "IBSP.h"
+#include "ILCD.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "Net.h"
@@ -197,14 +198,17 @@ bool App::Init(void) {
   SSD1329 * const lOLEDDisplayPtr = BSP_InitOLEDDisplay();
   DisplayMgrInitEvt const lDisplayMgrInitEvt(SIG_DUMMY, 5);
   mDisplayMgr_AO = new DisplayMgr_AO(*lOLEDDisplayPtr);
+#else
+  mDisplay = lFactory->CreateDisplay(*mSPIDev);
+  mDisplayMgr_AO = new Display::AO::Mgr_AO(*mDisplay);//, 5);
+#endif
   mDisplayMgr_AO->start(
     5U,
     mDisplayMgrEventQueue,
     Q_DIM(mDisplayMgrEventQueue),
     nullptr,
-    0U,
-    &lDisplayMgrInitEvt);
-#endif
+    0U);
+  //&lDisplayMgrInitEvt);
   // Send signal dictionaries for globally published events...
   //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
 

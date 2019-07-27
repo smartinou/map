@@ -42,6 +42,7 @@ class BFHMgr_AO;
 class DisplayMgr_AO;
 class FileLogSink_AO;
 class LwIPMgr_AO;
+class ILCD;
 class IRTCC;
 class RTCC_AO;
 class GPIOs;
@@ -68,6 +69,12 @@ namespace RTCC {
 
 
 namespace PFPP {
+  namespace AO {
+    class Mgr_AO;
+  }
+}
+
+namespace Display {
   namespace AO {
     class Mgr_AO;
   }
@@ -108,12 +115,15 @@ class App {
   GPIOs *mSDCCsPin = nullptr;
   CoreLink::SPISlaveCfg *mSDCSlaveCfg = nullptr;
   static SDC *mSDCDrive0;
-  
+
+  ILCD *mDisplay = nullptr;
+  Display::AO::Mgr_AO *mDisplayMgr_AO = nullptr;
+
   // QP AOs.
   RTCC::AO::RTCC_AO *mRTCC_AO = nullptr;
   PFPP::AO::Mgr_AO *mPFPPMgr_AO = nullptr;
   //FileLogSink_AO *mFileLogSink_AO = nullptr;
-  DisplayMgr_AO  *mDisplayMgr_AO = nullptr;
+  //DisplayMgr_AO  *mDisplayMgr_AO = nullptr;
   LwIPMgr_AO     *mLwIPMgr_AO = nullptr;
 
   FATFS mFatFS = {0};

@@ -83,6 +83,7 @@ VPATH = \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/src \
+        $(FIRMWARE_PATH)/qp_ao/model \
         $(FIRMWARE_PATH)/qp_ao/model/src \
         $(FIRMWARE_PATH)/qp_ao/model/codegen \
         $(FIRMWARE_PATH)/utils/date \
@@ -113,6 +114,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
+        -I$(FIRMWARE_PATH)/qp_ao/model \
         -I$(FIRMWARE_PATH)/qp_ao/model/inc \
         -I$(FIRMWARE_PATH)/qp_ao/model/codegen \
         -I$(FIRMWARE_PATH)/utils/date \
@@ -168,7 +170,7 @@ CPP_SRCS := \
         Date.cpp \
         DB.cpp \
         DBRec.cpp \
-        DisplayMgr_AO.cpp \
+        DisplayMgr_AOs.cpp \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \

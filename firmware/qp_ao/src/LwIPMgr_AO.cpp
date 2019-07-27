@@ -264,7 +264,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
       DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt,
-                                                 SIG_DISPLAY_TEXT,
+                                                 DISPLAY_TEXT_SIG,
                                                  0 * 6,
                                                  0 * 8,
                                                  12);
