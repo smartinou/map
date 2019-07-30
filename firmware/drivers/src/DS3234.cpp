@@ -84,29 +84,29 @@ enum L_LIMITS {
 
 // Ctor.
 DS3234::DS3234(
-  unsigned int aBaseYear,
-  unsigned long aInterruptNumber,
+  unsigned int const aBaseYear,
+  unsigned long const aInterruptNumber,
   GPIOs const &aInterruptGPIO,
-  CoreLink::SPIDev      &aSPIDev,
-  CoreLink::SPISlaveCfg aSPICfg)
+  CoreLink::SPIDev &aSPIDev,
+  CoreLink::SPISlaveCfg const &aSPICfg
+)
   : mBaseYear(aBaseYear)
   , mSPIDev(aSPIDev)
   , mSPICfg(aSPICfg)
   , mInterruptNumber(aInterruptNumber)
   , mInterruptGPIO(aInterruptGPIO)
-    //, mRegMap{0}
 {
-
   // Ctor body intentionally left empty.
 }
 
 
 DS3234::DS3234(
-  unsigned int aBaseYear,
-  unsigned long aInterruptNumber,
+  unsigned int const aBaseYear,
+  unsigned long const aInterruptNumber,
   GPIOs const &aInterruptPin,
   CoreLink::SPIDev &aSPIDev,
-  GPIOs const &aCsPin)
+  GPIOs const &aCSnPin
+)
   : mBaseYear(aBaseYear)
   , mSPIDev(aSPIDev)
   , mSPICfg()
@@ -117,7 +117,7 @@ DS3234::DS3234(
   mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::MOTO_1);
   mSPICfg.SetBitRate(4000000);
   mSPICfg.SetDataWidth(8);
-  mSPICfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
+  mSPICfg.SetCSnGPIO(aCSnPin.GetPort(), aCSnPin.GetPin());
 }
 
 

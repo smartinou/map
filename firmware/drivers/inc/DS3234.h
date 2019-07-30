@@ -41,16 +41,16 @@ class DS3234
   : public IRTCC {
 
  public:
-  DS3234(unsigned int aBaseYear,
-         unsigned long aInterruptNumber,
+  DS3234(unsigned int const aBaseYear,
+         unsigned long const aInterruptNumber,
          GPIOs const &aInterruptGPIO,
-         CoreLink::SPIDev      &aSPIDev,
-         CoreLink::SPISlaveCfg  aSPICfg);
-  DS3234(unsigned int aBaseYear,
-         unsigned long aInterruptNumber,
+         CoreLink::SPIDev &aSPIDev,
+         CoreLink::SPISlaveCfg const &aSPICfg);
+  DS3234(unsigned int const aBaseYear,
+         unsigned long const aInterruptNumber,
          GPIOs const &aInterruptPin,
          CoreLink::SPIDev &aSPIDev,
-         GPIOs const &aCsPin);
+         GPIOs const &aCSnPin);
   ~DS3234();
 
   // RTCC Interface.

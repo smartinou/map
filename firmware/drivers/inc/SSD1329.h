@@ -8,9 +8,8 @@
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
+//! \brief SSD1329 OLED controller class.
 //! \ingroup ext_peripherals
-
 
 // ******************************************************************************
 //
@@ -46,18 +45,20 @@ class SSD1329
 public:
    SSD1329(
        CoreLink::SPIDev &aSPIDev,
-       CoreLink::SPISlaveCfg aSPICfg,
+       CoreLink::SPISlaveCfg const &aSPICfg,
        GPIOs const aDCnGPIO,
        GPIOs const aEn15VGPIO,
        unsigned int const aDisplayWidth  = 128,
-       unsigned int const aDisplayHeight = 128);
+       unsigned int const aDisplayHeight = 128
+   );
    SSD1329(
        CoreLink::SPIDev &aSPIDev,
        GPIOs const &aCsPin,
        GPIOs const aDCnGPIO,
        GPIOs const aEn15VGPIO,
        unsigned int const aDisplayWidth = 128,
-       unsigned int const aDisplayHeight = 128);
+       unsigned int const aDisplayHeight = 128
+   );
    virtual ~SSD1329();
 
     void Init() override;
@@ -66,7 +67,7 @@ public:
 
     void Clr(void) override;
     void DrawStr(
-        std::string aStr,
+        std::string const &aStr,
         unsigned int aXPos,
         unsigned int aYPos,
         unsigned int aGreyLevel) override;

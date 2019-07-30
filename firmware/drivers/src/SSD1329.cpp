@@ -7,7 +7,7 @@
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
+//! \brief SSD1329 OLED controller class.
 //! \ingroup ext_peripherals
 
 // *****************************************************************************
@@ -158,7 +158,7 @@ uint8_t const SSD1329::sFontTbl[96][FONT_WIDTH_MAX] = {
 
 SSD1329::SSD1329(
     CoreLink::SPIDev &aSPIDev,
-    CoreLink::SPISlaveCfg aSPICfg,
+    CoreLink::SPISlaveCfg const &aSPICfg,
     GPIOs const aDCnGPIO,
     GPIOs const aEn15VGPIO,
     unsigned int const aDisplayWidth,
@@ -211,7 +211,8 @@ void SSD1329::Init(void) {
         mDCnGPIO.GetPort(),
         mDCnGPIO.GetPin(),
         GPIO_STRENGTH_8MA,
-        GPIO_PIN_TYPE_STD);
+        GPIO_PIN_TYPE_STD
+    );
     GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), mDCnGPIO.GetPin());
 
     // Configure the GPIO port pin used to enable power to the OLED panel.
@@ -220,7 +221,8 @@ void SSD1329::Init(void) {
         mEn15VGPIO.GetPort(),
         mEn15VGPIO.GetPin(),
         GPIO_STRENGTH_8MA,
-        GPIO_PIN_TYPE_STD);
+        GPIO_PIN_TYPE_STD
+    );
     GPIOPinWrite(mEn15VGPIO.GetPort(), mEn15VGPIO.GetPin(), mEn15VGPIO.GetPin());
 
     // Clear screen.
@@ -313,6 +315,7 @@ void SSD1329::Clr(void) {
 
     // Clear the data buffer.
     uint8_t lDataBuf[16] = { 0 };
+    // TODO: Remove for loop if above line works.
     //for (unsigned int lByteIx = 0; lByteIx < sizeof(lDataBuf); lByteIx++) {
         //lDataBuf[lByteIx] = 0;
     //}
@@ -329,7 +332,7 @@ void SSD1329::Clr(void) {
 
 
 void SSD1329::DrawStr(
-    std::string  aStr,
+    std::string const &aStr,
     unsigned int aXPos,
     unsigned int aYPos,
     unsigned int aGreyLevel) {
@@ -351,7 +354,7 @@ void SSD1329::DrawStr(
     static uint8_t const sCmdVerticalInc[] = {SET_REMAP, 0x56};
     WrCmd(&sCmdVerticalInc[0], sizeof(sCmdVerticalInc));
 
-    for (std::string::iterator lIt = aStr.begin(); lIt != aStr.end(); ++lIt) {
+    for (std::string::const_iterator lIt = aStr.begin(); lIt != aStr.end(); ++lIt) {
         // Get a working copy of the current character and convert to an index
         // into the character bit-map array.
         unsigned char lTmpChr = *lIt;
