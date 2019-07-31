@@ -102,7 +102,6 @@ bool App::Init(void) {
 
   // Initialize the Board Support Package.
   IBSPFactory *lFactory = BSP::Init();
-  mSPIDev = lFactory->CreateSPIDev();
 
   // Create records and assign them to DB.
   // Deserialize NV memory into it.
@@ -115,6 +114,11 @@ bool App::Init(void) {
 
   sFeedCfgRec = new FeedCfgRec();
   DB::AddRec(sFeedCfgRec);
+  // DB records are now deserialized, and fixed if required.
+  // Create all other AOs.
+
+  // SPI Device.
+  mSPIDev = lFactory->CreateSPIDev();
 
   // RTCC & matching AO.
   App::mRTCC = lFactory->CreateRTCC(*mSPIDev);
@@ -125,17 +129,10 @@ bool App::Init(void) {
     mRTCCEventQueue,
     Q_DIM(mRTCCEventQueue),
     nullptr,
-    0U,
-    nullptr);
+    0U);
 
-#if 0
   // Create SDC instance to use in FS stubs.
-  mSDCSlaveCfg = new CoreLink::SPISlaveCfg();
-  mSDCCsPin = lFactory->CreateSDCCsPin();
-  mSDCDrive0 = lFactory->CreateSDC(
-    *mSPIDev,
-    *mSDCSlaveCfg,
-    *mSDCCsPin);
+  mSDCDrive0 = lFactory->CreateSDC(*mSPIDev);
 
   // If supported, mount FS.
   FRESULT lResult = f_mount(&mFatFS, "", 0);
@@ -143,7 +140,6 @@ bool App::Init(void) {
     return false;
   }
 
-#endif
 #if 0
   mFileLogSink_AO = new FileLogSink_AO();
   mFileLogSink_AO->start(
@@ -153,21 +149,6 @@ bool App::Init(void) {
     nullptr,
     0U);
 
-  // DB records are now deserialized, and fixed if required.
-  // Create all other AOs.
-  BFHInitEvt const lBFHInitEvt(
-    SIG_DUMMY,
-    App::sFeedCfgRecPtr,
-    BSP_gIn1GPIOPtr,
-    BSP_gIn2GPIOPtr,
-    BSP_gPWMGPIOPtr);
-  mBFHMgr_AO.start(
-    3U,
-    mBeastMgrEventQueue,
-    Q_DIM(mBeastMgrEventQueue),
-    nullptr,
-    0U,
-    &lBFHInitEvt);
 #else
   mPFPPMgr_AO = new PFPP::AO::Mgr_AO(*App::sFeedCfgRec);
   mPFPPMgr_AO->start(
@@ -177,6 +158,7 @@ bool App::Init(void) {
     nullptr,
     0U);
 #endif
+
 #if 0
   // Network makes sense in the following cases:
   // -if we use support web pages.

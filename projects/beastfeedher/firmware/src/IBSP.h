@@ -48,20 +48,13 @@ namespace CoreLink {
 // Consider namespace App or BSP.
 
 class IBSPFactory {
- public:
-  virtual CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) = 0;
+public:
   virtual CoreLink::SPIDev * CreateSPIDev(void) = 0;
 
   virtual IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) = 0;
-
   virtual ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) = 0;
-  virtual IFS * CreateFS(CoreLink::SPIDev * const aSPIDev) = 0;
+  virtual SDC * CreateSDC(CoreLink::SPIDev &aSPIDev) = 0;
 
-  virtual GPIOs * CreateSDCCsPin(void) = 0;
-  virtual SDC * CreateSDC(
-    CoreLink::SPIDev &aSPIDev,
-    CoreLink::SPISlaveCfg &aSlaveCfg,
-    GPIOs const &aCsPin) = 0;
 };
 
 // ******************************************************************************
