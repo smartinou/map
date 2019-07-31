@@ -1,16 +1,15 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: Component drivers.
 //
-// Module: Application class.
+// Module: Motor controller.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief Motor controller interface class.
+//! \ingroup ext_peripherals
 
 // ******************************************************************************
 //
@@ -22,10 +21,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-// FatFS.
-#include "diskio.h"
-#include "ff.h"
-
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -34,100 +29,17 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declaration.
-class CalendarRec;
-class NetIFRec;
-class FeedCfgRec;
-class BFHMgr_AO;
-class DisplayMgr_AO;
-class FileLogSink_AO;
-class LwIPMgr_AO;
-class ILCD;
-class IMotorControl;
-class IRTCC;
-class RTCC_AO;
-class GPIOs;
-class SDC;
-
-namespace RTCC {
-    namespace AO {
-        class RTCC_AO;
-    } // namespace AO
-} // namespace RTCC
-
-
-namespace CoreLink {
-    class SPIDev;
-    class SPISlaveCfg;
-}
-
-
-namespace RTCC {
-    namespace AO {
-        class RTCC_AO;
-    }
-}
-
-
-namespace PFPP {
-    namespace AO {
-      class Mgr_AO;
-    }
-}
-
-namespace Display {
-    namespace AO {
-        class Mgr_AO;
-    }
-}
-
-
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class App {
+class IMotorControl {
 public:
-    App();
-    ~App();
+    //void Init(unsigned int aSysClk, unsigned int aPeriod);
 
-    bool Init(void);
-
-    static SDC *GetSDCDrive(void) { return mSDCDrive0; }
-
-private:
-    static void NetCallbackInit(void);
-
-    // DB records.
-    static CalendarRec *sCalendar;
-    static NetIFRec    *sNetIFRec;
-    static FeedCfgRec  *sFeedCfgRec;
-
-    // QP Event Queues.
-    QP::QEvt const *mRTCCEventQueue[10] = {nullptr};
-    QP::QEvt const *mPFPPMgrEventQueue[5] = {nullptr};
-    QP::QEvt const *mFileLogSinkEventQueue[10] = {nullptr};
-    QP::QEvt const *mLwIPEventQueue[10] = {nullptr};
-    QP::QEvt const *mDisplayMgrEventQueue[5] = {nullptr};
-
-    CoreLink::SPIDev *mSPIDev = nullptr;
-
-    static IRTCC *mRTCC;
-    RTCC::AO::RTCC_AO *mRTCC_AO = nullptr;
-
-    static SDC *mSDCDrive0;
-    CoreLink::SPISlaveCfg *mSDCSlaveCfg = nullptr;
-
-    IMotorControl *mMotorControl = nullptr;
-    PFPP::AO::Mgr_AO *mPFPPMgr_AO = nullptr;
-
-    ILCD *mDisplay = nullptr;
-    Display::AO::Mgr_AO *mDisplayMgr_AO = nullptr;
-
-    // QP AOs.
-    //FileLogSink_AO *mFileLogSink_AO = nullptr;
-    LwIPMgr_AO     *mLwIPMgr_AO = nullptr;
-
-    FATFS mFatFS = {0};
+    // Sets/clears the entry for the specified time, rounded to quarter hour.
+    virtual void TurnOnCW(unsigned int const aDutyCycle = 100) const = 0;
+    virtual void TurnOnCCW(unsigned int const aDutyCycle = 100) const = 0;
+    virtual void TurnOff(void) const = 0;
 };
 
 // ******************************************************************************

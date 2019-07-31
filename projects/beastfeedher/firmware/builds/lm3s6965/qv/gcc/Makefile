@@ -162,7 +162,6 @@ C_SRCS := \
 CPP_SRCS := \
         App.cpp \
         Main.cpp \
-        BFHMgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
@@ -196,6 +195,7 @@ CPP_SRCS := \
         Time.cpp \
         Weekday.cpp
 
+#        BFHMgr_AO.cpp \
 #        BSP.cpp \
 #        FileLogSink_AO.cpp \
 

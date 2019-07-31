@@ -34,6 +34,7 @@
 class IRTCC;
 class IFS;
 class ILCD;
+class IMotorControl;
 class GPIOs;
 class SDC;
 
@@ -54,6 +55,7 @@ public:
   virtual IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) = 0;
   virtual ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) = 0;
   virtual SDC * CreateSDC(CoreLink::SPIDev &aSPIDev) = 0;
+  virtual IMotorControl * CreateMotorControl(void) = 0;
 
 };
 

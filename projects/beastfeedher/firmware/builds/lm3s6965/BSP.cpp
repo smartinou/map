@@ -43,6 +43,7 @@
 #include "GPIOs.h"
 #include "Button.h"
 #include "SSD1329.h"
+#include "TB6612.h"
 
 #include "BFHMgr_Evt.h"
 #include "Signals.h"
@@ -142,10 +143,7 @@ class Factory
     : public IBSPFactory {
 
 public:
-    Factory()
-        : mIn1Pin(GPIO_PORTB_BASE, GPIO_PIN_6)
-        , mIn2Pin(GPIO_PORTB_BASE, GPIO_PIN_5)
-        , mPWMPin(GPIO_PORTB_BASE, GPIO_PIN_0) {
+    Factory() {
         // Empty Ctor.
     }
 
@@ -192,7 +190,7 @@ public:
         static unsigned int const sDisplayWidth = 128;
         static unsigned int const sDisplayHeight = 96;
 
-        ILCD *lLCD = new SSD1329(
+        ILCD * const lLCD = new SSD1329(
             aSPIDev,
             lOLEDCSnPin,
             lDCnPin,
@@ -202,6 +200,16 @@ public:
         );
         return lLCD;
     }
+
+    IMotorControl * CreateMotorControl(void) override {
+        GPIOs lIn1(GPIO_PORTB_BASE, GPIO_PIN_6);
+        GPIOs lIn2(GPIO_PORTB_BASE, GPIO_PIN_5);
+        GPIOs lPWM(GPIO_PORTB_BASE, GPIO_PIN_0);
+
+        IMotorControl * const lMotorControl = new TB6612(lIn1, lIn2, lPWM);
+        return lMotorControl;
+    }
+
 
     // Local interface.
     static GPIOs const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
@@ -226,11 +234,6 @@ private:
     CoreLink::SSIPinCfg *mSSIPinCfg = { nullptr };
 
     static GPIOs const mRTCCInterruptPin;
-
-    // All that is BFH Manager-related.
-    GPIOs const mIn1Pin;
-    GPIOs const mIn2Pin;
-    GPIOs const mPWMPin;
 };
 
 } // namespace BSP

@@ -28,9 +28,13 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mFeedCfgRec" type="FeedCfgRec const &amp;" visibility="0x02" properties="0x00">
      <documentation>A pointer to the Feeder configuration record.</documentation>
     </attribute>
+    <attribute name="mMotorControl" type="IMotorControl &amp;" visibility="0x02" properties="0x00">
+     <documentation>Motor controller for activating feeder.</documentation>
+    </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
      <parameter name="aFeedCfgRec" type="FeedCfgRec const &amp;"/>
+     <parameter name="aMotorControl" type="IMotorControl &amp;"/>
      <code>    : QP::QActive(Q_STATE_CAST(&amp;PFPP::AO::Mgr_AO::initial))
     , mDeferredEventQueueSto{nullptr}
     , mDeferredEventQueue()
@@ -39,6 +43,7 @@ This is where all the feeding actions are taken, based on calendar events and in
     , mManualMaxFeedPeriod(10 * BSP::TICKS_PER_SEC)
     , mTimedFeedPeriod(4 * BSP::TICKS_PER_SEC)
     , mFeedCfgRec(aFeedCfgRec)
+    , mMotorControl(aMotorControl)
 
 // Ctor body left empty.</code>
     </operation>
@@ -55,11 +60,13 @@ mFeedTimer.disarm();</code>
     </operation>
     <operation name="StartFeeder" type="void" visibility="0x02" properties="0x00">
      <documentation>Start whatever mechanism used to distribute food.</documentation>
-     <code>// Start motor.</code>
+     <code>// Start motor.
+mMotorControl.TurnOnCW();</code>
     </operation>
     <operation name="StopFeeder" type="void" visibility="0x02" properties="0x00">
      <documentation>Stops whatever mechanism is used to distribute food.</documentation>
-     <code>// Stop feeder.</code>
+     <code>// Stop feeder.
+mMotorControl.TurnOff();</code>
     </operation>
     <statechart properties="0x02">
      <initial target="../1">
@@ -261,6 +268,7 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
 
 
 #include &lt;FeedCfgRec.h&gt;
+#include &lt;IMotorControl.h&gt;
 
 
 $declare${project::AOs::Mgr_AO}

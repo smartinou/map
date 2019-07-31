@@ -3,24 +3,26 @@
 //
 // Project: Component drivers.
 //
-// Module: Motor controller class.
+// Module: TB6612.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief TB6612 class.
+//! \ingroup ext_peripherals
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include "IMotorControl.h"
+#include "GPIOs.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -30,32 +32,25 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declarations.
-class GPIOs;
-
-
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class TB6612 {
- public:
-  TB6612(GPIOs &aIn1,
-         GPIOs &aIn2,
-         GPIOs &aPWM);
-  ~TB6612() {}
+class TB6612
+    : public IMotorControl {
 
-  void Init(unsigned int aSysClk, unsigned int aPeriod);
+public:
+    TB6612(GPIOs const &aIn1, GPIOs const &aIn2, GPIOs const &aPWM);
+    virtual ~TB6612() {}
 
-  // Sets/clears the entry for the specified time, rounded to quarter hour.
-  void TurnOnCW(unsigned int aDutyCycle = 100) const;
-  void TurnOnCCW(unsigned int aDutyCycle = 100) const;
-  void TurnOff(void) const;
+    // IMotorController interface.
+    void TurnOnCW(unsigned int const aDutyCycle = 100) const override;
+    void TurnOnCCW(unsigned int const aDutyCycle = 100) const override;
+    void TurnOff(void) const override;
 
-  // Gets the next set entry from current time.
  private:
-  GPIOs const &mIn1;
-  GPIOs const &mIn2;
-  GPIOs const &mPWM;
+    GPIOs const mIn1;
+    GPIOs const mIn2;
+    GPIOs const mPWM;
 };
 
 // ******************************************************************************

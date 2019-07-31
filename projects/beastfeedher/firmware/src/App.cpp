@@ -1,18 +1,18 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: PFPP
 //
 // Module: Application class.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Application class.
+//! \ingroup application
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -76,69 +76,74 @@ FeedCfgRec  *App::sFeedCfgRec = nullptr;
 IRTCC *App::mRTCC = nullptr;
 SDC *App::mSDCDrive0 = nullptr;
 
-
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-App::App()
-//: mBFHMgr_AO(BFHMgr_AO::Instance())
-    //, mFileLogSink_AO(nullptr)
-//, mDisplayMgr_AO(nullptr)
-//, mLwIPMgr_AO(nullptr) {
-  // Ctor body left intentionally empty.
-{}
+App::App(){
+    // Ctor body left intentionally empty.
+}
 
 
 App::~App() {
-  // Dtor body.
-  delete(mDisplayMgr_AO);
-  delete(mLwIPMgr_AO);
-  //delete(mFileLogSink_AO);
+    // Dtor body.
+    delete(mDisplayMgr_AO);
+    delete(mDisplay);
+
+    delete(mPFPPMgr_AO);
+    delete(mMotorControl);
+
+    delete(mSDCDrive0);
+
+    delete(mRTCC_AO);
+    delete(mRTCC);
+
+    delete(mSPIDev);
 }
 
 
 bool App::Init(void) {
 
-  // Initialize the Board Support Package.
-  IBSPFactory *lFactory = BSP::Init();
+    // Initialize the Board Support Package.
+    IBSPFactory *const lFactory = BSP::Init();
 
-  // Create records and assign them to DB.
-  // Deserialize NV memory into it.
-  // Sanity of records is checked once deserialized.
-  sCalendar = new CalendarRec();
-  DB::AddRec(sCalendar);
+    // Create records and assign them to DB.
+    // Deserialize NV memory into it.
+    // Sanity of records is checked once deserialized.
+    sCalendar = new CalendarRec();
+    DB::AddRec(sCalendar);
 
-  sNetIFRec = new NetIFRec();
-  DB::AddRec(sNetIFRec);
+    sNetIFRec = new NetIFRec();
+    DB::AddRec(sNetIFRec);
 
-  sFeedCfgRec = new FeedCfgRec();
-  DB::AddRec(sFeedCfgRec);
-  // DB records are now deserialized, and fixed if required.
-  // Create all other AOs.
+    sFeedCfgRec = new FeedCfgRec();
+    DB::AddRec(sFeedCfgRec);
+    // DB records are now deserialized, and fixed if required.
+    // Create all other AOs.
 
-  // SPI Device.
-  mSPIDev = lFactory->CreateSPIDev();
+    // SPI Device.
+    mSPIDev = lFactory->CreateSPIDev();
 
-  // RTCC & matching AO.
-  App::mRTCC = lFactory->CreateRTCC(*mSPIDev);
+    // RTCC & matching AO.
+    App::mRTCC = lFactory->CreateRTCC(*mSPIDev);
 
-  mRTCC_AO = new RTCC::AO::RTCC_AO(*App::mRTCC);
-  mRTCC_AO->start(
-    1U,
-    mRTCCEventQueue,
-    Q_DIM(mRTCCEventQueue),
-    nullptr,
-    0U);
+    mRTCC_AO = new RTCC::AO::RTCC_AO(*App::mRTCC);
+    mRTCC_AO->start(
+        1U,
+        mRTCCEventQueue,
+        Q_DIM(mRTCCEventQueue),
+        nullptr,
+        0U
+    );
 
-  // Create SDC instance to use in FS stubs.
-  mSDCDrive0 = lFactory->CreateSDC(*mSPIDev);
+    // Create SDC instance to use in FS stubs.
+    mSDCDrive0 = lFactory->CreateSDC(*mSPIDev);
 
-  // If supported, mount FS.
-  FRESULT lResult = f_mount(&mFatFS, "", 0);
-  if (FR_OK != lResult) {
-    return false;
-  }
+    // If supported, mount FS.
+    FRESULT lResult = f_mount(&mFatFS, "", 0);
+    if (FR_OK != lResult) {
+        return false;
+    }
 
 #if 0
   mFileLogSink_AO = new FileLogSink_AO();
@@ -150,13 +155,15 @@ bool App::Init(void) {
     0U);
 
 #else
-  mPFPPMgr_AO = new PFPP::AO::Mgr_AO(*App::sFeedCfgRec);
-  mPFPPMgr_AO->start(
-    3U,
-    mPFPPMgrEventQueue,
-    Q_DIM(mPFPPMgrEventQueue),
-    nullptr,
-    0U);
+    mMotorControl = lFactory->CreateMotorControl();
+    mPFPPMgr_AO = new PFPP::AO::Mgr_AO(*App::sFeedCfgRec, *mMotorControl);
+    mPFPPMgr_AO->start(
+        3U,
+        mPFPPMgrEventQueue,
+        Q_DIM(mPFPPMgrEventQueue),
+        nullptr,
+        0U
+    );
 #endif
 
 #if 0
@@ -181,27 +188,28 @@ bool App::Init(void) {
   DisplayMgrInitEvt const lDisplayMgrInitEvt(SIG_DUMMY, 5);
   mDisplayMgr_AO = new DisplayMgr_AO(*lOLEDDisplayPtr);
 #else
-  mDisplay = lFactory->CreateDisplay(*mSPIDev);
-  mDisplayMgr_AO = new Display::AO::Mgr_AO(*mDisplay);//, 5);
+    mDisplay = lFactory->CreateDisplay(*mSPIDev);
+    mDisplayMgr_AO = new Display::AO::Mgr_AO(*mDisplay);//, 5);
 #endif
-  mDisplayMgr_AO->start(
-    5U,
-    mDisplayMgrEventQueue,
-    Q_DIM(mDisplayMgrEventQueue),
-    nullptr,
-    0U);
-  //&lDisplayMgrInitEvt);
-  // Send signal dictionaries for globally published events...
-  //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
+    mDisplayMgr_AO->start(
+        5U,
+        mDisplayMgrEventQueue,
+        Q_DIM(mDisplayMgrEventQueue),
+        nullptr,
+        0U
+    );
+    //&lDisplayMgrInitEvt);
+    // Send signal dictionaries for globally published events...
+    //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
 
-  // Send object dictionaries for event queues...
-  QS_OBJ_DICTIONARY(mRTCCEventQueue);
-  QS_OBJ_DICTIONARY(mPFPPMgrEventQueue);
-  QS_OBJ_DICTIONARY(mLwIPEventQueue);
-  QS_OBJ_DICTIONARY(mDisplayMgrEventQueue);
-  QS_OBJ_DICTIONARY(mFileLogSinkEventQueue);
+    // Send object dictionaries for event queues...
+    QS_OBJ_DICTIONARY(mRTCCEventQueue);
+    QS_OBJ_DICTIONARY(mPFPPMgrEventQueue);
+    QS_OBJ_DICTIONARY(mLwIPEventQueue);
+    QS_OBJ_DICTIONARY(mDisplayMgrEventQueue);
+    QS_OBJ_DICTIONARY(mFileLogSinkEventQueue);
 
-  return true;
+    return true;
 }
 
 // *****************************************************************************
@@ -215,57 +223,57 @@ extern "C" {
 //
 
 DSTATUS disk_initialize(BYTE pdrv) {
-  // Only drive 0 is supported in this application.
-  if (0 == pdrv) {
-    return App::GetSDCDrive()->DiskInit();
-  } else {
-    return RES_PARERR;
-  }
+    // Only drive 0 is supported in this application.
+    if (0 == pdrv) {
+        return App::GetSDCDrive()->DiskInit();
+    } else {
+        return RES_PARERR;
+    }
 }
 
 
 DSTATUS disk_status(BYTE pdrv) {
-  // Only drive 0 is supported in this application.
-  if (0 == pdrv) {
-    return App::GetSDCDrive()->GetDiskStatus();
-  } else {
-    return RES_PARERR;
-  }
+    // Only drive 0 is supported in this application.
+    if (0 == pdrv) {
+        return App::GetSDCDrive()->GetDiskStatus();
+    } else {
+        return RES_PARERR;
+    }
 }
 
 
 DRESULT disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count) {
-  // Only drive 0 is supported in this application.
-  if (0 == pdrv) {
-    return App::GetSDCDrive()->DiskRd(buff, sector, count);
-  } else {
-    return RES_PARERR;
-  }
+    // Only drive 0 is supported in this application.
+    if (0 == pdrv) {
+        return App::GetSDCDrive()->DiskRd(buff, sector, count);
+    } else {
+        return RES_PARERR;
+    }
 }
 
 
 #if (FF_FS_READONLY == 0)
 DRESULT disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count) {
-  // Only drive 0 is supported in this application.
-  if (0 == pdrv) {
-    return App::GetSDCDrive()->DiskWr(buff, sector, count);
-  } else {
-    return RES_PARERR;
-  }
+    // Only drive 0 is supported in this application.
+    if (0 == pdrv) {
+        return App::GetSDCDrive()->DiskWr(buff, sector, count);
+    } else {
+        return RES_PARERR;
+    }
 }
 #endif // FF_FS_READONLY
 
 
 #if (FF_FS_READONLY == 0)
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff) {
-  return (DRESULT)0;
+    return (DRESULT)0;
 }
 #endif // FF_FS_READONLY
 
 
 #if !FF_FS_READONLY && !FF_FS_NORTC
 DWORD get_fattime(void) {
-  return 0;
+    return 0;
 }
 #endif
 
