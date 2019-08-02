@@ -34,7 +34,7 @@
 //! ...here.
 class IMotorControl {
 public:
-    //void Init(unsigned int aSysClk, unsigned int aPeriod);
+    virtual ~IMotorControl() {}
 
     // Sets/clears the entry for the specified time, rounded to quarter hour.
     virtual void TurnOnCW(unsigned int const aDutyCycle = 100) const = 0;

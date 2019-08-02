@@ -39,8 +39,9 @@
 //! Details follow...
 //! ...here.
 class ILCD {
- public:
+public:
 
+    virtual ~ILCD() {}
     virtual void Init() = 0;
     virtual void DisplayOn(void) = 0;
     virtual void DisplayOff(void) = 0;
@@ -58,26 +59,6 @@ class ILCD {
         unsigned int aWidth,
         unsigned int aHeight) = 0;
 
- private:
-  //void WrCmd(uint8_t const *aCmdBufPtr, unsigned int aLen);
-  //void WrData(uint8_t const *aDataBufPtr, unsigned int aLen);
-
-  //void AssertDataLine(void);
-  //void AssertCmdLine(void);
-
-  //CoreLink::SPIDev      &mSPIDevRef;
-  //CoreLink::SPISlaveCfg &mSPICfgRef;
-  
-  //unsigned long mDCnGPIOPort;
-  //unsigned int  mDCnGPIOPin;
-  //unsigned long mEn15VGPIOPort;
-  //unsigned int  mEn15VGPIOPin;
-
-  //unsigned int mDisplayWidth;
-  //unsigned int mDisplayHeight;
-
-  //static unsigned int const mWidthMax  = (128 / 2) - 1;;
-  //static unsigned int const mHeightMax = 128 - 1;
 };
 
 // ******************************************************************************

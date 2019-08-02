@@ -11,7 +11,6 @@
 //! \brief RTCC interface class.
 //! \ingroup ext_peripherals
 
-
 // ******************************************************************************
 //
 //        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
@@ -47,6 +46,7 @@ class IRTCC {
     ALARM_ID_2,
   };
 
+  virtual ~IRTCC() {}
   virtual void SetInterrupt(bool aEnable) = 0;
   virtual void SetImpure(void) = 0;
 
