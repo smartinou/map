@@ -38,17 +38,17 @@
 
 // This project.
 #include "App.h"
-#include "PFPP_AOs.h"
 #include "BSP.h"
 #include "DisplayMgr_AOs.h"
 #include "FileLogSink_AO.h"
 #include "FWVersionGenerated.h"
 #include "IBSP.h"
 #include "ILCD.h"
+#include "IRTCC.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "Net.h"
-#include "IRTCC.h"
+#include "PFPP_AOs.h"
 #include "RTCC_AO.h"
 #include "SDC.h"
 
@@ -107,18 +107,14 @@ bool App::Init(void) {
     IBSPFactory *const lFactory = BSP::Init();
 
     // Create records and assign them to DB.
-    // Deserialize NV memory into it.
-    // Sanity of records is checked once deserialized.
     sCalendar = new CalendarRec();
     sNetIFRec = new NetIFRec();
     sFeedCfgRec = new FeedCfgRec();
 
-    // DB records are now deserialized, and fixed if required.
-    // Create all other AOs.
-
     // SPI Device.
     mSPIDev = lFactory->CreateSPIDev();
 
+    // Create all other AOs.
     // RTCC & matching AO.
     App::mRTCC = lFactory->CreateRTCC(*mSPIDev);
 

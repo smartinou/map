@@ -1,14 +1,14 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: PFPP
 //
-// Module: Application class.
+// Module: BSP.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief BSP class.
+//! \ingroup application_bsp
 
 // *****************************************************************************
 //
@@ -45,7 +45,7 @@
 #include "SSD1329.h"
 #include "TB6612.h"
 
-#include "BFHMgr_Evt.h"
+#include "PFPP_Events.h"
 #include "Signals.h"
 #include "IBSP.h"
 #include "BSP.h"
@@ -675,8 +675,8 @@ void GPIOPortC_IRQHandler(void) {
     if (lPin & lIntStatus) {
         GPIOPinIntClear(GPIO_PORTC_BASE, lPin);
 
-        static BFHManualFeedCmdEvt const sOnEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
-        static BFHManualFeedCmdEvt const sOffEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
+        static PFPP::Event::ManualFeedCmd const sOnEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
+        static PFPP::Event::ManualFeedCmd const sOffEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
         // Decouple using framework PUBLISH() method instead of direct posting to AO.
         if (Button::PRESSED == BSP::mManualFeedButton.GetGPIOPinState()) {
             QP::QF::PUBLISH(&sOnEvt, 0);
@@ -699,7 +699,7 @@ void GPIOPortD_IRQHandler(void) {
         GPIOPinIntClear(GPIO_PORTD_BASE, lPin);
         // Only interested in the pin coming high.
         if (Button::PRESSED == BSP::mTimedFeedButton.GetGPIOPinState()) {
-            static BFHTimedFeedCmdEvt const sEvt(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
+            static PFPP::Event::TimedFeedCmd const sEvt(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
             QP::QF::PUBLISH(&sEvt, 0);
         }
     }

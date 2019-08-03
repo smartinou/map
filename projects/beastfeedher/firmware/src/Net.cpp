@@ -40,7 +40,7 @@
 #include "lwip/stats.h"
 
 // AOs.
-#include "BFHMgr_Evt.h"
+#include "PFPP_Events.h"
 #include "RTCC_AO.h"
 #include "RTCC_Events.h"
 
@@ -695,10 +695,11 @@ static char const *DispIndex(
     // Send event with value as parameter.
     unsigned int lTime = 0;
     sscanf(aValsVec[0], "%d", &lTime);
-    BFHTimedFeedCmdEvt *lEvtPtr = Q_NEW(
-      BFHTimedFeedCmdEvt,
+    PFPP::Event::TimedFeedCmd *lEvtPtr = Q_NEW(
+      PFPP::Event::TimedFeedCmd,
       SIG_FEED_MGR_TIMED_FEED_CMD,
-      lTime);
+      lTime
+    );
 
     // Could use QF_Publish() to decouple from active object.
     // Here, there's only this well-known recipient.
