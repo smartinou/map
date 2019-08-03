@@ -39,7 +39,7 @@
 class DBRec {
 public:
     DBRec();
-    ~DBRec();
+    virtual ~DBRec();
 
     bool IsDirty(void) const { return mIsDirty; }
 

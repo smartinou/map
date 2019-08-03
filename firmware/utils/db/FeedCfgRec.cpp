@@ -2,17 +2,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding configuration class.
+// Module: Feeding configuration.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Feeding configuration class.
+//! \ingroup utils_db
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -22,9 +22,6 @@
 
 // Standard Library.
 #include <string.h>
-
-// Common Library.
-//#include "IDB.h"
 
 // This project.
 #include "FeedCfgRec.h"
@@ -50,7 +47,8 @@
 // *****************************************************************************
 
 FeedCfgRec::FeedCfgRec()
-    : mRec{0} {
+    : DBRec()
+    , mRec{0} {
 
     // Ctor body left intentionally empty.
 }

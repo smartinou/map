@@ -3,18 +3,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding calendar class.
+// Module: Feeding calendar.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
+//! \brief Feeding calendar class.
 //! \ingroup module_group
-
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,17 +31,13 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declaration.
-//class DBRec;
-
-
 class NetIFRec
     : public DBRec {
 public:
     NetIFRec();
     ~NetIFRec();
 
-    // IDBRec.
+    // DBRec.
     bool IsSane(void) override;
     void ResetDflt(void) override;
 
@@ -58,6 +53,7 @@ public:
     void SetGWAddr(uint32_t aGWAddr);
 
 private:
+    // DBRec.
     unsigned int GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;
     void Deserialize(uint8_t const * const aDataPtr) override;

@@ -73,6 +73,15 @@ public:
   );
 
 private:
+    // DBRec.
+    unsigned int GetRecSize(void) const override;
+    void Serialize(uint8_t * const aData) const override;
+    void Deserialize(uint8_t const * const aData) override;
+
+    unsigned int GetArrayIx(Time const &aTime);
+    unsigned int WeekdayToBitMask(Weekday const &aWeekday);
+    unsigned int BitMaskToWeekday(unsigned int aBitMask);
+
     enum CalendarDimEnumTag {
         HOUR_QTY          = 24,
         SLOTS_PER_HOUR    = 4,
@@ -81,14 +90,6 @@ private:
     };
 
     enum BitMaskEnumTag { ALL_WEEK_BIT_MASK = (0x1 << 0) };
-
-    unsigned int GetRecSize(void) const override;
-    void Serialize(uint8_t * const aData) const override;
-    void Deserialize(uint8_t const * const aData) override;
-
-    unsigned int GetArrayIx(Time const &aTime);
-    unsigned int WeekdayToBitMask(Weekday const &aWeekday);
-    unsigned int BitMaskToWeekday(unsigned int aBitMask);
 
     struct RecStructTag {
         uint8_t mCRC;

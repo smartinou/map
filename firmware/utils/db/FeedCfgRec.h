@@ -3,18 +3,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding configuration class.
+// Module: Feeding configuration.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
+//! \brief Feeding configuration class class.
 //! \ingroup module_group
-
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -55,6 +54,7 @@ public:
     void SetIsAutoPetFeedingEnabled(bool aIsEnabled);
 
 private:
+    // DBRec.
     unsigned int GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;
     void Deserialize(uint8_t const * const aDataPtr) override;

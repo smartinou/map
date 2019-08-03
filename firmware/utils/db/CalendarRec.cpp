@@ -47,10 +47,11 @@
 // *****************************************************************************
 
 CalendarRec::CalendarRec()
-  : mRec{0} {
+    : DBRec()
+    , mRec{0} {
 
-  // Ctor body left intentionally empty.
-  ClrAllEntries();
+    // Ctor body left intentionally empty.
+    ClrAllEntries();
 }
 
 
