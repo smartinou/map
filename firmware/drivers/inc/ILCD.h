@@ -11,7 +11,6 @@
 //! \brief LCD interface class.
 //! \ingroup ext_peripherals
 
-
 // ******************************************************************************
 //
 //        Copyright (c) 2015-2019, Martin Garon, All rights reserved.

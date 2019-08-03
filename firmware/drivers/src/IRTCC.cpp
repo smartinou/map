@@ -48,29 +48,29 @@
 
 unsigned int IRTCC::BinaryToBCD(unsigned int aBinVal) {
 
-  unsigned int lBCDVal = 0;
+    unsigned int lBCDVal = 0;
 
-  if (aBinVal > 10) {
-    lBCDVal   = BinaryToBCD(aBinVal / 10);
-    lBCDVal <<= 4;
-    lBCDVal  |= (aBinVal % 10);
-  } else {
-    lBCDVal = aBinVal;
-  }
+    if (aBinVal > 10) {
+        lBCDVal   = BinaryToBCD(aBinVal / 10);
+        lBCDVal <<= 4;
+        lBCDVal  |= (aBinVal % 10);
+    } else {
+        lBCDVal = aBinVal;
+    }
 
-  return lBCDVal;
+    return lBCDVal;
 }
 
 
 unsigned int IRTCC::BCDToBinary(unsigned int aBCDVal) {
 
-  unsigned int lBinVal = aBCDVal & 0x0F;
-  aBCDVal >>= 4;
-  if (0 != aBCDVal) {
-    lBinVal += (10 * BCDToBinary(aBCDVal));
-  }
+    unsigned int lBinVal = aBCDVal & 0x0F;
+    aBCDVal >>= 4;
+    if (0 != aBCDVal) {
+        lBinVal += (10 * BCDToBinary(aBCDVal));
+    }
 
-  return lBinVal;
+    return lBinVal;
 }
 
 // *****************************************************************************

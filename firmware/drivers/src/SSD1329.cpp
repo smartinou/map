@@ -168,8 +168,8 @@ SSD1329::SSD1329(
     , mDCnGPIO(aDCnGPIO)
     , mEn15VGPIO(aEn15VGPIO)
     , mDisplayWidth(aDisplayWidth)
-    , mDisplayHeight(aDisplayHeight) {
-
+    , mDisplayHeight(aDisplayHeight
+) {
     // Ctor body left intentionally empty.
 }
 
@@ -181,7 +181,7 @@ SSD1329::SSD1329(
     GPIOs const aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight
-    )
+)
     : mSPIDev(aSPIDev)
     , mSPICfg()
     , mDCnGPIO(aDCnGPIO)
@@ -335,7 +335,8 @@ void SSD1329::DrawStr(
     std::string const &aStr,
     unsigned int aXPos,
     unsigned int aYPos,
-    unsigned int aGreyLevel) {
+    unsigned int aGreyLevel
+) {
 
     // Setup a window starting at the specified column and row,
     // ending at the right edge of the display and 8 rows down
@@ -405,7 +406,8 @@ void SSD1329::DrawImg(
 	unsigned int   aXPos,
 	unsigned int   aYPos,
 	unsigned int   aWidth,
-	unsigned int   aHeight) {
+	unsigned int   aHeight
+) {
 
   // [MG] BUNCH OF ASSERTS TO PUT DOWN HERE.
 

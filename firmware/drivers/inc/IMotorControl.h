@@ -1,7 +1,7 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Component drivers.
+// Project: Drivers.
 //
 // Module: Motor controller.
 //

@@ -184,7 +184,6 @@ CPP_SRCS := \
         NetIFRec.cpp \
         PFPP_AOs.cpp \
         PFPP_Events.cpp \
-        RTCC.cpp \
         IRTCC.cpp \
         RTCC_AO.cpp \
         RTCC_Events.cpp \
@@ -198,6 +197,7 @@ CPP_SRCS := \
 #        BFHMgr_AO.cpp \
 #        BSP.cpp \
 #        FileLogSink_AO.cpp \
+#        RTCC.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \
