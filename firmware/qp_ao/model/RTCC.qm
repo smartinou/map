@@ -356,8 +356,8 @@ WrToNVMem();
   <file name="RTCC_Events.h">
    <text>#include &lt;qpcpp.h&gt;
 
-#include &lt;Time.h&gt;
-#include &lt;Date.h&gt;
+#include &lt;time/Time.h&gt;
+#include &lt;date/Date.h&gt;
 
 class CalendarRec;
 
@@ -369,8 +369,6 @@ $declare${RTCC::Events::SaveToRAM}
   </file>
   <file name="RTCC_Events.cpp">
    <text>#include &lt;db/CalendarRec.h&gt;
-#include &quot;Date.h&quot;
-#include &quot;Time.h&quot;
 
 #include &quot;RTCC_Events.h&quot;
 

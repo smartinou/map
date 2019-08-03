@@ -2,17 +2,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding calendar class.
+// Module: Feeding calendar.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Feeding calendar class.
+//! \ingroup utils_db
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -22,11 +22,6 @@
 
 // Standard Library.
 #include <string.h>
-
-// Common Library.
-//#include "IDB.h"
-#include "Date.h"
-#include "Time.h"
 
 // This project.
 #include "CalendarRec.h"

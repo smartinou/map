@@ -119,9 +119,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/qp_ao/model/inc \
         -I$(FIRMWARE_PATH)/qp_ao/model/codegen \
         -I$(FIRMWARE_PATH)/utils \
-        -I$(FIRMWARE_PATH)/utils/date \
         -I$(FIRMWARE_PATH)/utils/inc \
-        -I$(FIRMWARE_PATH)/utils/time \
         -I$(STELLARIS_LIB) \
         -I$(STELLARIS_LIB)/inc \
         -I$(STELLARIS_LIB)/driverlib \
