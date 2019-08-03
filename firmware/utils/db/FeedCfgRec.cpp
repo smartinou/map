@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: Utils.
 //
-// Module: Feeding calendar class.
+// Module: Feeding configuration class.
 //
 // *****************************************************************************
 
@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -24,10 +24,10 @@
 #include <string.h>
 
 // Common Library.
-#include "DBRec.h"
+//#include "IDB.h"
 
 // This project.
-#include "NetIFRec.h"
+#include "FeedCfgRec.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -49,110 +49,107 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-NetIFRec::NetIFRec()
-  : DBRec()
-  , mRec{0} {
+FeedCfgRec::FeedCfgRec()
+    : mRec{0} {
 
-  // Ctor body left intentionally empty.
+    // Ctor body left intentionally empty.
 }
 
 
-bool NetIFRec::UseDHCP(void) const {
-  return mRec.mUseDHCP;
+FeedCfgRec::~FeedCfgRec() {
+    // Dtor body left intentionally empty.
 }
 
 
-uint32_t NetIFRec::GetIPAddr(void) const {
-  return mRec.mIPAddr;
+//
+// Start of DBRec interface.
+//
+
+bool FeedCfgRec::IsSane(void) {
+    // Check CRC.
+    if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+        return false;
+    }
+
+    // Check magic value.
+    if (('C' != mRec.mMagic[0])
+          || ('F' != mRec.mMagic[1])
+          || ('G' != mRec.mMagic[2])
+    ) {
+        return false;
+    }
+
+    return true;
 }
 
 
-uint32_t NetIFRec::GetSubnetMask(void) const {
-  return mRec.mSubnetMask;
+void FeedCfgRec::ResetDflt(void) {
+
+    // Set magic.
+    mRec.mMagic[0] = 'C';
+    mRec.mMagic[1] = 'F';
+    mRec.mMagic[2] = 'G';
+
+    mRec.mTimedFeedPeriod = 2;
+    mRec.mIsWebFeedingEnable     = true;
+    mRec.mIsAutoPetFeedingEnable = true;
+
+    mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
+    SetIsDirty();
 }
 
 
-uint32_t NetIFRec::GetGWAddr(void) const {
-  return mRec.mGWAddr;
-}
-
-
-void NetIFRec::SetUseDHCP(bool aUseDHCP) {
-  mRec.mUseDHCP = aUseDHCP;
-}
-
-
-void NetIFRec::SetIPAddr(uint32_t aIPAddr) {
-  mRec.mIPAddr = aIPAddr;
-}
-
-
-void NetIFRec::SetSubnetMask(uint32_t aSubnetMask) {
-  mRec.mSubnetMask = aSubnetMask;
-}
-
-
-void NetIFRec::SetGWAddr(uint32_t aGWAddr) {
-  mRec.mGWAddr = aGWAddr;
-}
-
-
-bool NetIFRec::IsSane(void) {
-  if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
-    return false;
-  }
-
-  // Check magic value.
-  if (('N' != mRec.mMagic[0])
-      || ('E' != mRec.mMagic[1])
-      || ('T' != mRec.mMagic[2])) {
-    return false;
-  }
-
-  return true;
-}
-
-
-bool NetIFRec::IsDirty(void) const {
-  return mIsDirty;
-}
-
-
-void NetIFRec::ResetDflt(void) {
-
-  // Set magic.
-  mRec.mMagic[0] = 'N';
-  mRec.mMagic[1] = 'E';
-  mRec.mMagic[2] = 'T';
-
-  mRec.mUseDHCP = 1;
-  mRec.mUseIPv6 = 0;
-  mRec.mIPAddr  = 0x00000000;
-  mRec.mSubnetMask = 0x00000000;
-  mRec.mGWAddr = 0x00000000;
-
-  mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
-  mIsDirty = true;
-}
-
-
-unsigned int NetIFRec::GetRecSize(void) const {
-  return sizeof(struct RecStructTag);
+unsigned int FeedCfgRec::GetRecSize(void) const {
+    return sizeof(struct RecStructTag);
 }
 
 
 // Trivial serialization function.
-void NetIFRec::Serialize(uint8_t * const aDataPtr) const {
+void FeedCfgRec::Serialize(uint8_t * const aDataPtr) const {
 
-  memcpy(aDataPtr, &mRec, GetRecSize());
+    memcpy(aDataPtr, &mRec, GetRecSize());
 }
 
 
 // Trivial serialization function.
-void NetIFRec::Deserialize(uint8_t const *aDataPtr) {
+void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
 
-  memcpy(&mRec, aDataPtr, GetRecSize());
+    memcpy(&mRec, aDataPtr, GetRecSize());
 }
+
+//
+// Start of child methods.
+//
+
+uint8_t FeedCfgRec::GetTimedFeedPeriod(void) const {
+    return mRec.mTimedFeedPeriod;
+}
+
+
+bool FeedCfgRec::IsWebFeedingEnable(void) const {
+    return mRec.mIsWebFeedingEnable;
+}
+
+
+bool FeedCfgRec::IsAutoPetFeedingEnable(void) const {
+    return mRec.mIsAutoPetFeedingEnable;
+}
+
+
+void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
+    mRec.mTimedFeedPeriod = aPeriod;
+}
+
+
+void FeedCfgRec::SetIsWebFeedingEnabled(bool aIsEnabled) {
+    mRec.mIsWebFeedingEnable = aIsEnabled;
+}
+
+
+void FeedCfgRec::SetIsAutoPetFeedingEnabled(bool aIsEnabled) {
+    mRec.mIsAutoPetFeedingEnable = aIsEnabled;
+}
+
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS

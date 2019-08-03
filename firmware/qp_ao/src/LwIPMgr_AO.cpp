@@ -60,14 +60,16 @@ extern "C" {
 } // extern "C"
 #endif // __cplusplus
 
+
+// Common libraries.
+#include <db/NetIFRec.h>
+
 // This project.
 #include "BSP.h"
-#include "DBRec.h"
 #include "DisplayMgr_Evt.h"
 #include "Logger.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
-#include "NetIFRec.h"
 #include "Signals.h"
 
 // *****************************************************************************

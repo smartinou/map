@@ -27,8 +27,10 @@
 #include <string.h>
 
 // Common Library.
-#include "DB.h"
-#include "DBRec.h"
+#include <db/DBRec.h>
+#include <db/CalendarRec.h>
+#include <db/FeedCfgRec.h>
+#include <db/NetIFRec.h>
 
 // LwIP stack.
 #include "lwip/apps/httpd.h"
@@ -38,9 +40,7 @@
 #include "App.h"
 #include "PFPP_AOs.h"
 #include "BSP.h"
-#include "CalendarRec.h"
 #include "DisplayMgr_AOs.h"
-#include "FeedCfgRec.h"
 #include "FileLogSink_AO.h"
 #include "FWVersionGenerated.h"
 #include "IBSP.h"
@@ -48,7 +48,6 @@
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
 #include "Net.h"
-#include "NetIFRec.h"
 #include "IRTCC.h"
 #include "RTCC_AO.h"
 #include "SDC.h"
@@ -111,13 +110,9 @@ bool App::Init(void) {
     // Deserialize NV memory into it.
     // Sanity of records is checked once deserialized.
     sCalendar = new CalendarRec();
-    DB::AddRec(sCalendar);
-
     sNetIFRec = new NetIFRec();
-    DB::AddRec(sNetIFRec);
-
     sFeedCfgRec = new FeedCfgRec();
-    DB::AddRec(sFeedCfgRec);
+
     // DB records are now deserialized, and fixed if required.
     // Create all other AOs.
 

@@ -267,7 +267,7 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
     <text>#include &lt;qpcpp.h&gt;
 
 
-#include &lt;FeedCfgRec.h&gt;
+#include &lt;db/FeedCfgRec.h&gt;
 #include &lt;IMotorControl.h&gt;
 
 

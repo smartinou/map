@@ -1,13 +1,13 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: PFPP
 //
-// Module: Network class.
+// Module: Network.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
+//! \brief Network class.
 //! \ingroup application
 
 // *****************************************************************************
@@ -27,13 +27,13 @@
 #include <string.h>
 
 // Common Library.
-#include "DB.h"
-#include "DBRec.h"
+#include <db/CalendarRec.h>
+#include <db/FeedCfgRec.h>
+#include <db/NetIFRec.h>
 
 // Util Library.
 #include "Date.h"
 #include "Time.h"
-#include "CalendarRec.h"
 
 // LwIP stack.
 #include "lwip/apps/httpd.h"
@@ -49,8 +49,6 @@
 #include "FWVersionGenerated.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
-#include "FeedCfgRec.h"
-#include "NetIFRec.h"
 #include "Signals.h"
 
 #include "Net.h"
@@ -392,7 +390,7 @@ static uint16_t SSIHandler(
       "%s",
       FWVersionGenerated::GitHash);
   case SSI_TAG_IX_INFO_DB_STATUS:
-    if (DB::GetRecCount() && DB::IsSane()) {
+    if (DBRec::GetDBRecCount() && DBRec::IsDBSane()) {
       return snprintf(
         aInsertStr,
         LWIP_HTTPD_MAX_TAG_INSERT_LEN,

@@ -68,16 +68,16 @@ If not returns 0.0.
 
 if (lNVMemSize) {
     mNVMemBuf = new uint8_t [lNVMemSize];
-    unsigned int lDBSize = DB::GetSize();
+    unsigned int lDBSize = DBRec::GetDBSize();
     mRTCC.RdFromNVMem(mNVMemBuf, 0, lDBSize);
-    DB::Deserialize(mNVMemBuf);
-    if (!DB::IsSane()) {
+    DBRec::DeserializeDB(mNVMemBuf);
+    if (!DBRec::IsDBSane()) {
         // Reset defaults and write back to NV mem.
-        DB::ResetDflt();
+        DBRec::ResetDBDflt();
         WrToNVMem();
     }
 } else {
-    DB::ResetDflt();
+    DBRec::ResetDBDflt();
 }
 </code>
     </operation>
@@ -132,8 +132,8 @@ mRTCC.SetInterrupt(true);
     </operation>
     <operation name="WrToNVMem" type="void" visibility="0x02" properties="0x00">
      <documentation>Write buffer to NV memory.</documentation>
-     <code>unsigned int lDBSize = DB::GetSize();
-DB::Serialize(mNVMemBuf);
+     <code>unsigned int lDBSize = DBRec::GetDBSize();
+DBRec::SerializeDB(mNVMemBuf);
 mRTCC.WrToNVMem(mNVMemBuf, 0, lDBSize);
 </code>
     </operation>
@@ -368,7 +368,7 @@ $declare${RTCC::Events::SaveToRAM}
 </text>
   </file>
   <file name="RTCC_Events.cpp">
-   <text>#include &quot;CalendarRec.h&quot;
+   <text>#include &lt;db/CalendarRec.h&gt;
 #include &quot;Date.h&quot;
 #include &quot;Time.h&quot;
 
@@ -390,8 +390,7 @@ $declare${RTCC::AOs::RTCC_AO}
 </text>
   </file>
   <file name="RTCC_AO.cpp">
-   <text>#include &quot;DB.h&quot;
-#include &quot;CalendarRec.h&quot;
+   <text>#include &lt;db/CalendarRec.h&gt;
 #include &quot;IRTCC.h&quot;
 
 #include &quot;Signals.h&quot;

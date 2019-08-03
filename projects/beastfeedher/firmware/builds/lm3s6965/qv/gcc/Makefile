@@ -87,6 +87,7 @@ VPATH = \
         $(FIRMWARE_PATH)/qp_ao/model/src \
         $(FIRMWARE_PATH)/qp_ao/model/codegen \
         $(FIRMWARE_PATH)/utils/date \
+        $(FIRMWARE_PATH)/utils/db \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
         $(STELLARIS_LIB)/inc \
@@ -117,6 +118,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/qp_ao/model \
         -I$(FIRMWARE_PATH)/qp_ao/model/inc \
         -I$(FIRMWARE_PATH)/qp_ao/model/codegen \
+        -I$(FIRMWARE_PATH)/utils \
         -I$(FIRMWARE_PATH)/utils/date \
         -I$(FIRMWARE_PATH)/utils/inc \
         -I$(FIRMWARE_PATH)/utils/time \
@@ -167,7 +169,6 @@ CPP_SRCS := \
         CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
-        DB.cpp \
         DBRec.cpp \
         DisplayMgr_AOs.cpp \
         DS3234.cpp \
@@ -196,6 +197,7 @@ CPP_SRCS := \
 
 #        BFHMgr_AO.cpp \
 #        BSP.cpp \
+#        DB.cpp \
 #        FileLogSink_AO.cpp \
 #        RTCC.cpp \
 

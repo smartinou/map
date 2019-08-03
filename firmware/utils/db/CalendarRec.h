@@ -1,20 +1,20 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Utilities
+// Project: Utils.
 //
-// Module: Calendar class.
+// Module: Feeding calendar class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief Class used for storing time entries.
-//! \ingroup utils
+//! \brief MyClass device class.
+//! \ingroup module_group
 
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -36,64 +36,69 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
+// Forward declarations.
 class Time;
 class Weekday;
+
 
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class CalendarRec : public DBRec {
- public:
-  CalendarRec();
-  ~CalendarRec() {}
+class CalendarRec
+    : public DBRec {
+public:
+    CalendarRec();
+    ~CalendarRec();
+
+    // DBRec.
+    bool IsSane(void) override;
+    void ResetDflt(void) override;
+
+    // Extended object's interface.
 
   // Sets/clears the entry for the specified time, rounded to quarter hour.
-  void SetEntry(Weekday const &aWeekdayRef, Time const &aTimeRef);
-  void SetEntry(unsigned int const aWeekday, Time const &aTimeRef);
-  void ClrEntry(Weekday const &aWeekdayRef, Time const &aTimeRef);
-  void ClrEntry(unsigned int const aWeekday, Time const &aTimeRef);
-  void SetTimeEntry(Time const &aTimeRef);
+  void SetEntry(Weekday const &aWeekday, Time const &aTime);
+  void SetEntry(unsigned int const aWeekday, Time const &aTime);
+  void ClrEntry(Weekday const &aWeekday, Time const &aTime);
+  void ClrEntry(unsigned int const aWeekday, Time const &aTime);
+  void SetTimeEntry(Time const &aTime);
   void ClrAllEntries(void);
 
-  bool IsEntrySet(Time const &aTimeRef);
+  bool IsEntrySet(Time const &aTime);
 
   // Gets the next set entry from current time.
   bool GetNextEntry(
-    Weekday const &aWeekdayRef,
-    Time    const &aTimeRef,
-    Weekday       &aNextWeekdayRef,
-    Time          &aNextTimeRef);
+      Weekday const &aWeekday,
+      Time    const &aTime,
+      Weekday       &aNextWeekday,
+      Time          &aNextTime
+  );
 
-  bool IsSane(void);
-  bool IsDirty(void) const;
-  void ResetDflt(void);
+private:
+    enum CalendarDimEnumTag {
+        HOUR_QTY          = 24,
+        SLOTS_PER_HOUR    = 4,
+        TIME_ENTRY_QTY    = HOUR_QTY * SLOTS_PER_HOUR,
+        WEEKDAY_ENTRY_QTY = 7
+    };
 
-  // Simple Serialize/Deserialize methods.
-  unsigned int GetRecSize(void) const;
-  void Serialize(  uint8_t       * const aDataPtr) const;
-  void Deserialize(uint8_t const * const aDataPtr);
+    enum BitMaskEnumTag { ALL_WEEK_BIT_MASK = (0x1 << 0) };
 
- private:
-  enum CalendarDimEnumTag {
-    HOUR_QTY          = 24,
-    SLOTS_PER_HOUR    = 4,
-    TIME_ENTRY_QTY    = HOUR_QTY * SLOTS_PER_HOUR,
-    WEEKDAY_ENTRY_QTY = 7
-  };
+    unsigned int GetRecSize(void) const override;
+    void Serialize(uint8_t * const aData) const override;
+    void Deserialize(uint8_t const * const aData) override;
 
-  enum BitMaskEnumTag { ALL_WEEK_BIT_MASK = (0x1 << 0) };
+    unsigned int GetArrayIx(Time const &aTime);
+    unsigned int WeekdayToBitMask(Weekday const &aWeekday);
+    unsigned int BitMaskToWeekday(unsigned int aBitMask);
 
-  unsigned int GetArrayIx(Time const &aTimeRef);
-  unsigned int WeekdayToBitMask(Weekday const &aWeekdayRef);
-  unsigned int BitMaskToWeekday(unsigned int aBitMask);
+    struct RecStructTag {
+        uint8_t mCRC;
+        char    mMagic[3];
+        std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
+    };
 
-  struct RecStructTag {
-    uint8_t mCRC;
-    char    mMagic[3];
-    std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
-  };
-
-  struct RecStructTag mRec;
+    struct RecStructTag mRec;
 };
 
 // ******************************************************************************

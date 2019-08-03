@@ -1,9 +1,9 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: Utils.
 //
-// Module: DB holder class.
+// Module: Feeding configuration class.
 //
 // *******************************************************************************
 
@@ -11,9 +11,10 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
+
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,8 +22,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <stddef.h>
-#include <stdint.h>
+#include "DBRec.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -32,35 +32,42 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declarations.
-class DBRec;
-
-
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
+class FeedCfgRec
+    : public DBRec {
+public:
+    FeedCfgRec();
+    ~FeedCfgRec();
 
-//! \brief Button component.
-class DB {
- public:
-  static void AddRec(DBRec * const aDBRecPtr);
+    // DBRec.
+    bool IsSane(void) override;
+    void ResetDflt(void) override;
 
-  static bool IsSane(void);
-  static bool IsDirty(void);
-  static void ResetDflt(void);
+    // Extended object's interface.
+    uint8_t GetTimedFeedPeriod(void) const;
+    bool    IsWebFeedingEnable(void) const;
+    bool    IsAutoPetFeedingEnable(void) const;
 
-  static unsigned int GetSize(void);
-  static void Serialize(uint8_t *aDataPtr);
-  static void Deserialize(uint8_t const * const aDataPtr);
+    void SetTimedFeedPeriod(uint8_t aPeriod);
+    void SetIsWebFeedingEnabled(bool aIsEnabled);
+    void SetIsAutoPetFeedingEnabled(bool aIsEnabled);
 
-  static unsigned int GetRecCount(void);
+private:
+    unsigned int GetRecSize(void) const override;
+    void Serialize(uint8_t * const aDataPtr) const override;
+    void Deserialize(uint8_t const * const aDataPtr) override;
 
- private:
-  static bool IsSane(DBRec * const aDBRecPtr);
-  static bool IsDirty(DBRec * const aDBRecPtr);
+    struct RecStructTag {
+        uint8_t mCRC;
+        char    mMagic[3];
+        uint8_t mTimedFeedPeriod;
+        bool    mIsWebFeedingEnable;
+        bool    mIsAutoPetFeedingEnable;
+    };
 
-  static DBRec       *mRootDBRecPtr;
-  static unsigned int mDBRecObjCount;
+    struct RecStructTag mRec;
 };
 
 // ******************************************************************************
