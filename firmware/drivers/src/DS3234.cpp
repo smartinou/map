@@ -23,9 +23,9 @@
 #include <stddef.h>
 
 // TI Library.
-#include "hw_types.h"
-#include "gpio.h"
-#include "interrupt.h"
+#include <hw_types.h>
+#include <driverlib/gpio.h>
+#include <driverlib/interrupt.h>
 
 #include "DS3234.h"
 
@@ -85,7 +85,7 @@ enum L_LIMITS {
 DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
-    GPIOs const &aInterruptGPIO,
+    GPIO const &aInterruptGPIO,
     CoreLink::SPIDev &aSPIDev,
     CoreLink::SPISlaveCfg const &aSPICfg
 )
@@ -102,9 +102,9 @@ DS3234::DS3234(
 DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
-    GPIOs const &aInterruptPin,
+    GPIO const &aInterruptPin,
     CoreLink::SPIDev &aSPIDev,
-    GPIOs const &aCSnPin
+    GPIO const &aCSnPin
 )
     : mBaseYear(aBaseYear)
     , mSPIDev(aSPIDev)

@@ -122,7 +122,6 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/utils/inc \
         -I$(STELLARIS_LIB) \
         -I$(STELLARIS_LIB)/inc \
-        -I$(STELLARIS_LIB)/driverlib \
         -I$(QPCPP)/include \
         -I$(QPCPP)/src \
         -I$(QP_PORT_DIR) \
@@ -172,7 +171,7 @@ CPP_SRCS := \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \
-        GPIOs.cpp \
+        GPIO.cpp \
         Limit.cpp \
         LogEvt.cpp \
         Logger.cpp \

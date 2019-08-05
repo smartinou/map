@@ -24,7 +24,7 @@
 
 // Peripheral Driver Library.
 #include <hw_types.h>
-#include <gpio.h>
+#include <driverlib/gpio.h>
 
 #include "SSD1329.h"
 
@@ -159,8 +159,8 @@ uint8_t const SSD1329::sFontTbl[96][FONT_WIDTH_MAX] = {
 SSD1329::SSD1329(
     CoreLink::SPIDev &aSPIDev,
     CoreLink::SPISlaveCfg const &aSPICfg,
-    GPIOs const aDCnGPIO,
-    GPIOs const aEn15VGPIO,
+    GPIO const aDCnGPIO,
+    GPIO const aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight)
     : mSPIDev(aSPIDev)
@@ -176,9 +176,9 @@ SSD1329::SSD1329(
 
 SSD1329::SSD1329(
     CoreLink::SPIDev &aSPIDev,
-    GPIOs const &aCsPin,
-    GPIOs const aDCnGPIO,
-    GPIOs const aEn15VGPIO,
+    GPIO const &aCsPin,
+    GPIO const aDCnGPIO,
+    GPIO const aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight
 )

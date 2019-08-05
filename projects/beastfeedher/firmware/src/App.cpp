@@ -41,7 +41,6 @@
 #include "BSP.h"
 #include "DisplayMgr_AOs.h"
 #include "FileLogSink_AO.h"
-#include "FWVersionGenerated.h"
 #include "IBSP.h"
 #include "ILCD.h"
 #include "IRTCC.h"

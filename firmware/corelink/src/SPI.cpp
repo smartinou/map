@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,13 +20,12 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// Driver Library.
-#include "hw_memmap.h"
-#include "hw_ssi.h"
-#include "hw_sysctl.h"
-#include "hw_types.h"
-
-#include "gpio.h"
+// TI Library.
+#include <hw_memmap.h>
+#include <hw_ssi.h>
+#include <hw_sysctl.h>
+#include <hw_types.h>
+#include <driverlib/gpio.h>
 
 #include "SPI.h"
 

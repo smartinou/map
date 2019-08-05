@@ -24,7 +24,7 @@
 // Standard Libraries.
 #include <string>
 
-#include "GPIOs.h"
+#include "GPIO.h"
 #include "ILCD.h"
 #include "SPI.h"
 
@@ -46,16 +46,16 @@ public:
    SSD1329(
        CoreLink::SPIDev &aSPIDev,
        CoreLink::SPISlaveCfg const &aSPICfg,
-       GPIOs const aDCnGPIO,
-       GPIOs const aEn15VGPIO,
+       GPIO const aDCnGPIO,
+       GPIO const aEn15VGPIO,
        unsigned int const aDisplayWidth  = 128,
        unsigned int const aDisplayHeight = 128
    );
    SSD1329(
        CoreLink::SPIDev &aSPIDev,
-       GPIOs const &aCsPin,
-       GPIOs const aDCnGPIO,
-       GPIOs const aEn15VGPIO,
+       GPIO const &aCsPin,
+       GPIO const aDCnGPIO,
+       GPIO const aEn15VGPIO,
        unsigned int const aDisplayWidth = 128,
        unsigned int const aDisplayHeight = 128
    );
@@ -122,8 +122,8 @@ public:
     CoreLink::SPIDev      &mSPIDev;
     CoreLink::SPISlaveCfg  mSPICfg;
 
-    GPIOs const mDCnGPIO;
-    GPIOs const mEn15VGPIO;
+    GPIO const mDCnGPIO;
+    GPIO const mEn15VGPIO;
 
     unsigned int const mDisplayWidth;
     unsigned int const mDisplayHeight;

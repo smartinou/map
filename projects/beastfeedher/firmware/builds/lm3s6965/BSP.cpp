@@ -27,20 +27,20 @@
 #include "lm3s_cmsis.h"
 
 // TI Library.
-#include "hw_ints.h"
+#include <hw_ints.h>
 //#include "hw_memmap.h" // duplicated defines in lm3s_cmsis.h
-#include "hw_types.h"
-#include "gpio.h"
-#include "interrupt.h"
-#include "sysctl.h"
-#include "systick.h"
-#include "uart.h"
+#include <hw_types.h>
+#include <driverlib/gpio.h>
+#include <driverlib/interrupt.h>
+#include <driverlib/sysctl.h>
+#include <driverlib/systick.h>
+#include <driverlib/uart.h>
 
 
 #include "SDC.h"
 #include "SPI.h"
 #include "DS3234.h"
-#include "GPIOs.h"
+#include "GPIO.h"
 #include "Button.h"
 #include "SSD1329.h"
 #include "TB6612.h"
@@ -163,7 +163,7 @@ public:
         // Calls the Ctor that uses default SPI slave configuration,
         // with specified CSn pin.
         unsigned long lInterruptNumber = INT_GPIOA;
-        GPIOs lCSnPin(GPIO_PORTA_BASE, GPIO_PIN_7);
+        GPIO lCSnPin(GPIO_PORTA_BASE, GPIO_PIN_7);
         IRTCC * const lRTCC = new DS3234(
             2000,
             lInterruptNumber,
@@ -177,16 +177,16 @@ public:
 
 
     SDC * CreateSDC(CoreLink::SPIDev &aSPIDev) override {
-        GPIOs lCSnPin(GPIO_PORTD_BASE, GPIO_PIN_0);
+        GPIO lCSnPin(GPIO_PORTD_BASE, GPIO_PIN_0);
         SDC * const lSDC = new SDC(0, aSPIDev, lCSnPin);
         return lSDC;
     }
 
 
     ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) override {
-        GPIOs lOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3);
-        GPIOs lDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7);
-        GPIOs lEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6);
+        GPIO lOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3);
+        GPIO lDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7);
+        GPIO lEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6);
         static unsigned int const sDisplayWidth = 128;
         static unsigned int const sDisplayHeight = 96;
 
@@ -202,9 +202,9 @@ public:
     }
 
     IMotorControl * CreateMotorControl(void) override {
-        GPIOs lIn1(GPIO_PORTB_BASE, GPIO_PIN_6);
-        GPIOs lIn2(GPIO_PORTB_BASE, GPIO_PIN_5);
-        GPIOs lPWM(GPIO_PORTB_BASE, GPIO_PIN_0);
+        GPIO lIn1(GPIO_PORTB_BASE, GPIO_PIN_6);
+        GPIO lIn2(GPIO_PORTB_BASE, GPIO_PIN_5);
+        GPIO lPWM(GPIO_PORTB_BASE, GPIO_PIN_0);
 
         IMotorControl * const lMotorControl = new TB6612(lIn1, lIn2, lPWM);
         return lMotorControl;
@@ -212,7 +212,7 @@ public:
 
 
     // Local interface.
-    static GPIOs const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
+    static GPIO const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
 
 private:
     CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
@@ -233,7 +233,7 @@ private:
 
     CoreLink::SSIPinCfg *mSSIPinCfg = { nullptr };
 
-    static GPIOs const mRTCCInterruptPin;
+    static GPIO const mRTCCInterruptPin;
 };
 
 } // namespace BSP
@@ -265,9 +265,9 @@ static uint8_t const sGPIOPortA_IRQHandler = 0U;
 #endif // Q_SPY
 
 
-// TODO: GPIOs class should really be a Pin class.
+// TODO: GPIO class should really be a Pin class.
 // Button class should become GPIO class.
-GPIOs const BSP::Factory::mRTCCInterruptPin(GPIO_PORTA_BASE, GPIO_PIN_6);
+GPIO const BSP::Factory::mRTCCInterruptPin(GPIO_PORTA_BASE, GPIO_PIN_6);
 
 
 namespace BSP {
@@ -277,7 +277,7 @@ static Button const mManualFeedButton(GPIO_PORTC_BASE, GPIO_PIN_4, INT_GPIOC, 0)
 static Button const mTimedFeedButton(GPIO_PORTD_BASE, GPIO_PIN_4, INT_GPIOC, 0);
 static Button const mSelectButton(GPIO_PORTF_BASE, GPIO_PIN_1, INT_GPIOF, 0);
 
-static GPIOs const sUserLEDPin(GPIO_PORTF_BASE, GPIO_PIN_0);
+static GPIO const sUserLEDPin(GPIO_PORTF_BASE, GPIO_PIN_0);
 } // namespace BSP
 
 // *****************************************************************************
@@ -302,7 +302,7 @@ IBSPFactory *Init(void) {
 
     // Enable the clock to the peripherals used by the application.
 
-    // Enable all required GPIOs.
+    // Enable all required GPIO.
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
@@ -313,8 +313,8 @@ IBSPFactory *Init(void) {
     //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
 
     // Debug UART port.
-    GPIOs lU0RxGPIO(GPIO_PORTA_BASE, GPIO_PIN_0);
-    GPIOs lU0TxGPIO(GPIO_PORTA_BASE, GPIO_PIN_1);
+    GPIO lU0RxGPIO(GPIO_PORTA_BASE, GPIO_PIN_0);
+    GPIO lU0TxGPIO(GPIO_PORTA_BASE, GPIO_PIN_1);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
     GPIOPinTypeUART(lU0RxGPIO.GetPort(), lU0RxGPIO.GetPin() | lU0TxGPIO.GetPin());
     //UARTStdioInit(0);
@@ -366,7 +366,7 @@ namespace BSP {
 static void InitEtherLED(void) {
 
     // GPIO for Ethernet LEDs.
-    static GPIOs const sLinkLEDPin(GPIO_PORTF_BASE, GPIO_PIN_3);
+    static GPIO const sLinkLEDPin(GPIO_PORTF_BASE, GPIO_PIN_3);
     GPIOPinTypeGPIOOutput(sLinkLEDPin.GetPort(), sLinkLEDPin.GetPin());
     GPIOPadConfigSet(
         sLinkLEDPin.GetPort(),
@@ -376,7 +376,7 @@ static void InitEtherLED(void) {
     );
     GPIOPinTypeEthernetLED(sLinkLEDPin.GetPort(), sLinkLEDPin.GetPin());
 
-    static GPIOs const sActivityLEDPin(GPIO_PORTF_BASE, GPIO_PIN_2);
+    static GPIO const sActivityLEDPin(GPIO_PORTF_BASE, GPIO_PIN_2);
     GPIOPinTypeGPIOOutput(sActivityLEDPin.GetPort(), sActivityLEDPin.GetPin());
     GPIOPadConfigSet(
         sActivityLEDPin.GetPort(),

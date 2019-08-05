@@ -23,8 +23,8 @@
 // ******************************************************************************
 
 // Driver Library.
-#include "hw_types.h"
-#include "ssi.h"
+#include <hw_types.h>
+#include <driverlib/ssi.h>
 
 #include "CoreLinkPeripheralDev.h"
 

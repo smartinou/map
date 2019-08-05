@@ -20,9 +20,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-// Corelink driver.
-//#include "SPI.h"
-
 // This module.
 #include "SDC.h"
 
@@ -142,7 +139,7 @@ enum L_OCR_MASK_ENUM_TAG {
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-SDC::SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, GPIOs const aCSnPin)
+SDC::SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, GPIO const aCSnPin)
     : mMyDriveIx(aDriveIx)
     , mSPIDev(aSPIDev)
     , mSPICfg()

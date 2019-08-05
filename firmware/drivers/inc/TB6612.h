@@ -22,7 +22,7 @@
 // ******************************************************************************
 
 #include "IMotorControl.h"
-#include "GPIOs.h"
+#include "GPIO.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -39,7 +39,7 @@ class TB6612
     : public IMotorControl {
 
 public:
-    TB6612(GPIOs const &aIn1, GPIOs const &aIn2, GPIOs const &aPWM);
+    TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM);
     virtual ~TB6612() {}
 
     // IMotorController interface.
@@ -48,9 +48,9 @@ public:
     void TurnOff(void) const override;
 
  private:
-    GPIOs const mIn1;
-    GPIOs const mIn2;
-    GPIOs const mPWM;
+    GPIO const mIn1;
+    GPIO const mIn2;
+    GPIO const mPWM;
 };
 
 // ******************************************************************************

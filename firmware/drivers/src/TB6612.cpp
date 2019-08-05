@@ -21,8 +21,8 @@
 // *****************************************************************************
 
 // TI Library.
-#include "hw_types.h"
-#include "gpio.h"
+#include <hw_types.h>
+#include <driverlib/gpio.h>
 
 // This project.
 #include "TB6612.h"
@@ -106,7 +106,7 @@ TB6612::TB6612(unsigned long aIn1GPIOPort,
 }
 #endif
 
-TB6612::TB6612(GPIOs const &aIn1, GPIOs const &aIn2, GPIOs const &aPWM)
+TB6612::TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM)
     : mIn1(aIn1)
     , mIn2(aIn2)
     , mPWM(aPWM) {

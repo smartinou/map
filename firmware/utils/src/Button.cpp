@@ -2,17 +2,17 @@
 //
 // Project: Utilities.
 //
-// Module: Button class.
+// Module: GPIO.
 //
 // *****************************************************************************
 
 //! \file
 //! \brief MyClass device class.
-//! \ingroup module_group
+//! \ingroup utils_gpio
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -21,12 +21,11 @@
 // *****************************************************************************
 
 // TI Library.
-#include "hw_types.h"
-#include "gpio.h"
-#include "interrupt.h"
+#include <hw_types.h>
+#include <driverlib/gpio.h>
+#include <driverlib/interrupt.h>
 
 // This project.
-#include "GPIOs.h"
 #include "Button.h"
 
 // *****************************************************************************
@@ -49,67 +48,73 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Button::Button(unsigned long const aGPIOPort,
-               unsigned int  const aGPIOPin,
-               unsigned long const aIntNbr,
-               unsigned int  const aID)
-  : GPIOs(aGPIOPort, aGPIOPin)
-  , mIntNbr(aIntNbr)
-  , mID(aID) {
+Button::Button(
+    unsigned long const aGPIOPort,
+    unsigned int  const aGPIOPin,
+    unsigned long const aIntNbr,
+    unsigned int  const aID
+)
+    : GPIO(aGPIOPort, aGPIOPin)
+    , mIntNbr(aIntNbr)
+    , mID(aID) {
 
-  DisableInt();
+    DisableInt();
 
-  // Set specified GPIO as edge triggered input.
-  // Don't enable interrupt just yet.
-  GPIOPinTypeGPIOInput(mPort, mPin);
-  GPIOIntTypeSet(mPort, mPin, GPIO_BOTH_EDGES);
-  GPIOPadConfigSet(mPort,
-                   mPin,
-                   GPIO_STRENGTH_2MA,
-                   GPIO_PIN_TYPE_STD_WPU);
+    // Set specified GPIO as edge triggered input.
+    // Don't enable interrupt just yet.
+    GPIOPinTypeGPIOInput(GetPort(), GetPin());
+    GPIOIntTypeSet(GetPort(), GetPin(), GPIO_BOTH_EDGES);
+    GPIOPadConfigSet(
+        GetPort(),
+        GetPin(),
+        GPIO_STRENGTH_2MA,
+        GPIO_PIN_TYPE_STD_WPU
+    );
 
-  // Enable the interrupt of the selected GPIO.
-  // Don't enable the interrupt globally yet.
-  GPIOPinIntEnable(mPort, mPin);
-  GPIOPinIntClear(mPort, mPin);
+    // Enable the interrupt of the selected GPIO.
+    // Don't enable the interrupt globally yet.
+    GPIOPinIntEnable(GetPort(), GetPin());
+    GPIOPinIntClear(GetPort(), GetPin());
 }
 
 
-Button::Button(GPIOs         const &aGPIO,
-               unsigned long const aIntNbr,
-               unsigned int  const aID)
-  : Button(aGPIO.GetPort(),
-           aGPIO.GetPin(),
-           aIntNbr,
-           aID) {
-  // Ctor body left intentionally empty.
+Button::Button(
+    GPIO          const &aGPIO,
+    unsigned long const aIntNbr,
+    unsigned int  const aID
+)
+    : GPIO(aGPIO)
+    , mIntNbr(aIntNbr)
+    , mID(aID) {
+
+    // Ctor body left intentionally empty.
 }
 
 
 unsigned int Button::GetGPIOPinState(void) const {
 
-  unsigned long lGPIOPin = GPIOPinRead(mPort, mPin);
-  unsigned int  lState = RELEASED;
-  if (lGPIOPin & mPin) {
-    lState = PRESSED;
-  }
+    unsigned long lGPIOPin = GPIOPinRead(GetPort(), GetPin());
+    unsigned int  lState = RELEASED;
+    if (lGPIOPin & GetPin()) {
+        lState = PRESSED;
+    }
 
-  return lState;
+    return lState;
 }
 
 
 void Button::DisableInt(void) const {
-  IntDisable(mIntNbr);
+    IntDisable(mIntNbr);
 }
 
 
 void Button::EnableInt(void) const {
-  IntEnable(mIntNbr);
+    IntEnable(mIntNbr);
 }
 
 
 void Button::ClrInt(void) const {
-  GPIOPinIntClear(mPort, mPin);
+    GPIOPinIntClear(GetPort(), GetPin());
 }
 
 // *****************************************************************************

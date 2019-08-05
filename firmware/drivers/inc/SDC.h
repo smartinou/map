@@ -25,7 +25,7 @@
 
 #include "diskio.h"
 
-#include "GPIOs.h"
+#include "GPIO.h"
 #include "SPI.h"
 
 // ******************************************************************************
@@ -48,7 +48,7 @@ namespace CoreLink {
 //! ...here.
 class SDC {
  public:
-    SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, GPIOs const aCSnPin);
+    SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, GPIO const aCSnPin);
     SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, CoreLink::SPISlaveCfg const &aSPISlaveCfg);
 
     DSTATUS GetDiskStatus(void);

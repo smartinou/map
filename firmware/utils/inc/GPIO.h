@@ -3,17 +3,17 @@
 //
 // Project: Utilities.
 //
-// Module: GPIOs class.
+// Module: GPIO.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief GPIO class.
+//! \ingroup utils_gpio
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,18 +32,17 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-//! \brief GPIO component.
-class GPIOs {
- public:
-  GPIOs(unsigned long const aPort,
-        unsigned int  const aPin);
+class GPIO {
+public:
+    GPIO(unsigned long const aPort, unsigned int const aPin);
+    ~GPIO();
 
-  unsigned long GetPort(void) const;
-  unsigned int  GetPin(void)  const;
+    unsigned long GetPort(void) const;
+    unsigned int  GetPin(void)  const;
 
- protected:
-  unsigned long const mPort;
-  unsigned int  const mPin;
+private:
+    unsigned long const mPort;
+    unsigned int  const mPin;
 };
 
 // ******************************************************************************

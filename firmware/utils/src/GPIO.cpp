@@ -2,17 +2,17 @@
 //
 // Project: Utilities.
 //
-// Module: GPIO class.
+// Module: GPIO.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief GPIO class.
+//! \ingroup utils_gpio
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -21,7 +21,7 @@
 // *****************************************************************************
 
 // This project.
-#include "GPIOs.h"
+#include "GPIO.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -43,22 +43,27 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-GPIOs::GPIOs(unsigned long const aPort,
-             unsigned int  const aPin)
-  : mPort(aPort)
-  , mPin(aPin) {
+GPIO::GPIO(unsigned long const aPort, unsigned int const aPin)
+    : mPort(aPort)
+    , mPin(aPin) {
 
   // Ctor body left intentionally empty.
 }
 
 
-unsigned long GPIOs::GetPort(void) const {
-  return mPort;
+GPIO::~GPIO() {
+
+    // Dtor body left intentionally empty.
 }
 
 
-unsigned int GPIOs::GetPin(void) const {
-  return mPin;
+unsigned long GPIO::GetPort(void) const {
+    return mPort;
+}
+
+
+unsigned int GPIO::GetPin(void) const {
+    return mPin;
 }
 
 // *****************************************************************************

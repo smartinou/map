@@ -53,12 +53,8 @@ extern "C" {
 
 
 // TI Library.
-#ifdef __cplusplus
-extern "C" {
-#include "hw_types.h"
-#include "flash.h"
-} // extern "C"
-#endif // __cplusplus
+#include <hw_types.h>
+#include <driverlib/flash.h>
 
 
 // Common libraries.
@@ -66,7 +62,7 @@ extern "C" {
 
 // This project.
 #include "BSP.h"
-#include "DisplayMgr_Evt.h"
+#include "DisplayMgr_Events.h"
 #include "Logger.h"
 #include "LwIPMgr_AO.h"
 #include "LwIPMgr_Evt.h"
@@ -265,7 +261,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
       LOG_INFO(&sLogCategory[0], "New IP address.");
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.
-      DisplayTextEvt * const lTextEvtPtr = Q_NEW(DisplayTextEvt,
+      Display::Event::DisplayText * const lTextEvtPtr = Q_NEW(Display::Event::DisplayText,
                                                  DISPLAY_TEXT_SIG,
                                                  0 * 6,
                                                  0 * 8,
