@@ -135,16 +135,16 @@ bool App::Init(void) {
         return false;
     }
 
-#if 0
-  mFileLogSink_AO = new FileLogSink_AO();
-  mFileLogSink_AO->start(
-    2U,
-    mFileLogSinkEventQueue,
-    Q_DIM(mFileLogSinkEventQueue),
-    nullptr,
-    0U);
+    mFileLogSink_AO = new FileLogSink_AO();
+    mFileLogSink_AO->start(
+        2U,
+        mFileLogSinkEventQueue,
+        Q_DIM(mFileLogSinkEventQueue),
+        nullptr,
+        0U
+    );
 
-#else
+
     mMotorControl = lFactory->CreateMotorControl();
     mPFPPMgr_AO = new PFPP::AO::Mgr_AO(*App::sFeedCfgRec, *mMotorControl);
     mPFPPMgr_AO->start(
@@ -154,7 +154,6 @@ bool App::Init(void) {
         nullptr,
         0U
     );
-#endif
 
 #if 0
   // Network makes sense in the following cases:

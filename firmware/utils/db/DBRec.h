@@ -38,12 +38,8 @@
 //! ...here.
 class DBRec {
 public:
-    DBRec();
-    virtual ~DBRec();
-
     bool IsDirty(void) const { return mIsDirty; }
 
-    // DBRec.
     virtual bool IsSane(void) = 0;
     virtual void ResetDflt(void) = 0;
 
@@ -57,6 +53,9 @@ public:
     static void DeserializeDB(uint8_t const * aData);
 
 protected:
+    DBRec();
+    virtual ~DBRec();
+
     void SetIsDirty(void) { mIsDirty = true; }
     bool IsCRCGood(uint8_t const * const aData, unsigned int aSize);
     uint8_t ComputeCRC(uint8_t const * const aData, unsigned int aSize);

@@ -171,6 +171,7 @@ CPP_SRCS := \
         DS3234.cpp \
         eth_driver.cpp \
         FeedCfgRec.cpp \
+        FileLogSink_AO.cpp \
         GPIO.cpp \
         Limit.cpp \
         LogEvt.cpp \
@@ -192,11 +193,6 @@ CPP_SRCS := \
         Time.cpp \
         Weekday.cpp
 
-#        BFHMgr_AO.cpp \
-#        BSP.cpp \
-#        DB.cpp \
-#        FileLogSink_AO.cpp \
-#        RTCC.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \
@@ -387,9 +383,9 @@ MODEL_IN_FILES := \
 
 MODEL_OUT_FILES := \
   FileLogSink_AO.h \
-	FileLogSink_AO.cpp \
 
 
+#	FileLogSink_AO.cpp \
          #RTCC_AO.cpp \
 	#Logger.h \
 	#Logger.cpp \

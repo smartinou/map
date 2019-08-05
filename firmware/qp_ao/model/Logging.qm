@@ -119,8 +119,9 @@ $declare(AOs::FileLogSink_AO)
 #include &quot;ff.h&quot;
 
 #include &quot;BSP.h&quot;
+#include &quot;Signals.h&quot;
 
-#include &quot;RTCC_Evt.h&quot;
+#include &quot;RTCC_Events.h&quot;
 #include &quot;FileLogSink_AO.h&quot;
 
 

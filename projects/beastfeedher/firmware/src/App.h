@@ -115,6 +115,7 @@ private:
 
     static SDC *mSDCDrive0;
     CoreLink::SPISlaveCfg *mSDCSlaveCfg = nullptr;
+    FileLogSink_AO *mFileLogSink_AO = nullptr;
 
     IMotorControl *mMotorControl = nullptr;
     PFPP::AO::Mgr_AO *mPFPPMgr_AO = nullptr;
@@ -123,7 +124,6 @@ private:
     Display::AO::Mgr_AO *mDisplayMgr_AO = nullptr;
 
     // QP AOs.
-    //FileLogSink_AO *mFileLogSink_AO = nullptr;
     LwIPMgr_AO     *mLwIPMgr_AO = nullptr;
 
     FATFS mFatFS = {0};

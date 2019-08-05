@@ -48,19 +48,6 @@ std::vector <DBRec *> DBRec::mRecList;
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-DBRec::DBRec()
-    : mIsDirty(false) {
-
-    // Ctor body.
-    AddRec();
-}
-
-
-DBRec::~DBRec() {
-    // Dtor body left intentionally empty.
-}
-
-
 // DB static methods.
 bool DBRec::IsDBSane(void) {
     for (std::vector<DBRec *>::iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
@@ -124,6 +111,19 @@ void DBRec::DeserializeDB(uint8_t const * aData) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+DBRec::DBRec()
+    : mIsDirty(false) {
+
+    // Ctor body.
+    AddRec();
+}
+
+
+DBRec::~DBRec() {
+    // Dtor body left intentionally empty.
+}
+
 
 void DBRec::AddRec(void) {
     mRecList.push_back(this);
