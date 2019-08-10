@@ -1,7 +1,7 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: PFPP.
 //
 // Module: Network functions.
 //
@@ -10,7 +10,6 @@
 //! \file
 //! \brief MyClass device class.
 //! \ingroup module_group
-
 
 // ******************************************************************************
 //
@@ -21,6 +20,8 @@
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include <memory>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -56,15 +57,14 @@ namespace RTCC {
 namespace Net {
 
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
-void NetCallbackInit(
-  RTCC::AO::RTCC_AO * const aRTCC_AO,
-  CalendarRec *sCalendar,
-  FeedCfgRec *sFeedCfgRec);
+void InitCallback(
+    std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
+    CalendarRec * const aCalendar,
+    FeedCfgRec * const aFeedCfgRec
+);
 #endif
 
 } // namespace Net
-
-
 
 // ******************************************************************************
 //                                END OF FILE

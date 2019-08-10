@@ -221,7 +221,7 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
     <attribute name="mFeedCfgRec" type="FeedCfgRec * const" visibility="0x00" properties="0x00">
      <documentation>Pointer to FeedCfgRec.</documentation>
     </attribute>
-    <operation name="Init" type="" visibility="0x00" properties="0x00">
+    <operation name="Init" type="" visibility="0x00" properties="0x02">
      <documentation>Ctor.</documentation>
      <parameter name="aSig" type="QP::QSignal"/>
      <parameter name="aFeedCfgRec" type="FeedCfgRec * const"/>
@@ -236,7 +236,7 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
     <attribute name="mIsActive" type="bool" visibility="0x00" properties="0x00">
      <documentation>The state of the command: true when on, false when off.</documentation>
     </attribute>
-    <operation name="ManualFeedCmd" type="" visibility="0x00" properties="0x00">
+    <operation name="ManualFeedCmd" type="" visibility="0x00" properties="0x02">
      <documentation>Ctor.</documentation>
      <parameter name="aSig" type="QP::QSignal"/>
      <parameter name="aIsActive" type="bool"/>
@@ -251,7 +251,7 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
     <attribute name="mDuration" type="QP::QTimeEvtCtr" visibility="0x00" properties="0x00">
      <documentation>An event for timed event commands.</documentation>
     </attribute>
-    <operation name="TimedFeedCmd" type="" visibility="0x00" properties="0x00">
+    <operation name="TimedFeedCmd" type="" visibility="0x00" properties="0x02">
      <documentation>Ctor.</documentation>
      <parameter name="aSig" type="QP::QSignal"/>
      <parameter name="aDuration" type="QP::QTimeEvtCtr"/>
@@ -293,15 +293,6 @@ $define${project::AOs::Mgr_AO}
 // Add Init event here if ever needed.
 $declare${project::Events::ManualFeedCmd}
 $declare${project::Events::TimedFeedCmd}
-</text>
-   </file>
-   <file name="PFPP_Events.cpp">
-    <text>#include &quot;PFPP_Events.h&quot;
-
-
-// Add Init event here if ever needed.
-$define${project::Events::ManualFeedCmd}
-$define${project::Events::TimedFeedCmd}
 </text>
    </file>
   </directory>

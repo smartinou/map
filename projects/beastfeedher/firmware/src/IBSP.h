@@ -1,16 +1,15 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: PFPP.
 //
-// Module: BSP class.
+// Module: BSP.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief BSP class.
+//! \ingroup application_bsp
 
 // ******************************************************************************
 //
@@ -22,6 +21,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include <memory>
+
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -31,18 +32,11 @@
 // ******************************************************************************
 
 // Forward declaration.
-class IRTCC;
-class IFS;
-class ILCD;
-class IMotorControl;
-class GPIOs;
 class SDC;
 
 
-namespace CoreLink {
-  class SSIPinCfg;
-  class SPISlaveCfg;
-  class SPIDev;
+namespace QP {
+    class QActive;
 }
 
 
@@ -50,13 +44,14 @@ namespace CoreLink {
 
 class IBSPFactory {
 public:
-  virtual CoreLink::SPIDev * CreateSPIDev(void) = 0;
+    virtual ~IBSPFactory() {}
 
-  virtual IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) = 0;
-  virtual ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) = 0;
-  virtual SDC * CreateSDC(CoreLink::SPIDev &aSPIDev) = 0;
-  virtual IMotorControl * CreateMotorControl(void) = 0;
+    virtual std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) = 0;
+    virtual std::shared_ptr<SDC> CreateSDC(void) = 0;
 
+    virtual std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) = 0;
+    virtual std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) = 0;
+    virtual std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) = 0;
 };
 
 // ******************************************************************************

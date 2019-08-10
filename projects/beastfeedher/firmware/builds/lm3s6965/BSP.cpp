@@ -45,6 +45,11 @@
 #include "SSD1329.h"
 #include "TB6612.h"
 
+#include "DisplayMgr_AOs.h"
+#include "FileLogSink_AO.h"
+#include "PFPP_AOs.h"
+#include "RTCC_AO.h"
+
 #include "PFPP_Events.h"
 #include "Signals.h"
 #include "IBSP.h"
@@ -106,7 +111,7 @@ public:
     SSI0PinCfg() : CoreLink::SSIPinCfg(0) {}
     ~SSI0PinCfg() {}
 
-    void SetPins(void) const {
+    void SetPins(void) const override {
         SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
         GPIOPinTypeSSI(
             sSSIPins.mPort,
@@ -143,86 +148,87 @@ class Factory
     : public IBSPFactory {
 
 public:
-    Factory() {
-        // Empty Ctor.
+    explicit Factory()
+        : mSSIPinCfg(nullptr)
+        , mSPIDev(nullptr)
+        , mRTCC(nullptr)
+        , mRTCCAO(nullptr)
+        , mFileLogSink(nullptr)
+        , mMotorControl(nullptr)
+        , mPFPPAO(nullptr)
+        , mDisplay(nullptr)
+        , mDisplayMgrAO(nullptr)
+        , mSDC(nullptr) {
+        
+        // Ctor.
+        // SPIDev is required with several devices.
+        mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(0));
     }
 
 
     virtual ~Factory() {
-        delete [] mSSIPinCfg;
+        // Empty Dtor.
     }
 
     // IBSPFactory Interface.
-    CoreLink::SPIDev * CreateSPIDev() override {
-        return CreateSPIDev(0);
+    std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) override {
+        if (mRTCCAO.get() == nullptr) {
+            mRTCC = CreateRTCC();
+            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC);
+        }
+        return mRTCCAO;
     }
 
 
-    IRTCC * CreateRTCC(CoreLink::SPIDev &aSPIDev) override {
-        // Creates a DS3234 RTCC.
-        // Calls the Ctor that uses default SPI slave configuration,
-        // with specified CSn pin.
-        unsigned long lInterruptNumber = INT_GPIOA;
-        GPIO lCSnPin(GPIO_PORTA_BASE, GPIO_PIN_7);
-        IRTCC * const lRTCC = new DS3234(
-            2000,
-            lInterruptNumber,
-            mRTCCInterruptPin,
-            aSPIDev,
-            lCSnPin
-        );
-
-        return lRTCC;
+    std::shared_ptr<SDC> CreateSDC(void) override {
+        if (mSDC.get() == nullptr) {
+            GPIO lCSnPin(GPIO_PORTD_BASE, GPIO_PIN_0);
+            //auto lSPIDev = GetSPIDev();
+            mSDC = std::make_shared<SDC>(0, *mSPIDev, lCSnPin);
+        }
+        return mSDC;
     }
 
 
-    SDC * CreateSDC(CoreLink::SPIDev &aSPIDev) override {
-        GPIO lCSnPin(GPIO_PORTD_BASE, GPIO_PIN_0);
-        SDC * const lSDC = new SDC(0, aSPIDev, lCSnPin);
-        return lSDC;
+    std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) override {
+        if (mFileLogSink.get() == nullptr) {
+            mFileLogSink = std::make_shared<FileLogSink_AO>();
+        }
+        return mFileLogSink;
     }
 
 
-    ILCD * CreateDisplay(CoreLink::SPIDev &aSPIDev) override {
-        GPIO lOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3);
-        GPIO lDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7);
-        GPIO lEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6);
-        static unsigned int const sDisplayWidth = 128;
-        static unsigned int const sDisplayHeight = 96;
-
-        ILCD * const lLCD = new SSD1329(
-            aSPIDev,
-            lOLEDCSnPin,
-            lDCnPin,
-            lEn15VPin,
-            sDisplayWidth,
-            sDisplayHeight
-        );
-        return lLCD;
+    std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) override {
+        if (mPFPPAO.get() == nullptr) {
+            mMotorControl = CreateMotorControl();
+            mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(aFeedCfgRec, *mMotorControl);
+        }
+        return mPFPPAO;
     }
 
-    IMotorControl * CreateMotorControl(void) override {
-        GPIO lIn1(GPIO_PORTB_BASE, GPIO_PIN_6);
-        GPIO lIn2(GPIO_PORTB_BASE, GPIO_PIN_5);
-        GPIO lPWM(GPIO_PORTB_BASE, GPIO_PIN_0);
 
-        IMotorControl * const lMotorControl = new TB6612(lIn1, lIn2, lPWM);
-        return lMotorControl;
+    std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) override {
+        if (mDisplayMgrAO.get() == nullptr) {
+            mDisplay = CreateDisplay();
+            mDisplayMgrAO = std::make_shared<Display::AO::Mgr_AO>(*mDisplay);
+        }
+        return mDisplayMgrAO;
     }
-
 
     // Local interface.
     static GPIO const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
 
 private:
-    CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
+    Factory(const Factory&) = delete;
+    Factory& operator=(const Factory&) = delete;
 
+    CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
         switch (aSSIID) {
         case 0:
             // Create pin configuration.
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
-            mSSIPinCfg = new SSI0PinCfg;
+            mSSIPinCfg = std::make_unique<SSI0PinCfg>();
             return new CoreLink::SPIDev(SSI0_BASE, *mSSIPinCfg);
 
         case 1:
@@ -231,7 +237,61 @@ private:
         }
     }
 
-    CoreLink::SSIPinCfg *mSSIPinCfg = { nullptr };
+
+    std::unique_ptr<DS3234> CreateRTCC(void) {
+        // Creates a DS3234 RTCC.
+        // Calls the Ctor that uses default SPI slave configuration,
+        // with specified CSn pin.
+        unsigned long lInterruptNumber = INT_GPIOA;
+        GPIO lCSnPin(GPIO_PORTA_BASE, GPIO_PIN_7);
+        auto lRTCC = std::make_unique<DS3234>(
+            2000,
+            lInterruptNumber,
+            mRTCCInterruptPin,
+            *mSPIDev,
+            lCSnPin
+        );
+
+        return lRTCC;
+    }
+
+    std::unique_ptr<TB6612> CreateMotorControl(void) {
+        GPIO lIn1(GPIO_PORTB_BASE, GPIO_PIN_6);
+        GPIO lIn2(GPIO_PORTB_BASE, GPIO_PIN_5);
+        GPIO lPWM(GPIO_PORTB_BASE, GPIO_PIN_0);
+
+        return std::make_unique<TB6612>(lIn1, lIn2, lPWM);
+    }
+
+
+    std::unique_ptr<SSD1329> CreateDisplay() {
+        GPIO lOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3);
+        GPIO lDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7);
+        GPIO lEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6);
+        static unsigned int const sDisplayWidth = 128;
+        static unsigned int const sDisplayHeight = 96;
+
+        auto lDisplay = std::make_unique<SSD1329>(
+            *mSPIDev,
+            lOLEDCSnPin,
+            lDCnPin,
+            lEn15VPin,
+            sDisplayWidth,
+            sDisplayHeight
+        );
+        return lDisplay;
+    }
+
+    std::unique_ptr<CoreLink::SSIPinCfg> mSSIPinCfg;
+    std::unique_ptr<CoreLink::SPIDev> mSPIDev;
+    std::unique_ptr<DS3234> mRTCC;
+    std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
+    std::shared_ptr<FileLogSink_AO> mFileLogSink;
+    std::unique_ptr<TB6612> mMotorControl;
+    std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
+    std::unique_ptr<SSD1329> mDisplay;
+    std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
+    std::shared_ptr<SDC> mSDC;
 
     static GPIO const mRTCCInterruptPin;
 };
@@ -265,7 +325,6 @@ static uint8_t const sGPIOPortA_IRQHandler = 0U;
 #endif // Q_SPY
 
 
-// TODO: GPIO class should really be a Pin class.
 // Button class should become GPIO class.
 GPIO const BSP::Factory::mRTCCInterruptPin(GPIO_PORTA_BASE, GPIO_PIN_6);
 
@@ -286,7 +345,7 @@ static GPIO const sUserLEDPin(GPIO_PORTF_BASE, GPIO_PIN_0);
 
 namespace BSP {
 
-IBSPFactory *Init(void) {
+std::unique_ptr<IBSPFactory> Init(void) {
     // NOTE: SystemInit() already called from the startup code,
     // where clock already set (CLOCK_SETUP in lm3s_config.h)
     // SystemCoreClockUpdate() also called from there.
@@ -349,7 +408,7 @@ IBSPFactory *Init(void) {
     //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
 
-    IBSPFactory *lFactory = new Factory;
+    std::unique_ptr<IBSPFactory> lFactory(new Factory);
     return lFactory;
 }
 

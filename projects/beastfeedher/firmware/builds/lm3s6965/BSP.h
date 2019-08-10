@@ -1,16 +1,15 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her.
+// Project: PFPP.
 //
-// Module: BSP class.
+// Module: BSP.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
-
+//! \brief BSP class.
+//! \ingroup application_bsp
 
 // ******************************************************************************
 //
@@ -21,6 +20,8 @@
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include <memory>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -37,7 +38,7 @@ class IBSPFactory;
 namespace BSP {
 
 // Non-member functions.
-IBSPFactory *Init(void);
+std::unique_ptr<IBSPFactory> Init(void);
 
 } // namespace BSP
 

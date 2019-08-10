@@ -71,8 +71,8 @@ CalendarRec *App::sCalendar   = nullptr;
 NetIFRec    *App::sNetIFRec   = nullptr;
 FeedCfgRec  *App::sFeedCfgRec = nullptr;
 
-IRTCC *App::mRTCC = nullptr;
-SDC *App::mSDCDrive0 = nullptr;
+std::shared_ptr<RTCC::AO::RTCC_AO> App::mRTCC_AO;
+std::shared_ptr<SDC> App::mSDCDrive0;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -85,40 +85,23 @@ App::App(){
 
 App::~App() {
     // Dtor body.
-    delete(mDisplayMgr_AO);
-    delete(mDisplay);
-
-    delete(mPFPPMgr_AO);
-    delete(mMotorControl);
-
-    delete(mSDCDrive0);
-
-    delete(mRTCC_AO);
-    delete(mRTCC);
-
-    delete(mSPIDev);
 }
 
 
 bool App::Init(void) {
 
     // Initialize the Board Support Package.
-    IBSPFactory *const lFactory = BSP::Init();
+    mFactory = BSP::Init();
 
     // Create records and assign them to DB.
     sCalendar = new CalendarRec();
     sNetIFRec = new NetIFRec();
     sFeedCfgRec = new FeedCfgRec();
 
-    // SPI Device.
-    mSPIDev = lFactory->CreateSPIDev();
-
-    // Create all other AOs.
-    // RTCC & matching AO.
-    App::mRTCC = lFactory->CreateRTCC(*mSPIDev);
-
-    mRTCC_AO = new RTCC::AO::RTCC_AO(*App::mRTCC);
-    mRTCC_AO->start(
+    // Create all AOs.
+    // RTCC AO.
+    App::mRTCC_AO = mFactory->CreateRTCCAO();
+    App::mRTCC_AO->start(
         1U,
         mRTCCEventQueue,
         Q_DIM(mRTCCEventQueue),
@@ -127,27 +110,29 @@ bool App::Init(void) {
     );
 
     // Create SDC instance to use in FS stubs.
-    mSDCDrive0 = lFactory->CreateSDC(*mSPIDev);
-
-    // If supported, mount FS.
-    FRESULT lResult = f_mount(&mFatFS, "", 0);
-    if (FR_OK != lResult) {
-        return false;
+    mSDCDrive0 = mFactory->CreateSDC();
+    if (mSDCDrive0.get() != nullptr) {
+        // If supported, mount FS.
+        // No use if there's no flash file storage.
+        FRESULT lResult = f_mount(&mFatFS, "", 0);
+        if (FR_OK != lResult) {
+            return false;
+        }
     }
 
-    mFileLogSink_AO = new FileLogSink_AO();
-    mFileLogSink_AO->start(
-        2U,
-        mFileLogSinkEventQueue,
-        Q_DIM(mFileLogSinkEventQueue),
-        nullptr,
-        0U
-    );
+    auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
+    if (mFileLogSink_AO.get() != nullptr) {
+        mFileLogSink_AO->start(
+            2U,
+            mFileLogSinkEventQueue,
+            Q_DIM(mFileLogSinkEventQueue),
+            nullptr,
+            0U
+        );
+    }
 
-
-    mMotorControl = lFactory->CreateMotorControl();
-    mPFPPMgr_AO = new PFPP::AO::Mgr_AO(*App::sFeedCfgRec, *mMotorControl);
-    mPFPPMgr_AO->start(
+    auto lPFPPMgr_AO = mFactory->CreatePFPPAO(*App::sFeedCfgRec);
+    lPFPPMgr_AO->start(
         3U,
         mPFPPMgrEventQueue,
         Q_DIM(mPFPPMgrEventQueue),
@@ -156,38 +141,36 @@ bool App::Init(void) {
     );
 
 #if 0
-  // Network makes sense in the following cases:
-  // -if we use support web pages.
-  // -For larger IoT support.
-  LwIPInitEvt const lLwIPInitEvt(
-    SIG_DUMMY,
-    App::sNetIFRecPtr,
-    Net::NetCallbackInit);
-  mLwIPMgr_AO = new LwIPMgr_AO;
-  mLwIPMgr_AO->start(
-    4U,
-    mLwIPEventQueue,
-    Q_DIM(mLwIPEventQueue),
-    nullptr,
-    0U,
-    &lLwIPInitEvt);
+    // Network makes sense in the following cases:
+    // -if we use support web pages.
+    // -For larger IoT support.
+    // TODO: Check if Init event is required at all.
+    LwIPInitEvt const lLwIPInitEvt(
+        SIG_DUMMY,
+        App::sNetIFRecPtr,
+        App::HTTPInitCallback
+    );
 
-
-  SSD1329 * const lOLEDDisplayPtr = BSP_InitOLEDDisplay();
-  DisplayMgrInitEvt const lDisplayMgrInitEvt(SIG_DUMMY, 5);
-  mDisplayMgr_AO = new DisplayMgr_AO(*lOLEDDisplayPtr);
-#else
-    mDisplay = lFactory->CreateDisplay(*mSPIDev);
-    mDisplayMgr_AO = new Display::AO::Mgr_AO(*mDisplay);//, 5);
+    mLwIPMgr_AO = new LwIPMgr_AO;
+    mLwIPMgr_AO->start(
+        4U,
+        mLwIPEventQueue,
+        Q_DIM(mLwIPEventQueue),
+        nullptr,
+        0U);// ,
+        //&lLwIPInitEvt
+    //);
 #endif
-    mDisplayMgr_AO->start(
+
+    auto lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();
+    lDisplayMgr_AO->start(
         5U,
         mDisplayMgrEventQueue,
         Q_DIM(mDisplayMgrEventQueue),
         nullptr,
         0U
     );
-    //&lDisplayMgrInitEvt);
+
     // Send signal dictionaries for globally published events...
     //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
 
@@ -204,6 +187,11 @@ bool App::Init(void) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+void App::NetInitCallback(void) {
+    Net::InitCallback(App::mRTCC_AO, App::sCalendar, App::sFeedCfgRec);
+}
+
 
 extern "C" {
 

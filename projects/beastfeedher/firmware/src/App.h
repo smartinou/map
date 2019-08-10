@@ -21,6 +21,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include <memory>
+
 // FatFS.
 #include "diskio.h"
 #include "ff.h"
@@ -37,47 +39,19 @@
 class CalendarRec;
 class NetIFRec;
 class FeedCfgRec;
-class BFHMgr_AO;
-class DisplayMgr_AO;
-class FileLogSink_AO;
 class LwIPMgr_AO;
-class ILCD;
-class IMotorControl;
-class IRTCC;
-class RTCC_AO;
-class GPIOs;
+class IBSPFactory;
 class SDC;
 
 namespace RTCC {
     namespace AO {
         class RTCC_AO;
-    } // namespace AO
-} // namespace RTCC
-
-
-namespace CoreLink {
-    class SPIDev;
-    class SPISlaveCfg;
-}
-
-
-namespace RTCC {
-    namespace AO {
-        class RTCC_AO;
     }
 }
 
 
-namespace PFPP {
-    namespace AO {
-      class Mgr_AO;
-    }
-}
-
-namespace Display {
-    namespace AO {
-        class Mgr_AO;
-    }
+namespace QP {
+    class QActive;
 }
 
 
@@ -91,10 +65,10 @@ public:
 
     bool Init(void);
 
-    static SDC *GetSDCDrive(void) { return mSDCDrive0; }
+    static SDC *GetSDCDrive(void) { return mSDCDrive0.get(); }
 
 private:
-    static void NetCallbackInit(void);
+    static void NetInitCallback(void);
 
     // DB records.
     static CalendarRec *sCalendar;
@@ -108,23 +82,15 @@ private:
     QP::QEvt const *mLwIPEventQueue[10] = {nullptr};
     QP::QEvt const *mDisplayMgrEventQueue[5] = {nullptr};
 
-    CoreLink::SPIDev *mSPIDev = nullptr;
+    // When this object gets out of scope,
+    // the Factory is destroyed and all that is responsible as well.
+    std::unique_ptr<IBSPFactory> mFactory;
 
-    static IRTCC *mRTCC;
-    RTCC::AO::RTCC_AO *mRTCC_AO = nullptr;
-
-    static SDC *mSDCDrive0;
-    CoreLink::SPISlaveCfg *mSDCSlaveCfg = nullptr;
-    FileLogSink_AO *mFileLogSink_AO = nullptr;
-
-    IMotorControl *mMotorControl = nullptr;
-    PFPP::AO::Mgr_AO *mPFPPMgr_AO = nullptr;
-
-    ILCD *mDisplay = nullptr;
-    Display::AO::Mgr_AO *mDisplayMgr_AO = nullptr;
+    static std::shared_ptr<RTCC::AO::RTCC_AO> mRTCC_AO;
+    static std::shared_ptr<SDC> mSDCDrive0;
 
     // QP AOs.
-    LwIPMgr_AO     *mLwIPMgr_AO = nullptr;
+    LwIPMgr_AO *mLwIPMgr_AO = nullptr;
 
     FATFS mFatFS = {0};
 };

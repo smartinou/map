@@ -182,7 +182,6 @@ CPP_SRCS := \
         Net.cpp \
         NetIFRec.cpp \
         PFPP_AOs.cpp \
-        PFPP_Events.cpp \
         IRTCC.cpp \
         RTCC_AO.cpp \
         RTCC_Events.cpp \
@@ -291,7 +290,7 @@ CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++11 \
+	-std=c++14 \
 	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 
@@ -310,12 +309,11 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++11 \
+	-std=c++14 \
 	-O $(INCLUDES) $(DEFINES) -DQ_SPY
 
 else
 # Default Debug configuration.
-
 BIN_DIR := dbg
 
 ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
@@ -326,7 +324,7 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++11 \
+	-std=c++14 \
 	-O $(INCLUDES) $(DEFINES)
 
 endif

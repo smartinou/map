@@ -1,7 +1,7 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: PFPP
 //
 // Module: Board Support Package.
 //
@@ -11,10 +11,9 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
