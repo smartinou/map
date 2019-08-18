@@ -425,25 +425,25 @@ namespace BSP {
 static void InitEtherLED(void) {
 
     // GPIO for Ethernet LEDs.
-    static GPIO const sLinkLEDPin(GPIO_PORTF_BASE, GPIO_PIN_3);
-    GPIOPinTypeGPIOOutput(sLinkLEDPin.GetPort(), sLinkLEDPin.GetPin());
+    GPIO const lLinkLEDPin(GPIO_PORTF_BASE, GPIO_PIN_3);
+    GPIOPinTypeGPIOOutput(lLinkLEDPin.GetPort(), lLinkLEDPin.GetPin());
     GPIOPadConfigSet(
-        sLinkLEDPin.GetPort(),
-        sLinkLEDPin.GetPin(),
+        lLinkLEDPin.GetPort(),
+        lLinkLEDPin.GetPin(),
         GPIO_STRENGTH_2MA,
         GPIO_PIN_TYPE_STD
     );
-    GPIOPinTypeEthernetLED(sLinkLEDPin.GetPort(), sLinkLEDPin.GetPin());
+    GPIOPinTypeEthernetLED(lLinkLEDPin.GetPort(), lLinkLEDPin.GetPin());
 
-    static GPIO const sActivityLEDPin(GPIO_PORTF_BASE, GPIO_PIN_2);
-    GPIOPinTypeGPIOOutput(sActivityLEDPin.GetPort(), sActivityLEDPin.GetPin());
+    GPIO const lActivityLEDPin(GPIO_PORTF_BASE, GPIO_PIN_2);
+    GPIOPinTypeGPIOOutput(lActivityLEDPin.GetPort(), lActivityLEDPin.GetPin());
     GPIOPadConfigSet(
-        sActivityLEDPin.GetPort(),
-        sActivityLEDPin.GetPin(),
+        lActivityLEDPin.GetPort(),
+        lActivityLEDPin.GetPin(),
         GPIO_STRENGTH_2MA,
         GPIO_PIN_TYPE_STD
     );
-    GPIOPinTypeEthernetLED(sActivityLEDPin.GetPort(), sActivityLEDPin.GetPin());
+    GPIOPinTypeEthernetLED(lActivityLEDPin.GetPort(), lActivityLEDPin.GetPin());
 
     IntEnable(INT_ETH);
 }

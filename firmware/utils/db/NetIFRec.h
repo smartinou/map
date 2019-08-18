@@ -38,7 +38,7 @@ public:
     ~NetIFRec();
 
     // DBRec.
-    bool IsSane(void) override;
+    bool IsSane(void) const override;
     void ResetDflt(void) override;
 
     // Extended object's interface.
@@ -58,9 +58,8 @@ private:
     void Serialize(uint8_t * const aDataPtr) const override;
     void Deserialize(uint8_t const * const aDataPtr) override;
 
-    struct RecStructTag {
-        uint8_t  mCRC;
-        char     mMagic[3];
+    struct RecData {
+        BaseRec mBase;
         uint8_t  mUseDHCP;
         uint8_t  mUseIPv6;
         uint32_t mIPAddr;
@@ -69,7 +68,9 @@ private:
         uint32_t mGWAddr;
     };
 
-    struct RecStructTag mRec;
+    struct RecData mRec;
+
+    static char constexpr sMagic[3] = { 'N', 'E', 'T' };
 };
 
 // ******************************************************************************

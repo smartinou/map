@@ -42,6 +42,8 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
+char constexpr FeedCfgRec::sMagic[3];
+
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
@@ -63,17 +65,14 @@ FeedCfgRec::~FeedCfgRec() {
 // Start of DBRec interface.
 //
 
-bool FeedCfgRec::IsSane(void) {
-    // Check CRC.
-    if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+bool FeedCfgRec::IsSane(void) const {
+    // Check magic.
+    if (!IsMagicGood(reinterpret_cast<BaseRec const * const>(&mRec.mBase), sMagic)) {
         return false;
     }
 
-    // Check magic value.
-    if (('C' != mRec.mMagic[0])
-          || ('F' != mRec.mMagic[1])
-          || ('G' != mRec.mMagic[2])
-    ) {
+    // Check CRC.
+    if (!IsCRCGood(reinterpret_cast<uint8_t const * const>(&mRec), sizeof(struct RecData))) {
         return false;
     }
 
@@ -84,21 +83,21 @@ bool FeedCfgRec::IsSane(void) {
 void FeedCfgRec::ResetDflt(void) {
 
     // Set magic.
-    mRec.mMagic[0] = 'C';
-    mRec.mMagic[1] = 'F';
-    mRec.mMagic[2] = 'G';
+    mRec.mBase.mMagic[0] = sMagic[0];
+    mRec.mBase.mMagic[1] = sMagic[1];
+    mRec.mBase.mMagic[2] = sMagic[2];
 
     mRec.mTimedFeedPeriod = 2;
     mRec.mIsWebFeedingEnable     = true;
     mRec.mIsAutoPetFeedingEnable = true;
 
-    mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
+    mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
     SetIsDirty();
 }
 
 
-unsigned int FeedCfgRec::GetRecSize(void) const {
-    return sizeof(struct RecStructTag);
+size_t FeedCfgRec::GetRecSize(void) const {
+    return sizeof(struct RecData);
 }
 
 

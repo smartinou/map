@@ -41,7 +41,7 @@ public:
     ~FeedCfgRec();
 
     // DBRec.
-    bool IsSane(void) override;
+    bool IsSane(void) const override;
     void ResetDflt(void) override;
 
     // Extended object's interface.
@@ -55,19 +55,20 @@ public:
 
 private:
     // DBRec.
-    unsigned int GetRecSize(void) const override;
+    size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;
     void Deserialize(uint8_t const * const aDataPtr) override;
 
-    struct RecStructTag {
-        uint8_t mCRC;
-        char    mMagic[3];
+    struct RecData {
+        struct BaseRec mBase;
         uint8_t mTimedFeedPeriod;
         bool    mIsWebFeedingEnable;
         bool    mIsAutoPetFeedingEnable;
     };
 
-    struct RecStructTag mRec;
+    struct RecData mRec;
+
+    static char constexpr sMagic[3] = { 'C', 'F', 'G' };
 };
 
 // ******************************************************************************

@@ -80,9 +80,9 @@ void DBRec::ResetDBDflt(void) {
 }
 
 
-unsigned int DBRec::GetDBSize(void) {
+size_t DBRec::GetDBSize(void) {
 
-    unsigned int lDBSize = 0;
+    size_t lDBSize = 0;
     for (std::vector<DBRec *>::const_iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
         lDBSize += (*lDBIt)->GetRecSize();
     }
@@ -130,30 +130,36 @@ void DBRec::AddRec(void) {
 }
 
 
-uint8_t DBRec::ComputeCRC(uint8_t const * const aData, unsigned int aSize) {
+uint8_t DBRec::ComputeCRC(uint8_t const * const aData, size_t aSize) const {
+
     uint8_t lCRC = 0;
-    for (unsigned int lIx = 1; lIx < aSize; lIx++) {
+    for (size_t lIx = 1; lIx < aSize; lIx++) {
         lCRC += aData[lIx];
     }
-
     return ~lCRC;
 }
 
 
-bool DBRec::IsCRCGood(uint8_t const * const aData, unsigned int aSize) {
-    uint8_t lCRC = 0;
-    for (unsigned int lIx = 0; lIx < aSize; lIx++) {
-        lCRC += aData[lIx];
+bool DBRec::IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic[]) const {
+
+    if ((aMagic[0] == aBaseRec->mMagic[0])
+        && (aMagic[1] == aBaseRec->mMagic[1])
+        && (aMagic[2] == aBaseRec->mMagic[2])
+        ) {
+        return true;
+    }
+    return false;
+}
+
+
+bool DBRec::IsCRCGood(uint8_t const * const aData, size_t aSize) const {
+    uint8_t mRecCRC = reinterpret_cast<DBRec::BaseRec const * const>(aData)->mCRC;
+    uint8_t lCRC = ComputeCRC(aData, aSize);
+    if (lCRC == mRecCRC) {
+        return true;
     }
 
-    lCRC++;
-
-    // Total CRC (data + CRC) should yield 0.
-    if (lCRC) {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 // *****************************************************************************

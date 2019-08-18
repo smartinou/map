@@ -42,6 +42,8 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
+char constexpr CalendarRec::sMagic[3];
+
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
@@ -60,17 +62,14 @@ CalendarRec::~CalendarRec() {
 }
 
 
-bool CalendarRec::IsSane(void) {
-    // Check CRC.
-    if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+bool CalendarRec::IsSane(void) const {
+    // Check magic.
+    if (!IsMagicGood(reinterpret_cast<BaseRec const * const>(&mRec.mBase), sMagic)) {
         return false;
     }
 
-    // Check magic value.
-    if (('C' != mRec.mMagic[0])
-          || ('A' != mRec.mMagic[1])
-          || ('L' != mRec.mMagic[2])
-    ) {
+    // Check CRC.
+    if (!IsCRCGood(reinterpret_cast<uint8_t const * const>(&mRec), sizeof(struct RecData))) {
         return false;
     }
 
@@ -79,11 +78,9 @@ bool CalendarRec::IsSane(void) {
 
 
 void CalendarRec::ResetDflt(void) {
-
-    // Set magic.
-    mRec.mMagic[0] = 'C';
-    mRec.mMagic[1] = 'A';
-    mRec.mMagic[2] = 'L';
+    mRec.mBase.mMagic[0] = sMagic[0];
+    mRec.mBase.mMagic[1] = sMagic[1];
+    mRec.mBase.mMagic[2] = sMagic[2];
 
     // Set time entries in whole week.
     // 8:00 and 17:00.
@@ -91,14 +88,14 @@ void CalendarRec::ResetDflt(void) {
     SetTimeEntry(Time(8, 0, 0, true));
     SetTimeEntry(Time(17, 0, 0, true));
 
-    mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
+    mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
 
     SetIsDirty();
 }
 
 
-unsigned int CalendarRec::GetRecSize(void) const {
-    return mRec.mCalendarArray.size();
+size_t CalendarRec::GetRecSize(void) const {
+    return static_cast<size_t>(sizeof(struct BaseRec) + mRec.mCalendarArray.size());
 }
 
 

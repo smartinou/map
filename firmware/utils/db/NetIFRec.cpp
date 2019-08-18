@@ -21,7 +21,7 @@
 // *****************************************************************************
 
 // Standard Library.
-#include <string.h>
+#include <string>
 
 // This project.
 #include "NetIFRec.h"
@@ -41,6 +41,8 @@
 // *****************************************************************************
 //                             GLOBAL VARIABLES
 // *****************************************************************************
+
+char constexpr NetIFRec::sMagic[3];
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -63,17 +65,14 @@ NetIFRec::~NetIFRec() {
 // Start of IDBRec interface.
 //
 
-bool NetIFRec::IsSane(void) {
-    // Check CRC.
-    if (!IsCRCGood(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec))) {
+bool NetIFRec::IsSane(void) const {
+    // Check magic.
+    if (!IsMagicGood(reinterpret_cast<BaseRec const * const>(&mRec.mBase), &NetIFRec::sMagic[0])) {
         return false;
     }
 
-    // Check magic value.
-    if (('N' != mRec.mMagic[0])
-          || ('E' != mRec.mMagic[1])
-          || ('T' != mRec.mMagic[2])
-    ) {
+    // Check CRC.
+    if (!IsCRCGood(reinterpret_cast<uint8_t const * const>(&mRec), sizeof(struct RecData))) {
         return false;
     }
 
@@ -84,9 +83,9 @@ bool NetIFRec::IsSane(void) {
 void NetIFRec::ResetDflt(void) {
 
     // Set magic.
-    mRec.mMagic[0] = 'N';
-    mRec.mMagic[1] = 'E';
-    mRec.mMagic[2] = 'T';
+    mRec.mBase.mMagic[0] = NetIFRec::sMagic[0];
+    mRec.mBase.mMagic[1] = NetIFRec::sMagic[1];
+    mRec.mBase.mMagic[2] = NetIFRec::sMagic[2];
 
     mRec.mUseDHCP = 1;
     mRec.mUseIPv6 = 0;
@@ -94,13 +93,13 @@ void NetIFRec::ResetDflt(void) {
     mRec.mSubnetMask = 0x00000000;
     mRec.mGWAddr = 0x00000000;
 
-    mRec.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(mRec));
+    mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
     SetIsDirty();
 }
 
 
 unsigned int NetIFRec::GetRecSize(void) const {
-    return sizeof(struct RecStructTag);
+    return sizeof(struct RecData);
 }
 
 
@@ -122,7 +121,7 @@ void NetIFRec::Deserialize(uint8_t const *aDataPtr) {
 //
 
 bool NetIFRec::UseDHCP(void) const {
-    return mRec.mUseDHCP;
+    return static_cast<bool>(mRec.mUseDHCP);
 }
 
 

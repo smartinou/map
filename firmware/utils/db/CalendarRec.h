@@ -49,7 +49,7 @@ public:
     ~CalendarRec();
 
     // DBRec.
-    bool IsSane(void) override;
+    bool IsSane(void) const override;
     void ResetDflt(void) override;
 
     // Extended object's interface.
@@ -74,7 +74,7 @@ public:
 
 private:
     // DBRec.
-    unsigned int GetRecSize(void) const override;
+    size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aData) const override;
     void Deserialize(uint8_t const * const aData) override;
 
@@ -91,13 +91,14 @@ private:
 
     enum BitMaskEnumTag { ALL_WEEK_BIT_MASK = (0x1 << 0) };
 
-    struct RecStructTag {
-        uint8_t mCRC;
-        char    mMagic[3];
+    struct RecData {
+        BaseRec mBase;
         std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
     };
 
-    struct RecStructTag mRec;
+    struct RecData mRec;
+
+    static char constexpr sMagic[3] = { 'C', 'A', 'L' };
 };
 
 // ******************************************************************************
