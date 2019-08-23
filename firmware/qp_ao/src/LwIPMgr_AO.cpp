@@ -163,6 +163,7 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   // For the Stellaris Eval Kits, the MAC address will be stored in the
   // non-volatile USER0 and USER1 registers.  These registers can be read
   // using the FlashUserGet function, as illustrated below.
+  // TODO: This should be part of the BSP and passed via init event.
   unsigned long lUser0 = 0;
   unsigned long lUser1 = 0;
   FlashUserGet(&lUser0, &lUser1);
@@ -186,6 +187,7 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
 #else
   uint8_t const lMACAddr[NETIF_MAX_HWADDR_LEN] = {0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff};
 #endif
+  // This never worked and never got why.
   //me->mEthDrvPtr = EthDrv2::EthDrvInstance(8);
   //me->mEthDrvPtr = new EthDrv2(8);
   //me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
@@ -257,7 +259,7 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
       // IP address in the network byte order.
       // Save the IP addr.
       me->mIPAddr = me->mNetIFPtr->ip_addr.addr;
-      uint32_t lIPAddrNet = ntohl(me->mIPAddr);
+      uint32_t lIPAddrNet = me->mIPAddr; // TODO: HAVE THE ABOVE FUNCTION RETURN IN PROPER ENDIANNESS. ntohl(me->mIPAddr);
       LOG_INFO(&sLogCategory[0], "New IP address.");
       (void)lIPAddrNet;
       // Publish the text event to display the new IP address.

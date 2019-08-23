@@ -30,12 +30,14 @@
 #include <hw_ints.h>
 //#include "hw_memmap.h" // duplicated defines in lm3s_cmsis.h
 #include <hw_types.h>
+#include <driverlib/flash.h>
 #include <driverlib/gpio.h>
 #include <driverlib/interrupt.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/systick.h>
 #include <driverlib/uart.h>
 
+#include <net/EthernetAddress.h>
 
 #include "SDC.h"
 #include "SPI.h"
@@ -280,6 +282,31 @@ private:
             sDisplayHeight
         );
         return lDisplay;
+    }
+
+    EthernetAddress GetMACAddress(void) {
+        // For the Stellaris Eval Kits, the MAC address will be stored in the
+        // non-volatile USER0 and USER1 registers. These registers can be read
+        // using the FlashUserGet function, as illustrated below.
+        unsigned long lUser0 = 0;
+        unsigned long lUser1 = 0;
+        FlashUserGet(&lUser0, &lUser1);
+
+        // Convert the 24/24 split MAC address from NV ram into a 32/16 split MAC address.
+        EthernetAddress lMAC(
+            static_cast<uint8_t>((lUser0 & 0x000000FFL) >>  0),
+            static_cast<uint8_t>((lUser0 & 0x0000FF00L) >>  8),
+            static_cast<uint8_t>((lUser0 & 0x00FF0000L) >> 16),
+            static_cast<uint8_t>((lUser0 & 0xFF000000L) >> 24),
+            static_cast<uint8_t>((lUser1 & 0x000000FFL) >>  0),
+            static_cast<uint8_t>((lUser1 & 0x0000FF00L) >>  8)
+        );
+
+        if (lMAC.IsValid()) {
+            return lMAC;
+        }
+
+        return EthernetAddress(0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff);
     }
 
     std::unique_ptr<CoreLink::SSIPinCfg> mSSIPinCfg;

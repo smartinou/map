@@ -1,10 +1,9 @@
-#ifndef LWIP_DRV_H_
-#define LWIP_DRV_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Active Object Library
+// Project: LwIP
 //
-// Module: Module in the larger project scope.
+// Module: LM3S6965 low-level Ethernet driver.
 //
 // *******************************************************************************
 
@@ -12,16 +11,20 @@
 //! \brief MyClass device class.
 //! \ingroup module_group
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2017, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include "net/EthernetAddress.h"
+
+#include <map>
+#include <vector>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -31,54 +34,84 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declarations.
+// Forward declarations
+namespace QP {
+    class QActive;
+}
 
-
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
 class LwIPDrv {
- public:
-  LwIPDrv();
+public:
+    virtual ~LwIPDrv() {}
 
-  struct netif *Init(u8_t          const aMACAddr[NETIF_MAX_HWADDR_LEN],
-		     unsigned int  const aQSize);
-  void Rd(void);
-  void Wr(void);
+    // Static functions to hook to 'C' code.
+    // Specific to an Ethernet IF.
+    static void StaticDrvInit(
+        QP::QActive * const aAO,
+        EthernetAddress const &aEthernetAddress,
+        unsigned int aPBufQSize,
+        bool aUseDHCP,
+        uint32_t aIPAddress,
+        uint32_t aSubnetMask,
+        uint32_t aGWAddress
+    );
+    static err_t StaticEtherIFInit(struct netif * const aNetIF);
+    static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
+    static void StaticISR(void);
 
-  void ISR(QP::QActive &aAO,
-	   QP::QEvent const &aRxIntEvt,
-	   QP::QEvent const &aTxIntEvt);
+    virtual void DrvInit(
+        QP::QActive * const aAO,
+        EthernetAddress const &aEthernetAddress,
+        unsigned int aPBufQSize,
+        bool aUseDHCP,
+        uint32_t aIPAddress,
+        uint32_t aSubnetMask,
+        uint32_t aGWAddress
+    ) = 0;
 
- private:
-  // Static functions for assigning to netif.
-  static err_t EtherIFInit(struct netif *aNetIFPtr);
-  static err_t EtherIFLinkOut(struct netif *aNetIFPtr,
-			      struct pbuf  *aPBufPtr);
+    virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
+    virtual err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) = 0;
+    virtual void Rd(void) = 0;
+    virtual void Wr(void) = 0;
+    virtual void ISR(void) = 0;
 
-  // Low-level driver methods.
-  void         LowLevelTx(struct pbuf * const aPBufPtr);
-  struct pbuf *LowLevelRx(void);
+private:
+    // Internal PBuf Q-ring class.
+    class PBufQ {
+    public:
+        PBufQ(unsigned int aQSize);
 
-  // Internal PBuf Q-ring class.
-  class PBufQ {
-  public:
-    PBufQ(unsigned int aQSize);
-    bool         IsEmpty(void);
-    bool         Put(struct pbuf *aPBufPtr);
-    struct pbuf *Get(void);
-  private:
-    struct pbuf **mRingPtr;
-    unsigned int mRingSize;
-    unsigned int mQWrIx;
-    unsigned int mQRdIx;
-    unsigned int mQOverflow;
-  };
+        bool IsEmpty(void) const;
+        bool Put(struct pbuf *aPBufPtr);
+        struct pbuf *Get(void);
 
- private:
-  // Queue of pbufs for transmission.
-  PBufQ       *mPBufQPtr;
-  struct netif mNetIF;
+    private:
+        struct pbuf **mPBufRing;
+        unsigned int mRingSize;
+        unsigned int mQWrIx;
+        unsigned int mQRdIx;
+        unsigned int mQOverflow;
+    };
+
+protected:
+    LwIPDrv(unsigned int aPBufQSize);
+
+    PBufQ &GetPBufQ(void) const { return *mPBufQ; }
+
+    struct netif &GetNetIF(void) { return mNetIF; }
+    QP::QActive &GetAO(void) const { return *mAO; }
+    void SetAO(QP::QActive * const aAO) { mAO = aAO; }
+
+private:
+    LwIPDrv(LwIPDrv const &) = delete;
+    LwIPDrv const &operator=(LwIPDrv const &) = delete;
+
+    static std::map<struct netif * const, LwIPDrv * const> sMap;
+    //static std::vector<LwIPDrv * const> sVector;
+
+    // Queue of pbufs for transmission.
+    PBufQ       *mPBufQ = nullptr;
+    struct netif mNetIF;
+    QP::QActive *mAO = nullptr;
 };
 
 // ******************************************************************************
@@ -96,4 +129,3 @@ class LwIPDrv {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // LWIP_DRV_H_

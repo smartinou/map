@@ -21,7 +21,7 @@
 // *****************************************************************************
 
 // Standard Library.
-#include <string>
+#include <string.h>
 
 // This project.
 #include "NetIFRec.h"

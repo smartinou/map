@@ -88,6 +88,7 @@ VPATH = \
         $(FIRMWARE_PATH)/qp_ao/model/codegen \
         $(FIRMWARE_PATH)/utils/date \
         $(FIRMWARE_PATH)/utils/db \
+        $(FIRMWARE_PATH)/utils/net \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
         $(STELLARIS_LIB)/inc \
@@ -170,6 +171,8 @@ CPP_SRCS := \
         DisplayMgr_AOs.cpp \
         DS3234.cpp \
         eth_driver.cpp \
+        EthernetAddress.cpp \
+        EthDrv.cpp \
         FeedCfgRec.cpp \
         FileLogSink_AO.cpp \
         GPIO.cpp \
