@@ -24,7 +24,7 @@
 // Standard Libraries.
 #include <string>
 
-#include "GPIO.h"
+#include "inc/GPIO.h"
 #include "ILCD.h"
 #include "SPI.h"
 
@@ -44,7 +44,7 @@ class SSD1329
  
 public:
    SSD1329(
-       CoreLink::SPIDev &aSPIDev,
+       CoreLink::ISPIDev &aSPIDev,
        CoreLink::SPISlaveCfg const &aSPICfg,
        GPIO const aDCnGPIO,
        GPIO const aEn15VGPIO,
@@ -52,7 +52,7 @@ public:
        unsigned int const aDisplayHeight = 128
    );
    SSD1329(
-       CoreLink::SPIDev &aSPIDev,
+       CoreLink::ISPIDev &aSPIDev,
        GPIO const &aCsPin,
        GPIO const aDCnGPIO,
        GPIO const aEn15VGPIO,
@@ -70,13 +70,15 @@ public:
         std::string const &aStr,
         unsigned int aXPos,
         unsigned int aYPos,
-        unsigned int aGreyLevel) override;
+        unsigned int aGreyLevel
+    ) override;
     void DrawImg(
         uint8_t const *aImgBufPtr,
 	    unsigned int aXPos,
 	    unsigned int aYPos,
 	    unsigned int aWidth,
-	    unsigned int aHeight) override;
+	    unsigned int aHeight
+    ) override;
 
  private:
     enum {
@@ -119,8 +121,8 @@ public:
     void AssertDataLine(void);
     void AssertCmdLine(void);
 
-    CoreLink::SPIDev      &mSPIDev;
-    CoreLink::SPISlaveCfg  mSPICfg;
+    CoreLink::ISPIDev     &mSPIDev;
+    CoreLink::SPISlaveCfg mSPICfg;
 
     GPIO const mDCnGPIO;
     GPIO const mEn15VGPIO;

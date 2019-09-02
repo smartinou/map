@@ -23,7 +23,7 @@
 
 #include "IRTCC.h"
 #include "SPI.h"
-#include "GPIO.h"
+#include "inc/GPIO.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -37,21 +37,24 @@
 //! Details follow...
 //! ...here.
 class DS3234
-  : public IRTCC {
+    : public IRTCC {
 
  public:
-    DS3234(
-        unsigned int const aBaseYear,
-        unsigned long const aInterruptNumber,
-        GPIO const &aInterruptGPIO,
-        CoreLink::SPIDev &aSPIDev,
-        CoreLink::SPISlaveCfg const &aSPICfg
-    );
-    DS3234(
+#if 0
+     DS3234(
+         unsigned int const aBaseYear,
+         unsigned long const aInterruptNumber,
+         GPIO const &aInterruptGPIO,
+         CoreLink::ISPIDev &aSPIDev,
+         CoreLink::SPISlaveCfg const &aSPICfg
+         );
+
+#endif // 0
+     DS3234(
         unsigned int const aBaseYear,
         unsigned long const aInterruptNumber,
         GPIO const &aInterruptPin,
-        CoreLink::SPIDev &aSPIDev,
+        CoreLink::ISPIDev &aSPIDev,
         GPIO const &aCSnPin
     );
     ~DS3234();
@@ -73,22 +76,26 @@ class DS3234
 
     unsigned int GetNumberOfAlarms(void) const override { return 2; }
     bool WrAlarm(
-        enum ALARM_ID   aAlarmID,
-        Time const     &aTime,
-        Date const     &aDate) override;
+        IRTCC::alarm_id_t aAlarmID,
+        Time const &aTime,
+        Date const &aDate
+    ) override;
     bool WrAlarm(
-        enum ALARM_ID   aAlarmID,
-        Time    const  &aTime,
-        Weekday const  &aWeekday) override;
-    bool IsAlarmOn(enum ALARM_ID aAlarmID) override;
-    void DisableAlarm(enum ALARM_ID aAlarmID) override;
-    void ClrAlarmFlag(enum ALARM_ID aAlarmID) override;
+        IRTCC::alarm_id_t aAlarmID,
+        Time const &aTime,
+        Weekday const &aWeekday
+    ) override;
+    bool IsAlarmOn(IRTCC::alarm_id_t aAlarmID) override;
+    void DisableAlarm(IRTCC::alarm_id_t aAlarmID) override;
+    void ClrAlarmFlag(IRTCC::alarm_id_t aAlarmID) override;
 
     unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
     void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
     void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
 
     // Local API.
+    // FIXME: goes against LISP todo so.
+    // MOVE UP TO INTERFACE.
     void Init(uint8_t aCtrlRef);
 
 private:
@@ -105,7 +112,11 @@ private:
         WHEN_DATE_HOURS_MINS_SECS_MATCH,
         WHEN_DATE_HOURS_MINS_MATCH = WHEN_DATE_HOURS_MINS_SECS_MATCH
     };
-
+#ifdef _WIN32
+    typedef enum class ALARM_MODE alarm_mode_t;
+#else
+    typedef enum ALARM_MODE alarm_mode_t;
+#endif
 
     typedef uint8_t volatile rtcc_reg_t;
 
@@ -240,10 +251,10 @@ private:
         Weekday const  &aWeekdayRef
     );
     void FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const &aTimeRef);
-    void FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, enum ALARM_MODE aAlarmMode);
-    void TxAlarmStruct(enum ALARM_ID aAlarmID);
+    void FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMode);
+    void TxAlarmStruct(IRTCC::alarm_id_t aAlarmID);
 
-    void SetAlarm(enum ALARM_ID aAlarmID);
+    void SetAlarm(IRTCC::alarm_id_t aAlarmID);
 
     uint8_t GetCtrl(void);
     uint8_t GetStatus(void);
@@ -251,8 +262,8 @@ private:
     unsigned int mBaseYear = 0;
     unsigned int mCentury = 0;
 
-    CoreLink::SPIDev      &mSPIDev;
-    CoreLink::SPISlaveCfg  mSPICfg;
+    CoreLink::ISPIDev &mSPIDev;
+    CoreLink::SPISlaveCfg mSPICfg;
 
     unsigned long mInterruptNumber = 0;
     GPIO const &mInterruptGPIO;

@@ -157,7 +157,7 @@ uint8_t const SSD1329::sFontTbl[96][FONT_WIDTH_MAX] = {
 // *****************************************************************************
 
 SSD1329::SSD1329(
-    CoreLink::SPIDev &aSPIDev,
+    CoreLink::ISPIDev &aSPIDev,
     CoreLink::SPISlaveCfg const &aSPICfg,
     GPIO const aDCnGPIO,
     GPIO const aEn15VGPIO,
@@ -175,7 +175,7 @@ SSD1329::SSD1329(
 
 
 SSD1329::SSD1329(
-    CoreLink::SPIDev &aSPIDev,
+    CoreLink::ISPIDev &aSPIDev,
     GPIO const &aCsPin,
     GPIO const aDCnGPIO,
     GPIO const aEn15VGPIO,
@@ -183,17 +183,17 @@ SSD1329::SSD1329(
     unsigned int const aDisplayHeight
 )
     : mSPIDev(aSPIDev)
-    , mSPICfg()
+    , mSPICfg(aCsPin)
     , mDCnGPIO(aDCnGPIO)
     , mEn15VGPIO(aEn15VGPIO)
     , mDisplayWidth(aDisplayWidth)
     , mDisplayHeight(aDisplayHeight) {
 
     // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::MOTO_2);
+    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_2);
     mSPICfg.SetBitRate(4000000);
     mSPICfg.SetDataWidth(8);
-    mSPICfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
+    //mSPICfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
 }
 
 

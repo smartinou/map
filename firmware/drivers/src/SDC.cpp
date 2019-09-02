@@ -139,19 +139,18 @@ enum L_OCR_MASK_ENUM_TAG {
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-SDC::SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, GPIO const aCSnPin)
+SDC::SDC(unsigned int const aDriveIx, CoreLink::ISPIDev &aSPIDev, GPIO const &aCSnPin)
     : mMyDriveIx(aDriveIx)
     , mSPIDev(aSPIDev)
-    , mSPICfg()
+    , mSPICfg(aCSnPin)
     , mStatus(STA_NOINIT)
     , mCardType(0) {
 
     // Ctor body.
     // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::MOTO_1);
+    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_1);
     mSPICfg.SetBitRate(4000000);
     mSPICfg.SetDataWidth(8);
-    mSPICfg.SetCSnGPIO(aCSnPin.GetPort(), aCSnPin.GetPin());
 }
 
 

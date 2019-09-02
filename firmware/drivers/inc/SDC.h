@@ -25,7 +25,7 @@
 
 #include "diskio.h"
 
-#include "GPIO.h"
+#include "inc/GPIO.h"
 #include "SPI.h"
 
 // ******************************************************************************
@@ -48,21 +48,20 @@ namespace CoreLink {
 //! ...here.
 class SDC {
  public:
-    SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, GPIO const aCSnPin);
-    SDC(unsigned int const aDriveIx, CoreLink::SPIDev &aSPIDev, CoreLink::SPISlaveCfg const &aSPISlaveCfg);
+    SDC(unsigned int const aDriveIx, CoreLink::ISPIDev &aSPIDev, GPIO const &aCSnPin);
 
     DSTATUS GetDiskStatus(void);
     DSTATUS DiskInit(void);
     DRESULT DiskRd(
-        uint8_t     *aBufPtr,
-        uint32_t     aStartSector,
+        uint8_t *aBufPtr,
+        uint32_t aStartSector,
         unsigned int aSectorCount
     );
 #if (FF_FS_READONLY == 0)
     DRESULT DiskWr(
         uint8_t const *aBufPtr,
-        uint32_t       aStartSector,
-        unsigned int   aSectorCount
+        uint32_t aStartSector,
+        unsigned int aSectorCount
     );
 #endif // _DISKIO_WRITE
 
@@ -120,16 +119,16 @@ class SDC {
 
     //R1_RESPONSE_PKT SendCmd(uint8_t aCmd, uint32_t aArg);
     R1_RESPONSE_PKT SendCmd(
-        uint8_t      aCmd,
-        uint32_t     aArg,
-        uint8_t     *aRegPtr = nullptr,
+        uint8_t aCmd,
+        uint32_t aArg,
+        uint8_t *aRegPtr = nullptr,
         unsigned int aRegLen = 0
     );
     bool IsExpectedVoltageRange(void);
 
-    unsigned int const     mMyDriveIx;
-    CoreLink::SPIDev      &mSPIDev;
-    CoreLink::SPISlaveCfg  mSPICfg;
+    unsigned int const mMyDriveIx;
+    CoreLink::ISPIDev &mSPIDev;
+    CoreLink::SPISlaveCfg mSPICfg;
 
     DSTATUS mStatus;
     uint8_t mCardType;

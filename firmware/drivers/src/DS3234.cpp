@@ -82,13 +82,14 @@ enum L_LIMITS {
 // *****************************************************************************
 
 // Ctor.
+#if 0
 DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
     GPIO const &aInterruptGPIO,
-    CoreLink::SPIDev &aSPIDev,
+    CoreLink::ISPIDev &aSPIDev,
     CoreLink::SPISlaveCfg const &aSPICfg
-)
+    )
     : mBaseYear(aBaseYear)
     , mSPIDev(aSPIDev)
     , mSPICfg(aSPICfg)
@@ -98,25 +99,27 @@ DS3234::DS3234(
     // Ctor body intentionally left empty.
 }
 
+#endif // 0
+
 
 DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
     GPIO const &aInterruptPin,
-    CoreLink::SPIDev &aSPIDev,
+    CoreLink::ISPIDev &aSPIDev,
     GPIO const &aCSnPin
 )
     : mBaseYear(aBaseYear)
     , mSPIDev(aSPIDev)
-    , mSPICfg()
+    , mSPICfg(aCSnPin)
     , mInterruptNumber(aInterruptNumber)
     , mInterruptGPIO(aInterruptPin) {
 
     // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::MOTO_1);
+    mSPICfg.SetProtocol(CoreLink::ISPISlaveCfg::PROTOCOL::MOTO_1);
     mSPICfg.SetBitRate(4000000);
     mSPICfg.SetDataWidth(8);
-    mSPICfg.SetCSnGPIO(aCSnPin.GetPort(), aCSnPin.GetPin());
+    //mSPICfg.SetCSnGPIO(aCSnPin.GetPort(), aCSnPin.GetPin());
 }
 
 
@@ -226,7 +229,7 @@ void DS3234::SetInterrupt(bool aEnable) {
     Time lTime;
     Date lDate;
     WrAlarm(
-        DS3234::ALARM_ID::ALARM_ID_1,
+        IRTCC::ALARM_ID::ALARM_ID_1,
         lTime,
         lDate
     ); //DS3234::ALARM_MODE::ONCE_PER_SEC);
@@ -371,19 +374,19 @@ float DS3234::GetTemperature(void) {
     // Return temperature field.
     // Convert temperature MSB and LSB to float.
     UpdateCachedVal();
-    float lTempFloat = 0.25 * (mRegMap.mTempLSB >> 6);
+    float lTempFloat = 0.25f * (mRegMap.mTempLSB >> 6);
     lTempFloat += static_cast<float>(mRegMap.mTempMSB);
     return lTempFloat;
 }
 
 
 bool DS3234::WrAlarm(
-    enum ALARM_ID   aAlarmID,
-    Time const     &aTime,
-    Date const     &aDate
+    IRTCC::alarm_id_t aAlarmID,
+    Time const &aTime,
+    Date const &aDate
 ) {//,enum ALARM_MODE aAlarmMode) {
   
-    enum ALARM_MODE aAlarmMode =  ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH;
+    alarm_mode_t aAlarmMode =  ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH;
     // Fill alarm structure to write to RTC.
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -409,12 +412,12 @@ bool DS3234::WrAlarm(
 
 
 bool DS3234::WrAlarm(
-    enum ALARM_ID   aAlarmID,
-    Time    const  &aTime,
-    Weekday const  &aWeekdayRef
+    IRTCC::alarm_id_t aAlarmID,
+    Time const &aTime,
+    Weekday const &aWeekdayRef
 ) {//,enum ALARM_MODE aAlarmMode) {
 
-    enum ALARM_MODE aAlarmMode =  ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
+    alarm_mode_t aAlarmMode =  ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
     // Fill alarm structure to write to RTC.
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -440,7 +443,7 @@ bool DS3234::WrAlarm(
 }
 
 
-bool DS3234::IsAlarmOn(enum ALARM_ID aAlarmID) {
+bool DS3234::IsAlarmOn(IRTCC::alarm_id_t aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -462,7 +465,7 @@ bool DS3234::IsAlarmOn(enum ALARM_ID aAlarmID) {
 }
 
 
-void DS3234::DisableAlarm(enum ALARM_ID aAlarmID) {
+void DS3234::DisableAlarm(IRTCC::alarm_id_t aAlarmID) {
 
     // Only clear interrupt.
     // We don't care if the Alarm fields are set,
@@ -481,7 +484,7 @@ void DS3234::DisableAlarm(enum ALARM_ID aAlarmID) {
 }
 
 
-void DS3234::ClrAlarmFlag(enum ALARM_ID aAlarmID) {
+void DS3234::ClrAlarmFlag(IRTCC::alarm_id_t aAlarmID) {
 
     // Only clear interrupt.
     // We don't care if the Alarm fields are set,
@@ -681,7 +684,7 @@ void DS3234::FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const   &aTime) {
 }
 
 
-void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, enum ALARM_MODE  aAlarmMode) {
+void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMode) {
 
     // Assumes the AxMy bit was clear on previous operation.
     // This should be performed by BinaryToBCD().
@@ -715,7 +718,7 @@ void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, enum ALARM_MODE  aAlar
 }
 
 
-void DS3234::TxAlarmStruct(enum ALARM_ID aAlarmID) {
+void DS3234::TxAlarmStruct(IRTCC::alarm_id_t aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -748,7 +751,7 @@ void DS3234::TxAlarmStruct(enum ALARM_ID aAlarmID) {
 }
 
 
-void DS3234::SetAlarm(enum ALARM_ID aAlarmID) {
+void DS3234::SetAlarm(IRTCC::alarm_id_t aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1: mRegMap.mCtrl |= AEI1; break;
