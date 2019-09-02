@@ -23,6 +23,9 @@
 
 #include "net/EthernetAddress.h"
 
+#include "lwip/err.h"
+#include "lwip/netif.h"
+
 #include <map>
 #include <vector>
 
@@ -39,29 +42,18 @@ namespace QP {
     class QActive;
 }
 
+
 class LwIPDrv {
 public:
     virtual ~LwIPDrv() {}
-
     // Static functions to hook to 'C' code.
     // Specific to an Ethernet IF.
-    static void StaticDrvInit(
-        QP::QActive * const aAO,
-        EthernetAddress const &aEthernetAddress,
-        unsigned int aPBufQSize,
-        bool aUseDHCP,
-        uint32_t aIPAddress,
-        uint32_t aSubnetMask,
-        uint32_t aGWAddress
-    );
     static err_t StaticEtherIFInit(struct netif * const aNetIF);
     static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
     static void StaticISR(void);
 
     virtual void DrvInit(
         QP::QActive * const aAO,
-        EthernetAddress const &aEthernetAddress,
-        unsigned int aPBufQSize,
         bool aUseDHCP,
         uint32_t aIPAddress,
         uint32_t aSubnetMask,
@@ -73,6 +65,8 @@ public:
     virtual void Rd(void) = 0;
     virtual void Wr(void) = 0;
     virtual void ISR(void) = 0;
+
+    uint32_t GetIPAddress(void) const;
 
 private:
     // Internal PBuf Q-ring class.
@@ -93,10 +87,9 @@ private:
     };
 
 protected:
-    LwIPDrv(unsigned int aPBufQSize);
+    LwIPDrv(unsigned int mMyIndex, unsigned int aPBufQSize);
 
     PBufQ &GetPBufQ(void) const { return *mPBufQ; }
-
     struct netif &GetNetIF(void) { return mNetIF; }
     QP::QActive &GetAO(void) const { return *mAO; }
     void SetAO(QP::QActive * const aAO) { mAO = aAO; }
@@ -106,9 +99,9 @@ private:
     LwIPDrv const &operator=(LwIPDrv const &) = delete;
 
     static std::map<struct netif * const, LwIPDrv * const> sMap;
-    //static std::vector<LwIPDrv * const> sVector;
 
     // Queue of pbufs for transmission.
+    unsigned int mMyIndex;
     PBufQ       *mPBufQ = nullptr;
     struct netif mNetIF;
     QP::QActive *mAO = nullptr;

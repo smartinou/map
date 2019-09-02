@@ -70,28 +70,10 @@ extern "C" {
 // *****************************************************************************
 
 std::map<struct netif * const, LwIPDrv * const> LwIPDrv::sMap;
-//std::vector<LwIPDrv * const> LwIPDrv::sVector;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
-
-// High-level driver init.
-void LwIPDrv::StaticDrvInit(
-    QP::QActive * const aAO,
-    EthernetAddress const &aEthernetAddress,
-    unsigned int aPBufQSize,
-    bool aUseDHCP,
-    uint32_t aIPAddress,
-    uint32_t aSubnetMask,
-    uint32_t aGWAddress
-) {
-    // Initialize all ethernet interfaces.
-    for (auto& lKeyValue : LwIPDrv::sMap) {
-        lKeyValue.second->DrvInit(aAO, aEthernetAddress, aPBufQSize, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
-    }
-}
-
 
 // Low-level init.
 // Will be called by LwIP at init stage.
@@ -124,11 +106,17 @@ void LwIPDrv::StaticISR(void) {
     //find_in_map->second->ISR();
 }
 
+
+uint32_t LwIPDrv::GetIPAddress(void) const {
+    return mNetIF.ip_addr.addr;
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-LwIPDrv::LwIPDrv(unsigned int aPBufQSize) {
+LwIPDrv::LwIPDrv(unsigned int aIndex, unsigned int aPBufQSize)
+    : mMyIndex(aIndex) {
 
     mPBufQ = new PBufQ(aPBufQSize);
 

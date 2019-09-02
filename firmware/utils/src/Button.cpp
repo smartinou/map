@@ -26,7 +26,7 @@
 #include <driverlib/interrupt.h>
 
 // This project.
-#include "Button.h"
+#include "inc/Button.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
