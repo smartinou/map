@@ -160,6 +160,17 @@ bool App::Init(void) {
         0U);// ,
         //&lLwIPInitEvt
     //);
+#else
+    auto lLwIPMgr_AO = mFactory->CreateLwIPMgrAO();
+    if (lLwIPMgr_AO.get() != nullptr) {
+        lLwIPMgr_AO->start(
+            4U,
+            mLwIPEventQueue,
+            Q_DIM(mLwIPEventQueue),
+            nullptr,
+            0U
+        );
+    }
 #endif
 
     auto lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();

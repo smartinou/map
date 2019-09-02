@@ -35,11 +35,8 @@
 #include "lwip/autoip.h"
 #include "lwip/def.h"
 #include "lwip/dhcp.h"
-#include "lwip/mem.h"
-#include "lwip/pbuf.h"
+#include "lwip/init.h"
 #include "lwip/stats.h"
-#include "lwip/snmp.h"
-#include "lwip/etharp.h"
 #include "lwip/apps/httpd.h"
 #include "lwip/priv/tcp_priv.h"
 
@@ -47,8 +44,8 @@
 #ifdef __cplusplus
 extern "C" {
 } // extern "C"
-#include "netif/eth_driver.h"
-//#include "netif/EthDrv2.h"
+//#include "netif/eth_driver.h"
+#include "netif/EthDrv.h"
 #endif // __cplusplus
 
 
@@ -101,11 +98,11 @@ static char const sLogCategory[] = "LwIP manager";
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-LwIPMgr_AO::LwIPMgr_AO() :
+LwIPMgr_AO::LwIPMgr_AO(LwIPDrv &aLwIPDrv) :
   QActive(Q_STATE_CAST(&LwIPMgr_AO::Initial))
   , mSlowTickTimer(this, SIG_LWIP_SLOW_TICK, 0U)
-  //, mEthDrvPtr(0)
-  , mNetIFPtr(nullptr)
+  , mEthDrvPtr(aLwIPDrv)
+  //, mNetIFPtr(nullptr)
   , mIPAddr(IPADDR_ANY)
 #if LWIP_TCP
   , mTCPTimer(0)
@@ -158,6 +155,11 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
 
     lCallbackInit = lLwIPInitEvtPtr->mCallbackInit;
   }
+
+  // Initialize the lwIP stack.
+  lwip_init();
+
+#if 0
   // Configure the hardware MAC address for the Ethernet Controller
   //
   // For the Stellaris Eval Kits, the MAC address will be stored in the
@@ -171,7 +173,6 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   // The MAC address must have been programmed!
   Q_ASSERT((lUser0 != 0xFFFFFFFF) && (lUser1 != 0xFFFFFFFF));
 
-#if 1
   // Convert the 24/24 split MAC address from NV ram into a 32/16 split MAC
   // address needed to program the hardware registers, then program the MAC
   // address into the Ethernet Controller registers.
@@ -184,19 +185,28 @@ QP::QState LwIPMgr_AO::Initial(LwIPMgr_AO     * const me,  //aMePtr,
   lMACAddr[3] = (uint8_t)lUser1; lUser1 >>= 8;
   lMACAddr[4] = (uint8_t)lUser1; lUser1 >>= 8;
   lMACAddr[5] = (uint8_t)lUser1;
-#else
+#elif 0
   uint8_t const lMACAddr[NETIF_MAX_HWADDR_LEN] = {0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff};
 #endif
   // This never worked and never got why.
   //me->mEthDrvPtr = EthDrv2::EthDrvInstance(8);
   //me->mEthDrvPtr = new EthDrv2(8);
-  //me->mNetIFPtr = me->mEthDrvPtr->Init((QP::QActive *)me, &lMACAddr[0]);
+  me->mEthDrvPtr.DrvInit(
+      (QP::QActive *)me,
+      lUseDHCP,
+      lIPAddr,
+      lSubnetMask,
+      lGWAddr
+      );
+
+#if 0
   me->mNetIFPtr = eth_driver_init((QP::QActive *)me,
-                                  lUseDHCP,
-                                  lIPAddr,
-                                  lSubnetMask,
-                                  lGWAddr,
-                                  &lMACAddr[0]);
+      lUseDHCP,
+      lIPAddr,
+      lSubnetMask,
+      lGWAddr,
+      &lMACAddr[0]);
+#endif // 0
 
   // Initialize the lwIP applications...
   // Initialize the simple HTTP-Deamon (web server).
@@ -242,23 +252,23 @@ QP::QState LwIPMgr_AO::Running(LwIPMgr_AO       * const me,  //aMePtr,
   }
 
   case SIG_LWIP_RX_READY: {
-    eth_driver_read();
-    //me->mEthDrvPtr->Rd();
+    //eth_driver_read();
+    me->mEthDrvPtr.Rd();
     return Q_HANDLED();
   }
 
   case SIG_LWIP_TX_READY: {
-    eth_driver_write();
-    //me->mEthDrvPtr->Wr();
+    //eth_driver_write();
+    me->mEthDrvPtr.Wr();
     return Q_HANDLED();
   }
 
   case SIG_LWIP_SLOW_TICK: {
     // Has IP address changed?
-    if (me->mIPAddr != me->mNetIFPtr->ip_addr.addr) {
+    if (me->mIPAddr != me->mEthDrvPtr.GetIPAddress()) {//me->mNetIFPtr->ip_addr.addr) {
       // IP address in the network byte order.
       // Save the IP addr.
-      me->mIPAddr = me->mNetIFPtr->ip_addr.addr;
+        me->mIPAddr = me->mEthDrvPtr.GetIPAddress(); // me->mNetIFPtr->ip_addr.addr;
       uint32_t lIPAddrNet = me->mIPAddr; // TODO: HAVE THE ABOVE FUNCTION RETURN IN PROPER ENDIANNESS. ntohl(me->mIPAddr);
       LOG_INFO(&sLogCategory[0], "New IP address.");
       (void)lIPAddrNet;

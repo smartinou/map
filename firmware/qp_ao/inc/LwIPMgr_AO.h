@@ -31,7 +31,7 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class EthDrv2;
+class LwIPDrv;
 
 
 //! \brief Brief description.
@@ -39,7 +39,8 @@ class EthDrv2;
 //! ...here.
 class LwIPMgr_AO : public QP::QActive {
  public:
-  LwIPMgr_AO();
+  //LwIPMgr_AO();
+  LwIPMgr_AO(LwIPDrv &aLwIPDrv);
   LwIPMgr_AO  * const GetInstancePtr(void) const;
   QP::QActive * const GetOpaqueAOInstancePtr(void) const;
 
@@ -51,8 +52,10 @@ class LwIPMgr_AO : public QP::QActive {
 private:
   QP::QTimeEvt    mSlowTickTimer;
 
-  //EthDrv2         *mEthDrvPtr;
-  struct netif   *mNetIFPtr;
+  // TODO: TRY TO USE NEW DRIVER WITH PRIMARY INTERFACE.
+  // THEN MAKE IT ARRAY OF INTERFACES.
+  LwIPDrv        &mEthDrvPtr;
+  //struct netif   *mNetIFPtr;
   //struct udp_pcb *mPCBPtr;
   // IP address in the native host byte order.
   uint32_t        mIPAddr;

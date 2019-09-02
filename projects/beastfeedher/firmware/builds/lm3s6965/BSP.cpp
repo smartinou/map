@@ -39,11 +39,13 @@
 
 #include <net/EthernetAddress.h>
 
+#include "inc/Button.h"
+#include "inc/GPIO.h"
+
+#include "netif/EthDrv.h"
 #include "SDC.h"
 #include "SPI.h"
 #include "DS3234.h"
-#include "GPIO.h"
-#include "Button.h"
 #include "SSD1329.h"
 #include "TB6612.h"
 
@@ -51,6 +53,7 @@
 #include "FileLogSink_AO.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AO.h"
+#include "LwIPMgr_AO.h"
 
 #include "PFPP_Events.h"
 #include "Signals.h"
@@ -217,6 +220,16 @@ public:
         return mDisplayMgrAO;
     }
 
+
+    std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
+        if (mEthDrv.get() == nullptr) {
+            mEthDrv = CreateEthDrv();
+            mLwIPMgrAO = std::make_shared<LwIPMgr_AO>(*mEthDrv);
+        }
+        return mLwIPMgrAO;
+    }
+
+
     // Local interface.
     static GPIO const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
 
@@ -270,8 +283,8 @@ private:
         GPIO lOLEDCSnPin(GPIO_PORTA_BASE, GPIO_PIN_3);
         GPIO lDCnPin(GPIO_PORTC_BASE, GPIO_PIN_7);
         GPIO lEn15VPin(GPIO_PORTC_BASE, GPIO_PIN_6);
-        static unsigned int const sDisplayWidth = 128;
-        static unsigned int const sDisplayHeight = 96;
+        static unsigned int constexpr sDisplayWidth = 128;
+        static unsigned int constexpr sDisplayHeight = 96;
 
         auto lDisplay = std::make_unique<SSD1329>(
             *mSPIDev,
@@ -283,6 +296,21 @@ private:
         );
         return lDisplay;
     }
+
+
+    std::unique_ptr<EthDrv> CreateEthDrv(void) {
+        EthernetAddress lMAC = GetMACAddress();
+        unsigned int lMyNetIFIndex = 0;
+        unsigned int lPBufQueueSize = 8;
+        auto lEthDrv = std::make_unique<EthDrv>(
+            lMyNetIFIndex,
+            lMAC,
+            lPBufQueueSize
+        );
+
+        return lEthDrv;
+    }
+
 
     EthernetAddress GetMACAddress(void) {
         // For the Stellaris Eval Kits, the MAC address will be stored in the
@@ -319,6 +347,8 @@ private:
     std::unique_ptr<SSD1329> mDisplay;
     std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
     std::shared_ptr<SDC> mSDC;
+    std::unique_ptr<EthDrv> mEthDrv;
+    std::shared_ptr<LwIPMgr_AO> mLwIPMgrAO;
 
     static GPIO const mRTCCInterruptPin;
 };
@@ -705,6 +735,12 @@ void QP::QS::onCommand(uint8_t aCmdId, uint32_t aParam1, uint32_t aParam2, uint3
 
 
 extern "C" {
+
+// LwIP
+u32_t sys_now() {
+    return SysTickValueGet();
+}
+
 
 void SysTick_Handler(void);
 void SysTick_Handler(void) {
