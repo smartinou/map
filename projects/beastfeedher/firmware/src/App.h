@@ -84,7 +84,7 @@ private:
 
     // When this object gets out of scope,
     // the Factory is destroyed and all that is responsible as well.
-    std::unique_ptr<IBSPFactory> mFactory;
+    std::shared_ptr<IBSPFactory> mFactory;
 
     static std::shared_ptr<RTCC::AO::RTCC_AO> mRTCC_AO;
     static std::shared_ptr<SDC> mSDCDrive0;

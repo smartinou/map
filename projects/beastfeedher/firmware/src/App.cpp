@@ -49,7 +49,9 @@
 #include "Net.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AO.h"
+#include "RTCC_Events.h"
 #include "SDC.h"
+#include "Signals.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -101,14 +103,16 @@ bool App::Init(void) {
     // Create all AOs.
     // RTCC AO.
     App::mRTCC_AO = mFactory->CreateRTCCAO();
+    RTCC::Event::Init lRTCCInitEvent(SIG_DUMMY, sCalendar);
     App::mRTCC_AO->start(
         1U,
         mRTCCEventQueue,
         Q_DIM(mRTCCEventQueue),
         nullptr,
-        0U
+        0U,
+        &lRTCCInitEvent
     );
-
+#if 0
     // Create SDC instance to use in FS stubs.
     mSDCDrive0 = mFactory->CreateSDC();
     if (mSDCDrive0.get() != nullptr) {
@@ -191,7 +195,7 @@ bool App::Init(void) {
     QS_OBJ_DICTIONARY(mLwIPEventQueue);
     QS_OBJ_DICTIONARY(mDisplayMgrEventQueue);
     QS_OBJ_DICTIONARY(mFileLogSinkEventQueue);
-
+#endif
     return true;
 }
 

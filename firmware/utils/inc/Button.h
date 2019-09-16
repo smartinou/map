@@ -61,6 +61,8 @@ public:
     };
 
 private:
+    static unsigned int PortToSysClockPeripheral(unsigned long aPort);
+
     unsigned long const mIntNbr;
     unsigned int  const mID;
 };

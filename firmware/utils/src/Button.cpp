@@ -22,6 +22,8 @@
 
 // TI Library.
 #include <hw_types.h>
+#include <hw_memmap.h>
+#include <driverlib/sysctl.h>
 #include <driverlib/gpio.h>
 #include <driverlib/interrupt.h>
 
@@ -57,6 +59,9 @@ Button::Button(
     : GPIO(aGPIOPort, aGPIOPin)
     , mIntNbr(aIntNbr)
     , mID(aID) {
+
+    // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
+    SysCtlPeripheralEnable(PortToSysClockPeripheral(aGPIOPort));
 
     DisableInt();
 
@@ -120,6 +125,21 @@ void Button::ClrInt(void) const {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+unsigned int Button::PortToSysClockPeripheral(unsigned long aPort) {
+    switch (aPort) {
+    case GPIO_PORTA_BASE: return SYSCTL_PERIPH_GPIOA;
+    case GPIO_PORTB_BASE: return SYSCTL_PERIPH_GPIOB;
+    case GPIO_PORTC_BASE: return SYSCTL_PERIPH_GPIOC;
+    case GPIO_PORTD_BASE: return SYSCTL_PERIPH_GPIOD;
+    case GPIO_PORTE_BASE: return SYSCTL_PERIPH_GPIOE;
+    case GPIO_PORTF_BASE: return SYSCTL_PERIPH_GPIOF;
+    case GPIO_PORTG_BASE: return SYSCTL_PERIPH_GPIOG;
+    case GPIO_PORTH_BASE: return SYSCTL_PERIPH_GPIOH;
+    }
+
+    return 0;
+}
 
 // *****************************************************************************
 //                                END OF FILE

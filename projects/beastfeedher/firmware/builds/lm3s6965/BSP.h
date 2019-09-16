@@ -38,7 +38,7 @@ class IBSPFactory;
 namespace BSP {
 
 // Non-member functions.
-std::unique_ptr<IBSPFactory> Init(void);
+std::shared_ptr<IBSPFactory> Init(void);
 
 } // namespace BSP
 

@@ -244,7 +244,8 @@ FLOAT_ABI :=
 ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
+GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 endif
 
 # make sure that the GNU-ARM toolset exists...

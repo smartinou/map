@@ -153,27 +153,21 @@ class Factory
     : public IBSPFactory {
 
 public:
-    explicit Factory()
-        : mSSIPinCfg(nullptr)
-        , mSPIDev(nullptr)
-        , mRTCC(nullptr)
-        , mRTCCAO(nullptr)
-        , mFileLogSink(nullptr)
-        , mMotorControl(nullptr)
-        , mPFPPAO(nullptr)
-        , mDisplay(nullptr)
-        , mDisplayMgrAO(nullptr)
-        , mSDC(nullptr) {
-        
-        // Ctor.
-        // SPIDev is required with several devices.
-        mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(0));
-    }
-
-
     virtual ~Factory() {
         // Empty Dtor.
     }
+
+
+    static std::shared_ptr<IBSPFactory> Instance(void) {
+        if (nullptr == Factory::mInstance.get()) {
+            // Assigning the instance this way rather than with std::make_shared<>()
+            // allows to make the Ctor private.
+            BSP::Factory::mInstance = std::shared_ptr<IBSPFactory> (new Factory);
+        }
+
+        return Factory::mInstance;
+    }
+
 
     // IBSPFactory Interface.
     std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) override {
@@ -183,6 +177,13 @@ public:
         }
         return mRTCCAO;
     }
+
+
+    // This could be used to get a temporary opaque pointer to RTCC AO,
+    // For direct posting to AO for instance:
+    //     QP::QActive * lPtr = GetOpaqueRTCCAO();
+    //     lPtr->Post(myEvent);
+    QP::QActive *GetOpaqueRTCCAO(void) override { return mRTCCAO.get(); }
 
 
     std::shared_ptr<SDC> CreateSDC(void) override {
@@ -236,6 +237,23 @@ public:
 private:
     Factory(const Factory&) = delete;
     Factory& operator=(const Factory&) = delete;
+    explicit Factory()
+        : mSSIPinCfg(nullptr)
+        , mSPIDev(nullptr)
+        , mRTCC(nullptr)
+        , mRTCCAO(nullptr)
+        , mFileLogSink(nullptr)
+        , mMotorControl(nullptr)
+        , mPFPPAO(nullptr)
+        , mDisplay(nullptr)
+        , mDisplayMgrAO(nullptr)
+        , mSDC(nullptr) {
+
+        // Ctor.
+        // SPIDev is required with several devices.
+        mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(0));
+    }
+
 
     CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
         switch (aSSIID) {
@@ -351,6 +369,8 @@ private:
     std::shared_ptr<LwIPMgr_AO> mLwIPMgrAO;
 
     static GPIO const mRTCCInterruptPin;
+
+    static std::shared_ptr<IBSPFactory> mInstance;
 };
 
 } // namespace BSP
@@ -383,6 +403,7 @@ static uint8_t const sGPIOPortA_IRQHandler = 0U;
 
 
 // Button class should become GPIO class.
+std::shared_ptr<IBSPFactory> BSP::Factory::mInstance = nullptr;
 GPIO const BSP::Factory::mRTCCInterruptPin(GPIO_PORTA_BASE, GPIO_PIN_6);
 
 
@@ -402,7 +423,7 @@ static GPIO const sUserLEDPin(GPIO_PORTF_BASE, GPIO_PIN_0);
 
 namespace BSP {
 
-std::unique_ptr<IBSPFactory> Init(void) {
+std::shared_ptr<IBSPFactory> Init(void) {
     // NOTE: SystemInit() already called from the startup code,
     // where clock already set (CLOCK_SETUP in lm3s_config.h)
     // SystemCoreClockUpdate() also called from there.
@@ -465,8 +486,7 @@ std::unique_ptr<IBSPFactory> Init(void) {
     //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
 
-    std::unique_ptr<IBSPFactory> lFactory(new Factory);
-    return lFactory;
+    return Factory::Instance();
 }
 
 
@@ -777,11 +797,13 @@ void GPIOPortA_IRQHandler(void) {
     if (lPin & lIntStatus) {
         GPIOPinIntClear(GPIO_PORTA_BASE, lPin);
 
-      // Signal to AO that RTCC generated an interrupt.
-      // This can be done with direct POST to known RTCC AO,
-      // but global publish() offers better decoupling.
-      static QP::QEvt const sRTCCAlarmIntEvent(RTCC_INTERRUPT_SIG);
-      QP::QF::PUBLISH(&sRTCCAlarmIntEvent, 0);
+        // Signal to AO that RTCC generated an interrupt.
+        // This can be done with direct POST to known RTCC AO, but since there's a single instance,
+        // broadcasting the event/signal is just fine too.
+        // Otherwise, would require something like: BSP::Factory::Instance()->GetOpaqueRTCCAO()->Post();
+        static QP::QEvt const sRTCCAlarmIntEvent(RTCC_INTERRUPT_SIG);
+        //QP::QF::PUBLISH(&sRTCCAlarmIntEvent, 0);
+        BSP::Factory::Instance()->GetOpaqueRTCCAO()->POST(&sRTCCAlarmIntEvent, 0);
     }
 }
 
