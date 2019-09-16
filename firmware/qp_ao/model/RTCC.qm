@@ -92,24 +92,24 @@ mRTCC.RdTimeAndDate(mTime, mDate);
 mTemperature = mRTCC.GetTemperature();
 
 RTCC::Event::Init const * const lInitEvent = static_cast&lt;RTCC::Event::Init const * const&gt;(e);
-if (nullptr == lInitEvent-&gt;mCalendarRec) {
-    mCalendarRec = new CalendarRec();
-} else {
+if ((nullptr != lInitEvent) &amp;&amp; (nullptr != lInitEvent-&gt;mCalendarRec)) {
     mCalendarRec = lInitEvent-&gt;mCalendarRec;
-}
+    // Set some defaults if required.
+    if (!mCalendarRec-&gt;IsSane()) {
+        mCalendarRec-&gt;ResetDflt();
+    }
 
-// Set some defaults if required.
-if (!mCalendarRec-&gt;IsSane()) {
-    mCalendarRec-&gt;ResetDflt();
-}
-
-// Check if a Calendar object was passed.
-// If not, create one locally,
+    // Check if a Calendar object was passed.
+    // If not, create one locally,
 #ifdef RTCC_CALENDAR_DBG
-mCalendarRec-&gt;ClrAllEntries();
+    mCalendarRec-&gt;ClrAllEntries();
 #endif // RTCC_CALENDAR_DBG
 
-SetNextCalendarEvent();
+    SetNextCalendarEvent();
+}
+
+// If you haven't passed a Calendar record,
+// no alarms will be set.
 </code>
     </operation>
     <operation name="InitInterrupt" type="void" visibility="0x02" properties="0x00">
@@ -118,16 +118,7 @@ SetNextCalendarEvent();
      <code>// Set interrupt pin and periodic alarm.
 //RTCCInitEvent const * const lRTCCInitEvent = static_cast&lt;RTCCInitEvent const * const&gt;(e);
 static_cast&lt;void&gt;(e);
-mRTCC.SetInterrupt(false);
-
-mRTCC.WrAlarm(
-    IRTCC::ALARM_ID::ALARM_ID_1,
-    mTime,
-    mDate); //DS3234::ALARM_MODE::ONCE_PER_SEC);
-
 mRTCC.SetInterrupt(true);
-// [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
-//GPIOPinIntClear(lGPIOInitEvtPtr-&gt;mIRQGPIOPort, lGPIOInitEvtPtr-&gt;mIRQGPIOPin);
 </code>
     </operation>
     <operation name="WrToNVMem" type="void" visibility="0x02" properties="0x00">
@@ -147,11 +138,11 @@ lAlarmTime = mTime;
 unsigned int lMinutes = mTime.GetMinutes() + 15;
 unsigned int lHours   = mTime.GetHours();
 if (lMinutes &gt;= 60) {
-  lMinutes %= 60;
-  lHours++;
-  if (lHours &gt;= 24) {
-    lHours = 0;
-  }
+    lMinutes %= 60;
+    lHours++;
+    if (lHours &gt;= 24) {
+        lHours = 0;
+    }
 }
 lAlarmTime.SetMinutes(lMinutes);
 lAlarmTime.SetHours(lHours);
@@ -159,31 +150,27 @@ mCalendarPtr-&gt;SetEntry(lCurrentWeekday, lAlarmTime);
 #endif // RTCC_CALENDAR_DBG
 
 bool lIsNextEntry = mCalendarRec-&gt;GetNextEntry(
-  lCurrentWeekday,
-  mTime,
-  lAlarmWeekday,
-  lAlarmTime);
+    lCurrentWeekday,
+    mTime,
+    lAlarmWeekday,
+    lAlarmTime);
 
 if (lIsNextEntry) {
-  // Entry found: use alarm 2 for feeding alarm.
-  mRTCC.WrAlarm(
-    IRTCC::ALARM_ID::ALARM_ID_2,
-    lAlarmTime,
-    lAlarmWeekday);
+    // Entry found: set alarm.
+    mRTCC.WrAlarm(lAlarmTime, lAlarmWeekday);
 } else {
-  // No next entry found:
-  // clear alarm so it does not generate an interrupt.
-  mRTCC.DisableAlarm(IRTCC::ALARM_ID::ALARM_ID_2);
+    // No next entry found:
+    // clear current alarm so it does not generate an interrupt anymore.
+    mRTCC.DisableAlarm();
 }
 </code>
     </operation>
     <statechart properties="0x02">
      <initial target="../1">
-      <action brief="Init();">// FIXME: Determine what to return in case of failure of 'new'.
-//int lResult = InitRTCC(this, e);
-//bool lResult = false;
+      <action brief="Init();">mRTCC.Init();
 
 // Subscribe to signals if any.
+subscribe(RTCC_INTERRUPT_SIG);
 subscribe(RTCC_SET_TIME_SIG);
 subscribe(RTCC_SET_DATE_SIG);
 subscribe(RTCC_SET_TIME_SIG);
@@ -193,8 +180,6 @@ subscribe(RTCC_SAVE_TO_NV_MEMORY_SIG);
 InitDB();
 InitCalendar(e);
 InitInterrupt(e);
-
-//(void)lResult;
 
 // Set logging category.
 //LOGGER.AddCategory(RTCC_LOG, &amp;sLogCategory[0]);
@@ -233,8 +218,8 @@ SetNextCalendarEvent();
        </tran_glyph>
       </tran>
       <tran trig="RTCC_INTERRUPT">
-       <action brief="ReadTimeAndTemp(); PublishTick();">bool lIsCalendarAlarm = mRTCC.IsAlarmOn(IRTCC::ALARM_ID::ALARM_ID_2);
-mRTCC.ClrAlarmFlag(IRTCC::ALARM_ID::ALARM_ID_1);
+       <action brief="ReadTimeAndTemp(); PublishTick();">bool lIsCalendarAlarm = mRTCC.IsAlarmOn();
+mRTCC.AckInterrupt();
 
 // Set data as impure to force refresh of data read from RTCC.
 mRTCC.SetImpure();
@@ -258,7 +243,6 @@ QP::QF::PUBLISH(lTickAlarmEvent, this);
 UARTprintf(&quot;A&quot;);
 #endif // RTCC_DBG
 //LOG_INFO(&amp;sLogCategory[0], &quot;Calendar event.&quot;);
-mRTCC.ClrAlarmFlag(IRTCC::ALARM_ID::ALARM_ID_2);
 RTCC::Event::TimeAndDate * const lCalendarEvent =
     Q_NEW(
         RTCC::Event::TimeAndDate,

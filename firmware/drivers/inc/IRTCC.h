@@ -40,19 +40,10 @@
 //! ...here.
 class IRTCC {
 public:
-    enum class ALARM_ID : unsigned int {
-        ALARM_ID_1 = 0,
-        ALARM_ID_2,
-    };
-
-#ifdef _WIN32
-    typedef enum class ALARM_ID alarm_id_t;
-#else
-    typedef enum ALARM_ID alarm_id_t;
-#endif
-
     virtual ~IRTCC() {}
+    virtual void Init(void) = 0;
     virtual void SetInterrupt(bool aEnable) = 0;
+    virtual void AckInterrupt(void) = 0;
     virtual void SetImpure(void) = 0;
 
     virtual void RdTime(Time &aTimeRef) = 0;
@@ -65,20 +56,11 @@ public:
     virtual void GetTimeAndDate(Time &aTimeRef, Date &aDateRef) = 0;
     virtual float GetTemperature(void) = 0;
 
-    virtual unsigned int GetNumberOfAlarms(void) const = 0;
-    virtual bool WrAlarm(
-        alarm_id_t aAlarmID,
-        Time const &aTimeRef,
-        Date const &aDateRef
-    ) = 0;
-    virtual bool WrAlarm(
-        alarm_id_t aAlarmID,
-        Time const &aTimeRef,
-        Weekday const &aWeekdayRef
-    ) = 0;
-    virtual bool IsAlarmOn(alarm_id_t aAlarmID) = 0;
-    virtual void DisableAlarm(alarm_id_t aAlarmID) = 0;
-    virtual void ClrAlarmFlag(alarm_id_t aAlarmID) = 0;
+    virtual bool WrAlarm(Time const &aTimeRef, Date const &aDateRef) = 0;
+    virtual bool WrAlarm(Time const &aTimeRef, Weekday const &aWeekdayRef) = 0;
+    virtual bool IsAlarmOn(void) = 0;
+    virtual void DisableAlarm(void) = 0;
+    virtual void ClrAlarmFlag(void) = 0;
 
     virtual unsigned int GetNVMemSize(void) const = 0;
     virtual void RdFromNVMem(

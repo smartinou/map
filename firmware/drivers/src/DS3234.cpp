@@ -129,16 +129,14 @@ DS3234::~DS3234() {
 }
 
 
-void DS3234::Init(uint8_t aCtrlReg) {
+void DS3234::Init(void) {
 
     // Configure the RTC to desired state:
     //   -Oscillator enabled.
     //   -Battery-backed square wave disabled.
-    //   -Rate select: 1KHz square wave.
-    //   -Interrupt Control disabled (square wave enabled).
+    //   -Interrupt enabled (square wave disabled).
     //   -Alarm 'N' disabled.
-    mRegMap.mCtrl  = 0x00;
-    mRegMap.mCtrl |= aCtrlReg;
+    mRegMap.mCtrl = Ctrl::INTCn;
 
     // Disable all and clear all flags in status regiser.
     mRegMap.mStatus = 0x00;
@@ -226,33 +224,46 @@ void DS3234::IsValid(void) {
 
 void DS3234::SetInterrupt(bool aEnable) {
 
-    Time lTime;
-    Date lDate;
-    WrAlarm(
-        IRTCC::ALARM_ID::ALARM_ID_1,
-        lTime,
-        lDate
-    ); //DS3234::ALARM_MODE::ONCE_PER_SEC);
-
-    // TODO: do something with the argument.
-    // TODO: This should be handled by an InterruptGPIO class,
-    // derived from GPIO.
     IntDisable(mInterruptNumber);
-    GPIOPinTypeGPIOInput(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
-    GPIOIntTypeSet(
-        mInterruptGPIO.GetPort(),
-        mInterruptGPIO.GetPin(),
-        GPIO_FALLING_EDGE
-    );
-    GPIOPadConfigSet(
-        mInterruptGPIO.GetPort(),
-        mInterruptGPIO.GetPin(),
-        GPIO_STRENGTH_2MA,
-        GPIO_PIN_TYPE_STD
-    );
-    GPIOPinIntEnable(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
-    // [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
-    //GPIOPinIntClear(mInterrupt->GetPort(), lGPIOInitEvtPtr->mIRQGPIOPin);
+    if (aEnable) {
+        GPIOPinTypeGPIOInput(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+        GPIOIntTypeSet(
+            mInterruptGPIO.GetPort(),
+            mInterruptGPIO.GetPin(),
+            GPIO_FALLING_EDGE
+        );
+        GPIOPadConfigSet(
+            mInterruptGPIO.GetPort(),
+            mInterruptGPIO.GetPin(),
+            GPIO_STRENGTH_2MA,
+            GPIO_PIN_TYPE_STD
+        );
+        GPIOPinIntEnable(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+        // [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
+        //GPIOPinIntClear(mInterrupt->GetPort(), lGPIOInitEvtPtr->mIRQGPIOPin);
+
+        IntEnable(mInterruptNumber);
+
+        // Alarm1 is dedicated to periodic interrupt.
+        Time lTime;
+        Date lDate;
+        WrAlarm(
+            ALARM_ID::ALARM_ID_1,
+            lTime,
+            lDate,
+            // This is also where we can throttle down the frequency of clock updates.
+            // Instead of using square wave, the alarm is triggered periodically.
+            ALARM_MODE::ONCE_PER_SEC
+        );
+    }
+}
+
+
+void DS3234::AckInterrupt(void) {
+    // It is assumed that all interrupts where serviced at this point.
+    // Clear all flags.
+    ClrAlarmFlag(ALARM_ID::ALARM_ID_1);
+    ClrAlarmFlag(ALARM_ID::ALARM_ID_2);
 }
 
 
@@ -380,43 +391,18 @@ float DS3234::GetTemperature(void) {
 }
 
 
-bool DS3234::WrAlarm(
-    IRTCC::alarm_id_t aAlarmID,
-    Time const &aTime,
-    Date const &aDate
-) {//,enum ALARM_MODE aAlarmMode) {
-  
-    alarm_mode_t aAlarmMode =  ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH;
-    // Fill alarm structure to write to RTC.
-    switch (aAlarmID) {
-    case ALARM_ID::ALARM_ID_1:
-        mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
-        FillAlarmStruct(mRegMap.mAlarm1, aTime, aDate);
-        FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
-    break;
+bool DS3234::WrAlarm(Time const &aTime, Date const &aDate) {
 
-    case ALARM_ID::ALARM_ID_2:
-        FillAlarmStruct(mRegMap.mAlarm2, aTime, aDate);
-        FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
-    break;
-
-    default:
-        return false;
-    }
-
-    // Send alarm and control portion of the structure to the RTC.
-    SetAlarm(aAlarmID);
-    TxAlarmStruct(aAlarmID);
-    return true;
+    // Public alarm is triggered on time match.
+    // Alarm1 is dedicated to periodic time/date interrupt.
+    return WrAlarm(ALARM_ID::ALARM_ID_2, aTime, aDate, ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH);
 }
 
 
-bool DS3234::WrAlarm(
-    IRTCC::alarm_id_t aAlarmID,
-    Time const &aTime,
-    Weekday const &aWeekdayRef
-) {//,enum ALARM_MODE aAlarmMode) {
+bool DS3234::WrAlarm(Time const &aTime, Weekday const &aWeekdayRef) {
 
+    // Hard-coded to use alarm2, but provides template for use with any alarm.
+    alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
     alarm_mode_t aAlarmMode =  ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
     // Fill alarm structure to write to RTC.
     switch (aAlarmID) {
@@ -443,8 +429,10 @@ bool DS3234::WrAlarm(
 }
 
 
-bool DS3234::IsAlarmOn(IRTCC::alarm_id_t aAlarmID) {
+bool DS3234::IsAlarmOn(void) {
 
+    // Hard-coded to use alarm2, but provides template for use with any alarm.
+    alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
         if ((DS3234::AF1  & GetStatus()) && (DS3234::AEI1 & GetCtrl())) {
@@ -465,8 +453,10 @@ bool DS3234::IsAlarmOn(IRTCC::alarm_id_t aAlarmID) {
 }
 
 
-void DS3234::DisableAlarm(IRTCC::alarm_id_t aAlarmID) {
+void DS3234::DisableAlarm(void) {
 
+    // Hard-coded to use alarm2, but provides template for use with any alarm.
+    alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
     // Only clear interrupt.
     // We don't care if the Alarm fields are set,
     // as long as the interrupt is not generated.
@@ -484,22 +474,9 @@ void DS3234::DisableAlarm(IRTCC::alarm_id_t aAlarmID) {
 }
 
 
-void DS3234::ClrAlarmFlag(IRTCC::alarm_id_t aAlarmID) {
+void DS3234::ClrAlarmFlag(void) {
 
-    // Only clear interrupt.
-    // We don't care if the Alarm fields are set,
-    // as long as the interrupt is not generated.
-    switch (aAlarmID) {
-    case ALARM_ID::ALARM_ID_1: mRegMap.mStatus &= ~AF1; break;
-    case ALARM_ID::ALARM_ID_2: mRegMap.mStatus &= ~AF2; break;
-    }
-
-    mSPIDev.WrData(
-        L_WR_ADDR(mStatus),
-        const_cast<uint8_t const *>(&mRegMap.mStatus),
-        sizeof(rtcc_reg_t),
-        mSPICfg
-    );
+    ClrAlarmFlag(ALARM_ID::ALARM_ID_2);
 }
 
 
@@ -668,14 +645,14 @@ void DS3234::FillAlarmStruct(
 }
 
 
-void DS3234::FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const   &aTime) {
+void DS3234::FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const &aTime) {
 
     unsigned int lMinutes = BinaryToBCD(aTime.GetMinutes());
     unsigned int lHours   = BinaryToBCD(aTime.GetHours());
     if (!aTime.Is24H()) {
         lHours |= HoursFields::H12_24_n;
         if (aTime.IsPM()) {
-        lHours |= HoursFields::PM_AM_n;
+            lHours |= HoursFields::PM_AM_n;
         }
     }
 
@@ -718,7 +695,7 @@ void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMod
 }
 
 
-void DS3234::TxAlarmStruct(IRTCC::alarm_id_t aAlarmID) {
+void DS3234::TxAlarmStruct(alarm_id_t aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -751,12 +728,62 @@ void DS3234::TxAlarmStruct(IRTCC::alarm_id_t aAlarmID) {
 }
 
 
-void DS3234::SetAlarm(IRTCC::alarm_id_t aAlarmID) {
+void DS3234::SetAlarm(alarm_id_t aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1: mRegMap.mCtrl |= AEI1; break;
     case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl |= AEI2; break;
     }
+}
+
+
+void DS3234::ClrAlarmFlag(alarm_id_t aAlarmID) {
+
+    // Only clear interrupt.
+    // We don't care if the Alarm fields are set,
+    // as long as the interrupt is not generated.
+    switch (aAlarmID) {
+    case ALARM_ID::ALARM_ID_1: mRegMap.mStatus &= ~AF1; break;
+    case ALARM_ID::ALARM_ID_2: mRegMap.mStatus &= ~AF2; break;
+    }
+
+    mSPIDev.WrData(
+        L_WR_ADDR(mStatus),
+        const_cast<uint8_t const *>(&mRegMap.mStatus),
+        sizeof(rtcc_reg_t),
+        mSPICfg
+    );
+}
+
+
+bool DS3234::WrAlarm(
+    alarm_id_t aAlarmID,
+    Time const &aTime,
+    Date const &aDate,
+    enum ALARM_MODE aAlarmMode
+) {
+
+    // Fill alarm structure to write to RTC.
+    switch (aAlarmID) {
+    case ALARM_ID::ALARM_ID_1:
+        mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
+        FillAlarmStruct(mRegMap.mAlarm1, aTime, aDate);
+        FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
+        break;
+
+    case ALARM_ID::ALARM_ID_2:
+        FillAlarmStruct(mRegMap.mAlarm2, aTime, aDate);
+        FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
+        break;
+
+    default:
+        return false;
+    }
+
+    // Send alarm and control portion of the structure to the RTC.
+    SetAlarm(aAlarmID);
+    TxAlarmStruct(aAlarmID);
+    return true;
 }
 
 

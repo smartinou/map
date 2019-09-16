@@ -60,7 +60,9 @@ class DS3234
     ~DS3234();
 
     // RTCC Interface.
+    void Init(void) override;
     void SetInterrupt(bool aEnable) override;
+    void AckInterrupt(void) override;
     void SetImpure(void) override { mIsImpure = true; }
 
     // Polled API.
@@ -74,32 +76,29 @@ class DS3234
     void GetTimeAndDate(Time &aTime, Date &aDate) override;
     float GetTemperature(void) override;
 
-    unsigned int GetNumberOfAlarms(void) const override { return 2; }
-    bool WrAlarm(
-        IRTCC::alarm_id_t aAlarmID,
-        Time const &aTime,
-        Date const &aDate
-    ) override;
-    bool WrAlarm(
-        IRTCC::alarm_id_t aAlarmID,
-        Time const &aTime,
-        Weekday const &aWeekday
-    ) override;
-    bool IsAlarmOn(IRTCC::alarm_id_t aAlarmID) override;
-    void DisableAlarm(IRTCC::alarm_id_t aAlarmID) override;
-    void ClrAlarmFlag(IRTCC::alarm_id_t aAlarmID) override;
+    bool WrAlarm(Time const &aTime, Date const &aDate) override;
+    bool WrAlarm(Time const &aTime, Weekday const &aWeekday) override;
+    bool IsAlarmOn(void) override;
+    void DisableAlarm(void) override;
+    void ClrAlarmFlag(void) override;
 
     unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
     void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
     void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
 
-    // Local API.
-    // FIXME: goes against LISP todo so.
-    // MOVE UP TO INTERFACE.
-    void Init(uint8_t aCtrlRef);
-
 private:
-    enum class ALARM_MODE {
+    enum class ALARM_ID : unsigned int {
+        ALARM_ID_1 = 0,
+        ALARM_ID_2,
+    };
+
+#ifdef _WIN32
+    typedef enum class ALARM_ID alarm_id_t;
+#else
+    typedef enum ALARM_ID alarm_id_t;
+#endif
+
+    enum class ALARM_MODE : unsigned int {
         ONCE_PER_SEC = 0,
         WHEN_SECS_MATCH,
         ONCE_PER_MINUTE = WHEN_SECS_MATCH,
@@ -252,9 +251,17 @@ private:
     );
     void FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const &aTimeRef);
     void FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMode);
-    void TxAlarmStruct(IRTCC::alarm_id_t aAlarmID);
+    void TxAlarmStruct(alarm_id_t aAlarmID);
 
-    void SetAlarm(IRTCC::alarm_id_t aAlarmID);
+    void SetAlarm(alarm_id_t aAlarmID);
+    void ClrAlarmFlag(alarm_id_t aAlarmID);
+    bool WrAlarm(
+        alarm_id_t aAlarmID,
+        Time const &aTime,
+        Date const &aDate,
+        enum ALARM_MODE aAlarmMode
+    );
+
 
     uint8_t GetCtrl(void);
     uint8_t GetStatus(void);
