@@ -47,6 +47,7 @@
 //*****************************************************************************
 typedef unsigned char tBoolean;
 
+#ifndef __cplusplus
 #ifndef true
 #define true 1
 #endif
@@ -54,6 +55,8 @@ typedef unsigned char tBoolean;
 #ifndef false
 #define false 0
 #endif
+
+#endif // __cplusplus
 
 //*****************************************************************************
 //
