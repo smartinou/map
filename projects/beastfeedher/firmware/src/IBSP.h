@@ -52,7 +52,9 @@ public:
 
     virtual std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) = 0;
+    virtual QP::QActive *GetOpaquePFPPAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) = 0;
+    virtual QP::QActive *GetOpaqueDisplayMgrAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) = 0;
 };
 

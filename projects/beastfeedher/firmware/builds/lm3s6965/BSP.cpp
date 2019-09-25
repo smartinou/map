@@ -213,6 +213,9 @@ public:
     }
 
 
+    QP::QActive *GetOpaquePFPPAO(void) override { return mPFPPAO.get(); }
+
+
     std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) override {
         if (mDisplayMgrAO.get() == nullptr) {
             mDisplay = CreateDisplay();
@@ -220,6 +223,9 @@ public:
         }
         return mDisplayMgrAO;
     }
+
+
+    QP::QActive *GetOpaqueDisplayMgrAO(void) override { return mDisplayMgrAO.get(); }
 
 
     std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
@@ -411,7 +417,7 @@ namespace BSP {
 
 // Those variables are used locally in various stubs and IRQ handlers.
 static Button const mManualFeedButton(GPIO_PORTC_BASE, GPIO_PIN_4, INT_GPIOC, 0);
-static Button const mTimedFeedButton(GPIO_PORTD_BASE, GPIO_PIN_4, INT_GPIOC, 0);
+static Button const mTimedFeedButton(GPIO_PORTD_BASE, GPIO_PIN_4, INT_GPIOD, 0);
 static Button const mSelectButton(GPIO_PORTF_BASE, GPIO_PIN_1, INT_GPIOF, 0);
 
 static GPIO const sUserLEDPin(GPIO_PORTF_BASE, GPIO_PIN_0);
@@ -574,7 +580,7 @@ void QP::QF::onStartup(void) {
     SysTickIntEnable();
     SysTickEnable();
 
-    // assing all priority bits for preemption-prio. and none to sub-prio.
+    // Assign all priority bits for preemption-prio. and none to sub-prio.
     //NVIC_SetPriorityGrouping(0U); from CMSIS
     IntPriorityGroupingSet(0U);
     IntPrioritySet(INT_GPIOA, 0x20); //GPIOPORTA_PRIO);
@@ -600,6 +606,51 @@ void QP::QF::onStartup(void) {
 #ifdef Q_SPY
     // UART0 interrupt used for QS-RX.
     NVIC_EnableIRQ(UART0_IRQn);
+#endif // Q_SPY
+}
+
+
+//............................................................................
+// called with interrupts disabled, see NOTE01
+void QP::QV::onIdle(void) {
+
+    // Toggle LED for visual effect.
+    BSP::SetUserLED();
+    BSP::ClrUserLED();
+
+#ifdef Q_SPY
+    QF_INT_ENABLE();
+
+    // Parse all the received bytes.
+    QS::rxParse();
+
+    // TX done?
+    if (UARTSpaceAvail(UART0_BASE)) {
+        // Max bytes we can accept.
+        uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
+
+        QF_INT_DISABLE();
+        // Try to get next block to transmit.
+        uint8_t const *lBlockPtr = QS::getBlock(&lFIFOLen);
+        QF_INT_ENABLE();
+
+        // Any bytes in the block?
+        while (lFIFOLen-- != 0U) {
+            // Put into the FIFO.
+            UARTCharPut(UART0_BASE, *lBlockPtr++);
+        }
+    }
+
+#elif defined NDEBUG
+    // Put the CPU and peripherals to the low-power mode.
+    // you might need to customize the clock management for your application,
+    // see the datasheet for your particular Cortex-M3 MCU.
+    //
+    // Atomically go to sleep and enable interrupts.
+    QV_CPU_SLEEP();
+#else
+    // Just enable interrupts.
+    QF_INT_ENABLE();
 #endif // Q_SPY
 }
 
@@ -637,51 +688,6 @@ bool QP::QS::onStartup(void const *aArgPtr) {
 
     // Return success.
     return true;
-}
-
-
-//............................................................................
-// called with interrupts disabled, see NOTE01
-void QP::QV::onIdle(void) {
-
-    // Toggle LED for visual effect.
-    BSP::SetUserLED();
-    BSP::ClrUserLED();
-
-#ifdef Q_SPY
-    QF_INT_ENABLE();
-
-    // Parse all the received bytes.
-    QS::rxParse();
-
-    // TX done?
-    if (UARTSpaceAvail(UART0_BASE)) {
-        // Max bytes we can accept.
-        uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
-
-        QF_INT_DISABLE();
-        // Try to get next block to transmit.
-        uint8_t const *lBlockPtr = QS::getBlock(&lFIFOLen);
-        QF_INT_ENABLE();
-
-        // Any bytes in the block?
-        while (lFIFOLen-- != 0U) {
-        // Put into the FIFO.
-        UARTCharPut(UART0_BASE, *lBlockPtr++);
-        }
-    }
-
-#elif defined NDEBUG
-    // Put the CPU and peripherals to the low-power mode.
-    // you might need to customize the clock management for your application,
-    // see the datasheet for your particular Cortex-M3 MCU.
-    //
-    // Atomically go to sleep and enable interrupts.
-    QV_CPU_SLEEP();
-#else
-    // Just enable interrupts.
-    QF_INT_ENABLE();
-#endif // Q_SPY
 }
 
 
@@ -822,10 +828,15 @@ void GPIOPortC_IRQHandler(void) {
         static PFPP::Event::ManualFeedCmd const sOnEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
         static PFPP::Event::ManualFeedCmd const sOffEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
         // Decouple using framework PUBLISH() method instead of direct posting to AO.
-        if (Button::PRESSED == BSP::mManualFeedButton.GetGPIOPinState()) {
-            QP::QF::PUBLISH(&sOnEvt, 0);
-        } else {
-            QP::QF::PUBLISH(&sOffEvt, 0);
+        QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
+        if (nullptr != lPFPPAO) {
+            if (Button::IS_HIGH == BSP::mManualFeedButton.GetGPIOPinState()) {
+                //QP::QF::PUBLISH(&sOnEvt, 0);
+                lPFPPAO->POST(&sOnEvt, 0);
+            } else {
+                //QP::QF::PUBLISH(&sOffEvt, 0);
+                lPFPPAO->POST(&sOffEvt, 0);
+            }
         }
     }
 }
@@ -842,9 +853,13 @@ void GPIOPortD_IRQHandler(void) {
     if (lPin & lIntStatus) {
         GPIOPinIntClear(GPIO_PORTD_BASE, lPin);
         // Only interested in the pin coming high.
-        if (Button::PRESSED == BSP::mTimedFeedButton.GetGPIOPinState()) {
-            static PFPP::Event::TimedFeedCmd const sEvt(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
-            QP::QF::PUBLISH(&sEvt, 0);
+        QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
+        if (nullptr != lPFPPAO) {
+            if (Button::IS_HIGH == BSP::mTimedFeedButton.GetGPIOPinState()) {
+                static PFPP::Event::TimedFeedCmd const sEvt(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
+                //QP::QF::PUBLISH(&sEvt, 0);
+                lPFPPAO->POST(&sEvt, 0);
+            }
         }
     }
 }
@@ -861,10 +876,13 @@ void GPIOPortF_IRQHandler(void) {
     if (lPin & lIntStatus) {
         GPIOPinIntClear(GPIO_PORTF_BASE, lPin);
         // Only interested in the pin coming high.
-        if (Button::PRESSED == BSP::mSelectButton.GetGPIOPinState()) {
-            static QP::QEvt const sEvt(DISPLAY_REFRESH_SIG);
-            //DisplayMgr_AO::AOInstance().POST(&sEvt, 0);
-            QP::QF::PUBLISH(&sEvt, 0);
+        QP::QActive * const lDisplayMgrAO = BSP::Factory::Instance()->GetOpaqueDisplayMgrAO();
+        if (nullptr != lDisplayMgrAO) {
+            if (Button::IS_HIGH == BSP::mSelectButton.GetGPIOPinState()) {
+                static QP::QEvt const sEvt(DISPLAY_REFRESH_SIG);
+                QP::QF::PUBLISH(&sEvt, 0);
+                lDisplayMgrAO->POST(&sEvt, 0);
+            }
         }
     }
 }

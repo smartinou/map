@@ -37,6 +37,11 @@
 class Button
     : public GPIO {
 public:
+    enum State {
+        IS_LOW = 0,
+        IS_HIGH = 1
+    };
+
     Button(
         unsigned long const aPort,
         unsigned int  const aPin,
@@ -49,16 +54,11 @@ public:
         unsigned int  const aID
     );
 
-    unsigned int GetGPIOPinState(void) const;
+    enum State GetGPIOPinState(void) const;
 
     void DisableInt(void) const;
     void EnableInt(void) const;
     void ClrInt(void) const;
-
-    enum State {
-        RELEASED = 0,
-        PRESSED  = 1
-    };
 
 private:
     static unsigned int PortToSysClockPeripheral(unsigned long aPort);

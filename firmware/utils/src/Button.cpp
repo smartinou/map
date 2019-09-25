@@ -87,24 +87,19 @@ Button::Button(
     GPIO          const &aGPIO,
     unsigned long const aIntNbr,
     unsigned int  const aID
-)
-    : GPIO(aGPIO)
-    , mIntNbr(aIntNbr)
-    , mID(aID) {
-
+)   : Button(aGPIO.GetPort(), aGPIO.GetPin(), aIntNbr, aID) {
     // Ctor body left intentionally empty.
 }
 
 
-unsigned int Button::GetGPIOPinState(void) const {
+Button::State Button::GetGPIOPinState(void) const {
 
     unsigned long lGPIOPin = GPIOPinRead(GetPort(), GetPin());
-    unsigned int  lState = RELEASED;
     if (lGPIOPin & GetPin()) {
-        lState = PRESSED;
+        return IS_HIGH;
     }
 
-    return lState;
+    return IS_LOW;
 }
 
 
