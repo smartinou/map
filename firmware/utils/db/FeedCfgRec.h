@@ -45,13 +45,15 @@ public:
     void ResetDflt(void) override;
 
     // Extended object's interface.
+    uint8_t GetManualFeedWaitPeriod(void) const;
+    uint8_t GetManualFeedMaxFeedPeriod(void) const;
     uint8_t GetTimedFeedPeriod(void) const;
-    bool    IsWebFeedingEnable(void) const;
-    bool    IsAutoPetFeedingEnable(void) const;
+    bool IsManualFeedEnable(void) const;
+    bool IsTimedFeedEnable(void) const;
 
     void SetTimedFeedPeriod(uint8_t aPeriod);
-    void SetIsWebFeedingEnabled(bool aIsEnabled);
-    void SetIsAutoPetFeedingEnabled(bool aIsEnabled);
+    void SetManualFeedEnabled(bool aIsEnabled);
+    void SetTimedFeedEnabled(bool aIsEnabled);
 
 private:
     // DBRec.
@@ -61,9 +63,11 @@ private:
 
     struct RecData {
         struct BaseRec mBase;
+        uint8_t mManualFeedWaitPeriod;
+        uint8_t mManualFeedMaxFeedPeriod;
         uint8_t mTimedFeedPeriod;
-        bool    mIsWebFeedingEnable;
-        bool    mIsAutoPetFeedingEnable;
+        bool mIsManualFeedEnable;
+        bool mIsTimedFeedEnable;
     };
 
     struct RecData mRec;

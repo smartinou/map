@@ -95,9 +95,9 @@ enum KernelAwareISRs {
 Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 
 
+#define UART_BAUD_RATE      115200U
 #ifdef Q_SPY
 
-#define UART_BAUD_RATE      115200U
 #define UART_TXFIFO_DEPTH   16U
 
 #endif // Q_SPY
@@ -207,7 +207,7 @@ public:
     std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) override {
         if (mPFPPAO.get() == nullptr) {
             mMotorControl = CreateMotorControl();
-            mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(aFeedCfgRec, *mMotorControl);
+            mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(*mMotorControl, &aFeedCfgRec);
         }
         return mPFPPAO;
     }

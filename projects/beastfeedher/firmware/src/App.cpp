@@ -112,6 +112,7 @@ bool App::Init(void) {
         0U,
         &lRTCCInitEvent
     );
+
 #if 0
     // Create SDC instance to use in FS stubs.
     mSDCDrive0 = mFactory->CreateSDC();
@@ -134,6 +135,7 @@ bool App::Init(void) {
             0U
         );
     }
+#endif
 
     auto lPFPPMgr_AO = mFactory->CreatePFPPAO(*App::sFeedCfgRec);
     lPFPPMgr_AO->start(
@@ -143,7 +145,7 @@ bool App::Init(void) {
         nullptr,
         0U
     );
-
+#if 0
 #if 0
     // Network makes sense in the following cases:
     // -if we use support web pages.
@@ -177,7 +179,8 @@ bool App::Init(void) {
     }
 #endif
 
-    auto lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();
+
+    std::shared_ptr<QP::QActive> lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();
     lDisplayMgr_AO->start(
         5U,
         mDisplayMgrEventQueue,

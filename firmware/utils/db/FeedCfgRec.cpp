@@ -87,9 +87,11 @@ void FeedCfgRec::ResetDflt(void) {
     mRec.mBase.mMagic[1] = sMagic[1];
     mRec.mBase.mMagic[2] = sMagic[2];
 
-    mRec.mTimedFeedPeriod = 2;
-    mRec.mIsWebFeedingEnable     = true;
-    mRec.mIsAutoPetFeedingEnable = true;
+    mRec.mManualFeedWaitPeriod = 2;
+    mRec.mManualFeedMaxFeedPeriod = 5;
+    mRec.mTimedFeedPeriod = 4;
+    mRec.mIsManualFeedEnable = true;
+    mRec.mIsTimedFeedEnable = true;
 
     mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
     SetIsDirty();
@@ -118,18 +120,29 @@ void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
 // Start of child methods.
 //
 
+uint8_t FeedCfgRec::GetManualFeedWaitPeriod(void) const {
+    return mRec.mManualFeedWaitPeriod;
+}
+
+
+uint8_t FeedCfgRec::GetManualFeedMaxFeedPeriod(void) const
+{
+    return mRec.mManualFeedMaxFeedPeriod;
+}
+
+
 uint8_t FeedCfgRec::GetTimedFeedPeriod(void) const {
     return mRec.mTimedFeedPeriod;
 }
 
 
-bool FeedCfgRec::IsWebFeedingEnable(void) const {
-    return mRec.mIsWebFeedingEnable;
+bool FeedCfgRec::IsManualFeedEnable(void) const {
+    return mRec.mIsManualFeedEnable;
 }
 
 
-bool FeedCfgRec::IsAutoPetFeedingEnable(void) const {
-    return mRec.mIsAutoPetFeedingEnable;
+bool FeedCfgRec::IsTimedFeedEnable(void) const {
+    return mRec.mIsTimedFeedEnable;
 }
 
 
@@ -138,13 +151,13 @@ void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
 }
 
 
-void FeedCfgRec::SetIsWebFeedingEnabled(bool aIsEnabled) {
-    mRec.mIsWebFeedingEnable = aIsEnabled;
+void FeedCfgRec::SetManualFeedEnabled(bool aIsEnabled) {
+    mRec.mIsManualFeedEnable = aIsEnabled;
 }
 
 
-void FeedCfgRec::SetIsAutoPetFeedingEnabled(bool aIsEnabled) {
-    mRec.mIsAutoPetFeedingEnable = aIsEnabled;
+void FeedCfgRec::SetTimedFeedEnabled(bool aIsEnabled) {
+    mRec.mIsTimedFeedEnable = aIsEnabled;
 }
 
 

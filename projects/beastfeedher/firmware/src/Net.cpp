@@ -473,7 +473,7 @@ static uint16_t SSIHandler(
             aInsertStr,
             aInsertStrLen,
             "feeding_pad\" value=\"y\"",
-            Net::sFeedCfgRec->IsAutoPetFeedingEnable()
+            Net::sFeedCfgRec->IsTimedFeedEnable()
         );
     }
     case SSI_TAG_IX_CFG_PAD_DISABLE: {
@@ -482,7 +482,7 @@ static uint16_t SSIHandler(
             aInsertStr,
             aInsertStrLen,
             "feeding_pad\" value=\"n\"",
-            !Net::sFeedCfgRec->IsAutoPetFeedingEnable()
+            !Net::sFeedCfgRec->IsTimedFeedEnable()
         );
     }
     case SSI_TAG_IX_CFG_FEED_TIME: {
@@ -828,9 +828,9 @@ static char const *DispCfg(
         for (int lIx = 0; lIx < aParamsQty; ++lIx) {
             if (0 == strcmp(aParamsVec[lIx], "feeding_button")) {
                 if ('y' == *aValsVec[lIx]) {
-                    Net::sFeedCfgRec->SetIsAutoPetFeedingEnabled(true);
+                    Net::sFeedCfgRec->SetTimedFeedEnabled(true);
                 } else {
-                    Net::sFeedCfgRec->SetIsAutoPetFeedingEnabled(false);
+                    Net::sFeedCfgRec->SetTimedFeedEnabled(false);
                 }
             } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
                 unsigned int lFeedingTime = 0;

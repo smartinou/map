@@ -16,34 +16,22 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mFeedTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
      <documentation>Timer for fixed and time-capped feeding periods.</documentation>
     </attribute>
-    <attribute name="mManualWaitPeriod" type="QP::QTimeEvtCtr const" visibility="0x02" properties="0x00">
-     <documentation>The debouncing/wait period for manual timed feed.</documentation>
-    </attribute>
-    <attribute name="mManualMaxFeedPeriod" type="QP::QTimeEvtCtr const" visibility="0x02" properties="0x00">
-     <documentation>The capped/maximum feed period for manual feed.</documentation>
-    </attribute>
-    <attribute name="mTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
-     <documentation>The programmable timed-feeding period.</documentation>
-    </attribute>
-    <attribute name="mFeedCfgRec" type="FeedCfgRec const &amp;" visibility="0x02" properties="0x00">
-     <documentation>A pointer to the Feeder configuration record.</documentation>
-    </attribute>
     <attribute name="mMotorControl" type="IMotorControl &amp;" visibility="0x02" properties="0x00">
      <documentation>Motor controller for activating feeder.</documentation>
     </attribute>
+    <attribute name="mFeedCfgRec" type="FeedCfgRec const * const" visibility="0x02" properties="0x00">
+     <documentation>A pointer to the Feeder configuration record.</documentation>
+    </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
-     <parameter name="aFeedCfgRec" type="FeedCfgRec const &amp;"/>
      <parameter name="aMotorControl" type="IMotorControl &amp;"/>
+     <parameter name="aFeedCfgRec" type="FeedCfgRec const * const"/>
      <code>    : QP::QActive(Q_STATE_CAST(&amp;PFPP::AO::Mgr_AO::initial))
     , mDeferredEventQueueSto{nullptr}
     , mDeferredEventQueue()
     , mFeedTimer(this, FEED_MGR_TIMEOUT_SIG, 0U)
-    , mManualWaitPeriod(2 * BSP::TICKS_PER_SEC)
-    , mManualMaxFeedPeriod(10 * BSP::TICKS_PER_SEC)
-    , mTimedFeedPeriod(4 * BSP::TICKS_PER_SEC)
-    , mFeedCfgRec(aFeedCfgRec)
     , mMotorControl(aMotorControl)
+    , mFeedCfgRec(aFeedCfgRec)
 
 // Ctor body left empty.</code>
     </operation>
@@ -68,16 +56,53 @@ mMotorControl.TurnOnCW();</code>
      <code>// Stop feeder.
 mMotorControl.TurnOff();</code>
     </operation>
+    <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+     <documentation>Returns the manual waiting period as per FeedCfgRec if any, or default value.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;GetManualFeedWaitPeriod() * BSP::TICKS_PER_SEC;
+}
+
+static QP::QTimeEvtCtr constexpr sManualWaitPeriod = 2 * BSP::TICKS_PER_SEC;
+return sManualWaitPeriod;</code>
+    </operation>
+    <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+     <documentation>Returns the manual feed period as per FeedCfgRec if any, or default value.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;GetManualFeedMaxFeedPeriod() * BSP::TICKS_PER_SEC;
+}
+
+static QP::QTimeEvtCtr constexpr sManualMaxFeedPeriod = 10 * BSP::TICKS_PER_SEC;
+return sManualMaxFeedPeriod;</code>
+    </operation>
+    <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+     <documentation>Returns the timed feed period as per FeedCfgRec if any, or default value.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;GetTimedFeedPeriod() * BSP::TICKS_PER_SEC;
+}
+
+static QP::QTimeEvtCtr constexpr sTimedFeedPeriod = 4 * BSP::TICKS_PER_SEC;
+return sTimedFeedPeriod;</code>
+    </operation>
+    <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+     <documentation>Returns if manual feed is allowed or not.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;IsManualFeedEnable();
+}
+
+return true;</code>
+    </operation>
+    <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+     <documentation>Returns if timed feed is allowed or not.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;IsTimedFeedEnable();
+}
+
+return true;</code>
+    </operation>
     <statechart properties="0x02">
      <initial target="../1">
-      <action brief="Init();">#if 0
-PFPP::Event::Init const * const lInitEvent = static_cast&lt;PFPP::Event::Init const * const&gt;(e);
-mFeedCfgRec = lInitEvent-&gt;mFeedCfgRec;
-// Store reference to a feeder unit, or a motor controller.
-me-&gt;mMotorCtrlPtr = new TB6612(*lBFHInitEvtPtr-&gt;mMotorCtrlIn1Ptr,
-                             *lBFHInitEvtPtr-&gt;mMotorCtrlIn2Ptr,
-                             *lBFHInitEvtPtr-&gt;mMotorCtrlPWMPtr);
-#endif
+      <action brief="Init();">//PFPP::Event::Init const * const lInitEvent = static_cast&lt;PFPP::Event::Init const * const&gt;(e);
+
 StopFeeder();
 
 // Initialize the QF queue for deferred feed requests.
@@ -85,6 +110,8 @@ mDeferredEventQueue.init(mDeferredEventQueueSto, Q_DIM(mDeferredEventQueueSto));
 
 // Subscribe to signals if any.
 subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
+subscribe(FEED_MGR_MANUAL_FEED_CMD_SIG);
+subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
 
 // Set logging category.
 //LOGGER.AddCategory(FEED_MGR_LOG_SIG, &amp;sLogCategory[0]);
@@ -94,17 +121,18 @@ subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
       </initial_glyph>
      </initial>
      <state name="Running">
-      <initial target="../4">
+      <documentation>Top state.</documentation>
+      <initial target="../5">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
        </initial_glyph>
       </initial>
-      <tran trig="FEED_MGR_TIMEOUT" target="../4">
+      <tran trig="FEED_MGR_TIMEOUT" target="../5">
        <tran_glyph conn="4,28,3,3,28">
         <action box="0,-2,22,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="FEED_MGR_TIMED_FEED_CMD, RTCC_CALENDAR_EVENT_ALARM" target="../6">
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../7">
        <tran_glyph conn="4,88,3,3,28">
         <action box="0,-2,28,4"/>
        </tran_glyph>
@@ -112,13 +140,13 @@ subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
        <action brief="GetState();">PFPP::Event::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::ManualFeedCmd const * const&gt;(e);
 </action>
-       <choice target="../../5">
-        <guard brief="State == On">lEvent-&gt;mIsActive == true</guard>
+       <choice target="../../6">
+        <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
         <choice_glyph conn="18,46,5,3,14">
-         <action box="1,-2,10,2"/>
+         <action box="0,-2,24,2"/>
         </choice_glyph>
        </choice>
-       <choice target="../../4">
+       <choice target="../../5">
         <guard brief="else"/>
         <choice_glyph conn="18,46,4,3,-16,14">
          <action box="0,-16,10,2"/>
@@ -126,6 +154,17 @@ subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
        </choice>
        <tran_glyph conn="4,46,3,-1,14">
         <action box="0,1,25,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="FEED_MGR_TIMED_FEED_CMD">
+       <choice target="../../7">
+        <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
+        <choice_glyph conn="18,94,5,3,14">
+         <action box="1,0,13,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="4,94,3,-1,14">
+        <action box="0,-2,26,2"/>
        </tran_glyph>
       </tran>
       <state name="Waiting">
@@ -162,7 +201,8 @@ subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
        </tran>
        <state name="WaitPeriod">
         <documentation>The wait period before starting the feeder.</documentation>
-        <entry brief="StartTimer(WaitTime);">mFeedTimer.armX(mManualWaitPeriod);</entry>
+        <entry brief="StartTimer(WaitTime);">QP::QTimeEvtCtr lManualWaitPeriod = GetManualWaitPeriod();
+mFeedTimer.armX(lManualWaitPeriod);</entry>
         <tran trig="FEED_MGR_TIMEOUT" target="../../4">
          <tran_glyph conn="42,50,3,3,-4,12,4">
           <action box="-4,5,20,2"/>
@@ -175,7 +215,8 @@ subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
        <state name="TimedCappedFeed">
         <documentation>The feeding state for a manual feed.
 Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
-        <entry brief="StartTimer(MaxFeedTime); StartFeeder();">StartTimedFeed(10000);</entry>
+        <entry brief="StartTimer(MaxFeedTime); StartFeeder();">QP::QTimeEvtCtr lManualMaxFeedPeriod = GetManualMaxFeedPeriod();
+StartTimedFeed(lManualMaxFeedPeriod);</entry>
         <state_glyph node="42,58,30,8">
          <entry box="1,2,25,4"/>
         </state_glyph>
@@ -186,7 +227,8 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
       </state>
       <state name="TimedFeed">
        <documentation>State describing behavior for events triggering a fixed timed feeding period.</documentation>
-       <entry brief="StartTimer(FeedTime); StartFeeder();">StartTimedFeed(5000);</entry>
+       <entry brief="StartTimer(FeedTime); StartFeeder();">QP::QTimeEvtCtr lTimedFeedPeriod = GetTimedFeedPeriod();
+StartTimedFeed(lTimedFeedPeriod);</entry>
        <exit brief="StopFeeder(); StopTimer();">StopTimedFeed();</exit>
        <tran trig="RTCC_CALENDAR_EVENT_ALARM">
         <action brief="Log(); defer();">if (defer(&amp;mDeferredEventQueue, e)) {
@@ -218,15 +260,13 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
   <package name="Events" stereotype="0x01" namespace="Event::">
    <class name="Init" superclass="qpcpp::QEvt">
     <documentation>Init event to pass to pseudo initial transition.</documentation>
-    <attribute name="mFeedCfgRec" type="FeedCfgRec * const" visibility="0x00" properties="0x00">
-     <documentation>Pointer to FeedCfgRec.</documentation>
-    </attribute>
     <operation name="Init" type="" visibility="0x00" properties="0x02">
      <documentation>Ctor.</documentation>
      <parameter name="aSig" type="QP::QSignal"/>
-     <parameter name="aFeedCfgRec" type="FeedCfgRec * const"/>
      <code>    : QP::QEvt(aSig)
-    , mFeedCfgRec(aFeedCfgRec)
+    , mManualWaitPeriod(aManualWaitPeriod)
+    , mTimeFeedPeriod(aTimeFeedPeriod)
+    , mManualMaxFeedPeriod(aManualMaxFeedPeriod)
 
 // Ctor body left empty.</code>
     </operation>
@@ -293,7 +333,7 @@ $define${project::AOs::Mgr_AO}
 // Add Init event here if ever needed.
 $declare${project::Events::ManualFeedCmd}
 $declare${project::Events::TimedFeedCmd}
-</text>
+//$declare${project::Events::Init}</text>
    </file>
   </directory>
  </package>
