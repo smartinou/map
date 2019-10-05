@@ -50,7 +50,7 @@
 #include "TB6612.h"
 
 #include "DisplayMgr_AOs.h"
-#include "FileLogSink_AO.h"
+#include "Logging_AOs.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AO.h"
 #include "LwIPMgr_AO.h"
@@ -198,7 +198,7 @@ public:
 
     std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) override {
         if (mFileLogSink.get() == nullptr) {
-            mFileLogSink = std::make_shared<FileLogSink_AO>();
+            mFileLogSink = std::make_shared<Logging::AO::FileSink_AO>();
         }
         return mFileLogSink;
     }
@@ -365,7 +365,7 @@ private:
     std::unique_ptr<CoreLink::SPIDev> mSPIDev;
     std::unique_ptr<DS3234> mRTCC;
     std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
-    std::shared_ptr<FileLogSink_AO> mFileLogSink;
+    std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSink;
     std::unique_ptr<TB6612> mMotorControl;
     std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
     std::unique_ptr<SSD1329> mDisplay;

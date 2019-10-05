@@ -82,10 +82,8 @@ VPATH = \
         $(PROJECT_FW_DIR)/src/lwip_port/netif \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
+        $(FIRMWARE_PATH)/qp_ao/codegen \
         $(FIRMWARE_PATH)/qp_ao/src \
-        $(FIRMWARE_PATH)/qp_ao/model \
-        $(FIRMWARE_PATH)/qp_ao/model/src \
-        $(FIRMWARE_PATH)/qp_ao/model/codegen \
         $(FIRMWARE_PATH)/utils/date \
         $(FIRMWARE_PATH)/utils/db \
         $(FIRMWARE_PATH)/utils/net \
@@ -116,9 +114,7 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
-        -I$(FIRMWARE_PATH)/qp_ao/model \
-        -I$(FIRMWARE_PATH)/qp_ao/model/inc \
-        -I$(FIRMWARE_PATH)/qp_ao/model/codegen \
+        -I$(FIRMWARE_PATH)/qp_ao/codegen \
         -I$(FIRMWARE_PATH)/utils \
         -I$(STELLARIS_LIB) \
         -I$(STELLARIS_LIB)/inc \
@@ -172,10 +168,10 @@ CPP_SRCS := \
         EthernetAddress.cpp \
         EthDrv.cpp \
         FeedCfgRec.cpp \
-        FileLogSink_AO.cpp \
         GPIO.cpp \
         Limit.cpp \
-        LogEvt.cpp \
+        Logging_AOs.cpp \
+        Logging_Events.cpp \
         Logger.cpp \
         LwIPMgr_AO.cpp \
         LwIPDrv.cpp \
@@ -384,9 +380,9 @@ MODEL_IN_FILES := \
   $(FIRMWARE_PATH)/qp_ao/model/Logging.qm
 
 MODEL_OUT_FILES := \
-  FileLogSink_AO.h \
 
 
+#  FileLogSink_AO.h \
 #	FileLogSink_AO.cpp \
          #RTCC_AO.cpp \
 	#Logger.h \
