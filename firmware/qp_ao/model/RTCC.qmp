@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package name="RTCC" stereotype="0x04" namespace="RTCC::">
+ <package name="AOs" stereotype="0x02" namespace="AO::">
+  <class name="RTCC_AO" superclass="qpcpp::QActive">
+   <documentation>RTCC Active Object.
+Uses signals from an RTCC component to maintain date and time.
+
+Can perform various other tasks like saving to Non-Volatile memory and read temperature (if so equipped).
+</documentation>
+   <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
+    <documentation>Holder for RTCC time.
+</documentation>
+   </attribute>
+   <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
+    <documentation>Holder for RTCC date.
+</documentation>
+   </attribute>
+   <attribute name="mTemperature" type="float" visibility="0x02" properties="0x00">
+    <documentation>Holder for RTCC temperature.
+</documentation>
+   </attribute>
+   <attribute name="mRTCC" type="IRTCC &amp;" visibility="0x02" properties="0x00">
+    <documentation>Reference to a IRTCC-compatible interface.
+</documentation>
+   </attribute>
+   <attribute name="mCalendarRec" type="CalendarRec *" visibility="0x02" properties="0x00">
+    <documentation>Pointer to CalendarRec object.
+</documentation>
+   </attribute>
+   <attribute name="mNVMemBuf" type="uint8_t *" visibility="0x02" properties="0x00">
+    <documentation>Pointer to the non-volatile memory buffer.</documentation>
+   </attribute>
+   <operation name="RTCC_AO" type="" visibility="0x00" properties="0x00">
+    <documentation>Ctor.
+</documentation>
+    <parameter name="aRTCC" type="IRTCC &amp;"/>
+    <code>    : QP::QActive(Q_STATE_CAST(&amp;RTCC::AO::RTCC_AO::initial))
+    , mTime()
+    , mDate()
+    , mTemperature(-1000.0)
+    , mRTCC(aRTCC)
+    , mCalendarRec(nullptr)
+    , mNVMemBuf(nullptr)
+
+// Ctor body left empty.</code>
+   </operation>
+   <operation name="GetTemperature" type="float" visibility="0x00" properties="0x08">
+    <documentation>Returns the last snapshot of temperature if available.
+If not returns 0.0.
+</documentation>
+    <code>return mTemperature;</code>
+   </operation>
+   <operation name="GetTime" type="Time const &amp;" visibility="0x00" properties="0x08">
+    <documentation>Returns the last snapshot of Time readout.
+</documentation>
+    <code>return mTime;</code>
+   </operation>
+   <operation name="GetDate" type="Date const &amp;" visibility="0x00" properties="0x08">
+    <documentation>Returns the last snapshot of Date readout.
+</documentation>
+    <code>return mDate;</code>
+   </operation>
+   <operation name="InitDB" type="void" visibility="0x02" properties="0x00">
+    <documentation>Initializes the DB, from NV memory if available, or to default if not.</documentation>
+    <code>unsigned int lNVMemSize = mRTCC.GetNVMemSize();
+
+if (lNVMemSize) {
+    mNVMemBuf = new uint8_t [lNVMemSize];
+    unsigned int lDBSize = DBRec::GetDBSize();
+    mRTCC.RdFromNVMem(mNVMemBuf, 0, lDBSize);
+    DBRec::DeserializeDB(mNVMemBuf);
+    if (!DBRec::IsDBSane()) {
+        // Reset defaults and write back to NV mem.
+        DBRec::ResetDBDflt();
+        WrToNVMem();
+    }
+} else {
+    DBRec::ResetDBDflt();
+}
+</code>
+   </operation>
+   <operation name="InitCalendar" type="void" visibility="0x02" properties="0x00">
+    <documentation>Initializes the calendar record.</documentation>
+    <parameter name="e" type="QP::QEvt  const * const"/>
+    <code>// -Get current time &amp; date, temperature.
+// -Read config from RTCC sram.
+// -Populate calendar.
+// -Set next alarm.
+mRTCC.RdTimeAndDate(mTime, mDate);
+mTemperature = mRTCC.GetTemperature();
+
+RTCC::Event::Init const * const lInitEvent = static_cast&lt;RTCC::Event::Init const * const&gt;(e);
+if ((nullptr != lInitEvent) &amp;&amp; (nullptr != lInitEvent-&gt;mCalendarRec)) {
+    mCalendarRec = lInitEvent-&gt;mCalendarRec;
+    // Set some defaults if required.
+    if (!mCalendarRec-&gt;IsSane()) {
+        mCalendarRec-&gt;ResetDflt();
+    }
+
+    // Check if a Calendar object was passed.
+    // If not, create one locally,
+#ifdef RTCC_CALENDAR_DBG
+    mCalendarRec-&gt;ClrAllEntries();
+#endif // RTCC_CALENDAR_DBG
+
+    SetNextCalendarEvent();
+}
+
+// If you haven't passed a Calendar record,
+// no alarms will be set.
+</code>
+   </operation>
+   <operation name="InitInterrupt" type="void" visibility="0x02" properties="0x00">
+    <documentation>Initialize interrupt of RTCC.</documentation>
+    <parameter name="e" type="QP::QEvt  const * const"/>
+    <code>// Set interrupt pin and periodic alarm.
+//RTCCInitEvent const * const lRTCCInitEvent = static_cast&lt;RTCCInitEvent const * const&gt;(e);
+static_cast&lt;void&gt;(e);
+mRTCC.SetInterrupt(true);
+</code>
+   </operation>
+   <operation name="WrToNVMem" type="void" visibility="0x02" properties="0x00">
+    <documentation>Write buffer to NV memory.</documentation>
+    <code>unsigned int lDBSize = DBRec::GetDBSize();
+DBRec::SerializeDB(mNVMemBuf);
+mRTCC.WrToNVMem(mNVMemBuf, 0, lDBSize);
+</code>
+   </operation>
+   <operation name="SetNextCalendarEvent" type="void" visibility="0x02" properties="0x00">
+    <code>Weekday lCurrentWeekday(mDate.GetWeekdayName());
+Time    lAlarmTime;
+Weekday lAlarmWeekday;
+
+#ifdef RTCC_CALENDAR_DBG
+lAlarmTime = mTime;
+unsigned int lMinutes = mTime.GetMinutes() + 15;
+unsigned int lHours   = mTime.GetHours();
+if (lMinutes &gt;= 60) {
+    lMinutes %= 60;
+    lHours++;
+    if (lHours &gt;= 24) {
+        lHours = 0;
+    }
+}
+lAlarmTime.SetMinutes(lMinutes);
+lAlarmTime.SetHours(lHours);
+mCalendarPtr-&gt;SetEntry(lCurrentWeekday, lAlarmTime);
+#endif // RTCC_CALENDAR_DBG
+
+bool lIsNextEntry = mCalendarRec-&gt;GetNextEntry(
+    lCurrentWeekday,
+    mTime,
+    lAlarmWeekday,
+    lAlarmTime);
+
+if (lIsNextEntry) {
+    // Entry found: set alarm.
+    mRTCC.WrAlarm(lAlarmTime, lAlarmWeekday);
+} else {
+    // No next entry found:
+    // clear current alarm so it does not generate an interrupt anymore.
+    mRTCC.DisableAlarm();
+}
+</code>
+   </operation>
+   <statechart properties="0x02">
+    <initial target="../1">
+     <action brief="Init();">mRTCC.Init();
+
+// Subscribe to signals if any.
+subscribe(RTCC_INTERRUPT_SIG);
+subscribe(RTCC_SET_TIME_SIG);
+subscribe(RTCC_SET_DATE_SIG);
+subscribe(RTCC_SET_TIME_SIG);
+subscribe(RTCC_SAVE_TO_NV_MEMORY_SIG);
+
+// Init database and calendar.
+InitDB();
+InitCalendar(e);
+InitInterrupt(e);
+
+// Set logging category.
+//LOGGER.AddCategory(RTCC_LOG, &amp;sLogCategory[0]);
+</action>
+     <initial_glyph conn="4,2,5,0,6,4">
+      <action box="0,-2,12,4"/>
+     </initial_glyph>
+    </initial>
+    <state name="Running">
+     <documentation>The top Running state.</documentation>
+     <entry brief="EnableRTCCInterrupt();">mRTCC.SetInterrupt(true);</entry>
+     <exit brief="DisableRTCCInterrupt();">mRTCC.SetInterrupt(false);</exit>
+     <tran trig="TERMINATE">
+      <tran_glyph conn="70,6,0,-1,-4,6">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="RTCC_SET_TIME">
+      <action brief="SetTime(Time const &amp;aTime);">//LOG_INFO(&amp;sLogCategory[0], &quot;New time set.&quot;);
+RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+mRTCC.WrTime(lSetTimeEvent-&gt;mTime);
+SetNextCalendarEvent();
+</action>
+      <tran_glyph conn="4,16,3,-1,40">
+       <action box="0,-2,36,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="RTCC_SET_DATE">
+      <action brief="SetDate(Date const aDate);">//LOG_INFO(&amp;sLogCategory[0], &quot;New date set.&quot;);
+RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+mRTCC.WrDate(lSetEventDate-&gt;mDate);
+SetNextCalendarEvent();
+</action>
+      <tran_glyph conn="4,20,3,-1,40">
+       <action box="0,-2,36,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="RTCC_INTERRUPT">
+      <action brief="ReadTimeAndTemp(); PublishTick();">bool lIsCalendarAlarm = mRTCC.IsAlarmOn();
+mRTCC.AckInterrupt();
+
+// Set data as impure to force refresh of data read from RTCC.
+mRTCC.SetImpure();
+mRTCC.GetTimeAndDate(mTime, mDate);
+mTemperature = mRTCC.GetTemperature();
+
+// Publish Tick Alarm Event.
+RTCC::Event::TimeAndDate * const lTickAlarmEvent =
+    Q_NEW(
+        RTCC::Event::TimeAndDate,
+        RTCC_TIME_TICK_ALARM_SIG,
+        mTime,
+        mDate);
+QP::QF::PUBLISH(lTickAlarmEvent, this);
+</action>
+      <choice>
+       <guard brief="Source == CalendarAlarm">lIsCalendarAlarm == true</guard>
+       <action brief="PublishCalendarEvent();">// Got a calendar event alarm: create event.
+// Set next calendar alarm event.
+#if defined(RTCC_DBG) &amp;&amp; !defined(Q_SPY)
+UARTprintf(&quot;A&quot;);
+#endif // RTCC_DBG
+//LOG_INFO(&amp;sLogCategory[0], &quot;Calendar event.&quot;);
+RTCC::Event::TimeAndDate * const lCalendarEvent =
+    Q_NEW(
+        RTCC::Event::TimeAndDate,
+        RTCC_CALENDAR_EVENT_ALARM_SIG,
+        mTime,
+        mDate);
+QP::QF::PUBLISH(lCalendarEvent, this);
+
+SetNextCalendarEvent();
+</action>
+       <choice_glyph conn="44,24,5,-1,28">
+        <action box="1,0,28,4"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="4,24,3,-1,40">
+       <action box="0,-2,35,4"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="RTCC_SAVE_TO_NV_MEMORY">
+      <action>RTCC::Event::SaveToRAM const * const lSaveEvent = static_cast&lt;RTCC::Event::SaveToRAM const * const&gt;(e);
+</action>
+      <choice>
+       <guard brief="CalendarChanged == true">lSaveEvent-&gt;mIsDataImpure</guard>
+       <action brief="WriteToNvMemory();">// Save to NV mem.
+WrToNVMem();
+</action>
+       <choice_glyph conn="44,30,5,-1,28">
+        <action box="1,0,27,4"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="4,30,3,-1,40">
+       <action box="0,-2,34,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="4,6,72,30">
+      <entry box="1,2,23,2"/>
+      <exit box="1,4,23,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="80,40"/>
+   </statechart>
+  </class>
+ </package>
+ <package name="Events" stereotype="0x01" namespace="Event::">
+  <class name="Init" superclass="qpcpp::QEvt">
+   <documentation>Event for the pseudo-init event.</documentation>
+   <attribute name="mCalendarRec" type="CalendarRec * const" visibility="0x00" properties="0x00">
+    <documentation>Pointer to calendar record.</documentation>
+   </attribute>
+   <operation name="Init" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSignal" type="QP::QSignal const"/>
+    <parameter name="aCalendarRec" type="CalendarRec * const"/>
+    <code>    : QP::QEvt(aSignal)
+    , mCalendarRec(aCalendarRec)
+// Ctor left empty.</code>
+   </operation>
+  </class>
+  <class name="TimeAndDate" superclass="qpcpp::QEvt">
+   <documentation>Event to propagate a new Time and Date.</documentation>
+   <attribute name="mTime" type="Time const" visibility="0x00" properties="0x00">
+    <documentation>The new Time to propagate.</documentation>
+   </attribute>
+   <attribute name="mDate" type="Date const" visibility="0x00" properties="0x00">
+    <documentation>The new Date to propagate.</documentation>
+   </attribute>
+   <operation name="TimeAndDate" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSignal" type="QP::QSignal const"/>
+    <parameter name="aTime" type="Time const"/>
+    <parameter name="aDate" type="Date const"/>
+    <code>    : QP::QEvt(aSignal)
+    , mTime(aTime)
+    , mDate(aDate)
+// Ctor body left empty.</code>
+   </operation>
+  </class>
+  <class name="SaveToRAM" superclass="qpcpp::QEvt">
+   <documentation>Signals the RTCC's RAM is to be saved.</documentation>
+   <attribute name="mIsDataImpure" type="bool const" visibility="0x00" properties="0x00">
+    <documentation>Data is impure, ready to be saved again.</documentation>
+   </attribute>
+   <operation name="SaveToRAM" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSignal" type="QP::QSignal const"/>
+    <parameter name="aIsDataImpure" type="bool const"/>
+    <code>    : QP::QEvt(aSignal)
+    , mIsDataImpure(aIsDataImpure)
+// Ctor left empty.</code>
+   </operation>
+  </class>
+ </package>
+ <directory name="../codegen">
+  <file name="RTCC_Events.h">
+   <text>#include &lt;qpcpp.h&gt;
+
+#include &lt;time/Time.h&gt;
+#include &lt;date/Date.h&gt;
+
+class CalendarRec;
+
+
+$declare${RTCC::Events::Init}
+$declare${RTCC::Events::TimeAndDate}
+$declare${RTCC::Events::SaveToRAM}
+</text>
+  </file>
+  <file name="RTCC_AO.h">
+   <text>#include &quot;qpcpp.h&quot;
+
+// Forward declaration.
+class IRTCC;
+class CalendarRec;
+
+$declare${RTCC::AOs::RTCC_AO}
+</text>
+  </file>
+  <file name="RTCC_AO.cpp">
+   <text>#include &lt;db/CalendarRec.h&gt;
+#include &quot;IRTCC.h&quot;
+
+#include &quot;Signals.h&quot;
+#include &quot;RTCC_Events.h&quot;
+#include &quot;RTCC_AO.h&quot;
+
+$define${RTCC::AOs::RTCC_AO}
+</text>
+  </file>
+ </directory>
+</package>

@@ -173,7 +173,7 @@ CPP_SRCS := \
         Logging_AOs.cpp \
         Logging_Events.cpp \
         Logger.cpp \
-        LwIPMgr_AO.cpp \
+        LwIP_AOs.cpp \
         LwIPDrv.cpp \
         Month.cpp \
         Net.cpp \
@@ -181,7 +181,6 @@ CPP_SRCS := \
         PFPP_AOs.cpp \
         IRTCC.cpp \
         RTCC_AO.cpp \
-        RTCC_Events.cpp \
         SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
@@ -191,6 +190,7 @@ CPP_SRCS := \
 
 #        IPAddress.cpp \
 #        eth_driver.cpp \
+#        RTCC_Events.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \

@@ -44,8 +44,8 @@
 #include "IBSP.h"
 #include "ILCD.h"
 #include "IRTCC.h"
-#include "LwIPMgr_AO.h"
-#include "LwIPMgr_Evt.h"
+#include "LwIP_AOs.h"
+#include "LwIP_Events.h"
 #include "Net.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AO.h"
@@ -103,7 +103,7 @@ bool App::Init(void) {
     // Create all AOs.
     // RTCC AO.
     App::mRTCC_AO = mFactory->CreateRTCCAO();
-    RTCC::Event::Init lRTCCInitEvent(SIG_DUMMY, sCalendar);
+    RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
     App::mRTCC_AO->start(
         1U,
         mRTCCEventQueue,
@@ -152,7 +152,7 @@ bool App::Init(void) {
     // -For larger IoT support.
     // TODO: Check if Init event is required at all.
     LwIPInitEvt const lLwIPInitEvt(
-        SIG_DUMMY,
+        DUMMY_SIG,
         App::sNetIFRecPtr,
         App::HTTPInitCallback
     );

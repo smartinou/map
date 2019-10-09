@@ -47,8 +47,8 @@
 // This project.
 //#include "BSP.h"
 #include "FWVersionGenerated.h"
-#include "LwIPMgr_AO.h"
-#include "LwIPMgr_Evt.h"
+#include "LwIP_AOs.h"
+#include "LwIP_Events.h"
 #include "Signals.h"
 
 #include "Net.h"
@@ -742,7 +742,7 @@ static char const *DispIndex(
         sscanf(aValsVec[0], "%d", &lTime);
         PFPP::Event::TimedFeedCmd *lEvtPtr = Q_NEW(
             PFPP::Event::TimedFeedCmd,
-            SIG_FEED_MGR_TIMED_FEED_CMD,
+            FEED_MGR_TIMED_FEED_CMD_SIG,
             lTime
         );
 

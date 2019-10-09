@@ -111,6 +111,16 @@ uint32_t LwIPDrv::GetIPAddress(void) const {
     return mNetIF.ip_addr.addr;
 }
 
+
+uint32_t LwIPDrv::GetSubnetMask(void) const {
+    return mNetIF.netmask.addr;
+}
+
+
+uint32_t LwIPDrv::GetDefaultGW(void) const {
+    return mNetIF.gw.addr;
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -146,7 +156,7 @@ bool LwIPDrv::PBufQ::IsEmpty(void) const {
 bool LwIPDrv::PBufQ::Put(struct pbuf *aPBufPtr) {
     unsigned int lNextQWr = mQWrIx + 1;
 
-    if (lNextQWr == Q_DIM(mPBufRing)) {
+    if (lNextQWr == mRingSize) {
         lNextQWr = 0;
     }
 
@@ -154,7 +164,7 @@ bool LwIPDrv::PBufQ::Put(struct pbuf *aPBufPtr) {
         // The queue isn't full so we add the new frame at the current
         // write position and move the write pointer.
         mPBufRing[mQWrIx] = aPBufPtr;
-        if ((++mQWrIx) == Q_DIM(mPBufRing)) {
+        if ((++mQWrIx) == mRingSize) {
             mQWrIx = 0;
         }
 
@@ -177,7 +187,7 @@ struct pbuf *LwIPDrv::PBufQ::Get(void) {
         // The queue is not empty so return the next frame from it.
         // Adjust the read pointer accordingly.
         lPBuf = mPBufRing[mQRdIx];
-        if ((++mQRdIx) == Q_DIM(mPBufRing)) {
+        if ((++mQRdIx) == mRingSize) {
             mQRdIx = 0;
         }
     }

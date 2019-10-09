@@ -53,7 +53,7 @@
 #include "Logging_AOs.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AO.h"
-#include "LwIPMgr_AO.h"
+#include "LwIP_AOs.h"
 
 #include "PFPP_Events.h"
 #include "Signals.h"
@@ -231,7 +231,7 @@ public:
     std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
         if (mEthDrv.get() == nullptr) {
             mEthDrv = CreateEthDrv();
-            mLwIPMgrAO = std::make_shared<LwIPMgr_AO>(*mEthDrv);
+            mLwIPMgrAO = std::make_shared<LwIP::AO::Mgr_AO>(*mEthDrv);
         }
         return mLwIPMgrAO;
     }
@@ -372,7 +372,7 @@ private:
     std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
     std::shared_ptr<SDC> mSDC;
     std::unique_ptr<EthDrv> mEthDrv;
-    std::shared_ptr<LwIPMgr_AO> mLwIPMgrAO;
+    std::shared_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO;
 
     static GPIO const mRTCCInterruptPin;
 

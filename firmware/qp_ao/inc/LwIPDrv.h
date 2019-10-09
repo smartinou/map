@@ -67,6 +67,8 @@ public:
     virtual void ISR(void) = 0;
 
     uint32_t GetIPAddress(void) const;
+    uint32_t GetSubnetMask(void) const;
+    uint32_t GetDefaultGW(void) const;
 
 private:
     // Internal PBuf Q-ring class.
