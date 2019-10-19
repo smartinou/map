@@ -6,10 +6,10 @@
    <attribute name="mTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
     <documentation>Timer for flushing queue of log events.</documentation>
    </attribute>
-   <attribute name="mSyncLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
+   <attribute name="mSyncLogLevel" type="LogLevel" visibility="0x02" properties="0x00">
     <documentation>Log level threshold/filter.</documentation>
    </attribute>
-   <attribute name="mBufLogLevel" type="LogLevel_t" visibility="0x02" properties="0x00">
+   <attribute name="mBufLogLevel" type="LogLevel" visibility="0x02" properties="0x00">
     <documentation>The log level required to write the log entry to the file.
 The file is sync'ed right away.</documentation>
    </attribute>
@@ -35,8 +35,8 @@ The file is sync'ed right away.</documentation>
     <documentation>Ctor.</documentation>
     <code>  : QActive(Q_STATE_CAST(&amp;Logging::AO::FileSink_AO::initial))
   , mTimer(this, LOG_TIMER_SIG, 0U)
-  , mSyncLogLevel(PRI_CRIT)
-  , mBufLogLevel(PRI_INFO)
+  , mSyncLogLevel(LogLevel::prio::CRITICAL)
+  , mBufLogLevel(LogLevel::prio::INFO)
   , mSyncTimerTicks(0)
   , mDate()
   , mTime()
@@ -51,12 +51,13 @@ The file is sync'ed right away.</documentation>
    </operation>
    <operation name="SetSyncLogLevel" type="void" visibility="0x00" properties="0x00">
     <documentation>Sets the new log level threshold to filter log events.</documentation>
-    <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
+    <parameter name="aLogLevelThreshold" type="LogLevel"/>
     <code>mSyncLogLevel = aLogLevelThreshold;</code>
    </operation>
    <operation name="SetBufLogLevel" type="void" visibility="0x00" properties="0x00">
     <documentation>Sets the new log level threshold to filter log events.</documentation>
-    <parameter name="aLogLevelThreshold" type="LogLevel_t"/>
+    <parameter name="aLogLevelThreshold" type="LogLevel"/>
+    <code>mBufLogLevel = aLogLevelThreshold;</code>
    </operation>
    <operation name="WrEvt" type="void" visibility="0x02" properties="0x00">
     <documentation>Common function to write event into file buffer.</documentation>
@@ -67,7 +68,7 @@ int lLen = f_printf(
       &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
       DateHelper::ToStr(mDate, &amp;lTmpStr[0]),
       TimeHelper::ToStr(mTime, &amp;lTmpStr[0]),
-      LogLevel::ToStr(aLogEvt.mLogLevel),
+      LogLevel::ToStr(aLogEvt.mLogLevel.GetLevel()),
       aLogEvt.mFileStr,
       aLogEvt.mFunctionStr,
       aLogEvt.mLine,
@@ -166,16 +167,16 @@ mDate != lEvt-&gt;mDate</guard>
   <class name="LogEvt" superclass="qpcpp::QEvt">
    <documentation>Event used to generate a log entry.</documentation>
    <attribute name="mSig" type="QP::QSignal" visibility="0x00" properties="0x00"/>
-   <attribute name="mLogLevel" type="LogLevel_t" visibility="0x00" properties="0x00"/>
+   <attribute name="mLogLevel" type="LogLevel" visibility="0x00" properties="0x00"/>
    <attribute name="mFileStr" type="char const * const" visibility="0x00" properties="0x00"/>
    <attribute name="mLine" type="unsigned int const" visibility="0x00" properties="0x00"/>
    <attribute name="mFunctionStr" type="char const * const" visibility="0x00" properties="0x00"/>
    <attribute name="mCategoryStr" type="char const * const" visibility="0x00" properties="0x00"/>
    <attribute name="mMsgStr" type="char const * const" visibility="0x00" properties="0x00"/>
-   <operation name="LogEvt" type="" visibility="0x00" properties="0x00">
+   <operation name="LogEvt" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
-    <parameter name="aLogLevel" type="LogLevel_t const"/>
+    <parameter name="aLogLevel" type="LogLevel const"/>
     <parameter name="aFileStr" type="char const * const"/>
     <parameter name="aLine" type="unsigned int const"/>
     <parameter name="aFunctionStr" type="char const * const"/>
@@ -198,56 +199,16 @@ mDate != lEvt-&gt;mDate</guard>
   </class>
  </package>
  <directory name="../codegen">
-  <file name="Logging_Events.cpp">
-   <text>#include &quot;Logging_Events.h&quot;
-
-
-namespace LogLevel {
-
-#define _(enum, str) case enum: return str;
-char const *ToStr(LogLevel_t const aLevel) {
-  switch (aLevel) {
-    X_LOG_LEVELS
-  }
-  return &quot;&quot;;
-}
-#undef _
-#undef X_LOG_LEVELS
-
-} // namespace LogLevel
-
-
-$define${Logging::Events::LogEvt}
-</text>
-  </file>
   <file name="Logging_Events.h">
    <text>#pragma once
 
 #include &quot;qpcpp.h&quot;
 
-// Debug levels.
-#define X_LOG_LEVELS         \
-  _(PRI_DBG,  &quot;DEBUG&quot;)       \
-  _(PRI_INFO, &quot;INFORMATION&quot;) \
-  _(PRI_WARN, &quot;WARNING&quot;)     \
-  _(PRI_ERR,  &quot;ERROR&quot;)       \
-  _(PRI_CRIT, &quot;CRITICAL&quot;)    \
-  _(PRI_DIS,  &quot;DISABLED&quot;)
+#include &quot;LogLevel.h&quot;
 
 
-#define _(enum, str) enum,
-typedef enum {
-  X_LOG_LEVELS
-} LogLevel_t;
-#undef _
-
-
-namespace LogLevel {
-char const *ToStr(LogLevel_t const aLevel);
-} // namespace LogLevel
-
-
-$declare${Logging::Events::LogEvt}</text>
+$declare${Logging::Events::LogEvt}
+</text>
   </file>
   <file name="Logging_AOs.cpp">
    <text>#include &quot;qpcpp.h&quot;
@@ -261,7 +222,7 @@ $declare${Logging::Events::LogEvt}</text>
 #include &quot;RTCC_Events.h&quot;
 #include &quot;Logging_Events.h&quot;
 #include &quot;Logging_AOs.h&quot;
-
+#include &quot;LogLevel.h&quot;
 
 $define${Logging::AOs::FileSink_AO}
 </text>
@@ -282,6 +243,7 @@ namespace Logging {
     } // namespace Events
 } // namespace Logging
 
+class LogLevel;
 
 // Expansion of QM classes.
 $declare${Logging::AOs::FileSink_AO}
@@ -290,8 +252,10 @@ $declare${Logging::AOs::FileSink_AO}
  </directory>
  <directory name="../inc">
   <file name="Logger.h" properties="external"/>
+  <file name="LogLevel.h" properties="external"/>
  </directory>
  <directory name="../src">
   <file name="Logger.cpp" properties="external"/>
+  <file name="LogLevel.cpp" properties="external"/>
  </directory>
 </package>

@@ -171,8 +171,8 @@ CPP_SRCS := \
         GPIO.cpp \
         Limit.cpp \
         Logging_AOs.cpp \
-        Logging_Events.cpp \
         Logger.cpp \
+        LogLevel.cpp \
         LwIP_AOs.cpp \
         LwIPDrv.cpp \
         Month.cpp \
@@ -188,6 +188,7 @@ CPP_SRCS := \
         Time.cpp \
         Weekday.cpp
 
+#        Logging_Events.cpp \
 #        IPAddress.cpp \
 #        eth_driver.cpp \
 #        RTCC_Events.cpp \

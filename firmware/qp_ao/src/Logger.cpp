@@ -81,7 +81,7 @@ Logger & Logger::Instance() {
 
 
 Logger::Logger()
-    : mLogLevel(PRI_ERR) {
+    : mLogLevel(LogLevel::prio::ERROR) {
 
     // Ctor body left intentionally empty.
 }
@@ -92,12 +92,12 @@ Logger::~Logger() {
 }
 
 
-LogLevel_t Logger::GetLogLevel(void) const {
+LogLevel Logger::GetLogLevel(void) const {
     return mLogLevel;
 }
 
 
-LogLevel_t Logger::GetLogLevel(char const * const aCategoryStr) const {
+LogLevel Logger::GetLogLevel(char const * const aCategoryStr) const {
 
     LogCategory_t const * const lCategoryStr = FindCategory(aCategoryStr);
     if (nullptr != lCategoryStr) {
@@ -119,7 +119,7 @@ unsigned int Logger::GetEvtSignal(char const * const aCategoryStr) const {
 }
 
 
-void Logger::SetLogLevel(LogLevel_t const aLevel) {
+void Logger::SetLogLevel(LogLevel const aLevel) {
     mLogLevel = aLevel;
 }
 
@@ -127,7 +127,7 @@ void Logger::SetLogLevel(LogLevel_t const aLevel) {
 bool Logger::AddCategory(
     unsigned int const aEvtSignal,
     char const * const aCategoryStr,
-    LogLevel_t   const aLevel
+    LogLevel::prio const aLevel
     ) {
 
     if (mCategoryQty >= sMaxLogCategories) {
@@ -171,7 +171,7 @@ bool Logger::AddCategory(
 
 
 bool Logger::Log(
-    LogLevel_t   const aLevel,
+    LogLevel   const aLevel,
     char const * const aFileStr,
     unsigned int const aLine,
     char const * const aFunctionStr,
@@ -181,7 +181,7 @@ bool Logger::Log(
     ) {
 
     // Check for log level threshold (global and per category).
-    LogLevel_t lCategoryLevel = GetLogLevel(aCategoryStr);
+    LogLevel lCategoryLevel = GetLogLevel(aCategoryStr);
     if (lCategoryLevel != sInvalidCategory) {
         if (aLevel < lCategoryLevel) {
             return false;

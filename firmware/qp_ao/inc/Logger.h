@@ -56,7 +56,7 @@
 #define LOG_DEBUG(aCategory, ...); \
 {                                  \
     LOGGER.Log(                    \
-        PRI_DBG,                   \
+        DEBUG,                     \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -125,19 +125,19 @@ class Logger {
 public:
     static Logger &Instance();
 
-    LogLevel_t GetLogLevel(void) const;
-    LogLevel_t GetLogLevel(char const * const aCategoryStr) const;
+    LogLevel GetLogLevel(void) const;
+    LogLevel GetLogLevel(char const * const aCategoryStr) const;
     unsigned int GetEvtSignal(char const * const aCategoryStr) const;
 
-    void SetLogLevel(LogLevel_t const aLevel);
+    void SetLogLevel(LogLevel const aLevel);
     bool AddCategory(
         unsigned int const aEvtSignal,
         char const * const aCategoryStr,
-        LogLevel_t   const aLevel = PRI_ERR
+        LogLevel::prio const aLevel = LogLevel::prio::ERROR
     );
 
     bool Log(
-        LogLevel_t   const aLevel,
+        LogLevel     const aLevel,
         char const * const aFileStr,
         unsigned int const aLine,
         char const * const aFunctionStr,
@@ -161,13 +161,13 @@ private:
 
     static unsigned int constexpr sMaxLogCategories  = 32;
     static unsigned int constexpr sMaxLogCategoryLen = 32;
-    static LogLevel_t   constexpr sInvalidCategory = static_cast<LogLevel_t>(-1);
+    static LogLevel::prio constexpr sInvalidCategory = LogLevel::prio::DISABLED;
     static unsigned int constexpr sMsgBufLen = 1024;
 
     typedef struct {
         unsigned int mEvtSignal;
         char         mName[sMaxLogCategoryLen];
-        LogLevel_t   mLevel;
+        LogLevel     mLevel;
     } LogCategory_t;
 
     LogCategory_t *FindCategory(char const * const aCategoryStr) const;
@@ -175,7 +175,7 @@ private:
     static LogCategory_t mCategories[sMaxLogCategories];
     static size_t        mCategoryQty;
 
-    LogLevel_t mLogLevel;
+    LogLevel mLogLevel;
 };
 
 // ******************************************************************************
