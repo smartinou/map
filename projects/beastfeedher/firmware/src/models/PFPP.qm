@@ -122,17 +122,17 @@ subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
      </initial>
      <state name="Running">
       <documentation>Top state.</documentation>
-      <initial target="../5">
+      <initial target="../7">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
        </initial_glyph>
       </initial>
-      <tran trig="FEED_MGR_TIMEOUT" target="../5">
+      <tran trig="FEED_MGR_TIMEOUT" target="../7">
        <tran_glyph conn="4,28,3,3,28">
         <action box="0,-2,22,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../7">
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../9">
        <tran_glyph conn="4,88,3,3,28">
         <action box="0,-2,28,4"/>
        </tran_glyph>
@@ -140,13 +140,13 @@ subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
        <action brief="GetState();">PFPP::Event::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::ManualFeedCmd const * const&gt;(e);
 </action>
-       <choice target="../../6">
+       <choice target="../../8">
         <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
         <choice_glyph conn="18,46,5,3,14">
          <action box="0,-2,24,2"/>
         </choice_glyph>
        </choice>
-       <choice target="../../5">
+       <choice target="../../7">
         <guard brief="else"/>
         <choice_glyph conn="18,46,4,3,-16,14">
          <action box="0,-16,10,2"/>
@@ -157,7 +157,7 @@ subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_TIMED_FEED_CMD">
-       <choice target="../../7">
+       <choice target="../../9">
         <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
         <choice_glyph conn="18,94,5,3,14">
          <action box="1,0,13,2"/>
@@ -165,6 +165,18 @@ subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
        </choice>
        <tran_glyph conn="4,94,3,-1,14">
         <action box="0,-2,26,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="RTCC_TIME_AND_DATE? 0">
+       <action brief="^DISPLAY_TEXT(Time, Date);"/>
+       <tran_glyph conn="4,106,3,-1,50">
+        <action box="0,-2,42,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="LWIP_IP_CHANGED">
+       <action brief="^DISPLAY_TEXT(IPAddress);"/>
+       <tran_glyph conn="4,110,3,-1,50">
+        <action box="0,-2,40,2"/>
        </tran_glyph>
       </tran>
       <state name="Waiting">
@@ -251,9 +263,9 @@ StartTimedFeed(lTimedFeedPeriod);</entry>
         <exit box="1,4,31,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="4,12,76,92"/>
+      <state_glyph node="4,12,76,108"/>
      </state>
-     <state_diagram size="84,108"/>
+     <state_diagram size="84,124"/>
     </statechart>
    </class>
   </package>
@@ -340,4 +352,5 @@ $declare${project::Events::TimedFeedCmd}
  <package file="./../../../../../firmware/qp_ao/model/Display.qmp"/>
  <package file="./../../../../../firmware/qp_ao/model/RTCC.qmp"/>
  <package file="./../../../../../firmware/qp_ao/model/Logging.qmp"/>
+ <package file="./../../../../../firmware/qp_ao/model/LwIP.qmp"/>
 </model>

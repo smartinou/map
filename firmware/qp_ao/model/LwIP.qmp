@@ -209,66 +209,6 @@ if (mIPAddress != mEtherDrv.GetIPAddress()) {//me-&gt;mNetIFPtr-&gt;ip_addr.addr
     <state_diagram size="54,38"/>
    </statechart>
   </class>
-  <directory name="../codegen">
-   <file name="LwIP_AOs.h">
-    <text>#pragma once
-
-// Forward declaration.
-class LwIPDrv;
-
-$declare${LwIP::AOs::Mgr_AO}
-</text>
-   </file>
-   <file name="LwIP_AOs.cpp">
-    <text>#define LWIP_ALLOWED
-
-// Standard Libraries.
-#include &lt;string.h&gt;
-#include &lt;stdio.h&gt;
-
-// QP-port.
-#include &quot;qpcpp.h&quot;
-
-// LwIP stack.
-#include &quot;lwip/autoip.h&quot;
-#include &quot;lwip/def.h&quot;
-#include &quot;lwip/dhcp.h&quot;
-#include &quot;lwip/init.h&quot;
-#include &quot;lwip/stats.h&quot;
-#include &quot;lwip/apps/httpd.h&quot;
-#include &quot;lwip/priv/tcp_priv.h&quot;
-
-// lwIP application.
-#ifdef __cplusplus
-extern &quot;C&quot; {
-} // extern &quot;C&quot;
-#include &quot;netif/EthDrv.h&quot;
-#endif // __cplusplus
-
-
-// TI Library.
-#include &lt;hw_types.h&gt;
-#include &lt;driverlib/flash.h&gt;
-
-
-// Common libraries.
-#include &lt;db/NetIFRec.h&gt;
-
-// This project.
-#include &quot;BSP.h&quot;
-#include &quot;DisplayMgr_Events.h&quot;
-#include &quot;Logger.h&quot;
-#include &quot;LwIP_AOs.h&quot;
-#include &quot;LwIP_Events.h&quot;
-#include &quot;Signals.h&quot;
-
-// Has to be set to the fastest interval to be serviced in the stack.
-#define LWIP_SLOW_TICK_MS AUTOIP_TMR_INTERVAL
-
-
-$define${LwIP::AOs::Mgr_AO}</text>
-   </file>
-  </directory>
  </package>
  <package name="Events" stereotype="0x01" namespace="Event::">
   <class name="Init" superclass="qpcpp::QEvt">
@@ -316,9 +256,68 @@ $define${LwIP::AOs::Mgr_AO}</text>
 // Ctor body.</code>
    </operation>
   </class>
-  <directory name="../codegen">
-   <file name="LwIP_Events.h">
-    <text>#pragma once
+ </package>
+ <directory name="../codegen">
+  <file name="LwIP_AOs.h">
+   <text>#pragma once
+
+// Forward declaration.
+class LwIPDrv;
+
+$declare${LwIP::AOs::Mgr_AO}
+</text>
+  </file>
+  <file name="LwIP_AOs.cpp">
+   <text>#define LWIP_ALLOWED
+
+// Standard Libraries.
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+
+// QP-port.
+#include &quot;qpcpp.h&quot;
+
+// LwIP stack.
+#include &quot;lwip/autoip.h&quot;
+#include &quot;lwip/def.h&quot;
+#include &quot;lwip/dhcp.h&quot;
+#include &quot;lwip/init.h&quot;
+#include &quot;lwip/stats.h&quot;
+#include &quot;lwip/apps/httpd.h&quot;
+#include &quot;lwip/priv/tcp_priv.h&quot;
+
+// lwIP application.
+#ifdef __cplusplus
+extern &quot;C&quot; {
+} // extern &quot;C&quot;
+#include &quot;netif/EthDrv.h&quot;
+#endif // __cplusplus
+
+
+// TI Library.
+#include &lt;hw_types.h&gt;
+#include &lt;driverlib/flash.h&gt;
+
+
+// Common libraries.
+#include &lt;db/NetIFRec.h&gt;
+
+// This project.
+#include &quot;BSP.h&quot;
+#include &quot;DisplayMgr_Events.h&quot;
+#include &quot;Logger.h&quot;
+#include &quot;LwIP_AOs.h&quot;
+#include &quot;LwIP_Events.h&quot;
+#include &quot;Signals.h&quot;
+
+// Has to be set to the fastest interval to be serviced in the stack.
+#define LWIP_SLOW_TICK_MS AUTOIP_TMR_INTERVAL
+
+
+$define${LwIP::AOs::Mgr_AO}</text>
+  </file>
+  <file name="LwIP_Events.h">
+   <text>#pragma once
 
 // Forward declaration
 class NetIFRec;
@@ -327,7 +326,6 @@ class NetIFRec;
 $declare${LwIP::Events::Init}
 $declare${LwIP::Events::IPAddressChanged}
 </text>
-   </file>
-  </directory>
- </package>
+  </file>
+ </directory>
 </package>
