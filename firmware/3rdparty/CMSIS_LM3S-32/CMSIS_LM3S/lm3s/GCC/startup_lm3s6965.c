@@ -70,13 +70,21 @@ void Reset_Handler(void);                            /* Reset Handler */
 /*----------------------------------------------------------------------------
   User Initial Stack & Heap
  *----------------------------------------------------------------------------*/
+// Those should really be called "min" values:
+// In linker file, the start of heap is specified after the RAM variables,
+// while the start of stack is set at the end of the RAM memory (growing downward).
+// This leaves whatever is free in RAM for both the heap and stack.
+// Defining a .stack and .heap regions will reserve those in memory,
+// but they are not monitored if they grow out of this allocated space.
 #ifndef __STACK_SIZE
   #define	__STACK_SIZE  0x00000400
 #endif
+#if __STACK_SIZE > 0
 static uint8_t stack[__STACK_SIZE] __attribute__ ((aligned(8), used, section(".stack")));
+#endif
 
 #ifndef __HEAP_SIZE
-  #define	__HEAP_SIZE   0x00000C00
+  #define	__HEAP_SIZE   0x00010000
 #endif
 #if __HEAP_SIZE > 0
 static uint8_t heap[__HEAP_SIZE]   __attribute__ ((aligned(8), used, section(".heap")));
@@ -393,7 +401,7 @@ void UsageFault_Handler(void) {
  *----------------------------------------------------------------------------*/
 void Default_Handler(void) {
 
-	while(1);
+    while (1);
 }
 #endif
 
