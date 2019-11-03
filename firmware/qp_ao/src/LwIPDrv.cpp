@@ -2,13 +2,13 @@
 //
 // Project: LwIP
 //
-// Module: LM3S6965 low-level Ethernet driver.
+// Module: LwIP Ethernet driver.
 //
-// *****************************************************************************
+// *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief LwIP Ethernet Driver class.
+//! \ingroup lwip
 
 // *****************************************************************************
 //
@@ -70,22 +70,21 @@ extern "C" {
 // *****************************************************************************
 
 std::map<struct netif * const, LwIPDrv * const> LwIPDrv::sMap;
+std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 // Low-level init.
-// Will be called by LwIP at init stage.
+// Will be called by LwIP at init stage, everytime a netif is added.
 err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
-    // Initialize all ethernet interfaces.
-    for (auto& lKeyValue : LwIPDrv::sMap) {
-        err_t lErr = lKeyValue.second->EtherIFInit(lKeyValue.first);
-        if (lErr != ERR_OK) {
-            // Return on 1st error.
-            return lErr;
-        }
+    // Find the instance in hash that owns this struct netif.
+    auto lIt = LwIPDrv::sMap.find(aNetIF);
+    if (lIt != LwIPDrv::sMap.end()) {
+        return lIt->second->EtherIFInit(aNetIF);
     }
+
     return ERR_ARG;
 }
 
@@ -101,9 +100,8 @@ err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const
 }
 
 
-// TODO: add parameter for the network interface.
-void LwIPDrv::StaticISR(void) {
-    //find_in_map->second->ISR();
+void LwIPDrv::StaticISR(unsigned int aIndex) {
+    sVector[aIndex]->ISR();
 }
 
 
@@ -126,13 +124,14 @@ uint32_t LwIPDrv::GetDefaultGW(void) const {
 // *****************************************************************************
 
 LwIPDrv::LwIPDrv(unsigned int aIndex, unsigned int aPBufQSize)
-    : mMyIndex(aIndex) {
+    : mMyIndex(aIndex)
+    , mNetIF{0} {
 
     mPBufQ = new PBufQ(aPBufQSize);
 
     // Associate this <struct netif *, LwIPDrv>.
     LwIPDrv::sMap.insert(std::pair<struct netif * const, LwIPDrv *const>(&mNetIF, this));
-    //LwIPDrv::sVector.push_back(this);
+    LwIPDrv::sVector[aIndex] = this;
 }
 
 
@@ -153,7 +152,7 @@ bool LwIPDrv::PBufQ::IsEmpty(void) const {
 }
 
 
-bool LwIPDrv::PBufQ::Put(struct pbuf *aPBufPtr) {
+bool LwIPDrv::PBufQ::Put(struct pbuf * const aPBufPtr) {
     unsigned int lNextQWr = mQWrIx + 1;
 
     if (lNextQWr == mRingSize) {

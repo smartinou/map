@@ -145,28 +145,13 @@ bool App::Init(void) {
         nullptr,
         0U
     );
-#if 0
-#if 0
+
+
     // Network makes sense in the following cases:
     // -if we use support web pages.
     // -For larger IoT support.
     // TODO: Check if Init event is required at all.
-    LwIPInitEvt const lLwIPInitEvt(
-        DUMMY_SIG,
-        App::sNetIFRecPtr,
-        App::HTTPInitCallback
-    );
-
-    mLwIPMgr_AO = new LwIPMgr_AO;
-    mLwIPMgr_AO->start(
-        4U,
-        mLwIPEventQueue,
-        Q_DIM(mLwIPEventQueue),
-        nullptr,
-        0U);// ,
-        //&lLwIPInitEvt
-    //);
-#else
+    LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
     auto lLwIPMgr_AO = mFactory->CreateLwIPMgrAO();
     if (lLwIPMgr_AO.get() != nullptr) {
         lLwIPMgr_AO->start(
@@ -174,10 +159,10 @@ bool App::Init(void) {
             mLwIPEventQueue,
             Q_DIM(mLwIPEventQueue),
             nullptr,
-            0U
+            0U,
+            &lLwIPInitEvent
         );
     }
-#endif
 
 
     std::shared_ptr<QP::QActive> lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();
@@ -198,7 +183,7 @@ bool App::Init(void) {
     QS_OBJ_DICTIONARY(mLwIPEventQueue);
     QS_OBJ_DICTIONARY(mDisplayMgrEventQueue);
     QS_OBJ_DICTIONARY(mFileLogSinkEventQueue);
-#endif
+
     return true;
 }
 
@@ -270,7 +255,7 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff) {
 DWORD get_fattime(void) {
     return 0;
 }
-#endif
+#endif // FF_FS_READONLY
 
 } // extern C
 

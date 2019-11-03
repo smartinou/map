@@ -3,13 +3,13 @@
 //
 // Project: LwIP
 //
-// Module: LM3S6965 low-level Ethernet driver.
+// Module: LwIP Ethernet driver.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief LwIP Ethernet Driver class.
+//! \ingroup lwip
 
 // ******************************************************************************
 //
@@ -50,7 +50,7 @@ public:
     // Specific to an Ethernet IF.
     static err_t StaticEtherIFInit(struct netif * const aNetIF);
     static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
-    static void StaticISR(void);
+    static void StaticISR(unsigned int aIndex);
 
     virtual void DrvInit(
         QP::QActive * const aAO,
@@ -77,7 +77,7 @@ private:
         PBufQ(unsigned int aQSize);
 
         bool IsEmpty(void) const;
-        bool Put(struct pbuf *aPBufPtr);
+        bool Put(struct pbuf * const aPBufPtr);
         struct pbuf *Get(void);
 
     private:
@@ -101,6 +101,7 @@ private:
     LwIPDrv const &operator=(LwIPDrv const &) = delete;
 
     static std::map<struct netif * const, LwIPDrv * const> sMap;
+    static std::vector<LwIPDrv *> sVector;
 
     // Queue of pbufs for transmission.
     unsigned int mMyIndex;

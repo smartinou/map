@@ -922,10 +922,7 @@ void UART0_IRQHandler(void) {
 
 void Ethernet_IRQHandler(void);
 void Ethernet_IRQHandler(void) {
-    //ISR_Ethernet();
-    //if (mEthernetCallback) {
-    //mEtherCallback();
-    //}
+    LwIPDrv::StaticISR(0);
 }
 
 
