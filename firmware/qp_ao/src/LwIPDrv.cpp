@@ -76,27 +76,27 @@ std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-// Low-level init.
-// Will be called by LwIP at init stage, everytime a netif is added.
-err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
-    // Find the instance in hash that owns this struct netif.
-    auto lIt = LwIPDrv::sMap.find(aNetIF);
-    if (lIt != LwIPDrv::sMap.end()) {
-        return lIt->second->EtherIFInit(aNetIF);
+void LwIPDrv::StaticInit(
+    QP::QActive * const aAO,
+    bool aUseDHCP,
+    uint32_t aIPAddress,
+    uint32_t aSubnetMask,
+    uint32_t aGWAddress
+) {
+    // Go through all registered network drivers and call their Init() function.
+    for (std::vector<LwIPDrv *>::iterator lIt = sVector.begin(); lIt != sVector.end(); ++lIt) {
+        (*lIt)->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
     }
-
-    return ERR_ARG;
 }
 
 
-err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
-    // Find the instance in hash that owns this struct netif.
-    auto lIt = LwIPDrv::sMap.find(aNetIF);
-    if (lIt != LwIPDrv::sMap.end()) {
-        return lIt->second->EtherIFOut(aNetIF, aPBuf);
-    }
+void LwIPDrv::StaticRd(unsigned int aIndex) {
+    sVector[aIndex]->Rd();
+}
 
-    return ERR_ARG;
+
+void LwIPDrv::StaticWr(unsigned int aIndex) {
+    sVector[aIndex]->Wr();
 }
 
 
@@ -122,6 +122,30 @@ uint32_t LwIPDrv::GetDefaultGW(void) const {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+// Low-level init.
+// Will be called by LwIP at init stage, everytime a netif is added.
+err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
+    // Find the instance in hash that owns this struct netif.
+    auto lIt = LwIPDrv::sMap.find(aNetIF);
+    if (lIt != LwIPDrv::sMap.end()) {
+        return lIt->second->EtherIFInit(aNetIF);
+    }
+
+    return ERR_ARG;
+}
+
+
+err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
+    // Find the instance in hash that owns this struct netif.
+    auto lIt = LwIPDrv::sMap.find(aNetIF);
+    if (lIt != LwIPDrv::sMap.end()) {
+        return lIt->second->EtherIFOut(aNetIF, aPBuf);
+    }
+
+    return ERR_ARG;
+}
+
 
 LwIPDrv::LwIPDrv(unsigned int aIndex, unsigned int aPBufQSize)
     : mMyIndex(aIndex)

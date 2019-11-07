@@ -46,25 +46,17 @@ namespace QP {
 class LwIPDrv {
 public:
     virtual ~LwIPDrv() {}
-    // Static functions to hook to 'C' code.
-    // Specific to an Ethernet IF.
-    static err_t StaticEtherIFInit(struct netif * const aNetIF);
-    static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
-    static void StaticISR(unsigned int aIndex);
 
-    virtual void DrvInit(
+    static void StaticInit(
         QP::QActive * const aAO,
         bool aUseDHCP,
         uint32_t aIPAddress,
         uint32_t aSubnetMask,
         uint32_t aGWAddress
-    ) = 0;
-
-    virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
-    virtual err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) = 0;
-    virtual void Rd(void) = 0;
-    virtual void Wr(void) = 0;
-    virtual void ISR(void) = 0;
+    );
+    static void StaticRd(unsigned int aIndex);
+    static void StaticWr(unsigned int aIndex);
+    static void StaticISR(unsigned int aIndex);
 
     uint32_t GetIPAddress(void) const;
     uint32_t GetSubnetMask(void) const;
@@ -89,9 +81,29 @@ private:
     };
 
 protected:
+    // Static functions to hook to 'C' code.
+    // Specific to an Ethernet IF.
+    static err_t StaticEtherIFInit(struct netif * const aNetIF);
+    static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
+
     LwIPDrv(unsigned int mMyIndex, unsigned int aPBufQSize);
 
+    virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
+    virtual err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) = 0;
+
+    virtual void DrvInit(
+        QP::QActive * const aAO,
+        bool aUseDHCP,
+        uint32_t aIPAddress,
+        uint32_t aSubnetMask,
+        uint32_t aGWAddress
+    ) = 0;
+    virtual void Rd(void) = 0;
+    virtual void Wr(void) = 0;
+    virtual void ISR(void) = 0;
+
     PBufQ &GetPBufQ(void) const { return *mPBufQ; }
+    unsigned int GetIndex(void) const { return mMyIndex; }
     struct netif &GetNetIF(void) { return mNetIF; }
     QP::QActive &GetAO(void) const { return *mAO; }
     void SetAO(QP::QActive * const aAO) { mAO = aAO; }

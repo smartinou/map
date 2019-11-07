@@ -322,6 +322,9 @@ private:
     }
 
 
+    // When LwIP::AO::Mgr can get rid of any local reference to LwIPDrv,
+    // it won't be necessary for this function to return a pointer to EthDrv.
+    // It will be referenced via LwIPDrv static functions.
     std::unique_ptr<EthDrv> CreateEthDrv(void) {
         EthernetAddress lMAC = GetMACAddress();
         unsigned int lMyNetIFIndex = 0;
@@ -880,7 +883,6 @@ void GPIOPortF_IRQHandler(void) {
         if (nullptr != lDisplayMgrAO) {
             if (Button::IS_HIGH == BSP::mSelectButton.GetGPIOPinState()) {
                 static QP::QEvt const sEvt(DISPLAY_REFRESH_SIG);
-                QP::QF::PUBLISH(&sEvt, 0);
                 lDisplayMgrAO->POST(&sEvt, 0);
             }
         }

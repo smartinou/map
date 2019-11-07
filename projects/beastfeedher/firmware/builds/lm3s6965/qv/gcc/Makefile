@@ -169,6 +169,7 @@ CPP_SRCS := \
         EthDrv.cpp \
         FeedCfgRec.cpp \
         GPIO.cpp \
+        IPAddress.cpp \
         Limit.cpp \
         Logging_AOs.cpp \
         Logger.cpp \
@@ -189,7 +190,6 @@ CPP_SRCS := \
         Weekday.cpp
 
 #        Logging_Events.cpp \
-#        IPAddress.cpp \
 #        eth_driver.cpp \
 #        RTCC_Events.cpp \
 

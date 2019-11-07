@@ -25,7 +25,10 @@
     <documentation>Singleton instance.</documentation>
    </attribute>
    <attribute name="mEtherDrv" type="LwIPDrv &amp;" visibility="0x02" properties="0x00">
-    <documentation>Reference to LwIP ethernet driver.</documentation>
+    <documentation>Reference to LwIP ethernet driver.
+
+TODO: Eventually work toward removing this reference, and only use LwIP static functions.
+</documentation>
    </attribute>
    <attribute name="mIPAddress" type="uint32_t" visibility="0x02" properties="0x00">
     <documentation>Network IP address in network order.</documentation>
@@ -98,7 +101,8 @@ if (nullptr != e) {
 // Initialize the lwIP stack.
 lwip_init();
 
-mEtherDrv.DrvInit(
+//mEtherDrv.DrvInit(
+LwIPDrv::StaticInit(
     (QP::QActive *)this,
     lUseDHCP,
     lIPAddr,
@@ -124,32 +128,31 @@ if (nullptr != lCallbackInit) {
 );</entry>
      <exit brief="StopTimer();">mSlowTickTimer.disarm();</exit>
      <tran trig="LWIP_RX_READY">
-      <action brief="EtherDrv.Rd();">mEtherDrv.Rd();</action>
+      <action brief="EtherDrv.Rd();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
+LwIPDrv::StaticRd(lEvent-&gt;mIndex);</action>
       <tran_glyph conn="8,19,3,-1,34">
        <action box="0,-2,28,2"/>
       </tran_glyph>
      </tran>
      <tran trig="LWIP_TX_READY">
-      <action brief="EtherDrv.Wr();">mEtherDrv.Wr();</action>
+      <action brief="EtherDrv.Wr();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
+LwIPDrv::StaticWr(lEvent-&gt;mIndex);</action>
       <tran_glyph conn="8,23,3,-1,34">
        <action box="0,-2,24,2"/>
       </tran_glyph>
      </tran>
      <tran trig="LWIP_SLOW_TICK">
       <action brief="CheckIPAddr, ProcTimers();">// Has IP address changed?
-if (mIPAddress != mEtherDrv.GetIPAddress()) {//me-&gt;mNetIFPtr-&gt;ip_addr.addr) {
+if (mIPAddress != mEtherDrv.GetIPAddress()) {
     // IP address in the network byte order.
     // Save the IP addr.
-    mIPAddress = mEtherDrv.GetIPAddress(); // me-&gt;mNetIFPtr-&gt;ip_addr.addr;
-    uint32_t lIPAddressNet = mIPAddress; // TODO: HAVE THE ABOVE FUNCTION RETURN IN PROPER ENDIANNESS. ntohl(me-&gt;mIPAddr);
-    (void)lIPAddressNet; // The var to put in an event.
+    mIPAddress = mEtherDrv.GetIPAddress();
 
-    // TODO: create event and publish.
     // Publish the text event to display the new IP address.
     LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
         LwIP::Event::IPAddressChanged,
         LWIP_IP_CHANGED_SIG,
-        lIPAddressNet,
+        mIPAddress,
         mEtherDrv.GetSubnetMask(),
         mEtherDrv.GetDefaultGW()
     );
@@ -256,6 +259,20 @@ if (mIPAddress != mEtherDrv.GetIPAddress()) {//me-&gt;mNetIFPtr-&gt;ip_addr.addr
 // Ctor body.</code>
    </operation>
   </class>
+  <class name="Interrupt" superclass="qpcpp::QEvt">
+   <documentation>Event raised with corresponding interrupt in ethernet driver.</documentation>
+   <attribute name="mIndex" type="unsigned int const" visibility="0x00" properties="0x00">
+    <documentation>0-based index of the network interface that this event belongs to.</documentation>
+   </attribute>
+   <operation name="Interrupt" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aIndex" type="unsigned int const"/>
+    <code>    : QP::QEvt(aSig)
+    , mIndex(aIndex)
+</code>
+   </operation>
+  </class>
  </package>
  <directory name="../codegen">
   <file name="LwIP_AOs.h">
@@ -325,6 +342,7 @@ class NetIFRec;
 
 $declare${LwIP::Events::Init}
 $declare${LwIP::Events::IPAddressChanged}
+$declare${LwIP::Events::Interrupt}
 </text>
   </file>
  </directory>

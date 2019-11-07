@@ -150,7 +150,6 @@ bool App::Init(void) {
     // Network makes sense in the following cases:
     // -if we use support web pages.
     // -For larger IoT support.
-    // TODO: Check if Init event is required at all.
     LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
     auto lLwIPMgr_AO = mFactory->CreateLwIPMgrAO();
     if (lLwIPMgr_AO.get() != nullptr) {

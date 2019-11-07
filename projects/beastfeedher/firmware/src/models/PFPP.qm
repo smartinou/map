@@ -110,8 +110,10 @@ mDeferredEventQueue.init(mDeferredEventQueueSto, Q_DIM(mDeferredEventQueueSto));
 
 // Subscribe to signals if any.
 subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
+subscribe(RTCC_TIME_TICK_ALARM_SIG);
 subscribe(FEED_MGR_MANUAL_FEED_CMD_SIG);
 subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
+subscribe(LWIP_IP_CHANGED_SIG);
 
 // Set logging category.
 //LOGGER.AddCategory(FEED_MGR_LOG_SIG, &amp;sLogCategory[0]);
@@ -167,14 +169,62 @@ subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
         <action box="0,-2,26,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="RTCC_TIME_AND_DATE? 0">
-       <action brief="^DISPLAY_TEXT(Time, Date);"/>
+      <tran trig="RTCC_TIME_TICK_ALARM">
+       <action brief="^DISPLAY_TEXT(Time, Date);">RTCC::Event::TimeAndDate const * const lEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;( e );
+//Time lTime(e-&gt;Time);
+char lDateStr[32] = {0};
+DateHelper::ToStr(lEvent-&gt;mDate, &amp;lDateStr[0]);
+char lTimeStr[32] = {0};
+TimeHelper::ToStr(lEvent-&gt;mTime, &amp;lTimeStr[0]);
+Display::Event::DisplayText * const lDateChangedEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 10,
+    0xF,
+    &amp;lDateStr[0],
+    false
+);
+QP::QF::PUBLISH(lDateChangedEvent, this);
+
+Display::Event::DisplayText * const lTimeChangedEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 20,
+    0xF,
+    &amp;lTimeStr[0],
+    false
+);
+QP::QF::PUBLISH(lTimeChangedEvent, this);</action>
        <tran_glyph conn="4,106,3,-1,50">
         <action box="0,-2,42,2"/>
        </tran_glyph>
       </tran>
       <tran trig="LWIP_IP_CHANGED">
-       <action brief="^DISPLAY_TEXT(IPAddress);"/>
+       <action brief="^DISPLAY_TEXT(IPAddress);">LwIP::Event::IPAddressChanged const * const lEvent = static_cast&lt;LwIP::Event::IPAddressChanged const * const&gt;( e );
+IPAddress lIPAddress(lEvent-&gt;mIPAddress);
+char lIPAddressStr[32] = {0};
+// Erase previous IP address, in case this one is longer.
+memset(&amp;lIPAddressStr[0], ' ', 15);
+lIPAddress.GetString(&amp;lIPAddressStr[0]);
+Display::Event::DisplayText * const lEraseLineEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 30,
+    0xF,
+    &amp;lIPAddressStr[0],
+    false
+);
+QP::QF::PUBLISH(lEraseLineEvent, this);
+
+Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 30,
+    0xF,
+    &amp;lIPAddressStr[0],
+    true
+);
+QP::QF::PUBLISH(lLwIPChangedEvent, this);</action>
        <tran_glyph conn="4,110,3,-1,50">
         <action box="0,-2,40,2"/>
        </tran_glyph>
@@ -330,6 +380,12 @@ $declare${project::AOs::Mgr_AO}
    <file name="PFPP_AOs.cpp">
     <text>#include &quot;BSP.h&quot;
 #include &quot;Signals.h&quot;
+
+#include &quot;net/IPAddress.h&quot;
+
+#include &quot;DisplayMgr_Events.h&quot;
+#include &quot;LwIP_Events.h&quot;
+#include &quot;RTCC_Events.h&quot;
 
 #include &quot;PFPP_AOs.h&quot;
 #include &quot;PFPP_Events.h&quot;

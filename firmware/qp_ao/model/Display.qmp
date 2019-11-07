@@ -22,21 +22,23 @@
     , mDisplayTimer(this, DISPLAY_TIMEOUT_SIG, 0U)
     , mLCD(aLCD)
     , mIsOn(false)
-    , mOnTime(0)
+    , mOnTime(5)
 
 // Ctor body.</code>
    </operation>
    <operation name="DisplayText" type="void" visibility="0x02" properties="0x00">
     <documentation>Displays text on screen.</documentation>
     <parameter name="e" type="QP::QEvt const * const"/>
-    <code>Display::Event::DisplayText const * const lTextEvt = static_cast&lt;Display::Event::DisplayText const * const&gt;(e);
-TurnDisplayOn();
+    <code>Display::Event::DisplayText const * const lTextEvent = static_cast&lt;Display::Event::DisplayText const * const&gt;(e);
 mLCD.DrawStr(
-    &amp;lTextEvt-&gt;mStr[0],
-    lTextEvt-&gt;mPosX,
-    lTextEvt-&gt;mPosY,
-    lTextEvt-&gt;mGreyLevel);
-</code>
+    &amp;lTextEvent-&gt;mStr[0],
+    lTextEvent-&gt;mPosX,
+    lTextEvent-&gt;mPosY,
+    lTextEvent-&gt;mGreyLevel
+);
+if (lTextEvent-&gt;mIsDisplayOn) {
+    TurnDisplayOn();
+}</code>
    </operation>
    <operation name="Init" type="void" visibility="0x02" properties="0x00">
     <documentation>Init function.</documentation>
@@ -125,18 +127,26 @@ TurnDisplayOff();</exit>
    <attribute name="mStr[32+1]" type="char" visibility="0x00" properties="0x00">
     <documentation>The string to display.</documentation>
    </attribute>
+   <attribute name="mIsDisplayOn" type="bool" visibility="0x00" properties="0x00">
+    <documentation>Turns the display on if set to true.
+Silently writes to display otherwise.</documentation>
+   </attribute>
    <operation name="DisplayText" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
     <parameter name="aPosX" type="unsigned int const"/>
     <parameter name="aPosY" type="unsigned int const"/>
     <parameter name="aGreyLevel" type="unsigned int const"/>
+    <parameter name="aStr" type="char const * const"/>
+    <parameter name="aIsDisplayOn" type="bool"/>
     <code>    : QP::QEvt(aSig)
     , mPosX(aPosX)
     , mPosY(aPosY)
     , mGreyLevel(aGreyLevel)
+    , mIsDisplayOn(aIsDisplayOn)
 
-// Ctor body left empty.</code>
+// Ctor body left empty.
+strncpy(&amp;mStr[0], aStr, 32);</code>
    </operation>
   </class>
  </package>
@@ -162,7 +172,9 @@ $define${Display::AOs::Mgr_AO}
 </text>
   </file>
   <file name="DisplayMgr_Events.h">
-   <text>#include &lt;qpcpp.h&gt;
+   <text>#include &lt;string.h&gt;
+
+#include &lt;qpcpp.h&gt;
 
 
 $declare${Display::Events}
