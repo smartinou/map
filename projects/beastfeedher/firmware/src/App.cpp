@@ -39,7 +39,7 @@
 // This project.
 #include "App.h"
 #include "BSP.h"
-#include "DisplayMgr_AOs.h"
+#include "Display_AOs.h"
 #include "Logging_AOs.h"
 #include "IBSP.h"
 #include "ILCD.h"

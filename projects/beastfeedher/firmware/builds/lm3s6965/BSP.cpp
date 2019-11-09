@@ -49,7 +49,7 @@
 #include "SSD1329.h"
 #include "TB6612.h"
 
-#include "DisplayMgr_AOs.h"
+#include "Display_AOs.h"
 #include "Logging_AOs.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AO.h"
@@ -790,8 +790,8 @@ void SysTick_Handler(void) {
     // Uncomment those line if need to publish every single tick.
     // Process time events for rate 0.
     // Publish to suscribers.
-    //static QP::QEvt const sTickEvt(TIME_TICK_SIG);
-    //QP::QF::PUBLISH(&sTickEvt, &sSysTick_Handler);
+    //static QP::QEvt const sTickEvent(TIME_TICK_SIG);
+    //QP::QF::PUBLISH(&sTickEvent, &sSysTick_Handler);
 }
 
 
@@ -828,17 +828,17 @@ void GPIOPortC_IRQHandler(void) {
     if (lPin & lIntStatus) {
         GPIOPinIntClear(GPIO_PORTC_BASE, lPin);
 
-        static PFPP::Event::ManualFeedCmd const sOnEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
-        static PFPP::Event::ManualFeedCmd const sOffEvt(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
+        static PFPP::Event::ManualFeedCmd const sOnEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
+        static PFPP::Event::ManualFeedCmd const sOffEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
         // Decouple using framework PUBLISH() method instead of direct posting to AO.
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
             if (Button::IS_HIGH == BSP::mManualFeedButton.GetGPIOPinState()) {
-                //QP::QF::PUBLISH(&sOnEvt, 0);
-                lPFPPAO->POST(&sOnEvt, 0);
+                //QP::QF::PUBLISH(&sOnEvent, 0);
+                lPFPPAO->POST(&sOnEvent, 0);
             } else {
-                //QP::QF::PUBLISH(&sOffEvt, 0);
-                lPFPPAO->POST(&sOffEvt, 0);
+                //QP::QF::PUBLISH(&sOffEvent, 0);
+                lPFPPAO->POST(&sOffEvent, 0);
             }
         }
     }
@@ -859,9 +859,9 @@ void GPIOPortD_IRQHandler(void) {
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
             if (Button::IS_HIGH == BSP::mTimedFeedButton.GetGPIOPinState()) {
-                static PFPP::Event::TimedFeedCmd const sEvt(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
-                //QP::QF::PUBLISH(&sEvt, 0);
-                lPFPPAO->POST(&sEvt, 0);
+                static PFPP::Event::TimedFeedCmd const sEvent(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
+                //QP::QF::PUBLISH(&sEvent, 0);
+                lPFPPAO->POST(&sEvent, 0);
             }
         }
     }
@@ -882,8 +882,8 @@ void GPIOPortF_IRQHandler(void) {
         QP::QActive * const lDisplayMgrAO = BSP::Factory::Instance()->GetOpaqueDisplayMgrAO();
         if (nullptr != lDisplayMgrAO) {
             if (Button::IS_HIGH == BSP::mSelectButton.GetGPIOPinState()) {
-                static QP::QEvt const sEvt(DISPLAY_REFRESH_SIG);
-                lDisplayMgrAO->POST(&sEvt, 0);
+                static QP::QEvt const sEvent(DISPLAY_REFRESH_SIG);
+                lDisplayMgrAO->POST(&sEvent, 0);
             }
         }
     }

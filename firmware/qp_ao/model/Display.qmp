@@ -151,7 +151,7 @@ strncpy(&amp;mStr[0], aStr, 32);</code>
   </class>
  </package>
  <directory name="../codegen">
-  <file name="DisplayMgr_AOs.h">
+  <file name="Display_AOs.h">
    <text>#include &lt;qpcpp.h&gt;
 
 #include &lt;ILCD.h&gt;
@@ -160,18 +160,18 @@ strncpy(&amp;mStr[0], aStr, 32);</code>
 $declare${Display::AOs::Mgr_AO}
 </text>
   </file>
-  <file name="DisplayMgr_AOs.cpp">
+  <file name="Display_AOs.cpp">
    <text>#include &quot;BSP.h&quot;
 #include &quot;Signals.h&quot;
 
-#include &quot;DisplayMgr_Events.h&quot;
-#include &quot;DisplayMgr_AOs.h&quot;
+#include &quot;Display_Events.h&quot;
+#include &quot;Display_AOs.h&quot;
 
 
 $define${Display::AOs::Mgr_AO}
 </text>
   </file>
-  <file name="DisplayMgr_Events.h">
+  <file name="Display_Events.h">
    <text>#include &lt;string.h&gt;
 
 #include &lt;qpcpp.h&gt;

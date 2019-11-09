@@ -163,7 +163,7 @@ CPP_SRCS := \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
         DBRec.cpp \
-        DisplayMgr_AOs.cpp \
+        Display_AOs.cpp \
         DS3234.cpp \
         EthernetAddress.cpp \
         EthDrv.cpp \
