@@ -348,7 +348,7 @@ $declare${RTCC::Events::TimeAndDate}
 $declare${RTCC::Events::SaveToRAM}
 </text>
   </file>
-  <file name="RTCC_AO.h">
+  <file name="RTCC_AOs.h">
    <text>#include &quot;qpcpp.h&quot;
 
 // Forward declaration.
@@ -358,13 +358,13 @@ class CalendarRec;
 $declare${RTCC::AOs::RTCC_AO}
 </text>
   </file>
-  <file name="RTCC_AO.cpp">
+  <file name="RTCC_AOs.cpp">
    <text>#include &lt;db/CalendarRec.h&gt;
 #include &quot;IRTCC.h&quot;
 
 #include &quot;Signals.h&quot;
 #include &quot;RTCC_Events.h&quot;
-#include &quot;RTCC_AO.h&quot;
+#include &quot;RTCC_AOs.h&quot;
 
 $define${RTCC::AOs::RTCC_AO}
 </text>

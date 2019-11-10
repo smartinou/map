@@ -181,7 +181,7 @@ CPP_SRCS := \
         NetIFRec.cpp \
         PFPP_AOs.cpp \
         IRTCC.cpp \
-        RTCC_AO.cpp \
+        RTCC_AOs.cpp \
         SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
@@ -383,13 +383,13 @@ MODEL_IN_FILES := \
 MODEL_OUT_FILES := \
 
 
-#  FileLogSink_AO.h \
-#	FileLogSink_AO.cpp \
-         #RTCC_AO.cpp \
-	#Logger.h \
-	#Logger.cpp \
-	#LogEvt.h \
-	#LogEvt.cpp
+#FileLogSink_AO.h \
+#FileLogSink_AO.cpp \
+#RTCC_AOs.cpp \
+#Logger.h \
+#Logger.cpp \
+#LogEvt.h \
+#LogEvt.cpp
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Targets.
