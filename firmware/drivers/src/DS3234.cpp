@@ -403,7 +403,7 @@ bool DS3234::WrAlarm(Time const &aTime, Weekday const &aWeekdayRef) {
 
     // Hard-coded to use alarm2, but provides template for use with any alarm.
     alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
-    alarm_mode_t aAlarmMode =  ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
+    alarm_mode_t const aAlarmMode = ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
     // Fill alarm structure to write to RTC.
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -440,7 +440,7 @@ bool DS3234::IsAlarmOn(void) {
         }
     return false;
 
-    case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl |= AEI2; break;
+    case ALARM_ID::ALARM_ID_2:
         if ((DS3234::AF2  & GetStatus()) && (DS3234::AEI2 & GetCtrl())) {
             return true;
         }

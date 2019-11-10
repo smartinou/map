@@ -27,15 +27,6 @@
 #include <qpcpp.h>
 
 extern "C" {
-// TI Library.
-#include <hw_ethernet.h>
-#include <hw_ints.h>
-#include <hw_memmap.h>
-#include <hw_types.h>
-#include <driverlib/ethernet.h>
-#include <driverlib/interrupt.h>
-#include <driverlib/sysctl.h>
-
 // LwIP.
 #include "lwip/opt.h"
 #include "lwip/init.h"
@@ -47,6 +38,15 @@ extern "C" {
 #include "lwip/snmp.h"
 #include "lwip/dhcp.h"
 #include "lwip/autoip.h"
+
+// TI Library.
+#include <hw_ethernet.h>
+#include <hw_ints.h>
+#include <hw_memmap.h>
+#include <hw_types.h>
+#include <driverlib/ethernet.h>
+#include <driverlib/interrupt.h>
+#include <driverlib/sysctl.h>
 
 #include "netif/etharp.h"
 } // extern "C"

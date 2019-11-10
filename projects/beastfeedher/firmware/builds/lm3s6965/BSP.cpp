@@ -26,6 +26,8 @@
 // CMSIS Library.
 #include "lm3s_cmsis.h"
 
+#include "netif/EthDrv.h"
+
 // TI Library.
 #include <hw_ints.h>
 //#include "hw_memmap.h" // duplicated defines in lm3s_cmsis.h
@@ -42,7 +44,6 @@
 #include "inc/Button.h"
 #include "inc/GPIO.h"
 
-#include "netif/EthDrv.h"
 #include "SDC.h"
 #include "SPI.h"
 #include "DS3234.h"
