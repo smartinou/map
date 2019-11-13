@@ -219,6 +219,8 @@ bool CalendarRec::GetNextEntry(
     }
 
     if (lIsEntryFound) {
+        Time lNextTime(lHourIx / SLOTS_PER_HOUR, (lHourIx % SLOTS_PER_HOUR) * (60 / SLOTS_PER_HOUR), 0, true);
+        aNextTime = lNextTime;
         unsigned int lWeekdayUI = BitMaskToWeekday(lNextWeekdayMask);
         aNextWeekday.Set(lWeekdayUI);
     }

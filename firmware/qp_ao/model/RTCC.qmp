@@ -216,10 +216,7 @@ SetNextCalendarEvent();
       </tran_glyph>
      </tran>
      <tran trig="RTCC_INTERRUPT">
-      <action brief="ReadTimeAndTemp(); PublishTick();">bool lIsCalendarAlarm = mRTCC.IsAlarmOn();
-mRTCC.AckInterrupt();
-
-// Set data as impure to force refresh of data read from RTCC.
+      <action brief="ReadTimeAndTemp(); PublishTick();">// Set data as impure to force refresh of data read from RTCC.
 mRTCC.SetImpure();
 mRTCC.GetTimeAndDate(mTime, mDate);
 mTemperature = mRTCC.GetTemperature();
@@ -232,6 +229,9 @@ RTCC::Event::TimeAndDate * const lTickAlarmEvent =
         mTime,
         mDate);
 QP::QF::PUBLISH(lTickAlarmEvent, this);
+
+bool lIsCalendarAlarm = mRTCC.IsAlarmOn();
+mRTCC.AckInterrupt();
 </action>
       <choice>
        <guard brief="Source == CalendarAlarm">lIsCalendarAlarm == true</guard>

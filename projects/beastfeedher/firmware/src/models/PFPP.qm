@@ -22,6 +22,12 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mFeedCfgRec" type="FeedCfgRec const * const" visibility="0x02" properties="0x00">
      <documentation>A pointer to the Feeder configuration record.</documentation>
     </attribute>
+    <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
+     <documentation>A local copy of current date from periodic tick.</documentation>
+    </attribute>
+    <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
+     <documentation>A local copy of current time from periodic tick.</documentation>
+    </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
      <parameter name="aMotorControl" type="IMotorControl &amp;"/>
@@ -32,6 +38,8 @@ This is where all the feeding actions are taken, based on calendar events and in
     , mFeedTimer(this, FEED_MGR_TIMEOUT_SIG, 0U)
     , mMotorControl(aMotorControl)
     , mFeedCfgRec(aFeedCfgRec)
+    , mDate()
+    , mTime()
 
 // Ctor body left empty.</code>
     </operation>
@@ -99,11 +107,28 @@ return true;</code>
 
 return true;</code>
     </operation>
+    <operation name="DisplayFeedTime" type="void" visibility="0x02" properties="0x00">
+     <documentation>Sends a &quot;Display Text&quot; signal to show last feeding time.</documentation>
+     <code>char lTimeAndDateStr[64] = {0};
+DateHelper::ToStr(mDate, &amp;lTimeAndDateStr[0]);
+size_t lStrLen = strlen(&amp;lTimeAndDateStr[0]);
+lTimeAndDateStr[lStrLen] = ' ';
+TimeHelper::ToStr(mTime, &amp;lTimeAndDateStr[lStrLen + 1]);
+
+Display::Event::DisplayText * const lTextEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 60,
+    0xF,
+    &amp;lTimeAndDateStr[0],
+    true
+);
+QP::QF::PUBLISH(lTextEvent, this);
+</code>
+    </operation>
     <statechart properties="0x02">
      <initial target="../1">
-      <action brief="Init();">//PFPP::Event::Init const * const lInitEvent = static_cast&lt;PFPP::Event::Init const * const&gt;(e);
-
-StopFeeder();
+      <action brief="Init();">StopFeeder();
 
 // Initialize the QF queue for deferred feed requests.
 mDeferredEventQueue.init(mDeferredEventQueueSto, Q_DIM(mDeferredEventQueueSto));
@@ -124,6 +149,17 @@ subscribe(LWIP_IP_CHANGED_SIG);
      </initial>
      <state name="Running">
       <documentation>Top state.</documentation>
+      <entry brief="DisplayFrame();">char const *lFrameStr = &quot;Last feed time:&quot;;
+Display::Event::DisplayText * const lFrameEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 50,
+    0xF,
+    lFrameStr,
+    false
+);
+QP::QF::PUBLISH(lFrameEvent, this);
+</entry>
       <initial target="../7">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
@@ -171,11 +207,11 @@ subscribe(LWIP_IP_CHANGED_SIG);
       </tran>
       <tran trig="RTCC_TIME_TICK_ALARM">
        <action brief="^DISPLAY_TEXT(Time, Date);">RTCC::Event::TimeAndDate const * const lEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;( e );
-//Time lTime(e-&gt;Time);
+mDate = lEvent-&gt;mDate;
+mTime = lEvent-&gt;mTime;
+
 char lDateStr[32] = {0};
 DateHelper::ToStr(lEvent-&gt;mDate, &amp;lDateStr[0]);
-char lTimeStr[32] = {0};
-TimeHelper::ToStr(lEvent-&gt;mTime, &amp;lTimeStr[0]);
 Display::Event::DisplayText * const lDateChangedEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
@@ -186,6 +222,8 @@ Display::Event::DisplayText * const lDateChangedEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lDateChangedEvent, this);
 
+char lTimeStr[32] = {0};
+TimeHelper::ToStr(lEvent-&gt;mTime, &amp;lTimeStr[0]);
 Display::Event::DisplayText * const lTimeChangedEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
@@ -279,8 +317,10 @@ mFeedTimer.armX(lManualWaitPeriod);</entry>
 Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
         <entry brief="StartTimer(MaxFeedTime); StartFeeder();">QP::QTimeEvtCtr lManualMaxFeedPeriod = GetManualMaxFeedPeriod();
 StartTimedFeed(lManualMaxFeedPeriod);</entry>
+        <exit brief="DisplayFeedTime();">DisplayFeedTime();</exit>
         <state_glyph node="42,58,30,8">
          <entry box="1,2,25,4"/>
+         <exit box="1,6,25,2"/>
         </state_glyph>
        </state>
        <state_glyph node="32,36,44,42">
@@ -291,7 +331,8 @@ StartTimedFeed(lManualMaxFeedPeriod);</entry>
        <documentation>State describing behavior for events triggering a fixed timed feeding period.</documentation>
        <entry brief="StartTimer(FeedTime); StartFeeder();">QP::QTimeEvtCtr lTimedFeedPeriod = GetTimedFeedPeriod();
 StartTimedFeed(lTimedFeedPeriod);</entry>
-       <exit brief="StopFeeder(); StopTimer();">StopTimedFeed();</exit>
+       <exit brief="StopFeeder(); StopTimer(); DisplayFeedTime();">StopTimedFeed();
+DisplayFeedTime();</exit>
        <tran trig="RTCC_CALENDAR_EVENT_ALARM">
         <action brief="Log(); defer();">if (defer(&amp;mDeferredEventQueue, e)) {
     // Event deferred: log event.
@@ -310,10 +351,12 @@ StartTimedFeed(lTimedFeedPeriod);</entry>
        </tran>
        <state_glyph node="32,82,44,18">
         <entry box="1,2,31,2"/>
-        <exit box="1,4,31,2"/>
+        <exit box="1,4,39,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="4,12,76,108"/>
+      <state_glyph node="4,12,76,108">
+       <entry box="1,2,17,2"/>
+      </state_glyph>
      </state>
      <state_diagram size="84,124"/>
     </statechart>

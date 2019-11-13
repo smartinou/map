@@ -395,28 +395,26 @@ bool DS3234::WrAlarm(Time const &aTime, Date const &aDate) {
 
     // Public alarm is triggered on time match.
     // Alarm1 is dedicated to periodic time/date interrupt.
-    return WrAlarm(ALARM_ID::ALARM_ID_2, aTime, aDate, ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH);
+    return WrAlarm(ALARM_ID::ALARM_ID_2, aTime, aDate, ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH);
 }
 
 
 bool DS3234::WrAlarm(Time const &aTime, Weekday const &aWeekdayRef) {
 
     // Hard-coded to use alarm2, but provides template for use with any alarm.
-    alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
-    alarm_mode_t const aAlarmMode = ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH;
+    alarm_id_t constexpr aAlarmID = ALARM_ID::ALARM_ID_2;
+    alarm_mode_t constexpr aAlarmMode = ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH;
     // Fill alarm structure to write to RTC.
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
         mRegMap.mAlarm1Seconds = BinaryToBCD(aTime.GetSeconds());
         FillAlarmStruct(mRegMap.mAlarm1, aTime, aWeekdayRef);
         FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
-        mRegMap.mCtrl |= AEI1;
     break;
 
     case ALARM_ID::ALARM_ID_2:
         FillAlarmStruct(mRegMap.mAlarm2, aTime, aWeekdayRef);
         FillAlarmModeStruct(mRegMap.mAlarm2, aAlarmMode);
-        mRegMap.mCtrl |= AEI2;
     break;
 
     default:
@@ -424,6 +422,7 @@ bool DS3234::WrAlarm(Time const &aTime, Weekday const &aWeekdayRef) {
     }
 
     // Send alarm and control portion of the structure to the RTC.
+    SetAlarm(aAlarmID);
     TxAlarmStruct(aAlarmID);
     return true;
 }
@@ -432,7 +431,7 @@ bool DS3234::WrAlarm(Time const &aTime, Weekday const &aWeekdayRef) {
 bool DS3234::IsAlarmOn(void) {
 
     // Hard-coded to use alarm2, but provides template for use with any alarm.
-    alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
+    alarm_id_t constexpr aAlarmID = ALARM_ID::ALARM_ID_2;
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
         if ((DS3234::AF1  & GetStatus()) && (DS3234::AEI1 & GetCtrl())) {
@@ -456,7 +455,7 @@ bool DS3234::IsAlarmOn(void) {
 void DS3234::DisableAlarm(void) {
 
     // Hard-coded to use alarm2, but provides template for use with any alarm.
-    alarm_id_t const aAlarmID = ALARM_ID::ALARM_ID_2;
+    alarm_id_t constexpr aAlarmID = ALARM_ID::ALARM_ID_2;
     // Only clear interrupt.
     // We don't care if the Alarm fields are set,
     // as long as the interrupt is not generated.
@@ -482,8 +481,8 @@ void DS3234::ClrAlarmFlag(void) {
 
 void DS3234::RdFromNVMem(
     uint8_t * const aDataPtr,
-    unsigned int    aOffset,
-    unsigned int    aSize
+    unsigned int const aOffset,
+    unsigned int aSize
 ) {
 
     // Write SRAM address register.
@@ -512,8 +511,8 @@ void DS3234::RdFromNVMem(
 
 void DS3234::WrToNVMem(
     uint8_t const * const aDataPtr,
-    unsigned int          aOffset,
-    unsigned int          aSize
+    unsigned int const aOffset,
+    unsigned int aSize
 ) {
 
     // Write SRAM address register.
@@ -635,9 +634,9 @@ void DS3234::FillAlarmStruct(
 
 
 void DS3234::FillAlarmStruct(
-    rtcc_alarm_t   &aAlarmRef,
-    Time    const  &aTime,
-    Weekday const  &aWeekdayRef
+    rtcc_alarm_t  &aAlarmRef,
+    Time    const &aTime,
+    Weekday const &aWeekdayRef
 ) {
 
     FillAlarmTimeStruct(aAlarmRef, aTime);
@@ -661,9 +660,9 @@ void DS3234::FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const &aTime) {
 }
 
 
-void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMode) {
+void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t const aAlarmMode) {
 
-    // Assumes the AxMy bit was clear on previous operation.
+    // Assumes the AxMy bit was cleared on previous operation.
     // This should be performed by BinaryToBCD().
     switch (aAlarmMode) {
     case ALARM_MODE::ONCE_PER_SEC:
@@ -695,7 +694,7 @@ void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMod
 }
 
 
-void DS3234::TxAlarmStruct(alarm_id_t aAlarmID) {
+void DS3234::TxAlarmStruct(alarm_id_t const aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
@@ -728,7 +727,7 @@ void DS3234::TxAlarmStruct(alarm_id_t aAlarmID) {
 }
 
 
-void DS3234::SetAlarm(alarm_id_t aAlarmID) {
+void DS3234::SetAlarm(alarm_id_t const aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1: mRegMap.mCtrl |= AEI1; break;
@@ -737,7 +736,7 @@ void DS3234::SetAlarm(alarm_id_t aAlarmID) {
 }
 
 
-void DS3234::ClrAlarmFlag(alarm_id_t aAlarmID) {
+void DS3234::ClrAlarmFlag(alarm_id_t const aAlarmID) {
 
     // Only clear interrupt.
     // We don't care if the Alarm fields are set,
@@ -757,10 +756,10 @@ void DS3234::ClrAlarmFlag(alarm_id_t aAlarmID) {
 
 
 bool DS3234::WrAlarm(
-    alarm_id_t aAlarmID,
+    alarm_id_t const aAlarmID,
     Time const &aTime,
     Date const &aDate,
-    enum ALARM_MODE aAlarmMode
+    enum ALARM_MODE const aAlarmMode
 ) {
 
     // Fill alarm structure to write to RTC.
