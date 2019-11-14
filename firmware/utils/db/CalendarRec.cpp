@@ -105,7 +105,7 @@ void CalendarRec::Serialize(uint8_t * const aDataPtr) const {
 }
 
 
-void CalendarRec::Deserialize(uint8_t const *aDataPtr) {
+void CalendarRec::Deserialize(uint8_t const * const aDataPtr) {
 
     memcpy(mRec.mCalendarArray.data(), aDataPtr, mRec.mCalendarArray.size());
 }
@@ -169,7 +169,7 @@ void CalendarRec::ClrEntry(Weekday const &aWeekday, Time const &aTime) {
 }
 
 
-void CalendarRec::ClrEntry(unsigned int aWeekday, Time const &aTime) {
+void CalendarRec::ClrEntry(unsigned int const aWeekday, Time const &aTime) {
 
     unsigned int lArrayIx        = GetArrayIx(aTime);
     unsigned int lWeekdayBitMask = (0x1 << aWeekday);

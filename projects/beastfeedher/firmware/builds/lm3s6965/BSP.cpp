@@ -403,10 +403,10 @@ static void ClrUserLED(void);
 #ifdef Q_SPY
 // For local extern "C" functions, not part of any namespace.
 static QP::QSTimeCtr QS_tickTime_ = 0;
-static QP::QSTimeCtr QS_tickPeriod_ = 0; //SystemCoreClock / BSP_TICKS_PER_SEC;
+static QP::QSTimeCtr QS_tickPeriod_ = SystemCoreClock / BSP::TICKS_PER_SEC;
 
 // event-source identifiers used for tracing
-static uint8_t const sSysTick_Handler      = 0U;
+static uint8_t const sSysTick_Handler = 0U;
 static uint8_t const sGPIOPortA_IRQHandler = 0U;
 
 #endif // Q_SPY
@@ -491,7 +491,7 @@ std::shared_ptr<IBSPFactory> Init(void) {
         Q_ERROR();
     }
     QS_OBJ_DICTIONARY(&sSysTick_Handler);
-    QS_OBJ_DICTIONARY(&sGPIOPortA_IRQHandler);
+    //QS_OBJ_DICTIONARY(&sGPIOPortA_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortC_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
@@ -790,7 +790,7 @@ void SysTick_Handler(void) {
 
     // Uncomment those line if need to publish every single tick.
     // Process time events for rate 0.
-    // Publish to suscribers.
+    // Publish to subscribers.
     //static QP::QEvt const sTickEvent(TIME_TICK_SIG);
     //QP::QF::PUBLISH(&sTickEvent, &sSysTick_Handler);
 }
@@ -891,8 +891,8 @@ void GPIOPortF_IRQHandler(void) {
 }
 
 
-void UART0_IRQHandler(void);
 #ifdef Q_SPY
+void UART0_IRQHandler(void);
 // ISR for receiving bytes from the QSPY Back-End
 // NOTE: This ISR is "QF-unaware" meaning that it does not interact with
 // the QF/QK and is not disabled.
@@ -900,7 +900,6 @@ void UART0_IRQHandler(void);
 // and they cannot post or publish events.
 //
 void UART0_IRQHandler(void) {
-
     // Get the raw interrupt status.
     // Clear the asserted interrupts.
     unsigned long lStatus = UARTIntStatus(UART0_BASE, true);
@@ -913,16 +912,12 @@ void UART0_IRQHandler(void) {
         QP::QS::rxPut(lByte);
     }
 }
-
 #else // Q_SPY
-void UART0_IRQHandler(void) {
-    // Intentional empty function body.
-}
+// Intentional undefined function body.
 #endif // Q_SPY
 
 
 // TODO: make this conditional to Ethernet support.
-
 void Ethernet_IRQHandler(void);
 void Ethernet_IRQHandler(void) {
     LwIPDrv::StaticISR(0);
