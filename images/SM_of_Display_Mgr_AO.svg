@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="116.114mm" height="96.7619mm"
+ viewBox="0.5 0.5 384 320"
+ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  version="1.2" baseProfile="tiny">
+<title>QM diagram</title>
+<desc>QM diagram</desc>
+<defs>
+</defs>
+<g fill="none" stroke="black" stroke-width="1" fill-rule="evenodd" stroke-linecap="square" stroke-linejoin="bevel" >
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,80)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="#e0e0ff" fill-opacity="0.501961" stroke="#00008b" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="round" transform="matrix(1,0,0,1,32,80)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M0.5,14.5 C0.5,6.76801 6.76801,0.5 14.5,0.5 L306.5,0.5 C314.232,0.5 320.5,6.76801 320.5,14.5 L320.5,194.5 C320.5,202.232 314.232,208.5 306.5,208.5 L14.5,208.5 C6.76801,208.5 0.5,202.232 0.5,194.5 L0.5,14.5"/>
+<polyline fill="none" vector-effect="none" points="0.5,16.5 320.5,16.5 " />
+<text fill="#00008b" fill-opacity="1" stroke="none" xml:space="preserve" x="138.156" y="10.8594" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >Running</text>
+<text fill="#00008b" fill-opacity="1" stroke="none" xml:space="preserve" x="10.5" y="27.3594" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >e / InitDisplay();</text>
+<text fill="#00008b" fill-opacity="1" stroke="none" xml:space="preserve" x="10.5" y="51.3594" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >x / DisableTimer()</text>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,80)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,32)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,32)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="none" points="0.5,0.5 48.5,0.5 " />
+<polyline fill="none" vector-effect="none" points="48.5,0.5 48.5,48.5 " />
+</g>
+
+<g fill="#8b0000" fill-opacity="1" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,32)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<circle cx="0.5" cy="0.5" r="4"/>
+</g>
+
+<g fill="none" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,32)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="none" points="44.5,40.5 48.5,48.5 52.5,40.5 " />
+<text fill="#8b0000" fill-opacity="1" stroke="none" xml:space="preserve" x="50.5" y="19.3594" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ > / Init();</text>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,32)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,160)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,160)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="none" points="0.5,0.5 272.5,0.5 " />
+</g>
+
+<g fill="#ffffff" fill-opacity="1" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,160)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<rect x="268.5" y="-3.5" width="8" height="8"/>
+<text fill="#8b0000" fill-opacity="1" stroke="none" xml:space="preserve" x="2.5" y="-4.64062" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >DISPLAY_TEXT / DisplayText()</text>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,160)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,208)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,208)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="none" points="0.5,0.5 272.5,0.5 " />
+</g>
+
+<g fill="#ffffff" fill-opacity="1" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,208)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<rect x="268.5" y="-3.5" width="8" height="8"/>
+<text fill="#8b0000" fill-opacity="1" stroke="none" xml:space="preserve" x="2.5" y="-4.64062" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >DISPLAY_TIMEOUT / TurnOff()</text>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,208)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,256)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,256)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="none" points="0.5,0.5 272.5,0.5 " />
+</g>
+
+<g fill="#ffffff" fill-opacity="1" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,32,256)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<rect x="268.5" y="-3.5" width="8" height="8"/>
+<text fill="#8b0000" fill-opacity="1" stroke="none" xml:space="preserve" x="2.5" y="-4.64062" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >DISPLAY_REFRESH / TurnOn();</text>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,32,256)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,304,80)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,304,80)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="none" points="0.5,0.5 0.5,-47.5 " />
+<polyline fill="none" vector-effect="none" points="0.5,-47.5 48.5,-47.5 " />
+</g>
+
+<g fill="#ffffff" fill-opacity="1" stroke="#8b0000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="round" transform="matrix(1,0,0,1,304,80)"
+font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+>
+<rect x="44.5" y="-51.5" width="8" height="8"/>
+<text fill="#8b0000" fill-opacity="1" stroke="none" xml:space="preserve" x="2.5" y="-20.6406" font-family="Arial" font-size="12" font-weight="400" font-style="normal" 
+ >TERMINATE</text>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,304,80)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+font-family="MS Shell Dlg 2" font-size="9.33333" font-weight="400" font-style="normal" 
+>
+</g>
+</g>
+</svg>
