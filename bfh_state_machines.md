@@ -99,6 +99,6 @@ The message display time is also managed by this AOto avoid wearing off the disp
 
 | Signal Name | Direction | Parameter | Comments |
 |:------------|:----------|:----------|:---------|
-| DISPLAY_TEXT_SIG | In | Text, position (x, y), grayscale, {on|off} | string to display. Triggers a 5s-time delay to keep the OLED display on. |
+| DISPLAY_TEXT_SIG | In | Text, position (x, y), grayscale, {on,off} | string to display. Triggers a 5s-time delay to keep the OLED display on. |
 | DISPLAY_TIMEOUT_SIG | In | None | Turn the OLED display off to save matrix. |
 | DISPLAY_REFRESH_SIG | In | None | Turn the OLED display on back again for a timed period. |
