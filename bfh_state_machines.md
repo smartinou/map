@@ -56,7 +56,7 @@ It is copied over 95% of the original application note from QP on how to use LwI
 found [here](https://www.state-machine.com/doc/AN_QP_and_lwIP.pdf)
 
 Nonetheless, the state machine was remodeled in QM, and improvements were made.
-![lwip_ao_sm](./images/SM_of_LwIP_AO.svg)
+![lwip_ao_sm](./images/SM_of_LwIP_Mgr_AO.svg)
 
 ### Diagram
  
@@ -72,16 +72,18 @@ The state machine responsible for handling the various feeding and alarm events.
 
 ### Diagram
 
-![bfh_mgr_ao_sm](./images/bfh_manager_ao_state_machine.png)
+![bfh_mgr_ao_sm](./images/SM_of_PFPP_Mgr_AO.svg)
 
 ### Signal List
 
 | Signal Name | Direction | Parameter | Comments |
 |:------------|:----------|:----------|:---------|
-| SIG_RTCC_CALENDAR_EVENT_ALARM | In | Time and Date references | Triggers a timed feeding, from scheduled calendar. |
-| SIG_FEED_MGR_MANUAL_FEED_CMD | In | State (on, off) | Triggers a manual feeding, or exit of it. From manual toggle sensor pad. |
-| SIG_FEED_MGR_TIMED_FEED_CMD | In | Feeding time | Triggers a timed feeding. From Pet Touch Pad or other. |
-| SIG_FEED_MGR_TIMEOUT | In | None | Feeding timeout, Maximum security feeding timeout or debouncing timeout. |
+| RTCC_CALENDAR_EVENT_ALARM_SIG | In | Time and Date references | Triggers a timed feeding, from scheduled calendar. |
+| FEED_MGR_MANUAL_FEED_CMD_SIG | In | State (on, off) | Triggers a manual feeding, or exit of it. From manual toggle sensor pad. |
+| FEED_MGR_TIMED_FEED_CMD_SIG | In | Feeding time | Triggers a timed feeding. From Pet Touch Pad or other. |
+| FEED_MGR_TIMEOUT_SIG | In | None | Feeding timeout, Maximum security feeding timeout or debouncing timeout. |
+| RTCC_TICK_ALARM | In | Time & Date | Signals the latest time & date. Redirected to display and logging. |
+| LWIP_CHANGED_SIG | In | IP/SN/GW | Signals the newest IP address. Redirected to display and logging .|
 
 ## DisplayMgr_AO
 
@@ -91,12 +93,12 @@ The message display time is also managed by this AOto avoid wearing off the disp
 
 ### Diagram
 
-![display_mgr_ao_sm](./images/display_manager_ao_state_machine.png)
+![display_mgr_ao_sm](./images/SM_of_Display_Mgr_AO.svg)
 
 ### Signal List
 
 | Signal Name | Direction | Parameter | Comments |
 |:------------|:----------|:----------|:---------|
-| SIG_DISPLAY_TEXT | In | Text | string to display. Triggers a 5s-time delay to keep the OLED display on. |
-| SIG_DISPLAY_TIMEOUT | In | None | Turn the OLED display off to save matrix. |
-| SIG_DISPLAY_REFRESH | In | None | Turn the OLED display on back again for a timed period. |
+| DISPLAY_TEXT_SIG | In | Text, position (x, y), grayscale, {on|off} | string to display. Triggers a 5s-time delay to keep the OLED display on. |
+| DISPLAY_TIMEOUT_SIG | In | None | Turn the OLED display off to save matrix. |
+| DISPLAY_REFRESH_SIG | In | None | Turn the OLED display on back again for a timed period. |
