@@ -58,6 +58,12 @@ public:
     static void StaticWr(unsigned int aIndex);
     static void StaticISR(unsigned int aIndex);
 
+    static uint8_t const *StaticGetMACAddress(unsigned int aIndex);
+    static uint32_t StaticGetIPAddress(unsigned int aIndex);
+    static uint32_t StaticGetSubnetMask(unsigned int aIndex);
+    static uint32_t StaticGetDefaultGW(unsigned int aIndex);
+
+    uint8_t const *GetMACAddress(void) const;
     uint32_t GetIPAddress(void) const;
     uint32_t GetSubnetMask(void) const;
     uint32_t GetDefaultGW(void) const;

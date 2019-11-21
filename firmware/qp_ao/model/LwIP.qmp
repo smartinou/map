@@ -204,6 +204,11 @@ if (mIPAddress != mEtherDrv.GetIPAddress()) {
        <action box="0,-2,34,2"/>
       </tran_glyph>
      </tran>
+     <tran trig="TERMINATE">
+      <tran_glyph conn="40,8,0,-1,-6,6">
+       <action box="0,-4,10,2"/>
+      </tran_glyph>
+     </tran>
      <state_glyph node="8,8,38,26">
       <entry box="1,2,23,2"/>
       <exit box="1,4,16,2"/>

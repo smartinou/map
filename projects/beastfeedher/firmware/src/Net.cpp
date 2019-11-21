@@ -34,12 +34,15 @@
 // Util Library.
 #include <date/Date.h>
 #include <time/Time.h>
+#include <net/EthernetAddress.h>
+#include <net/IPAddress.h>
 
 // LwIP stack.
 #include "lwip/apps/httpd.h"
 #include "lwip/stats.h"
 
 // AOs.
+#include "LwIPDrv.h"
 #include "PFPP_Events.h"
 #include "RTCC_AOs.h"
 #include "RTCC_Events.h"
@@ -174,6 +177,8 @@ static int SSICalendarHandler(
     unsigned int aHour
 );
 
+static int FullIPAddressHandler(char * const aInsertStr, uint32_t aAddress);
+
 static int SSINetworkHandler(
     int                aTagIx,
     char       * const aInsertStr,
@@ -269,7 +274,7 @@ char const * sSSITags[] = {
     "n_mac",     // SSI_TAG_IX_NET_MAC_ADDR
     "n_ipv4",    // SSI_TAG_IX_NET_IPV4_ADD
     "n_subnet",  // SSI_TAG_IX_NET_SUBNET_MASK
-    "n_gateway", // SSI_TAG_IX_NET_GW_ADD
+    "n_dfltgw",  // SSI_TAG_IX_NET_GW_ADD
     "n_dhcp",    // SSI_TAG_IX_NET_USE_DHCP
     "n_manual",  // SSI_TAG_IX_NET_USE_MANUAL
     "n_sip0",    // SSI_TAG_IX_NET_STATIC_IPV4_ADD_0
@@ -534,15 +539,22 @@ static uint16_t SSIHandler(
 
 
     // Network configuration.
-    case SSI_TAG_IX_NET_MAC_ADDR:
-    case SSI_TAG_IX_NET_IPV4_ADD:
-    case SSI_TAG_IX_NET_SUBNET_MASK:
-    case SSI_TAG_IX_NET_GW_ADD:
+    case SSI_TAG_IX_NET_MAC_ADDR: {
+        uint8_t const * const lMAC = LwIPDrv::StaticGetMACAddress(0);
+        EthernetAddress lMACAddress(lMAC[0], lMAC[1], lMAC[2], lMAC[3], lMAC[4], lMAC[5]);
+        char lMACAddressStr[32] = {0};
+        lMACAddress.GetString(&lMACAddressStr[0]);
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-            " "
+            "%s",
+            &lMACAddressStr[0]
         );
+    }
+
+    case SSI_TAG_IX_NET_IPV4_ADD: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetIPAddress(0));
+    case SSI_TAG_IX_NET_SUBNET_MASK: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetSubnetMask(0));
+    case SSI_TAG_IX_NET_GW_ADD: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetDefaultGW(0));
 
     case SSI_TAG_IX_NET_USE_DHCP:
         return SSIRadioButtonHandler(
@@ -671,6 +683,19 @@ static int SSICalendarHandler(
             aHour
         );
     }
+}
+
+
+static int FullIPAddressHandler(char * const aInsertStr, uint32_t aAddress) {
+    IPAddress lAddress(aAddress);
+    char lAddressStr[32] = {0};
+    lAddress.GetString(&lAddressStr[0]);
+    return snprintf(
+        aInsertStr,
+        LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+        "%s",
+        &lAddressStr[0]
+    );
 }
 
 

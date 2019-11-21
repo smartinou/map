@@ -105,6 +105,31 @@ void LwIPDrv::StaticISR(unsigned int aIndex) {
 }
 
 
+uint8_t const *LwIPDrv::StaticGetMACAddress(unsigned int aIndex) {
+    return sVector[aIndex]->GetMACAddress();
+}
+
+
+uint32_t LwIPDrv::StaticGetIPAddress(unsigned int aIndex) {
+    return sVector[aIndex]->GetIPAddress();
+}
+
+
+uint32_t LwIPDrv::StaticGetSubnetMask(unsigned int aIndex) {
+    return sVector[aIndex]->GetSubnetMask();
+}
+
+
+uint32_t LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
+    return sVector[aIndex]->GetDefaultGW();
+}
+
+
+uint8_t const *LwIPDrv::GetMACAddress(void) const {
+    return &mNetIF.hwaddr[0];
+}
+
+
 uint32_t LwIPDrv::GetIPAddress(void) const {
     return mNetIF.ip_addr.addr;
 }

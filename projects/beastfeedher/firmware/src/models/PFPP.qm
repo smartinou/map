@@ -160,17 +160,17 @@ Display::Event::DisplayText * const lFrameEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lFrameEvent, this);
 </entry>
-      <initial target="../7">
+      <initial target="../8">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
        </initial_glyph>
       </initial>
-      <tran trig="FEED_MGR_TIMEOUT" target="../7">
+      <tran trig="FEED_MGR_TIMEOUT" target="../8">
        <tran_glyph conn="4,28,3,3,28">
         <action box="0,-2,22,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../9">
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../10">
        <tran_glyph conn="4,88,3,3,28">
         <action box="0,-2,28,4"/>
        </tran_glyph>
@@ -178,13 +178,13 @@ QP::QF::PUBLISH(lFrameEvent, this);
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
        <action brief="GetState();">PFPP::Event::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::ManualFeedCmd const * const&gt;(e);
 </action>
-       <choice target="../../8">
+       <choice target="../../9">
         <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
         <choice_glyph conn="18,46,5,3,14">
          <action box="0,-2,24,2"/>
         </choice_glyph>
        </choice>
-       <choice target="../../7">
+       <choice target="../../8">
         <guard brief="else"/>
         <choice_glyph conn="18,46,4,3,-16,14">
          <action box="0,-16,10,2"/>
@@ -195,7 +195,7 @@ QP::QF::PUBLISH(lFrameEvent, this);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_TIMED_FEED_CMD">
-       <choice target="../../9">
+       <choice target="../../10">
         <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
         <choice_glyph conn="18,94,5,3,14">
          <action box="1,0,13,2"/>
@@ -265,6 +265,11 @@ Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
 QP::QF::PUBLISH(lLwIPChangedEvent, this);</action>
        <tran_glyph conn="4,110,3,-1,50">
         <action box="0,-2,40,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="TERMINATE">
+       <tran_glyph conn="72,12,0,-1,-6,8">
+        <action box="0,-4,10,2"/>
        </tran_glyph>
       </tran>
       <state name="Waiting">
