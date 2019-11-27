@@ -19,7 +19,7 @@ The reasons why I wanted to do this project (beside the obvious utility to feed 
 *  Learn about ARM-Cortex M3 MCU.
 *  Learn about IoT and mobile applications.
 
-<img src="./images/SukiEtMoi.jpg" alt="Suki and Me" height="200" width="275">
+<img align="center" src="./images/SukiEtMoi.jpg" alt="Suki and Me" height="200" width="275">
 
 The very first version was going to be a "smart" device, e.g. being able to program it and operating autonomously afterward. this version never saw the daylight as I went straight to the "connected" version of it soon after start.
 
@@ -58,9 +58,9 @@ Now as much as propulsion and aerodynamics are fun, my thing is really about avi
 *  Broadcast landing position over GSM or other means.
 *  ... and more I can't think of right now.
 
-<img src="./images/CloudBusterEtMoi.jpg" alt="CloudBuster and Me" height="200" width="275">
+<img align="center" src="./images/CloudBusterEtMoi.jpg" alt="CloudBuster and Me" height="200" width="275">
 
-<img src="./images/CloudBusterRecovery.jpg" alt="CloudBuster Recovery" height="200" width="275">
+<img align="center" src="./images/CloudBusterRecovery.jpg" alt="CloudBuster Recovery" height="200" width="275">
 
 
 ### Phases
@@ -70,10 +70,10 @@ In order to get there, here's a rough plan of various phases to achieve:
 *  Get HPR certification level 2 ('I' motor): optional, but can fly more powerful rockets!!!
 *  Build electronics & FW version 1: fly in recording mode only.
    *  This is a mean to see if main events can be properly sampled and logged for further analysis.
-*   Update FW to perform deployment of chute in single-deployment flight.
+*  Update FW to perform deployment of chute in single-deployment flight.
    *  Still use the motor deployment as a backup mean.
-*   Update FW to support dual-deployment flights.
-*   Add other bells and whistles.
+*  Update FW to support dual-deployment flights.
+*  Add other bells and whistles.
 
 To be continued...
 
