@@ -19,7 +19,9 @@ The reasons why I wanted to do this project (beside the obvious utility to feed 
 *  Learn about ARM-Cortex M3 MCU.
 *  Learn about IoT and mobile applications.
 
-<img align="center" src="./images/SukiEtMoi.jpg" alt="Suki and Me" height="200" width="275">
+<p align="center">
+  <img src="./images/SukiEtMoi.jpg" alt="Suki and Me" height="200" width="275">
+</p>
 
 The very first version was going to be a "smart" device, e.g. being able to program it and operating autonomously afterward. this version never saw the daylight as I went straight to the "connected" version of it soon after start.
 
@@ -58,10 +60,11 @@ Now as much as propulsion and aerodynamics are fun, my thing is really about avi
 *  Broadcast landing position over GSM or other means.
 *  ... and more I can't think of right now.
 
-<img align="center" src="./images/CloudBusterEtMoi.jpg" alt="CloudBuster and Me" height="200" width="275">
+<p align="center">
+  <img src="./images/CloudBusterEtMoi.jpg" alt="CloudBuster and Me" height="200" width="275">
 
-<img align="center" src="./images/CloudBusterRecovery.jpg" alt="CloudBuster Recovery" height="200" width="275">
-
+  <img src="./images/CloudBusterRecovery.jpg" alt="CloudBuster Recovery" height="200" width="275">
+</p>
 
 ### Phases
 
