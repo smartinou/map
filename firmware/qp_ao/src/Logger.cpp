@@ -108,11 +108,11 @@ LogLevel Logger::GetLogLevel(char const * const aCategoryStr) const {
 }
 
 
-unsigned int Logger::GetEvtSignal(char const * const aCategoryStr) const {
+unsigned int Logger::GetEventSignal(char const * const aCategoryStr) const {
 
     LogCategory_t const * const lCategoryStr = FindCategory(aCategoryStr);
     if (nullptr != lCategoryStr) {
-        return lCategoryStr->mEvtSignal;
+        return lCategoryStr->mEventSignal;
     }
 
     return 0;
@@ -125,7 +125,7 @@ void Logger::SetLogLevel(LogLevel const aLevel) {
 
 
 bool Logger::AddCategory(
-    unsigned int const aEvtSignal,
+    unsigned int const aEventSignal,
     char const * const aCategoryStr,
     LogLevel::prio const aLevel
     ) {
@@ -145,7 +145,7 @@ bool Logger::AddCategory(
             )
         );
         if (nullptr != lCategoryStr) {
-            //lCategoryStr->mEvtSignal = aEvtSignal;
+            //lCategoryStr->mEventSignal = aEventSignal;
             lCategoryStr->mLevel = aLevel;
             return true;
         }
@@ -157,7 +157,7 @@ bool Logger::AddCategory(
         sMaxLogCategoryLen
     );
     mCategories[mCategoryQty].mLevel = aLevel;
-    mCategories[mCategoryQty].mEvtSignal = aEvtSignal;
+    mCategories[mCategoryQty].mEventSignal = aEventSignal;
     mCategoryQty++;
 
     qsort(
@@ -198,9 +198,9 @@ bool Logger::Log(
     va_end(lArgs);
 
     // Create the Log event and publish it to all!
-    Logging::Event::LogEvt * const lLogEvt = Q_NEW(
-        Logging::Event::LogEvt,
-        GetEvtSignal(aCategoryStr),
+    Logging::Event::LogEntry * const lLogEvent = Q_NEW(
+        Logging::Event::LogEntry,
+        GetEventSignal(aCategoryStr),
         aLevel,
         aFileStr,
         aLine,
@@ -209,15 +209,15 @@ bool Logger::Log(
         &lMsgBuf[0]
     );
 
-    QP::QF::PUBLISH(lLogEvt, this);
+    QP::QF::PUBLISH(lLogEvent, this);
     return true;
 }
 
 
 void Logger::AddSink(QP::QActive * const aAO, char const * const aCategoryStr) {
     // Make the AO listener subscribe to the category.
-    unsigned int lEvtSig = GetEvtSignal(aCategoryStr);
-    aAO->subscribe(lEvtSig);
+    unsigned int lEventSig = GetEventSignal(aCategoryStr);
+    aAO->subscribe(lEventSig);
 }
 
 // ******************************************************************************

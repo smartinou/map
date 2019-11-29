@@ -40,6 +40,7 @@
 #include "App.h"
 #include "BSP.h"
 #include "Display_AOs.h"
+#include "FatFSDisk.h"
 #include "Logging_AOs.h"
 #include "IBSP.h"
 #include "ILCD.h"
@@ -113,29 +114,30 @@ bool App::Init(void) {
         &lRTCCInitEvent
     );
 
-#if 0
     // Create SDC instance to use in FS stubs.
+    // TODO: RETURN BOOL INSTEAD OF ACTUAL POINTER: IT'S OF NO USE.
+    // TODO: CHANGE METHOD NAME TO CreateDisks();
     mSDCDrive0 = mFactory->CreateSDC();
     if (mSDCDrive0.get() != nullptr) {
-        // If supported, mount FS.
+        // If supported, mount the default drive.
         // No use if there's no flash file storage.
         FRESULT lResult = f_mount(&mFatFS, "", 0);
-        if (FR_OK != lResult) {
-            return false;
+        if (FR_OK == lResult) {
+#if 1
+            auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
+            if (mFileLogSink_AO.get() != nullptr) {
+                mFileLogSink_AO->start(
+                    2U,
+                    mFileLogSinkEventQueue,
+                    Q_DIM(mFileLogSinkEventQueue),
+                    nullptr,
+                    0U
+                    );
+            }
+#endif
         }
     }
 
-    auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
-    if (mFileLogSink_AO.get() != nullptr) {
-        mFileLogSink_AO->start(
-            2U,
-            mFileLogSinkEventQueue,
-            Q_DIM(mFileLogSinkEventQueue),
-            nullptr,
-            0U
-        );
-    }
-#endif
 
     auto lPFPPMgr_AO = mFactory->CreatePFPPAO(*App::sFeedCfgRec);
     lPFPPMgr_AO->start(
@@ -199,57 +201,41 @@ extern "C" {
 
 //
 // File system stubs.
+// Media Access Inferface functions are a 1:1 mapping with the static functions 
+// from FatFSDisk class.
+// Perform any parameter casting if required.
 //
 
-DSTATUS disk_initialize(BYTE pdrv) {
-    // Only drive 0 is supported in this application.
-    if (0 == pdrv) {
-        return App::GetSDCDrive()->DiskInit();
-    } else {
-        return RES_PARERR;
-    }
+DSTATUS disk_initialize(BYTE aDriveIndex) {
+    return FatFSDisk::StaticInitDisk(aDriveIndex);
 }
 
 
-DSTATUS disk_status(BYTE pdrv) {
-    // Only drive 0 is supported in this application.
-    if (0 == pdrv) {
-        return App::GetSDCDrive()->GetDiskStatus();
-    } else {
-        return RES_PARERR;
-    }
+DSTATUS disk_status(BYTE aDriveIndex) {
+    return FatFSDisk::StaticGetDiskStatus(aDriveIndex);
 }
 
 
-DRESULT disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count) {
-    // Only drive 0 is supported in this application.
-    if (0 == pdrv) {
-        return App::GetSDCDrive()->DiskRd(buff, sector, count);
-    } else {
-        return RES_PARERR;
-    }
+DRESULT disk_read(BYTE aDriveIndex, BYTE* aBuffer, DWORD aSectorStart, UINT aCount) {
+    return FatFSDisk::StaticRdDisk(aDriveIndex, aBuffer, aSectorStart, aCount);
 }
 
 
 #if (FF_FS_READONLY == 0)
-DRESULT disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count) {
-    // Only drive 0 is supported in this application.
-    if (0 == pdrv) {
-        return App::GetSDCDrive()->DiskWr(buff, sector, count);
-    } else {
-        return RES_PARERR;
-    }
+DRESULT disk_write(BYTE aDriveIndex, const BYTE* aBuffer, DWORD aSectorStart, UINT aCount) {
+    return FatFSDisk::StaticWrDisk(aDriveIndex, aBuffer, aSectorStart, aCount);
 }
 #endif // FF_FS_READONLY
 
 
-#if (FF_FS_READONLY == 0)
-DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void* buff) {
-    return (DRESULT)0;
+#if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
+DRESULT disk_ioctl(BYTE aDriveIndex, BYTE aCmd, void *aBuffer) {
+    return FatFSDisk::StaticIOCTL(aDriveIndex, aCmd, aBuffer);
 }
 #endif // FF_FS_READONLY
 
 
+// TODO: UPDATE AS PER SPECS.
 #if !FF_FS_READONLY && !FF_FS_NORTC
 DWORD get_fattime(void) {
     return 0;

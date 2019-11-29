@@ -159,8 +159,8 @@ uint8_t const SSD1329::sFontTbl[96][FONT_WIDTH_MAX] = {
 SSD1329::SSD1329(
     CoreLink::ISPIDev &aSPIDev,
     CoreLink::SPISlaveCfg const &aSPICfg,
-    GPIO const aDCnGPIO,
-    GPIO const aEn15VGPIO,
+    GPIO const &aDCnGPIO,
+    GPIO const &aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight)
     : mSPIDev(aSPIDev)
@@ -177,8 +177,8 @@ SSD1329::SSD1329(
 SSD1329::SSD1329(
     CoreLink::ISPIDev &aSPIDev,
     GPIO const &aCsPin,
-    GPIO const aDCnGPIO,
-    GPIO const aEn15VGPIO,
+    GPIO const &aDCnGPIO,
+    GPIO const &aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight
 )
@@ -190,7 +190,7 @@ SSD1329::SSD1329(
     , mDisplayHeight(aDisplayHeight) {
 
     // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_2);
+    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_3);
     mSPICfg.SetBitRate(4000000);
     mSPICfg.SetDataWidth(8);
     //mSPICfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
@@ -315,10 +315,6 @@ void SSD1329::Clr(void) {
 
     // Clear the data buffer.
     uint8_t lDataBuf[16] = { 0 };
-    // TODO: Remove for loop if above line works.
-    //for (unsigned int lByteIx = 0; lByteIx < sizeof(lDataBuf); lByteIx++) {
-        //lDataBuf[lByteIx] = 0;
-    //}
 
     // Loop through the rows.
     for (unsigned int lRowIx = 0; lRowIx < mDisplayWidth; lRowIx++) {

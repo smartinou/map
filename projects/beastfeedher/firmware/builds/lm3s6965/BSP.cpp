@@ -403,7 +403,7 @@ static void ClrUserLED(void);
 #ifdef Q_SPY
 // For local extern "C" functions, not part of any namespace.
 static QP::QSTimeCtr QS_tickTime_ = 0;
-static QP::QSTimeCtr QS_tickPeriod_ = SystemCoreClock / BSP::TICKS_PER_SEC;
+static QP::QSTimeCtr const QS_tickPeriod_ = SystemCoreClock / BSP::TICKS_PER_SEC;
 
 // event-source identifiers used for tracing
 static uint8_t const sSysTick_Handler = 0U;
@@ -676,7 +676,7 @@ bool QP::QS::onStartup(void const *aArgPtr) {
     // To start timestamp at zero.
     uint32_t volatile lTmp = SysTick->CTRL;
     static_cast<void>(lTmp);
-    QS_tickPeriod_ = SysTickPeriodGet();
+    //QS_tickPeriod_ = SysTickPeriodGet();
     QS_tickTime_ = QS_tickPeriod_;
 
     // Setup the QS filters...
@@ -697,17 +697,19 @@ bool QP::QS::onStartup(void const *aArgPtr) {
 
 //............................................................................
 void QP::QS::onCleanup(void) {
+    // Used for QUTest only.
 }
 
 
 //............................................................................
 // NOTE: invoked with interrupts DISABLED.
 QP::QSTimeCtr QP::QS::onGetTime(void) {
+
     // Not set?
     // TODO: Check if can be done via API call.
 
     if ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0) {
-        return QS_tickTime_ - static_cast<QSTimeCtr>(SysTickValueGet()); //SysTick->VAL);
+        return QS_tickTime_ - static_cast<QSTimeCtr>(SysTickValueGet());
     } else {
         // The rollover occured, but the SysTick_ISR did not run yet.
         return QS_tickTime_ + QS_tickPeriod_
@@ -718,6 +720,7 @@ QP::QSTimeCtr QP::QS::onGetTime(void) {
 
 //............................................................................
 void QP::QS::onFlush(void) {
+
     // Tx FIFO depth.
     uint16_t lFIFOPtr = UART_TXFIFO_DEPTH;
     uint8_t const *lBlockPtr = nullptr;
@@ -746,7 +749,7 @@ void QP::QS::onFlush(void) {
 //............................................................................
 //! callback function to reset the target (to be implemented in the BSP)
 void QP::QS::onReset(void) {
-    NVIC_SystemReset();
+    //NVIC_SystemReset();
 }
 
 
@@ -779,8 +782,8 @@ void SysTick_Handler(void) {
     {
         // Clear SysTick_CTRL_COUNTFLAG.
         // Account for the clock rollover.
-        uint32_t volatile lTmp = SysTick->CTRL;
-        static_cast<void>(lTmp);
+        //uint32_t volatile lTmp = SysTick->CTRL;
+        //static_cast<void>(lTmp);
         QS_tickTime_ += QS_tickPeriod_;
     }
 #endif // Q_SPY

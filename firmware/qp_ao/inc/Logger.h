@@ -56,7 +56,7 @@
 #define LOG_DEBUG(aCategory, ...); \
 {                                  \
     LOGGER.Log(                    \
-        DEBUG,                     \
+        LogLevel::prio::DEBUG,     \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -71,7 +71,7 @@
 #define LOG_INFO(aCategory, ...); \
 {                                 \
     LOGGER.Log(                   \
-        PRI_INFO,                 \
+        LogLevel::prio::INFO,     \
         __FILE__,                 \
         __LINE__,                 \
         __FUNCTION__,             \
@@ -83,7 +83,7 @@
 #define LOG_WARNING(aCategory, ...); \
 {                                    \
     LOGGER.Log(                      \
-        PRI_WARN,                    \
+        LogLevel::prio::WARNING,     \
         __FILE__,                    \
         __LINE__,                    \
         __FUNCTION__,                \
@@ -95,7 +95,7 @@
 #define LOG_ERROR(aCategory, ...); \
 {                                  \
     LOGGER.Log(                    \
-        PRI_ERR,                   \
+        LogLevel::prio::ERR,                   \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -127,11 +127,11 @@ public:
 
     LogLevel GetLogLevel(void) const;
     LogLevel GetLogLevel(char const * const aCategoryStr) const;
-    unsigned int GetEvtSignal(char const * const aCategoryStr) const;
+    unsigned int GetEventSignal(char const * const aCategoryStr) const;
 
     void SetLogLevel(LogLevel const aLevel);
     bool AddCategory(
-        unsigned int const aEvtSignal,
+        unsigned int const aEventSignal,
         char const * const aCategoryStr,
         LogLevel::prio const aLevel = LogLevel::prio::ERROR
     );
@@ -151,21 +151,22 @@ public:
 private:
     // Disable default constructor/copy/assign
     Logger();
-    Logger(Logger const&);
+    Logger(Logger const&) = delete;
+    Logger &operator=(Logger const &) = delete;
     ~Logger();
-    void operator=(Logger const&);
+    //void operator=(Logger const&);
     void *operator new(size_t aSize){ return &(Instance()); }
     void  operator delete(void *aLogger) {}
 
     static int CompareStr(void const * const aFirstStr, void const * const aSecondStr);
 
-    static unsigned int constexpr sMaxLogCategories  = 32;
-    static unsigned int constexpr sMaxLogCategoryLen = 32;
+    static size_t constexpr sMaxLogCategories  = 32;
+    static size_t constexpr sMaxLogCategoryLen = 32;
     static LogLevel::prio constexpr sInvalidCategory = LogLevel::prio::DISABLED;
-    static unsigned int constexpr sMsgBufLen = 1024;
+    static size_t constexpr sMsgBufLen = 1024;
 
     typedef struct {
-        unsigned int mEvtSignal;
+        unsigned int mEventSignal;
         char         mName[sMaxLogCategoryLen];
         LogLevel     mLevel;
     } LogCategory_t;

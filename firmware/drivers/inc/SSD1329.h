@@ -46,16 +46,16 @@ public:
    SSD1329(
        CoreLink::ISPIDev &aSPIDev,
        CoreLink::SPISlaveCfg const &aSPICfg,
-       GPIO const aDCnGPIO,
-       GPIO const aEn15VGPIO,
+       GPIO const &aDCnGPIO,
+       GPIO const &aEn15VGPIO,
        unsigned int const aDisplayWidth  = 128,
        unsigned int const aDisplayHeight = 128
    );
    SSD1329(
        CoreLink::ISPIDev &aSPIDev,
        GPIO const &aCsPin,
-       GPIO const aDCnGPIO,
-       GPIO const aEn15VGPIO,
+       GPIO const &aDCnGPIO,
+       GPIO const &aEn15VGPIO,
        unsigned int const aDisplayWidth = 128,
        unsigned int const aDisplayHeight = 128
    );

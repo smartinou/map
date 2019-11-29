@@ -23,7 +23,7 @@
 
 #include <cstdint>
 
-#include "diskio.h"
+#include "FatFSDisk.h"
 
 #include "inc/GPIO.h"
 #include "SPI.h"
@@ -46,29 +46,30 @@ namespace CoreLink {
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class SDC {
+class SDC
+    : public FatFSDisk {
  public:
     SDC(unsigned int const aDriveIx, CoreLink::ISPIDev &aSPIDev, GPIO const &aCSnPin);
 
-    DSTATUS GetDiskStatus(void);
-    DSTATUS DiskInit(void);
-    DRESULT DiskRd(
-        uint8_t *aBufPtr,
+    // FatFSDisk interface.
+    DSTATUS GetDiskStatus(void) override;
+    DSTATUS InitDisk(void) override;
+    DRESULT RdDisk(
+        uint8_t * const aBuffer,
         uint32_t aStartSector,
         unsigned int aSectorCount
-    );
+    ) override;
 #if (FF_FS_READONLY == 0)
-    DRESULT DiskWr(
-        uint8_t const *aBufPtr,
+    DRESULT WrDisk(
+        uint8_t const * const aBuffer,
         uint32_t aStartSector,
         unsigned int aSectorCount
-    );
-#endif // _DISKIO_WRITE
+    ) override;
+#endif
 
-#if _DISKIO_IOCTL
-    DRESULT DiskIOCTL(BYTE aCmd, void *aBufPtr);
-#endif // _DISKIO_IOCTL
-
+#if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
+    DRESULT IOCTL(uint8_t aCmd, void * const aBuffer) override;
+#endif
 
  private:
     // MMC card type flags.
@@ -134,6 +135,7 @@ class SDC {
     uint8_t mCardType;
 
     static unsigned int constexpr sSectorSize = 512;
+    static uint8_t constexpr sDummyByte = 0xFF;
 };
 
 // ******************************************************************************

@@ -167,6 +167,7 @@ CPP_SRCS := \
         DS3234.cpp \
         EthernetAddress.cpp \
         EthDrv.cpp \
+        FatFSDisk.cpp \
         FeedCfgRec.cpp \
         GPIO.cpp \
         IPAddress.cpp \
@@ -287,12 +288,12 @@ ASFLAGS = $(ARM_CPU) $(ASM_FPU)
 
 CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++14 \
-	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 
 else ifeq (spy, $(CONF))
