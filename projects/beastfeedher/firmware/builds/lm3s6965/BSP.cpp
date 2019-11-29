@@ -44,6 +44,7 @@
 #include "inc/Button.h"
 #include "inc/GPIO.h"
 
+#include "FatFSDisk.h"
 #include "SDC.h"
 #include "SPI.h"
 #include "DS3234.h"
@@ -187,13 +188,14 @@ public:
     QP::QActive *GetOpaqueRTCCAO(void) override { return mRTCCAO.get(); }
 
 
-    std::shared_ptr<SDC> CreateSDC(void) override {
+    unsigned int CreateDisks(void) override {
+        // This BSP has one SDC device.
         if (mSDC.get() == nullptr) {
             GPIO lCSnPin(GPIO_PORTD_BASE, GPIO_PIN_0);
-            //auto lSPIDev = GetSPIDev();
             mSDC = std::make_shared<SDC>(0, *mSPIDev, lCSnPin);
         }
-        return mSDC;
+
+        return FatFSDisk::GetDiskQty();
     }
 
 

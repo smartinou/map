@@ -54,10 +54,10 @@ public:
 #endif
 
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
-    static DRESULT StaticIOCTL(unsigned int aDriveIndex, BYTE aCmd, void * const aBufPtr);
+    static DRESULT StaticIOCTL(unsigned int aDriveIndex, uint8_t aCmd, void * const aBufPtr);
 #endif
 
-    unsigned int GetDiskQty(void) const { return mVector.size(); }
+    static unsigned int GetDiskQty(void) { return mVector.size(); }
 
 protected:
      FatFSDisk();

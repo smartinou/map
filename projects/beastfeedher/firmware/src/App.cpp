@@ -51,7 +51,6 @@
 #include "PFPP_AOs.h"
 #include "RTCC_AOs.h"
 #include "RTCC_Events.h"
-#include "SDC.h"
 #include "Signals.h"
 
 // *****************************************************************************
@@ -75,7 +74,6 @@ NetIFRec    *App::sNetIFRec   = nullptr;
 FeedCfgRec  *App::sFeedCfgRec = nullptr;
 
 std::shared_ptr<RTCC::AO::RTCC_AO> App::mRTCC_AO;
-std::shared_ptr<SDC> App::mSDCDrive0;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -115,15 +113,12 @@ bool App::Init(void) {
     );
 
     // Create SDC instance to use in FS stubs.
-    // TODO: RETURN BOOL INSTEAD OF ACTUAL POINTER: IT'S OF NO USE.
-    // TODO: CHANGE METHOD NAME TO CreateDisks();
-    mSDCDrive0 = mFactory->CreateSDC();
-    if (mSDCDrive0.get() != nullptr) {
-        // If supported, mount the default drive.
-        // No use if there's no flash file storage.
+    unsigned int mDiskQty = mFactory->CreateDisks();
+    if (mDiskQty != 0) {
+        // Disks found: mount the default drive.
         FRESULT lResult = f_mount(&mFatFS, "", 0);
         if (FR_OK == lResult) {
-#if 1
+            // Found some disks and FS mounted: add log sink.
             auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
             if (mFileLogSink_AO.get() != nullptr) {
                 mFileLogSink_AO->start(
@@ -132,9 +127,8 @@ bool App::Init(void) {
                     Q_DIM(mFileLogSinkEventQueue),
                     nullptr,
                     0U
-                    );
+                );
             }
-#endif
         }
     }
 
@@ -204,6 +198,7 @@ extern "C" {
 // Media Access Inferface functions are a 1:1 mapping with the static functions 
 // from FatFSDisk class.
 // Perform any parameter casting if required.
+// Consider moving this to BSP.cpp file.
 //
 
 DSTATUS disk_initialize(BYTE aDriveIndex) {
@@ -216,13 +211,13 @@ DSTATUS disk_status(BYTE aDriveIndex) {
 }
 
 
-DRESULT disk_read(BYTE aDriveIndex, BYTE* aBuffer, DWORD aSectorStart, UINT aCount) {
+DRESULT disk_read(BYTE aDriveIndex, BYTE *aBuffer, DWORD aSectorStart, UINT aCount) {
     return FatFSDisk::StaticRdDisk(aDriveIndex, aBuffer, aSectorStart, aCount);
 }
 
 
 #if (FF_FS_READONLY == 0)
-DRESULT disk_write(BYTE aDriveIndex, const BYTE* aBuffer, DWORD aSectorStart, UINT aCount) {
+DRESULT disk_write(BYTE aDriveIndex, const BYTE *aBuffer, DWORD aSectorStart, UINT aCount) {
     return FatFSDisk::StaticWrDisk(aDriveIndex, aBuffer, aSectorStart, aCount);
 }
 #endif // FF_FS_READONLY
@@ -235,10 +230,26 @@ DRESULT disk_ioctl(BYTE aDriveIndex, BYTE aCmd, void *aBuffer) {
 #endif // FF_FS_READONLY
 
 
-// TODO: UPDATE AS PER SPECS.
-#if !FF_FS_READONLY && !FF_FS_NORTC
+#if (FF_FS_READONLY == 0) && (FF_FS_NORTC == 0)
 DWORD get_fattime(void) {
-    return 0;
+
+    static unsigned int constexpr sBaseYear = 1980;
+    static unsigned int constexpr sFieldWidth = 5;
+    Date const &lDate = App::GetRTCCAO()->GetDate();
+    uint32_t lFatTime = (lDate.GetYear() - sBaseYear) & 0x3F;
+    lFatTime <<= sFieldWidth;
+    lFatTime |= (lDate.GetMonth() & 0x1F);
+    lFatTime <<= sFieldWidth;
+    lFatTime |= (lDate.GetDate() & 0x1F);
+    lFatTime <<= sFieldWidth;
+
+    Time const &lTime = App::GetRTCCAO()->GetTime();
+    lFatTime |= (lTime.GetHours() & 0x1F);
+    lFatTime <<= sFieldWidth;
+    lFatTime |= (lTime.GetMinutes() & 0x1F);
+    lFatTime <<= sFieldWidth;
+    lFatTime |= (lTime.GetSeconds() / 2);
+    return lFatTime;
 }
 #endif // FF_FS_READONLY
 

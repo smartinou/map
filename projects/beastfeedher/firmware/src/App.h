@@ -24,7 +24,6 @@
 #include <memory>
 
 // FatFS.
-#include "diskio.h"
 #include "ff.h"
 
 // ******************************************************************************
@@ -39,9 +38,7 @@
 class CalendarRec;
 class NetIFRec;
 class FeedCfgRec;
-class LwIPMgr_AO;
 class IBSPFactory;
-class SDC;
 
 namespace RTCC {
     namespace AO {
@@ -50,14 +47,6 @@ namespace RTCC {
 }
 
 
-namespace QP {
-    class QActive;
-}
-
-
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
 class App {
 public:
     App();
@@ -65,7 +54,7 @@ public:
 
     bool Init(void);
 
-    static SDC *GetSDCDrive(void) { return mSDCDrive0.get(); }
+    static RTCC::AO::RTCC_AO *GetRTCCAO(void) { return mRTCC_AO.get(); }
 
 private:
     static void NetInitCallback(void);
@@ -76,21 +65,19 @@ private:
     static FeedCfgRec  *sFeedCfgRec;
 
     // QP Event Queues.
-    QP::QEvt const *mRTCCEventQueue[10] = {nullptr};
-    QP::QEvt const *mPFPPMgrEventQueue[5] = {nullptr};
-    QP::QEvt const *mFileLogSinkEventQueue[10] = {nullptr};
-    QP::QEvt const *mLwIPEventQueue[10] = {nullptr};
-    QP::QEvt const *mDisplayMgrEventQueue[5] = {nullptr};
+    static size_t constexpr sSmallQueueSize = 5;
+    static size_t constexpr sLargeQueueSize = 10;
+    QP::QEvt const *mRTCCEventQueue[sLargeQueueSize] = {nullptr};
+    QP::QEvt const *mPFPPMgrEventQueue[sSmallQueueSize] = {nullptr};
+    QP::QEvt const *mFileLogSinkEventQueue[sLargeQueueSize] = {nullptr};
+    QP::QEvt const *mLwIPEventQueue[sLargeQueueSize] = {nullptr};
+    QP::QEvt const *mDisplayMgrEventQueue[sSmallQueueSize] = {nullptr};
 
     // When this object gets out of scope,
-    // the Factory is destroyed and all that is responsible as well.
+    // the Factory is destroyed and all that is responsible for as well.
     std::shared_ptr<IBSPFactory> mFactory;
 
     static std::shared_ptr<RTCC::AO::RTCC_AO> mRTCC_AO;
-    static std::shared_ptr<SDC> mSDCDrive0;
-
-    // QP AOs.
-    LwIPMgr_AO *mLwIPMgr_AO = nullptr;
 
     FATFS mFatFS = {0};
 };
