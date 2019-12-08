@@ -113,14 +113,16 @@ bool App::Init(void) {
     );
 
     // Create SDC instance to use in FS stubs.
-    unsigned int mDiskQty = mFactory->CreateDisks();
-    if (mDiskQty != 0) {
+    unsigned int lDiskQty = mFactory->CreateDisks();
+    if (0 != lDiskQty) {
         // Disks found: mount the default drive.
-        FRESULT lResult = f_mount(&mFatFS, "", 0);
+        FRESULT lResult = f_mount(&mFatFS, "", 1);
         if (FR_OK == lResult) {
             // Found some disks and FS mounted: add log sink.
             auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
             if (mFileLogSink_AO.get() != nullptr) {
+                reinterpret_cast<Logging::AO::FileSink_AO * const>(
+                    mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
                 mFileLogSink_AO->start(
                     2U,
                     mFileLogSinkEventQueue,

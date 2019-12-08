@@ -108,17 +108,15 @@ class SDC
 
     bool Select(void);
     void Deselect(void);
-    //int  WaitReady(unsigned int aTimeout);
     void WaitReady(void);
     void PowerOn(void);
     void PowerOff(void);
 
-    bool RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen);
+    bool RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen);
 #if (FF_FS_READONLY == 0)
-    bool TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken);
+    bool TxDataBlock(uint8_t const *aBuffer, uint8_t aToken);
 #endif // FF_FS_READONLY
 
-    //R1_RESPONSE_PKT SendCmd(uint8_t aCmd, uint32_t aArg);
     R1_RESPONSE_PKT SendCmd(
         uint8_t aCmd,
         uint32_t aArg,
@@ -127,13 +125,13 @@ class SDC
     );
     bool IsExpectedVoltageRange(void);
 
-    unsigned int const mMyDriveIx;
     CoreLink::ISPIDev &mSPIDev;
     CoreLink::SPISlaveCfg mSPICfg;
 
-    DSTATUS mStatus;
-    uint8_t mCardType;
+    DSTATUS mStatus = STA_NOINIT;
+    uint8_t mCardType = 0;
 
+    static unsigned int constexpr mSPIBitRate = 4000000;
     static unsigned int constexpr sSectorSize = 512;
     static uint8_t constexpr sDummyByte = 0xFF;
 };
