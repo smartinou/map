@@ -19,12 +19,6 @@ The file is sync'ed right away.</documentation>
    <attribute name="mFile" type="FIL" visibility="0x02" properties="0x00">
     <documentation>The log file.</documentation>
    </attribute>
-   <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
-    <documentation>Local copy of current date.</documentation>
-   </attribute>
-   <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
-    <documentation>Local copy of current time.</documentation>
-   </attribute>
    <attribute name="mWrErr" type="unsigned int" visibility="0x02" properties="0x00">
     <documentation>Number of write errors.  </documentation>
    </attribute>
@@ -33,13 +27,12 @@ The file is sync'ed right away.</documentation>
    </attribute>
    <operation name="FileSink_AO" type="" visibility="0x00" properties="0x00">
     <documentation>Ctor.</documentation>
+    <parameter name="aSyncTimerTicks = 0" type="QP::QTimeEvtCtr"/>
     <code>  : QActive(Q_STATE_CAST(&amp;Logging::AO::FileSink_AO::initial))
   , mTimer(this, LOG_TIMER_SIG, 0U)
   , mSyncLogLevel(LogLevel::prio::CRITICAL)
   , mBufLogLevel(LogLevel::prio::INFO)
-  , mSyncTimerTicks(0)
-  , mDate()
-  , mTime()
+  , mSyncTimerTicks(aSyncTimerTicks)
   , mWrErr(0)
   , mLineOverflow(0)
 
@@ -59,24 +52,27 @@ The file is sync'ed right away.</documentation>
     <parameter name="aLogLevelThreshold" type="LogLevel"/>
     <code>mBufLogLevel = aLogLevelThreshold;</code>
    </operation>
-   <operation name="WrEvt" type="void" visibility="0x02" properties="0x00">
+   <operation name="WrEvent" type="void" visibility="0x02" properties="0x00">
     <documentation>Common function to write event into file buffer.</documentation>
-    <parameter name="aLogEvt" type="Logging::Event::LogEvt const &amp;"/>
-    <code>char lTmpStr[64];
+    <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
+    <code>char lDateStr[32] = {0};
+DateHelper::ToStr(aLogEvent.mDate, &amp;lDateStr[0]);
+char lTimeStr[32] = {0};
+TimeHelper::ToStr(aLogEvent.mTime, &amp;lTimeStr[0]);
 int lLen = f_printf(
-      &amp;mFile,
-      &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
-      DateHelper::ToStr(mDate, &amp;lTmpStr[0]),
-      TimeHelper::ToStr(mTime, &amp;lTmpStr[0]),
-      LogLevel::ToStr(aLogEvt.mLogLevel.GetLevel()),
-      aLogEvt.mFileStr,
-      aLogEvt.mFunctionStr,
-      aLogEvt.mLine,
-      aLogEvt.mCategoryStr,
-      aLogEvt.mMsgStr
+    &amp;mFile,
+    &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
+    &amp;lDateStr[0],
+    &amp;lTimeStr[0],
+    LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
+    aLogEvent.mFileStr,
+    aLogEvent.mFunctionStr,
+    aLogEvent.mLine,
+    aLogEvent.mCategoryStr,
+    &amp;aLogEvent.mMsg[0]
 );
 
-// Do nothing with Len for now.
+// Do nothing with returned Len for now.
 (void)lLen;</code>
    </operation>
    <statechart properties="0x02">
@@ -84,53 +80,58 @@ int lLen = f_printf(
      <action brief="OpenFile();">// At this stage, the FS must be initialized.
 FRESULT lResult = f_open(&amp;mFile, &quot;Log.txt&quot;, FA_OPEN_APPEND | FA_WRITE | FA_READ);
 if (FR_OK != lResult) {
-  // Error.
+    // Error. There's no use running this at all.
+    QP::QEvt * const lEvent = Q_NEW(QP::QEvt, TERMINATE_SIG);
+    POST(lEvent, this);
 }
+subscribe(LOG_EVENT_SIG);
 </action>
-     <initial_glyph conn="8,6,5,0,6,4">
-      <action box="0,-2,14,4"/>
+     <initial_glyph conn="4,4,5,0,6,6">
+      <action box="0,-2,12,2"/>
      </initial_glyph>
     </initial>
     <state name="Running">
      <documentation>Main running state.</documentation>
-     <entry brief="TimerStart();">mTimer.armX(mSyncTimerTicks, mSyncTimerTicks);</entry>
+     <entry brief="TimerStart();">if (mSyncTimerTicks) {
+    mTimer.armX(mSyncTimerTicks, mSyncTimerTicks);
+}</entry>
      <exit brief="TimerStop(); CloseFile();">mTimer.disarm();
 f_close(&amp;mFile);</exit>
      <tran trig="LOG_TIMER">
       <action brief="SyncFile();">f_sync(&amp;mFile);</action>
-      <tran_glyph conn="8,22,3,-1,50">
-       <action box="0,-3,36,3"/>
+      <tran_glyph conn="4,22,3,-1,22">
+       <action box="0,-2,22,2"/>
       </tran_glyph>
      </tran>
-     <tran trig="LOG_EVT">
-      <action brief="ParseEvt();">Logging::Event::LogEvt const * const lLogEvt = static_cast&lt;Logging::Event::LogEvt const * const&gt;(e);</action>
+     <tran trig="LOG_EVENT">
+      <action brief="ParseEvent();">Logging::Event::LogEntry const * const lLogEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);</action>
       <choice>
-       <guard brief="Level &gt;= SyncThreshold">lLogEvt-&gt;mLogLevel &gt;= mSyncLogLevel</guard>
-       <action brief="WriteEvt(); SyncFile();">WrEvt(*lLogEvt);
+       <guard brief="Level &gt;= SyncThreshold">lLogEvent-&gt;mLogLevel &gt;= mSyncLogLevel</guard>
+       <action brief="WriteEvent(); SyncFile();">WrEvent(*lLogEvent);
 f_sync(&amp;mFile);</action>
-       <choice_glyph conn="30,30,5,-1,54">
-        <action box="1,-3,46,4"/>
+       <choice_glyph conn="26,30,5,-1,38">
+        <action box="1,-2,37,2"/>
        </choice_glyph>
       </choice>
       <choice>
-       <guard brief="Level &gt;= BufThreshold">lLogEvt-&gt;mLogLevel &gt;= mBufLogLevel</guard>
-       <action brief="WriteEvt();">WrEvt(*lLogEvt);</action>
-       <choice_glyph conn="30,30,4,-1,8,54">
-        <action box="1,5,50,3"/>
+       <guard brief="Level &gt;= BufThreshold">lLogEvent-&gt;mLogLevel &gt;= mBufLogLevel</guard>
+       <action brief="WriteEvent();">WrEvent(*lLogEvent);</action>
+       <choice_glyph conn="26,30,4,-1,6,38">
+        <action box="1,4,37,2"/>
        </choice_glyph>
       </choice>
       <choice>
        <guard brief="else"/>
-       <action brief="DiscardEvt();"/>
-       <choice_glyph conn="30,30,4,-1,16,54">
-        <action box="1,13,26,3"/>
+       <action brief="DiscardEvent();"/>
+       <choice_glyph conn="26,30,4,-1,12,38">
+        <action box="1,10,19,2"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="8,30,3,-1,22">
-       <action box="0,-3,27,4"/>
+      <tran_glyph conn="4,30,3,-1,22">
+       <action box="0,-2,27,4"/>
       </tran_glyph>
      </tran>
-     <tran trig="RTCC_TIME_TICK_ALARM">
+     <tran trig="RTCC_TIME_TICK_ALARM? 0">
       <action brief="StoreDate();">RTCC::Event::TimeAndDate const * const lEvt = reinterpret_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 
 mTime = lEvt-&gt;mTime;</action>
@@ -139,60 +140,86 @@ mTime = lEvt-&gt;mTime;</action>
 mDate != lEvt-&gt;mDate</guard>
        <action brief="OpenNewLogFile();">mDate = lEvt-&gt;mDate;
 // Create a new log file.</action>
-       <choice_glyph conn="38,52,5,-1,46">
-        <action box="1,-3,41,3"/>
+       <choice_glyph conn="26,52,5,-1,30">
+        <action box="1,-2,25,2"/>
        </choice_glyph>
       </choice>
       <choice>
        <guard brief="else"/>
        <action brief="DoNothing();"/>
-       <choice_glyph conn="38,52,4,-1,8,46">
-        <action box="1,5,27,4"/>
+       <choice_glyph conn="26,52,4,-1,6,30">
+        <action box="1,4,17,2"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="8,52,3,-1,30">
-       <action box="0,-3,27,5"/>
+      <tran_glyph conn="4,52,3,-1,22">
+       <action box="0,-2,27,5"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="8,10,84,54">
+     <tran trig="TERMINATE">
+      <tran_glyph conn="62,10,0,-1,-6,6">
+       <action box="0,-4,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="4,10,64,54">
       <entry box="1,2,15,3"/>
-      <exit box="1,5,26,3"/>
+      <exit box="1,5,25,3"/>
      </state_glyph>
     </state>
-    <state_diagram size="96,68"/>
+    <state_diagram size="72,68"/>
    </statechart>
   </class>
  </package>
  <package name="Events" stereotype="0x01" namespace="Event::">
-  <class name="LogEvt" superclass="qpcpp::QEvt">
+  <class name="LogEntry" superclass="qpcpp::QEvt">
    <documentation>Event used to generate a log entry.</documentation>
-   <attribute name="mSig" type="QP::QSignal" visibility="0x00" properties="0x00"/>
    <attribute name="mLogLevel" type="LogLevel" visibility="0x00" properties="0x00"/>
-   <attribute name="mFileStr" type="char const * const" visibility="0x00" properties="0x00"/>
-   <attribute name="mLine" type="unsigned int const" visibility="0x00" properties="0x00"/>
-   <attribute name="mFunctionStr" type="char const * const" visibility="0x00" properties="0x00"/>
-   <attribute name="mCategoryStr" type="char const * const" visibility="0x00" properties="0x00"/>
-   <attribute name="mMsgStr" type="char const * const" visibility="0x00" properties="0x00"/>
-   <operation name="LogEvt" type="" visibility="0x00" properties="0x02">
+   <attribute name="mDate" type="Date const" visibility="0x00" properties="0x00">
+    <documentation>Date of the event.</documentation>
+   </attribute>
+   <attribute name="mTime" type="Time const" visibility="0x00" properties="0x00">
+    <documentation>The time of the event.</documentation>
+   </attribute>
+   <attribute name="mFileStr" type="char const * const" visibility="0x00" properties="0x00">
+    <documentation>File string of the file name where the event was generated.
+Usually mapped to macro __FILE__</documentation>
+   </attribute>
+   <attribute name="mLine" type="unsigned int const" visibility="0x00" properties="0x00">
+    <documentation>Line of code in file where the event was generated.
+Usually mapped to macro __LINE__</documentation>
+   </attribute>
+   <attribute name="mFunctionStr" type="char const * const" visibility="0x00" properties="0x00">
+    <documentation>File string of the function name where the event was generated.
+Usually mapped to macro __FUNCTION__</documentation>
+   </attribute>
+   <attribute name="mCategoryStr" type="char const * const" visibility="0x00" properties="0x00">
+    <documentation>A string representing the category of the event.</documentation>
+   </attribute>
+   <attribute name="mMsg[1024]" type="char" visibility="0x00" properties="0x00">
+    <documentation>Holder for the message string.</documentation>
+   </attribute>
+   <operation name="LogEntry" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
     <parameter name="aLogLevel" type="LogLevel const"/>
+    <parameter name="aDate" type="Date const &amp;"/>
+    <parameter name="aTime" type="Time const &amp;"/>
     <parameter name="aFileStr" type="char const * const"/>
     <parameter name="aLine" type="unsigned int const"/>
     <parameter name="aFunctionStr" type="char const * const"/>
     <parameter name="aCategoryStr" type="char const * const"/>
-    <parameter name="aMsgStr" type="char const * const"/>
-    <code>  : QP::QEvt(aSig)
-  , mLogLevel(aLogLevel)
-  , mFileStr(aFileStr)
-  , mLine(aLine)
-  , mFunctionStr(aFunctionStr)
-  , mCategoryStr(aCategoryStr)
-  , mMsgStr(aMsgStr)
+    <code>    : QP::QEvt(aSig)
+    , mLogLevel(aLogLevel)
+    , mDate(aDate)
+    , mTime(aTime)
+    , mFileStr(aFileStr)
+    , mLine(aLine)
+    , mFunctionStr(aFunctionStr)
+    , mCategoryStr(aCategoryStr)
+    , mMsg{0}
 
 // Ctor body.</code>
    </operation>
-   <operation name="~LogEvt" type="" visibility="0x02" properties="0x00">
+   <operation name="~LogEntry" type="" visibility="0x02" properties="0x00">
     <documentation>Dtor.</documentation>
     <code>// Dtor body.</code>
    </operation>
@@ -204,10 +231,13 @@ mDate != lEvt-&gt;mDate</guard>
 
 #include &quot;qpcpp.h&quot;
 
+#include &quot;date/Date.h&quot;
+#include &quot;time/Time.h&quot;
+
 #include &quot;LogLevel.h&quot;
 
 
-$declare${Logging::Events::LogEvt}
+$declare${Logging::Events::LogEntry}
 </text>
   </file>
   <file name="Logging_AOs.cpp">
@@ -239,7 +269,7 @@ $define${Logging::AOs::FileSink_AO}
 // Forward declarations.
 namespace Logging {
     namespace Events {
-        class LogEvt;
+        class LogEntry;
     } // namespace Events
 } // namespace Logging
 

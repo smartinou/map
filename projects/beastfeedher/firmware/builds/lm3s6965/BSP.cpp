@@ -125,6 +125,14 @@ public:
             sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin
         );
 
+        // Set a weak pull-up on MISO pin for SD Card's proper operation.
+        GPIOPadConfigSet(
+            sSSIPins.mPort,
+            sSSIPins.mRxPin,
+            GPIO_STRENGTH_2MA,
+            GPIO_PIN_TYPE_STD_WPU
+        );
+
         GPIOPadConfigSet(
             sSSIPins.mPort,
             sSSIPins.mClkPin | sSSIPins.mTxPin,

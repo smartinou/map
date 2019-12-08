@@ -29,18 +29,12 @@ using namespace CoreLink;
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
 
-enum L_SPI_SLAVE_CFG_ENUM_TAG {
-    L_CLK_FREQ_ID_MODE   = 400000UL,
-    L_CLK_FREQ_FAST_MODE = 25000000UL
-};
-
-
 enum {
     L_CMD0_PARAM = 0x00000000UL,
     // [31:12]: Reserved.
     // [11:8]: VHS (Host supplied voltage range). Set to '1'.
     // [7:0]: Check pattern.
-    L_CMD8_PARAM  = 0x000001AAUL,
+    L_CMD8_PARAM = 0x000001AAUL,
 
     // [31:0]: Stuff bits.
     L_CMD58_PARAM = 0x00000000UL,
@@ -112,9 +106,8 @@ enum L_OCR_MASK_ENUM_TAG {
 #define CMD55   (55)            // APP_CMD
 #define CMD58   (58)            // READ_OCR
 
-#define L_STOP_TOKEN_CMD25 (0xFD)
-#define L_DATA_TOKEN_OTHER (0xFE)
-
+static uint8_t constexpr sStartBlock = 0xFE;
+static uint8_t constexpr sStopBlock = 0xFD;
 
 #define REG32TOH(num)         \
     (((num>>24)&0x000000ff) | \
@@ -139,16 +132,12 @@ enum L_OCR_MASK_ENUM_TAG {
 // ******************************************************************************
 
 SDC::SDC(unsigned int const aDriveIx, CoreLink::ISPIDev &aSPIDev, GPIO const &aCSnPin)
-    : mMyDriveIx(aDriveIx)
-    , mSPIDev(aSPIDev)
-    , mSPICfg(aCSnPin)
-    , mStatus(STA_NOINIT)
-    , mCardType(0) {
+    : mSPIDev(aSPIDev)
+    , mSPICfg(aCSnPin) {
 
     // Ctor body.
     // Create an SPI slave to operate at maximum device speed.
     mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_0);
-    mSPICfg.SetBitRate(4000000);
     mSPICfg.SetDataWidth(8);
 }
 
@@ -166,7 +155,8 @@ DSTATUS SDC::InitDisk(void) {
     }
 
     // Set clock to Clock Frequency Identification Mode Max (400KHz).
-    mSPICfg.SetBitRate(L_CLK_FREQ_ID_MODE);
+    static unsigned int constexpr sClkFreqIDMode = 400000;
+    mSPICfg.SetBitRate(sClkFreqIDMode);
 
     // Send 80 dummy clocks, CSn de-asserted.
     mSPICfg.DeassertCSn();
@@ -265,20 +255,20 @@ DSTATUS SDC::InitDisk(void) {
         }
     }
 
-    // Put the card in SPI state.
-
+    Deselect();
+    // Set to normal operation bit rate.
+    mSPICfg.SetBitRate(mSPIBitRate);
     return mStatus;
 }
 
 
 DRESULT SDC::RdDisk(
-    uint8_t     *aBufPtr,
+    uint8_t     *aBuffer,
     uint32_t     aStartSector,
     unsigned int aSectorCount) {
 
     // Check parameter.
-    //if (drv || !aSectorCount) {
-    if (!aSectorCount) {
+    if (!aBuffer || !aSectorCount) {
         return RES_PARERR;
     }
 
@@ -295,19 +285,22 @@ DRESULT SDC::RdDisk(
     if (aSectorCount == 1) {
         // Single sector read.
         // READ_SINGLE_BLOCK.
-        if ((SendCmd(CMD17, aStartSector) == 0)
-	        && RxDataBlock(aBufPtr, SDC::sSectorSize)) {
-            aSectorCount = 0;
+        R1_RESPONSE_PKT lR1 = SendCmd(CMD17, aStartSector);
+        if (lR1 == 0) {
+            if (RxDataBlock(aBuffer, SDC::sSectorSize)) {
+                aSectorCount = 0;
+            }
         }
     } else {
         // Multiple sector read.
-        if (SendCmd(CMD18, aStartSector) == 0) {
+        R1_RESPONSE_PKT lR1 = SendCmd(CMD18, aStartSector);
+        if (lR1 == 0) {
             // READ_MULTIPLE_BLOCK.
             do {
-	            if (!RxDataBlock(aBufPtr, SDC::sSectorSize)) {
+                if (!RxDataBlock(aBuffer, SDC::sSectorSize)) {
                     break;
                 }
-	            aBufPtr += SDC::sSectorSize;
+                aBuffer += SDC::sSectorSize;
             } while (--aSectorCount);
 
             // STOP_TRANSMISSION.
@@ -326,7 +319,7 @@ DRESULT SDC::RdDisk(
 
 #if (FF_FS_READONLY == 0)
 DRESULT SDC::WrDisk(
-    uint8_t const *aBufPtr,
+    uint8_t const *aBuffer,
     uint32_t       aStartSector,
     unsigned int   aSectorCount) {
 
@@ -348,9 +341,13 @@ DRESULT SDC::WrDisk(
     if (aSectorCount == 1) {
         // Single sector write.
         // WRITE_BLOCK.
-        if ((SendCmd(CMD24, aStartSector) == 0)
-	        && TxDataBlock(aBufPtr, L_DATA_TOKEN_OTHER)) {
-            aSectorCount = 0;
+        R1_RESPONSE_PKT lR1 = SendCmd(CMD24, aStartSector);
+        if (lR1 == 0) {
+            // Need at least 8 clock cycles after receiving command response.
+            mSPIDev.PushPullByte(sDummyByte);
+            if (TxDataBlock(aBuffer, sStartBlock)) {
+                aSectorCount = 0;
+            }
         }
     } else {
         // Multiple sector write.
@@ -360,17 +357,20 @@ DRESULT SDC::WrDisk(
         }
 
         // WRITE_MULTIPLE_BLOCK.
-        if (SendCmd(CMD25, aStartSector) == 0) {
+        R1_RESPONSE_PKT lR1 = SendCmd(CMD25, aStartSector);
+        if (lR1 == 0) {
+            // Need at least 8 clock cycles after receiving command response.
+            mSPIDev.PushPullByte(sDummyByte);
             do {
                 static uint8_t constexpr sDataTokenCmd25 = 0xFC;
-	            if (!TxDataBlock(aBufPtr, sDataTokenCmd25)) {
+                if (!TxDataBlock(aBuffer, sDataTokenCmd25)) {
                     break;
                 }
-	            aBufPtr += SDC::sSectorSize;
+                aBuffer += SDC::sSectorSize;
             } while (--aSectorCount);
 
             // STOP_TRAN token.
-            if (!TxDataBlock(nullptr, L_STOP_TOKEN_CMD25)) {
+            if (!TxDataBlock(nullptr, sStopBlock)) {
                 aSectorCount = 1;
             }
         }
@@ -389,7 +389,7 @@ DRESULT SDC::WrDisk(
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
 DRESULT SDC::IOCTL(uint8_t aCmd, void * const aBuffer) {
     // No ioctl commands implemented.
-    return RES_ERROR;
+    return RES_OK;
 }
 #endif
 
@@ -401,6 +401,8 @@ bool SDC::Select(void) {
 
     // Assert CSn.
     // Dummy clock: force DO enabled.
+    // These extra clocks shouldn't be necessary right after asserting CSn,
+    // but they do not hurt either.
     mSPICfg.AssertCSn();
     mSPIDev.PushPullByte(sDummyByte);
 
@@ -410,6 +412,7 @@ bool SDC::Select(void) {
         return true;
     }
 
+    // Can never get here, right? Inifite loop above.
     mSPICfg.DeassertCSn();
     return false;
 }
@@ -443,24 +446,27 @@ void SDC::PowerOff(void) {
 }
 
 
-bool SDC::RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen) {
+bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
 
-    // Wait for DataStart token in timeout of 200ms.
+    // Wait for Start Block token in timeout of 200ms.
     uint8_t lToken = 0x00;
-    unsigned int Timer1 = 200;
+    unsigned int lRetryCount = 200;
     do {
         lToken = mSPIDev.PushPullByte(sDummyByte);
-        // This loop will take a time.
-        // Insert rot_rdq() here for multitask environment.
-    } while ((lToken == sDummyByte) && Timer1);
+    } while ((lToken == sDummyByte) && lRetryCount--);
 
-    if (lToken != L_DATA_TOKEN_OTHER) {
-        // Function fails if invalid DataStart token or timeout.
+    if (lToken != sStartBlock) {
+        // Function fails if invalid Start Block token or timeout.
         return false;
     }
 
     // Store trailing data to the buffer.
-    mSPIDev.RdData(aBufPtr, aBlockLen, mSPICfg);
+    // Data. Can't use mSPIDev.RdData() since it asserts/deasserts CSn.
+    while (aBuffer > 0) {
+        *aBuffer = mSPIDev.PushPullByte(0);
+        aBuffer++;
+        aBlockLen--;
+    }
 
     // Discard CRC.
     mSPIDev.PushPullByte(sDummyByte);
@@ -471,30 +477,39 @@ bool SDC::RxDataBlock(uint8_t *aBufPtr, unsigned int aBlockLen) {
 
 
 #if (FF_FS_READONLY == 0)
-bool SDC::TxDataBlock(uint8_t const *aBufPtr, uint8_t aToken) {
-
-    // Wait for card ready.
-    if (0) {//!wait_ready(500)) {
-        return false;
-    }
+bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
 
     // Send token byte.
     mSPIDev.PushPullByte(aToken);
 
     // Send data if token is other than StopTran.
-    if (aToken != L_STOP_TOKEN_CMD25) {
-        // Data.
-        mSPIDev.WrData(aBufPtr, SDC::sSectorSize, mSPICfg);
+    if (aToken != sStopBlock) {
+        // Data. Can't use mSPIDev.WrData() since it asserts/deasserts CSn.
+        unsigned int lLen = SDC::sSectorSize;
+        while (lLen > 0) {
+            mSPIDev.PushPullByte(*aBuffer);
+            aBuffer++;
+            lLen--;
+        }
+
         // Dummy CRC.
         mSPIDev.PushPullByte(sDummyByte);
         mSPIDev.PushPullByte(sDummyByte);
 
-        // Receive data resp.
+        // Receive data response token.
         uint8_t lVal = mSPIDev.PushPullByte(sDummyByte);
-        if ((lVal & 0x1F) != 0x05) {
+        static uint8_t constexpr sDataAccepted = 0x05;
+        if ((lVal & 0x1F) != sDataAccepted) {
             // Function fails if the data packet was not accepted.
             return false;
         }
+    }
+
+    // Busy wait: Get R1 1st (discard), then get busy signal.
+    R1_RESPONSE_PKT lR1b = mSPIDev.PushPullByte(sDummyByte);
+    lR1b = 0x00;
+    while (!lR1b) {
+        lR1b = mSPIDev.PushPullByte(sDummyByte);
     }
 
     return true;
@@ -552,16 +567,14 @@ SDC::R1_RESPONSE_PKT SDC::SendCmd(
         lR1 = mSPIDev.PushPullByte(sDummyByte);
     } while ((lR1 & L_R1_MASK_BUSY) && (lWaitCycles--));
 
-    // Ici, il faut pousser le data dans le ptr de retour.
+    // Pull data back into output pointer.
     while (aRegLen > 0) {
         *(static_cast<uint8_t *>(aRegPtr)) = mSPIDev.PushPullByte(sDummyByte);
         aRegPtr++;
         aRegLen--;
     }
 
-    // TODO: Deselect the card for certain commands (block reads)?
-    mSPICfg.DeassertCSn();
-
+    // SPI transaction is deasserted by calling function.
     return lR1;
 }
 

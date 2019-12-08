@@ -29,6 +29,7 @@
 // This application.
 #include "App.h"
 #include "BSP.h"
+#include "Logging_Events.h"
 #include "PFPP_Events.h"
 #include "RTCC_Events.h"
 #include "Signals.h"
@@ -57,48 +58,55 @@ Q_DEFINE_THIS_FILE
 
 int main(void) {
 
-  // Initialize the framework and the underlying RT kernel.
-  QP::QF::init();
+    // Initialize the framework and the underlying RT kernel.
+    QP::QF::init();
 
-  // Initialize event pool.
-  // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(PFPP::Event::ManualFeedCmd) sSmallPoolSto[20];
-  QP::QF::poolInit(
-      sSmallPoolSto,
-      sizeof(sSmallPoolSto),
-      sizeof(sSmallPoolSto[0])
-  );
+    // Initialize event pool.
+    static QF_MPOOL_EL(PFPP::Event::ManualFeedCmd) sSmallPoolSto[20];
+    QP::QF::poolInit(
+        sSmallPoolSto,
+        sizeof(sSmallPoolSto),
+        sizeof(sSmallPoolSto[0])
+    );
 
-  static QF_MPOOL_EL(RTCC::Event::TimeAndDate) sMediumPoolSto[10];
-  QP::QF::poolInit(
-      sMediumPoolSto,
-      sizeof(sMediumPoolSto),
-      sizeof(sMediumPoolSto[0])
-  );
+    static QF_MPOOL_EL(RTCC::Event::TimeAndDate) sMediumPoolSto[10];
+    QP::QF::poolInit(
+        sMediumPoolSto,
+        sizeof(sMediumPoolSto),
+        sizeof(sMediumPoolSto[0])
+    );
 
-  // Init publish-subscribe.
-  static QP::QSubscrList lSubsribeSto[QTY_SIG];
-  QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
+    static QF_MPOOL_EL(Logging::Event::LogEntry) sLargePoolSto[10];
+    QP::QF::poolInit(
+        sLargePoolSto,
+        sizeof(sLargePoolSto),
+        sizeof(sLargePoolSto[0])
+    );
 
-  // Send object dictionaries for event pools...
-  QS_OBJ_DICTIONARY(sSmallPoolSto);
-  QS_OBJ_DICTIONARY(sMediumPoolSto);
+    // Init publish-subscribe.
+    static QP::QSubscrList lSubsribeSto[QTY_SIG];
+    QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
-  QS_FUN_DICTIONARY(&QP::QHsm::top);
+    // Send object dictionaries for event pools...
+    QS_OBJ_DICTIONARY(sSmallPoolSto);
+    QS_OBJ_DICTIONARY(sMediumPoolSto);
+    QS_OBJ_DICTIONARY(sLargePoolSto);
 
-  // Start master record.
-  // Contains all AOs.
-  App * const lAppPtr = new App();
-  bool lInitGood = lAppPtr->Init();
+    QS_FUN_DICTIONARY(&QP::QHsm::top);
 
-  // Run the QF application.
-  if (lInitGood) {
-    //UARTprintf("QF version: %s", QP::QF::getVersion());
-    return QP::QF::run();
-  }
+    // Start master record.
+    // Contains all AOs.
+    App * const lAppPtr = new App();
+    bool lInitGood = lAppPtr->Init();
 
-  while (1);
-  return 1;
+    // Run the QF application.
+    if (lInitGood) {
+        //UARTprintf("QF version: %s", QP::QF::getVersion());
+        return QP::QF::run();
+    }
+
+    while (1);
+    return 1;
 }
 
 // *****************************************************************************

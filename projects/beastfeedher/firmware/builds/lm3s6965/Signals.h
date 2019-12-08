@@ -60,7 +60,7 @@ enum PFPP_SIGS_ENUM_TAG {
     DISPLAY_TEXT_SIG,
 
     // Log event generation/sinks.
-    LOG_EVT_SIG,
+    LOG_EVENT_SIG,
     LOG_TIMER_SIG,
 
     QTY_SIG

@@ -53,10 +53,12 @@
 
 // TODO: Verify that release builds with gcc define NDEBUG.
 #if defined(_DEBUG) || !defined(NDEBUG)
-#define LOG_DEBUG(aCategory, ...); \
+#define LOG_DEBUG(aCategory, aDate, aTime, ...); \
 {                                  \
     LOGGER.Log(                    \
         LogLevel::prio::DEBUG,     \
+        aDate,                     \
+        aTime,                     \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -65,13 +67,15 @@
     );                             \
 }
 #else
-#define LOG_DEBUG(aCategory, ...)
+#define LOG_DEBUG(aCategory, aDate, aTime, ...)
 #endif
 
-#define LOG_INFO(aCategory, ...); \
+#define LOG_INFO(aCategory, aDate, aTime, ...); \
 {                                 \
     LOGGER.Log(                   \
         LogLevel::prio::INFO,     \
+        aDate,                    \
+        aTime,                    \
         __FILE__,                 \
         __LINE__,                 \
         __FUNCTION__,             \
@@ -80,10 +84,12 @@
     );                            \
 }
 
-#define LOG_WARNING(aCategory, ...); \
+#define LOG_WARNING(aCategory, aDate, aTime, ...); \
 {                                    \
     LOGGER.Log(                      \
         LogLevel::prio::WARNING,     \
+        aDate,                       \
+        aTime,                       \
         __FILE__,                    \
         __LINE__,                    \
         __FUNCTION__,                \
@@ -92,10 +98,12 @@
     );                               \
 }
 
-#define LOG_ERROR(aCategory, ...); \
+#define LOG_ERROR(aCategory, aDate, aTime, ...); \
 {                                  \
     LOGGER.Log(                    \
-        LogLevel::prio::ERR,                   \
+        LogLevel::prio::ERR,       \
+        aDate,                     \
+        aTime,                     \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -104,10 +112,12 @@
     );                             \
 }
 
-#define LOG_CRITICAL(aCategory, ...); \
+#define LOG_CRITICAL(aCategory, aDate, aTime, ...); \
 {                                     \
     LOGGER.Log(                       \
         PRI_CRIT,                     \
+        aDate,                        \
+        aTime,                        \
         __FILE__,                     \
         __LINE__,                     \
         __FUNCTION__,                 \
@@ -137,7 +147,9 @@ public:
     );
 
     bool Log(
-        LogLevel     const aLevel,
+        LogLevel const aLevel,
+        Date const &aDate,
+        Time const &aTime,
         char const * const aFileStr,
         unsigned int const aLine,
         char const * const aFunctionStr,
@@ -158,12 +170,11 @@ private:
     void *operator new(size_t aSize){ return &(Instance()); }
     void  operator delete(void *aLogger) {}
 
-    static int CompareStr(void const * const aFirstStr, void const * const aSecondStr);
+    static int CompareStr(void const * const aKey, void const * const aElement);
 
     static size_t constexpr sMaxLogCategories  = 32;
     static size_t constexpr sMaxLogCategoryLen = 32;
     static LogLevel::prio constexpr sInvalidCategory = LogLevel::prio::DISABLED;
-    static size_t constexpr sMsgBufLen = 1024;
 
     typedef struct {
         unsigned int mEventSignal;

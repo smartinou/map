@@ -99,9 +99,9 @@ LogLevel Logger::GetLogLevel(void) const {
 
 LogLevel Logger::GetLogLevel(char const * const aCategoryStr) const {
 
-    LogCategory_t const * const lCategoryStr = FindCategory(aCategoryStr);
-    if (nullptr != lCategoryStr) {
-        return lCategoryStr->mLevel;
+    LogCategory_t const * const lCategory = FindCategory(aCategoryStr);
+    if (nullptr != lCategory) {
+        return lCategory->mLevel;
     }
 
     return sInvalidCategory;
@@ -137,8 +137,8 @@ bool Logger::AddCategory(
     if (mCategoryQty > 0) {
         LogCategory_t * const lCategoryStr = static_cast<LogCategory_t * const>(
             bsearch(
-                aCategoryStr,
-                mCategories,
+                static_cast<void const *>(aCategoryStr),
+                static_cast<void const *>(&mCategories[0]),
                 mCategoryQty,
                 sizeof(LogCategory_t),
                 Logger::CompareStr
@@ -171,7 +171,9 @@ bool Logger::AddCategory(
 
 
 bool Logger::Log(
-    LogLevel   const aLevel,
+    LogLevel const aLevel,
+    Date const &aDate,
+    Time const &aTime,
     char const * const aFileStr,
     unsigned int const aLine,
     char const * const aFunctionStr,
@@ -190,24 +192,26 @@ bool Logger::Log(
         return false;
     }
 
-    // Concatenate variadics if any.
-    va_list lArgs;
-    va_start(lArgs, aFormatStr);
-    static char lMsgBuf[sMsgBufLen];
-    vsprintf(&lMsgBuf[0], aFormatStr, lArgs);
-    va_end(lArgs);
-
     // Create the Log event and publish it to all!
     Logging::Event::LogEntry * const lLogEvent = Q_NEW(
         Logging::Event::LogEntry,
         GetEventSignal(aCategoryStr),
         aLevel,
+        aDate,
+        aTime,
         aFileStr,
         aLine,
         aFunctionStr,
-        aCategoryStr,
-        &lMsgBuf[0]
+        aCategoryStr
     );
+
+    if (nullptr != lLogEvent) {
+        // Concatenate variadics if any.
+        va_list lArgs;
+        va_start(lArgs, aFormatStr);
+        vsprintf(&lLogEvent->mMsg[0], aFormatStr, lArgs);
+        va_end(lArgs);
+    }
 
     QP::QF::PUBLISH(lLogEvent, this);
     return true;
@@ -232,8 +236,8 @@ Logger::LogCategory_t *Logger::FindCategory(char const * const aCategoryStr) con
 
     LogCategory_t * const lCategoryStr = static_cast<LogCategory_t * const>(
         bsearch(
-            aCategoryStr,
-            mCategories,
+            static_cast<void const *>(aCategoryStr),
+            static_cast<void const *>(mCategories),
             mCategoryQty,
             sizeof(LogCategory_t),
             Logger::CompareStr
@@ -243,11 +247,11 @@ Logger::LogCategory_t *Logger::FindCategory(char const * const aCategoryStr) con
 }
 
 
-int Logger::CompareStr(void const * const aFirstStr, void const * const aSecondStr) {
+int Logger::CompareStr(void const * const aKey, void const * const aElement) {
 
     return strcmp(
-        static_cast<LogCategory_t const * const>(aFirstStr)->mName,
-        static_cast<LogCategory_t const * const>(aSecondStr)->mName
+        static_cast<char const * const>(aKey),
+        static_cast<LogCategory_t const * const>(aElement)->mName
     );
 }
 
