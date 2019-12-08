@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="4.5.1" links="0">
+ <documentation>LwIP Active Objects and Events.</documentation>
+ <framework name="qpcpp"/>
+ <package file="./LwIP.qmp"/>
+</model>

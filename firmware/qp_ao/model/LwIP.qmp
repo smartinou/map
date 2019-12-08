@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package name="LwIP" stereotype="0x04" namespace="LwIP">
+ <package name="AOs" stereotype="0x02" namespace="AO::">
+  <class name="Mgr_AO" superclass="qpcpp::QActive">
+   <documentation>Main manager of the LwIP stack.</documentation>
+   <attribute name="mSlowTickTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
+    <documentation>Slow tick timer for long period events.</documentation>
+   </attribute>
+   <attribute name="mTCPTimer?def LWIP_TCP" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+    <documentation>Timer for TCP events.</documentation>
+   </attribute>
+   <attribute name="mARPTimer?def LWIP_ARP" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+    <documentation>Timer for ARP events.</documentation>
+   </attribute>
+   <attribute name="mDHCPFineTimer?def LWIP_DHCP" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+    <documentation>Timer for DHCP fine grain time events.</documentation>
+   </attribute>
+   <attribute name="mDHCPCoarseTimer?def LWIP_DHCP" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+    <documentation>Timer for DHCP coarse grain time events.</documentation>
+   </attribute>
+   <attribute name="mAutoIPTimer?def LWIP_AUTOIP" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+    <documentation>Auto IP event timer.</documentation>
+   </attribute>
+   <attribute name="mInstance" type="Mgr_AO *" visibility="0x02" properties="0x01">
+    <documentation>Singleton instance.</documentation>
+   </attribute>
+   <attribute name="mEtherDrv" type="LwIPDrv &amp;" visibility="0x02" properties="0x00">
+    <documentation>Reference to LwIP ethernet driver.
+
+TODO: Eventually work toward removing this reference, and only use LwIP static functions.
+</documentation>
+   </attribute>
+   <attribute name="mIPAddress" type="uint32_t" visibility="0x02" properties="0x00">
+    <documentation>Network IP address in network order.</documentation>
+   </attribute>
+   <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
+    <documentation>private ctor.</documentation>
+    <parameter name="aEtherDrv" type="LwIPDrv &amp;"/>
+    <code>    : QP::QActive(Q_STATE_CAST(&amp;LwIP::AO::Mgr_AO::initial))
+    , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
+#ifdef LWIP_TCP
+    , mTCPTimer()
+#endif // LWIP_TCP
+#ifdef LWIP_ARP
+    , mARPTimer()
+#endif // LWIP_ARP
+#ifdef LWIP_DHCP
+    , mDHCPFineTimer()
+    , mDHCPCoarseTimer()
+#endif // LWIP_DHCP
+#ifdef LWIP_AUTOIP
+    , mAutoIPTimer()
+#endif // LWIP_AUTOIP
+    , mEtherDrv(aEtherDrv)
+    , mIPAddress(0)
+
+// Ctor body.</code>
+   </operation>
+   <operation name="Mgr_AO" type="" visibility="0x02" properties="0x00">
+    <documentation>// Default Ctor (disabled).</documentation>
+   </operation>
+   <operation name="Mgr_AO?def _UNUSED_" type="" visibility="0x02" properties="0x00">
+    <documentation>// Default copy Ctor (disabled).</documentation>
+    <parameter name="" type="Mgr_AO const &amp;"/>
+   </operation>
+   <operation name="~Mgr_AO" type="" visibility="0x00" properties="0x00">
+    <documentation>// Dtor.</documentation>
+    <code>// What to do here?</code>
+   </operation>
+   <operation name="operator=" type="void" visibility="0x02" properties="0x00">
+    <documentation>// Default assignment operator (disabled).</documentation>
+    <parameter name="" type="Mgr_AO const &amp;"/>
+   </operation>
+   <operation name="Instance" type="Mgr_AO &amp;" visibility="0x00" properties="0x01">
+    <documentation>The singleton instance handler.</documentation>
+    <parameter name="aEtherDrv" type="LwIPDrv &amp;"/>
+    <code>if (nullptr == mInstance) {
+    mInstance = new Mgr_AO(aEtherDrv);
+}
+
+return *mInstance;</code>
+   </operation>
+   <statechart properties="0x02">
+    <initial target="../1">
+     <action brief="Init">// Suppress the compiler warning about unused parameter.
+bool     lUseDHCP    = false;
+uint32_t lIPAddr     = 0x00000000;
+uint32_t lSubnetMask = 0x00000000;
+uint32_t lGWAddr     = 0x00000000;
+void (*lCallbackInit)(void) = nullptr;
+if (nullptr != e) {
+    LwIP::Event::Init const * const lInitEvt = static_cast&lt;LwIP::Event::Init const * const&gt;(e);
+    lUseDHCP    = lInitEvt-&gt;mNetIFRec-&gt;UseDHCP();
+    lIPAddr     = lInitEvt-&gt;mNetIFRec-&gt;GetIPAddr();
+    lSubnetMask = lInitEvt-&gt;mNetIFRec-&gt;GetSubnetMask();
+    lGWAddr     = lInitEvt-&gt;mNetIFRec-&gt;GetGWAddr();
+
+    lCallbackInit = lInitEvt-&gt;mCallbackInit;
+}
+
+// Initialize the lwIP stack.
+lwip_init();
+
+//mEtherDrv.DrvInit(
+LwIPDrv::StaticInit(
+    (QP::QActive *)this,
+    lUseDHCP,
+    lIPAddr,
+    lSubnetMask,
+    lGWAddr
+);
+
+// Initialize the lwIP applications...
+httpd_init();
+if (nullptr != lCallbackInit) {
+    lCallbackInit();
+}
+</action>
+     <initial_glyph conn="4,2,5,0,8,6">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="Running">
+     <documentation>Main running state.</documentation>
+     <entry brief="StartTimer(SlowTickTimer);">mSlowTickTimer.armX(
+    (LWIP_SLOW_TICK_MS * BSP::TICKS_PER_SEC / 1000),
+    (LWIP_SLOW_TICK_MS * BSP::TICKS_PER_SEC / 1000)
+);</entry>
+     <exit brief="StopTimer();">mSlowTickTimer.disarm();</exit>
+     <tran trig="LWIP_RX_READY">
+      <action brief="EtherDrv.Rd();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
+LwIPDrv::StaticRd(lEvent-&gt;mIndex);</action>
+      <tran_glyph conn="8,18,3,-1,34">
+       <action box="0,-2,28,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="LWIP_TX_READY">
+      <action brief="EtherDrv.Wr();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
+LwIPDrv::StaticWr(lEvent-&gt;mIndex);</action>
+      <tran_glyph conn="8,22,3,-1,34">
+       <action box="0,-2,24,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="LWIP_SLOW_TICK">
+      <action brief="CheckIPAddr, ProcTimers();">// Has IP address changed?
+if (mIPAddress != mEtherDrv.GetIPAddress()) {
+    // IP address in the network byte order.
+    // Save the IP addr.
+    mIPAddress = mEtherDrv.GetIPAddress();
+
+    // Publish the text event to display the new IP address.
+    LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
+        LwIP::Event::IPAddressChanged,
+        LWIP_IP_CHANGED_SIG,
+        mIPAddress,
+        mEtherDrv.GetSubnetMask(),
+        mEtherDrv.GetDefaultGW()
+    );
+
+    QP::QF::PUBLISH(lEvent, this);
+}
+
+#if LWIP_TCP
+    mTCPTimer += LWIP_SLOW_TICK_MS;
+    if (mTCPTimer &gt;= TCP_TMR_INTERVAL) {
+        mTCPTimer = 0;
+        tcp_tmr();
+    }
+#endif
+#if LWIP_ARP
+    mARPTimer += LWIP_SLOW_TICK_MS;
+    if (mARPTimer &gt;= ARP_TMR_INTERVAL) {
+        mARPTimer = 0;
+        etharp_tmr();
+    }
+#endif
+#if LWIP_DHCP
+    mDHCPFineTimer += LWIP_SLOW_TICK_MS;
+    if (mDHCPFineTimer &gt;= DHCP_FINE_TIMER_MSECS) {
+        mDHCPFineTimer = 0;
+        dhcp_fine_tmr();
+    }
+    mDHCPCoarseTimer += LWIP_SLOW_TICK_MS;
+    if (mDHCPCoarseTimer &gt;= DHCP_COARSE_TIMER_MSECS) {
+        mDHCPCoarseTimer = 0;
+        dhcp_coarse_tmr();
+    }
+#endif
+#if LWIP_AUTOIP
+    mAutoIPTimer += LWIP_SLOW_TICK_MS;
+    if (mAutoIPTimer &gt;= AUTOIP_TMR_INTERVAL) {
+        mAutoIPTimer = 0;
+        autoip_tmr();
+    }
+#endif
+</action>
+      <tran_glyph conn="8,26,3,-1,34">
+       <action box="0,-2,36,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="LWIP_RX_OVERRUN">
+      <action brief="Stats(err);">LINK_STATS_INC(link.err);</action>
+      <tran_glyph conn="8,30,3,-1,34">
+       <action box="0,-2,34,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="TERMINATE">
+      <tran_glyph conn="40,8,0,-1,-6,6">
+       <action box="0,-4,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="8,8,38,26">
+      <entry box="1,2,23,2"/>
+      <exit box="1,4,16,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="54,38"/>
+   </statechart>
+  </class>
+ </package>
+ <package name="Events" stereotype="0x01" namespace="Event::">
+  <class name="Init" superclass="qpcpp::QEvt">
+   <documentation>Init event.</documentation>
+   <attribute name="mNetIFRec" type="NetIFRec const * const" visibility="0x00" properties="0x00">
+    <documentation>Pointer to Net IF record.</documentation>
+   </attribute>
+   <attribute name=" (*const mCallbackInit)(void)" type="void" visibility="0x00" properties="0x00">
+    <documentation>A callback function to set other network stack features.</documentation>
+   </attribute>
+   <operation name="Init" type="" visibility="0x00" properties="0x02">
+    <documentation>// Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aNetIFRec" type="NetIFRec const * const"/>
+    <parameter name="(*const aCallbackInit)(void)" type="void"/>
+    <code>    : QP::QEvt(aSig)
+    , mNetIFRec(aNetIFRec)
+    , mCallbackInit(aCallbackInit)
+
+// Ctor body.</code>
+   </operation>
+  </class>
+  <class name="IPAddressChanged" superclass="qpcpp::QEvt">
+   <documentation>IP Address changed.</documentation>
+   <attribute name="mIPAddress" type="uint32_t" visibility="0x00" properties="0x00">
+    <documentation>IP Address.</documentation>
+   </attribute>
+   <attribute name="mSubnetMask" type="uint32_t" visibility="0x00" properties="0x00">
+    <documentation>Subnet mask.</documentation>
+   </attribute>
+   <attribute name="mDefaultGW" type="uint32_t" visibility="0x00" properties="0x00">
+    <documentation>Default gateway.</documentation>
+   </attribute>
+   <operation name="IPAddressChanged" type="" visibility="0x00" properties="0x02">
+    <documentation>Event to signal that any field of the IP address changed from previous address.</documentation>
+    <parameter name="aSig" type="QP::QSignal"/>
+    <parameter name="aIPAddress" type="uint32_t"/>
+    <parameter name="aSubnetMask" type="uint32_t"/>
+    <parameter name="aDefaultGW" type="uint32_t"/>
+    <code>    : QP::QEvt(aSig)
+    , mIPAddress(aIPAddress)
+    , mSubnetMask(aSubnetMask)
+    , mDefaultGW(aDefaultGW)
+
+// Ctor body.</code>
+   </operation>
+  </class>
+  <class name="Interrupt" superclass="qpcpp::QEvt">
+   <documentation>Event raised with corresponding interrupt in ethernet driver.</documentation>
+   <attribute name="mIndex" type="unsigned int const" visibility="0x00" properties="0x00">
+    <documentation>0-based index of the network interface that this event belongs to.</documentation>
+   </attribute>
+   <operation name="Interrupt" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aIndex" type="unsigned int const"/>
+    <code>    : QP::QEvt(aSig)
+    , mIndex(aIndex)
+</code>
+   </operation>
+  </class>
+ </package>
+ <directory name="../codegen">
+  <file name="LwIP_AOs.h">
+   <text>#pragma once
+
+// Forward declaration.
+class LwIPDrv;
+
+$declare${LwIP::AOs::Mgr_AO}
+</text>
+  </file>
+  <file name="LwIP_AOs.cpp">
+   <text>#define LWIP_ALLOWED
+
+// Standard Libraries.
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+
+// QP-port.
+#include &quot;qpcpp.h&quot;
+
+// LwIP stack.
+#include &quot;lwip/autoip.h&quot;
+#include &quot;lwip/def.h&quot;
+#include &quot;lwip/dhcp.h&quot;
+#include &quot;lwip/init.h&quot;
+#include &quot;lwip/stats.h&quot;
+#include &quot;lwip/apps/httpd.h&quot;
+#include &quot;lwip/priv/tcp_priv.h&quot;
+
+// lwIP application.
+#ifdef __cplusplus
+extern &quot;C&quot; {
+} // extern &quot;C&quot;
+#include &quot;netif/EthDrv.h&quot;
+#endif // __cplusplus
+
+
+// TI Library.
+#include &lt;hw_types.h&gt;
+#include &lt;driverlib/flash.h&gt;
+
+
+// Common libraries.
+#include &lt;db/NetIFRec.h&gt;
+
+// This project.
+#include &quot;BSP.h&quot;
+#include &quot;Logger.h&quot;
+#include &quot;LwIP_AOs.h&quot;
+#include &quot;LwIP_Events.h&quot;
+#include &quot;Signals.h&quot;
+
+// Has to be set to the fastest interval to be serviced in the stack.
+#define LWIP_SLOW_TICK_MS AUTOIP_TMR_INTERVAL
+
+
+$define${LwIP::AOs::Mgr_AO}</text>
+  </file>
+  <file name="LwIP_Events.h">
+   <text>#pragma once
+
+// Forward declaration
+class NetIFRec;
+
+
+$declare${LwIP::Events::Init}
+$declare${LwIP::Events::IPAddressChanged}
+$declare${LwIP::Events::Interrupt}
+</text>
+  </file>
+ </directory>
+</package>

@@ -3,17 +3,17 @@
 //
 // Project: Utilities.
 //
-// Module: Button class.
+// Module: GPIO.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief GPIO class.
+//! \ingroup utils_gpio
 
-// ******************************************************************************
+// ****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,7 +21,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "GPIOs.h"
+#include "GPIO.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -34,31 +34,37 @@
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-//! \brief Button component.
-class Button : public GPIOs {
- public:
-  Button(unsigned long const aPort,
-         unsigned int  const aPin,
-         unsigned long const aIntNbr,
-         unsigned int  const aID);
-  Button(GPIOs         const &aGPIO,
-         unsigned long const aIntNbr,
-         unsigned int  const aID);
+class Button
+    : public GPIO {
+public:
+    enum State {
+        IS_LOW = 0,
+        IS_HIGH = 1
+    };
 
-  unsigned int GetGPIOPinState(void);
+    Button(
+        unsigned long const aPort,
+        unsigned int  const aPin,
+        unsigned long const aIntNbr,
+        unsigned int  const aID
+    );
+    Button(
+        GPIO          const &aGPIO,
+        unsigned long const aIntNbr,
+        unsigned int  const aID
+    );
 
-  void DisableInt(void);
-  void EnableInt(void);
-  void ClrInt(void);
+    enum State GetGPIOPinState(void) const;
 
-  enum State {
-    RELEASED = 0,
-    PRESSED  = 1
-  };
+    void DisableInt(void) const;
+    void EnableInt(void) const;
+    void ClrInt(void) const;
 
- private:
-  unsigned long const mIntNbr;
-  unsigned int  const mID;
+private:
+    static unsigned int PortToSysClockPeripheral(unsigned long aPort);
+
+    unsigned long const mIntNbr;
+    unsigned int  const mID;
 };
 
 // ******************************************************************************

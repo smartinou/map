@@ -11,10 +11,9 @@
 //! \brief CoreLink peripheral SPI device class declaration.
 //! \ingroup corelink_peripherals
 
-
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -22,11 +21,11 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-// Driver Library.
-#include "hw_types.h"
-#include "ssi.h"
 
-#include "CoreLinkPeripheralDev.h"
+#include "inc/GPIO.h"
+
+#include "ISPI.h"
+
 
 namespace CoreLink {
 
@@ -38,91 +37,85 @@ namespace CoreLink {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPISlaveCfg {
- public:
-  SPISlaveCfg();
-  SPISlaveCfg(unsigned int aPort, unsigned int aPin);
-  ~SPISlaveCfg() {}
+class SPISlaveCfg
+    : public ISPISlaveCfg {
+public:
+    SPISlaveCfg(unsigned int aPort, unsigned int aPin);
+    SPISlaveCfg(GPIO const &aGPIO);
+    ~SPISlaveCfg() {}
 
-  enum PROTOCOL_ENUM_TAG {
-    MOTO_0 = SSI_FRF_MOTO_MODE_0,
-    MOTO_1 = SSI_FRF_MOTO_MODE_1,
-    MOTO_2 = SSI_FRF_MOTO_MODE_2,
-    MOTO_3 = SSI_FRF_MOTO_MODE_3,
-    TI     = SSI_FRF_TI,
-    NMW    = SSI_FRF_NMW
-  };
+    //typedef enum PROTOCOL_ENUM_TAG protocol_t;
 
-  typedef enum PROTOCOL_ENUM_TAG protocol_t;
+    void SetProtocol(protocol_t aProtocol) override { mProtocol = aProtocol; }
+    void SetBitRate(unsigned int aBitRate) override { mBitRate = aBitRate; }
+    void SetDataWidth(unsigned int aDataWidth) override { mDataWidth = aDataWidth; }
 
-  void SetProtocol(protocol_t aProtocol)     { mProtocol  = aProtocol;  }
-  void SetBitRate(unsigned int aBitRate)     { mBitRate   = aBitRate;   }
-  void SetDataWidth(unsigned int aDataWidth) { mDataWidth = aDataWidth; }
-  void SetCSnGPIO(unsigned long aPort, unsigned int aPin);
+    protocol_t GetProtocol(void) const override { return mProtocol; }
+    unsigned int GetBitRate(void) const override { return mBitRate; }
+    unsigned int GetDataWidth(void) const override { return mDataWidth; }
 
-  protocol_t    GetProtocol(void)  const { return mProtocol;  }
-  unsigned int  GetBitRate(void)   const { return mBitRate;   }
-  unsigned int  GetDataWidth(void) const { return mDataWidth; }
+    void AssertCSn(void) override;
+    void DeassertCSn(void) override;
 
-  void AssertCSn(void);
-  void DeassertCSn(void);
+private:
+    void SetCSnGPIO(void);
 
- private:
-  protocol_t    mProtocol;
-  unsigned long mBitRate;
-  unsigned long mDataWidth;
+    SPISlaveCfg() = delete;
 
-  unsigned long mCSnGPIOPort;
-  unsigned char mCSnGPIOPin;
-};
+    protocol_t mProtocol;
+    unsigned long mBitRate;
+    unsigned long mDataWidth;
 
-// [MG] STARTING TO WONDER IF THIS WHOLE CLASS IS USEFULL AT ALL.
-// [MG] WOULDN'T SETTING THE PINS DIRECTLY IN SPIDev BE MORE EFFICIENT?
-class SSIPinCfg {
- public:
-  SSIPinCfg(unsigned int aSSIID) : mID(aSSIID) {}
-  virtual ~SSIPinCfg() {}
-
-  unsigned int GetID(void) const { return mID; }
-  virtual void SetPins(void) const = 0;
-
- private:
-  unsigned int mID;
+    unsigned long mCSnGPIOPort;
+    unsigned int mCSnGPIOPin;
 };
 
 
-class SPIDev : public PeripheralDev {
- public:
-  SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef);
-  ~SPIDev();
+class SPIDev
+    : public ISPIDev, public PeripheralDev {
+public:
+    SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef);
+    ~SPIDev();
 
-  void RdData(uint8_t      aAddr,
-              uint8_t     *aDataPtr,
-              unsigned int aLen,
-              SPISlaveCfg &aSPICfgRef);
+    void RdData(
+        uint8_t aAddr,
+        uint8_t * const aData,
+        unsigned int aLen,
+        ISPISlaveCfg &aSPICfgRef
+    ) override;
 
-  void RdData(uint8_t     *aDataPtr,
-              unsigned int aLen,
-              SPISlaveCfg &aSPICfgRef);
+    void RdData(
+        uint8_t * const aData,
+        unsigned int aLen,
+        ISPISlaveCfg &aSPICfgRef
+    ) override;
 
-  void WrData(uint8_t        aAddr,
-              uint8_t const *aDataPtr,
-              unsigned int   aLen,
-              SPISlaveCfg   &aSPICfgRef);
+    void WrData(
+        uint8_t aAddr,
+        uint8_t const * const aData,
+        unsigned int aLen,
+        ISPISlaveCfg &aSPICfgRef
+    ) override;
 
-  void WrData(uint8_t const *aDataPtr,
-              unsigned int   aLen,
-              SPISlaveCfg   &aSPICfgRef);
+    void WrData(
+        uint8_t const * const aData,
+        unsigned int aLen,
+        ISPISlaveCfg &aSPICfgRef
+    ) override;
 
-  uint8_t PushPullByte(uint8_t const aByte);
-  uint8_t PushPullByte(uint8_t const aByte,
-                       SPISlaveCfg  &aSPICfgRef);
+    uint8_t PushPullByte(uint8_t const aByte) override;
+    uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg &aSPICfgRef) override;
 
- private:
-  void SetCfg(SPISlaveCfg &aSPISlaveCfgRef);
+private:
+    void SetCfg(ISPISlaveCfg &aSPISlaveCfgRef);
 
-  SPISlaveCfg const *mLastSPICfgPtr;
+    static unsigned int ToNativeProtocol(ISPISlaveCfg::PROTOCOL aProtocol);
+
+    ISPISlaveCfg const *mLastSPICfgPtr;
 };
+
+
+} // namespace CoreLink
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -135,8 +128,6 @@ class SPIDev : public PeripheralDev {
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
-
-} // namespace CoreLink
 
 // ******************************************************************************
 //                                END OF FILE

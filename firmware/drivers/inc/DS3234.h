@@ -1,16 +1,15 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Component drivers.
+// Project: Drivers.
 //
 // Module: DS3234 RTCC.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief RTC base class.
+//! \brief DS3234 RTCC.
 //! \ingroup ext_peripherals
-
 
 // ******************************************************************************
 //
@@ -22,10 +21,9 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "RTCC.h"
+#include "IRTCC.h"
 #include "SPI.h"
-
-using namespace CoreLink;
+#include "inc/GPIO.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -38,216 +36,250 @@ using namespace CoreLink;
 //! \brief Brief description.
 //! Details follow...
 //! ...here.
-class DS3234 : public RTCC {
- public:
-  enum class ALARM_ID {
-    ALARM_ID_1 = 0,
-    ALARM_ID_2,
-  };
-
-  enum class ALARM_MODE {
-    ONCE_PER_SEC = 0,
-    WHEN_SECS_MATCH,
-    ONCE_PER_MINUTE = WHEN_SECS_MATCH,
-    WHEN_MINS_SECS_MATCH,
-    WHEN_MINS_MATCH = WHEN_MINS_SECS_MATCH,
-    WHEN_HOURS_MINS_SECS_MATCH,
-    WHEN_HOURS_MINS_MATCH = WHEN_HOURS_MINS_SECS_MATCH,
-    WHEN_DAY_HOURS_MINS_SECS_MATCH,
-    WHEN_DAY_HOURS_MINS_MATCH = WHEN_DAY_HOURS_MINS_SECS_MATCH,
-    WHEN_DATE_HOURS_MINS_SECS_MATCH,
-    WHEN_DATE_HOURS_MINS_MATCH = WHEN_DATE_HOURS_MINS_SECS_MATCH
-  };
-
-
- private:
-
-  typedef uint8_t volatile rtcc_reg_t;
-
-  struct L_TIME_STRUCT_TAG {
-    rtcc_reg_t mSeconds;
-    rtcc_reg_t mMinutes;
-    rtcc_reg_t mHours;
-  };
-
-
-  struct L_DATE_STRUCT_TAG {
-    rtcc_reg_t mWeekday;
-    rtcc_reg_t mDate;
-    rtcc_reg_t mMonth;
-    rtcc_reg_t mYear;
-  };
-
-  typedef struct L_TIME_STRUCT_TAG time2_t;
-  typedef struct L_DATE_STRUCT_TAG date_t;
-
-  struct L_ALARM_STRUCT_TAG {
-    rtcc_reg_t mMinutes;
-    rtcc_reg_t mHours;
-    rtcc_reg_t mDayDate;
-  };
-
-  typedef struct L_ALARM_STRUCT_TAG rtcc_alarm_t;
-
-
-  struct L_ADDR_MAP_STRUCT_TAG {
-    time2_t      mTime;
-    date_t       mDate;
-    rtcc_reg_t   mAlarm1Seconds;
-    rtcc_alarm_t mAlarm1;
-    rtcc_alarm_t mAlarm2;
-    rtcc_reg_t   mCtrl;
-    rtcc_reg_t   mStatus;
-    rtcc_reg_t   mAgingOffset;
-    rtcc_reg_t   mTempMSB;
-    rtcc_reg_t   mTempLSB;
-    rtcc_reg_t   mDisableTemp;
-    rtcc_reg_t   mReserved[4];
-    rtcc_reg_t   mSRAMAddr;
-    rtcc_reg_t   mSRAMData;
-  };
-
-  typedef struct L_ADDR_MAP_STRUCT_TAG rtcc_reg_map_t;
+class DS3234
+    : public IRTCC {
 
  public:
-  DS3234(unsigned int aBaseYear,
-         SPIDev      &aSPIDevRef,
-         SPISlaveCfg &aSPICfgRef);
-  ~DS3234();
+#if 0
+     DS3234(
+         unsigned int const aBaseYear,
+         unsigned long const aInterruptNumber,
+         GPIO const &aInterruptGPIO,
+         CoreLink::ISPIDev &aSPIDev,
+         CoreLink::SPISlaveCfg const &aSPICfg
+         );
 
-  void Init(uint8_t aCtrlRef);
+#endif // 0
+     DS3234(
+        unsigned int const aBaseYear,
+        unsigned long const aInterruptNumber,
+        GPIO const &aInterruptPin,
+        CoreLink::ISPIDev &aSPIDev,
+        GPIO const &aCSnPin
+    );
+    ~DS3234();
 
-  // Polled API.
-  void RdTime(Time &aTimeRef);
-  void RdDate(Date &aDateRef);
-  void RdTimeAndDate(Time &aTimeRef, Date &aDateRef);
+    // RTCC Interface.
+    void Init(void) override;
+    void SetInterrupt(bool aEnable) override;
+    void AckInterrupt(void) override;
+    void SetImpure(void) override { mIsImpure = true; }
 
-  void WrTime(Time const &aTimeRef);
-  void WrDate(Date const &aDateRef);
-  void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef);
-  void WrAlarm(enum ALARM_ID   aAlarmID,
-               Time const     &aTimeRef,
-               Date const     &aDateRef,
-               enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH);
-  void WrAlarm(enum ALARM_ID   aAlarmID,
-               Time    const  &aTimeRef,
-               Weekday const  &aWeekdayRef,
-               enum ALARM_MODE aAlarmMode = ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH);
-  void DisableAlarm(enum ALARM_ID aAlarmID);
-  void ClrAlarmFlag(enum ALARM_ID aAlarmID);
+    // Polled API.
+    void RdTime(Time &aTime) override;
+    void RdDate(Date &aDate) override;
+    void RdTimeAndDate(Time &aTime, Date &aDate) override;
 
-  unsigned int GetNVMemSize(void) const;
+    void WrTime(Time const &aTime) override;
+    void WrDate(Date const &aDate) override;
+    void WrTimeAndDate(Time const &aTime, Date const &aDate) override;
+    void GetTimeAndDate(Time &aTime, Date &aDate) override;
+    float GetTemperature(void) override;
 
-  void RdFromNVMem(uint8_t * const aDataPtr,
-                   unsigned int    aOffset,
-                   unsigned int    aSize);
-  void WrToNVMem(uint8_t const * const aDataPtr,
-                 unsigned int          aOffset,
-                 unsigned int          aSize);
+    bool WrAlarm(Time const &aTime, Date const &aDate) override;
+    bool WrAlarm(Time const &aTime, Weekday const &aWeekday) override;
+    bool IsAlarmOn(void) override;
+    void DisableAlarm(void) override;
+    void ClrAlarmFlag(void) override;
 
-  // Interrupt-based/cached API.
-  void    GetTimeAndDate(Time &aTimeRef, Date &aDateRef);
-  uint8_t GetCtrl(void);
-  uint8_t GetStatus(void);
-  float   GetTemperature(void);
+    unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
+    void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
+    void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
 
- protected:
-  void UpdateCachedVal(void);
+private:
+    enum class ALARM_ID : unsigned int {
+        ALARM_ID_1 = 0,
+        ALARM_ID_2,
+    };
 
- private:
-  enum HoursFields : uint8_t {
-    H12_24_n = (0x1 << 6),
-    PM_AM_n  = (0x1 << 5),
-  };
+#ifdef _WIN32
+    typedef enum class ALARM_ID alarm_id_t;
+#else
+    typedef enum ALARM_ID alarm_id_t;
+#endif
 
-  enum MonthFields : uint8_t {
-    CENTURY = (0x1 << 7),
-  };
+    enum class ALARM_MODE : unsigned int {
+        ONCE_PER_SEC = 0,
+        WHEN_SECS_MATCH,
+        ONCE_PER_MINUTE = WHEN_SECS_MATCH,
+        WHEN_MINS_SECS_MATCH,
+        WHEN_MINS_MATCH = WHEN_MINS_SECS_MATCH,
+        WHEN_HOURS_MINS_SECS_MATCH,
+        WHEN_HOURS_MINS_MATCH = WHEN_HOURS_MINS_SECS_MATCH,
+        WHEN_DAY_HOURS_MINS_SECS_MATCH,
+        WHEN_DAY_HOURS_MINS_MATCH = WHEN_DAY_HOURS_MINS_SECS_MATCH,
+        WHEN_DATE_HOURS_MINS_SECS_MATCH,
+        WHEN_DATE_HOURS_MINS_MATCH = WHEN_DATE_HOURS_MINS_SECS_MATCH
+    };
+#ifdef _WIN32
+    typedef enum class ALARM_MODE alarm_mode_t;
+#else
+    typedef enum ALARM_MODE alarm_mode_t;
+#endif
 
-  enum DayDateFields : uint8_t {
-    DAY_DATE_n = (0x1 << 6),
-    AnMx       = (0x1 << 7)
-  };
+    typedef uint8_t volatile rtcc_reg_t;
 
-  enum Addr : uint8_t {
-    WR_BASE_ADDR = 0x80
-  };
+    struct L_TIME_STRUCT_TAG {
+        rtcc_reg_t mSeconds;
+        rtcc_reg_t mMinutes;
+        rtcc_reg_t mHours;
+    };
 
- public:
-  /* -------------------------------------------------------------------------
-   Control Register : 0x0E/8Eh
-   Name    Value       Description
-   ----    ---------   -------------------------------------------------------
-   EOSCn   x--- ----   Enable Oscillator.
-   BBSQW   -x-- ----   Battery-Backed Square-Wave Enable.
-   CONV    --x- ----   Convert Temperature.
-   RS2     ---x ----   Rate selection bit 1.
-   RS1     ---- x---   Rate selection bit 2.
-   INTCn   ---- -x--   Interrupt Control.
-   AEI2    ---- --x-   Alarm 2 Interrupt Enable.
-   AEI1    ---- ---x   Alarm 1 Interrupt Enable.
-   ------------------------------------------------------------------------- */
-  enum Ctrl : uint8_t {
-    AEI1  = (0x1 << 0),
-    AEI2  = (0x1 << 1),
-    INTCn = (0x1 << 2),
-    RS1   = (0x1 << 3),
-    RS2   = (0x1 << 4),
-    CONV  = (0x1 << 5),
-    BBSQW = (0x1 << 6),
-    EOSCn = (0x1 << 7)
-  };
 
-  /* -------------------------------------------------------------------------
-   Control/Status Register : 0x0F/8Fh
-   Name    Value       Description
-   ----    ---------   -------------------------------------------------------
-   OSF     x--- ----   Oscillator Stop Flag.
-   BB32K   -x-- ----   Battery-Backed 32KHz Output.
-   CRATE1  --x- ----   Conversion Rate 1.
-   CRATE0  ---x ----   Conversion Rate 2.
-   EN32K   ---- x---   Enable 32KHz Output.
-   BSY     ---- -x--   Busy.
-   AF2     ---- --x-   Alarm 2 Flag.
-   AF1     ---- ---x   Alarm 1 Flag.
-   ------------------------------------------------------------------------- */
-  enum Status : uint8_t {
-    AF1    = (0x1 << 0),
-    AF2    = (0x1 << 1),
-    BSY    = (0x1 << 2),
-    EN32K  = (0x1 << 3),
-    CRATE0 = (0x1 << 4),
-    CRATE1 = (0x1 << 5),
-    BB32K  = (0x1 << 6),
-    ESF    = (0x1 << 7)
-  };
+    struct L_DATE_STRUCT_TAG {
+        rtcc_reg_t mWeekday;
+        rtcc_reg_t mDate;
+        rtcc_reg_t mMonth;
+        rtcc_reg_t mYear;
+    };
 
- private:
-  void UpdateTime(Time &aTime);
-  void UpdateDate(Date &aDate);
+    typedef struct L_TIME_STRUCT_TAG time2_t;
+    typedef struct L_DATE_STRUCT_TAG date_t;
 
-  void FillTimeStruct(Time const &aTimeRef);
-  void FillDateStruct(Date const &aDateRef);
-  void FillAlarmStruct(rtcc_alarm_t &aAlarmRef,
-                       Time const   &aTimeRef,
-                       Date const   &aDateRef);
-  void FillAlarmStruct(rtcc_alarm_t   &aAlarmRef,
-                       Time    const  &aTimeRef,
-                       Weekday const  &aWeekdayRef);
-  void FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef,
-                           Time const   &aTimeRef);
-  void FillAlarmModeStruct(rtcc_alarm_t    &aAlarmRef,
-                           enum ALARM_MODE  aAlarmMode);
-  void TxAlarmStruct(enum ALARM_ID aAlarmID);
+    struct L_ALARM_STRUCT_TAG {
+        rtcc_reg_t mMinutes;
+        rtcc_reg_t mHours;
+        rtcc_reg_t mDayDate;
+    };
 
-  void SetAlarm(enum ALARM_ID aAlarmID);
+    typedef struct L_ALARM_STRUCT_TAG rtcc_alarm_t;
 
-  CoreLink::SPIDev      &mSPIDevRef;
-  CoreLink::SPISlaveCfg &mSPICfgRef;
 
-  rtcc_reg_map_t mRegMap;
+    struct L_ADDR_MAP_STRUCT_TAG {
+        time2_t      mTime;
+        date_t       mDate;
+        rtcc_reg_t   mAlarm1Seconds;
+        rtcc_alarm_t mAlarm1;
+        rtcc_alarm_t mAlarm2;
+        rtcc_reg_t   mCtrl;
+        rtcc_reg_t   mStatus;
+        rtcc_reg_t   mAgingOffset;
+        rtcc_reg_t   mTempMSB;
+        rtcc_reg_t   mTempLSB;
+        rtcc_reg_t   mDisableTemp;
+        rtcc_reg_t   mReserved[4];
+        rtcc_reg_t   mSRAMAddr;
+        rtcc_reg_t   mSRAMData;
+    };
 
-  static unsigned int const mNVMemSize = 256;
+    typedef struct L_ADDR_MAP_STRUCT_TAG rtcc_reg_map_t;
+
+    enum HoursFields : uint8_t {
+        H12_24_n = (0x1 << 6),
+        PM_AM_n  = (0x1 << 5),
+    };
+
+    enum MonthFields : uint8_t {
+        CENTURY = (0x1 << 7),
+    };
+
+    enum DayDateFields : uint8_t {
+        DAY_DATE_n = (0x1 << 6),
+        AnMx       = (0x1 << 7)
+    };
+
+    enum Addr : uint8_t {
+        WR_BASE_ADDR = 0x80
+    };
+
+    // public:
+    /* -------------------------------------------------------------------------
+     Control Register : 0x0E/8Eh
+     Name    Value       Description
+     ----    ---------   -------------------------------------------------------
+     EOSCn   x--- ----   Enable Oscillator.
+     BBSQW   -x-- ----   Battery-Backed Square-Wave Enable.
+     CONV    --x- ----   Convert Temperature.
+     RS2     ---x ----   Rate selection bit 1.
+     RS1     ---- x---   Rate selection bit 2.
+     INTCn   ---- -x--   Interrupt Control.
+     AEI2    ---- --x-   Alarm 2 Interrupt Enable.
+     AEI1    ---- ---x   Alarm 1 Interrupt Enable.
+     ------------------------------------------------------------------------- */
+    enum Ctrl : uint8_t {
+        AEI1  = (0x1 << 0),
+        AEI2  = (0x1 << 1),
+        INTCn = (0x1 << 2),
+        RS1   = (0x1 << 3),
+        RS2   = (0x1 << 4),
+        CONV  = (0x1 << 5),
+        BBSQW = (0x1 << 6),
+        EOSCn = (0x1 << 7)
+    };
+
+    /* -------------------------------------------------------------------------
+     Control/Status Register : 0x0F/8Fh
+     Name    Value       Description
+     ----    ---------   -------------------------------------------------------
+     OSF     x--- ----   Oscillator Stop Flag.
+     BB32K   -x-- ----   Battery-Backed 32KHz Output.
+     CRATE1  --x- ----   Conversion Rate 1.
+     CRATE0  ---x ----   Conversion Rate 2.
+     EN32K   ---- x---   Enable 32KHz Output.
+     BSY     ---- -x--   Busy.
+     AF2     ---- --x-   Alarm 2 Flag.
+     AF1     ---- ---x   Alarm 1 Flag.
+     ------------------------------------------------------------------------- */
+    enum Status : uint8_t {
+        AF1    = (0x1 << 0),
+        AF2    = (0x1 << 1),
+        BSY    = (0x1 << 2),
+        EN32K  = (0x1 << 3),
+        CRATE0 = (0x1 << 4),
+        CRATE1 = (0x1 << 5),
+        BB32K  = (0x1 << 6),
+        ESF    = (0x1 << 7)
+    };
+
+private:
+    void UpdateCachedVal(void);
+    void UpdateTime(Time &aTime);
+    void UpdateDate(Date &aDate);
+    bool IsImpure(void) const { return mIsImpure; }
+
+    void FillTimeStruct(Time const &aTimeRef);
+    void FillDateStruct(Date const &aDateRef);
+    void FillAlarmStruct(
+        rtcc_alarm_t &aAlarmRef,
+        Time const   &aTimeRef,
+        Date const   &aDateRef
+    );
+    void FillAlarmStruct(
+        rtcc_alarm_t   &aAlarmRef,
+        Time    const  &aTimeRef,
+        Weekday const  &aWeekdayRef
+    );
+    void FillAlarmTimeStruct(rtcc_alarm_t &aAlarmRef, Time const &aTimeRef);
+    void FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t aAlarmMode);
+    void TxAlarmStruct(alarm_id_t aAlarmID);
+
+    void SetAlarm(alarm_id_t aAlarmID);
+    void ClrAlarmFlag(alarm_id_t aAlarmID);
+    bool WrAlarm(
+        alarm_id_t aAlarmID,
+        Time const &aTime,
+        Date const &aDate,
+        enum ALARM_MODE aAlarmMode
+    );
+
+
+    uint8_t GetCtrl(void);
+    uint8_t GetStatus(void);
+
+    unsigned int mBaseYear = 0;
+    unsigned int mCentury = 0;
+
+    CoreLink::ISPIDev &mSPIDev;
+    CoreLink::SPISlaveCfg mSPICfg;
+
+    unsigned long mInterruptNumber = 0;
+    GPIO const &mInterruptGPIO;
+
+    rtcc_reg_map_t mRegMap = {0};
+
+    bool mIsImpure = true;
+
+    static unsigned int const mNVMemSize = 256;
 };
 
 // ******************************************************************************

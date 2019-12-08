@@ -63,6 +63,13 @@ typedef u32_t               mem_ptr_t;
     #define PACK_STRUCT_FIELD(x) x
     #define PACK_STRUCT_USE_INCLUDES
 
+#elif defined (_WIN32)
+
+    #define PACK_STRUCT_BEGIN __pragma("pack(push, 1)")
+    #define PACK_STRUCT_STRUCT
+    #define PACK_STRUCT_END __pragma("pragma pack(pop)")
+    #define PACK_STRUCT_FIELD(x) x
+
 #else
                                       /* Setup PACKing macros for GCC Tools */
     #define PACK_STRUCT_BEGIN

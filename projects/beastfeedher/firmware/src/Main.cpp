@@ -1,18 +1,18 @@
 // *****************************************************************************
 //
-// Project: Beast Feed'Her
+// Project: PFPP
 //
-// Module: Main entry point.
+// Module: Main.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief Main entry point.
+//! \ingroup application
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2017, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -26,14 +26,12 @@
 // TI Library.
 //#include "uartstdio.h"
 
-// Common Library.
-#include "SPI.h"
-
 // This application.
 #include "App.h"
-#include "BFHMgr_Evt.h"
 #include "BSP.h"
-#include "RTCC_Evt.h"
+#include "PFPP_Events.h"
+#include "RTCC_Events.h"
+#include "Signals.h"
 
 Q_DEFINE_THIS_FILE
 
@@ -64,18 +62,22 @@ int main(void) {
 
   // Initialize event pool.
   // [MG] VERIFIER LE SIZE MAX D'EVENTS NECESSAIRES.
-  static QF_MPOOL_EL(BFHManualFeedCmdEvt) sSmallPoolSto[20];
-  QP::QF::poolInit(sSmallPoolSto,
-                   sizeof(sSmallPoolSto),
-                   sizeof(sSmallPoolSto[0]));
+  static QF_MPOOL_EL(PFPP::Event::ManualFeedCmd) sSmallPoolSto[20];
+  QP::QF::poolInit(
+      sSmallPoolSto,
+      sizeof(sSmallPoolSto),
+      sizeof(sSmallPoolSto[0])
+  );
 
-  static QF_MPOOL_EL(RTCCTimeDateEvt) sMediumPoolSto[10];
-  QP::QF::poolInit(sMediumPoolSto,
-                   sizeof(sMediumPoolSto),
-                   sizeof(sMediumPoolSto[0]));
+  static QF_MPOOL_EL(RTCC::Event::TimeAndDate) sMediumPoolSto[10];
+  QP::QF::poolInit(
+      sMediumPoolSto,
+      sizeof(sMediumPoolSto),
+      sizeof(sMediumPoolSto[0])
+  );
 
   // Init publish-subscribe.
-  static QP::QSubscrList lSubsribeSto[SIG_QTY];
+  static QP::QSubscrList lSubsribeSto[QTY_SIG];
   QP::QF::psInit(lSubsribeSto, Q_DIM(lSubsribeSto));
 
   // Send object dictionaries for event pools...
@@ -86,7 +88,7 @@ int main(void) {
 
   // Start master record.
   // Contains all AOs.
-  App *lAppPtr = new App();
+  App * const lAppPtr = new App();
   bool lInitGood = lAppPtr->Init();
 
   // Run the QF application.

@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="4.5.1" links="0">
+ <framework name="qpcpp"/>
+ <package name="project" stereotype="0x04" namespace="PFPP">
+  <package name="AOs" stereotype="0x02" namespace="AO">
+   <class name="Mgr_AO" superclass="qpcpp::QActive">
+    <documentation>The top manager AO for the project.
+
+This is where all the feeding actions are taken, based on calendar events and input buttons.</documentation>
+    <attribute name="mDeferredEventQueueSto[4]" type="QP::QEvt const *" visibility="0x02" properties="0x00">
+     <documentation>Queue of deferred events.</documentation>
+    </attribute>
+    <attribute name="mDeferredEventQueue" type="QP::QEQueue" visibility="0x02" properties="0x00">
+     <documentation>The queue of deferred events.</documentation>
+    </attribute>
+    <attribute name="mFeedTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
+     <documentation>Timer for fixed and time-capped feeding periods.</documentation>
+    </attribute>
+    <attribute name="mMotorControl" type="IMotorControl &amp;" visibility="0x02" properties="0x00">
+     <documentation>Motor controller for activating feeder.</documentation>
+    </attribute>
+    <attribute name="mFeedCfgRec" type="FeedCfgRec const * const" visibility="0x02" properties="0x00">
+     <documentation>A pointer to the Feeder configuration record.</documentation>
+    </attribute>
+    <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
+     <documentation>A local copy of current date from periodic tick.</documentation>
+    </attribute>
+    <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
+     <documentation>A local copy of current time from periodic tick.</documentation>
+    </attribute>
+    <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
+     <documentation>Ctor</documentation>
+     <parameter name="aMotorControl" type="IMotorControl &amp;"/>
+     <parameter name="aFeedCfgRec" type="FeedCfgRec const * const"/>
+     <code>    : QP::QActive(Q_STATE_CAST(&amp;PFPP::AO::Mgr_AO::initial))
+    , mDeferredEventQueueSto{nullptr}
+    , mDeferredEventQueue()
+    , mFeedTimer(this, FEED_MGR_TIMEOUT_SIG, 0U)
+    , mMotorControl(aMotorControl)
+    , mFeedCfgRec(aFeedCfgRec)
+    , mDate()
+    , mTime()
+
+// Ctor body left empty.</code>
+    </operation>
+    <operation name="StartTimedFeed" type="void" visibility="0x02" properties="0x00">
+     <documentation>Starts a timed feeding period.</documentation>
+     <parameter name="aFeedTime" type="QP::QTimeEvtCtr"/>
+     <code>mFeedTimer.armX(aFeedTime);
+StartFeeder();</code>
+    </operation>
+    <operation name="StopTimedFeed" type="void" visibility="0x02" properties="0x00">
+     <documentation>Stop timed feeding period.</documentation>
+     <code>StopFeeder();
+mFeedTimer.disarm();</code>
+    </operation>
+    <operation name="StartFeeder" type="void" visibility="0x02" properties="0x00">
+     <documentation>Start whatever mechanism used to distribute food.</documentation>
+     <code>// Start motor.
+mMotorControl.TurnOnCW();</code>
+    </operation>
+    <operation name="StopFeeder" type="void" visibility="0x02" properties="0x00">
+     <documentation>Stops whatever mechanism is used to distribute food.</documentation>
+     <code>// Stop feeder.
+mMotorControl.TurnOff();</code>
+    </operation>
+    <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+     <documentation>Returns the manual waiting period as per FeedCfgRec if any, or default value.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;GetManualFeedWaitPeriod() * BSP::TICKS_PER_SEC;
+}
+
+static QP::QTimeEvtCtr constexpr sManualWaitPeriod = 2 * BSP::TICKS_PER_SEC;
+return sManualWaitPeriod;</code>
+    </operation>
+    <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+     <documentation>Returns the manual feed period as per FeedCfgRec if any, or default value.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;GetManualFeedMaxFeedPeriod() * BSP::TICKS_PER_SEC;
+}
+
+static QP::QTimeEvtCtr constexpr sManualMaxFeedPeriod = 10 * BSP::TICKS_PER_SEC;
+return sManualMaxFeedPeriod;</code>
+    </operation>
+    <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+     <documentation>Returns the timed feed period as per FeedCfgRec if any, or default value.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;GetTimedFeedPeriod() * BSP::TICKS_PER_SEC;
+}
+
+static QP::QTimeEvtCtr constexpr sTimedFeedPeriod = 4 * BSP::TICKS_PER_SEC;
+return sTimedFeedPeriod;</code>
+    </operation>
+    <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+     <documentation>Returns if manual feed is allowed or not.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;IsManualFeedEnable();
+}
+
+return true;</code>
+    </operation>
+    <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+     <documentation>Returns if timed feed is allowed or not.</documentation>
+     <code>if (nullptr != mFeedCfgRec) {
+    return mFeedCfgRec-&gt;IsTimedFeedEnable();
+}
+
+return true;</code>
+    </operation>
+    <operation name="DisplayFeedTime" type="void" visibility="0x02" properties="0x00">
+     <documentation>Sends a &quot;Display Text&quot; signal to show last feeding time.</documentation>
+     <code>char lTimeAndDateStr[64] = {0};
+DateHelper::ToStr(mDate, &amp;lTimeAndDateStr[0]);
+size_t lStrLen = strlen(&amp;lTimeAndDateStr[0]);
+lTimeAndDateStr[lStrLen] = ' ';
+TimeHelper::ToStr(mTime, &amp;lTimeAndDateStr[lStrLen + 1]);
+
+Display::Event::DisplayText * const lTextEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 60,
+    0xF,
+    &amp;lTimeAndDateStr[0],
+    true
+);
+QP::QF::PUBLISH(lTextEvent, this);
+</code>
+    </operation>
+    <statechart properties="0x02">
+     <initial target="../1">
+      <action brief="Init();">StopFeeder();
+
+// Initialize the QF queue for deferred feed requests.
+mDeferredEventQueue.init(mDeferredEventQueueSto, Q_DIM(mDeferredEventQueueSto));
+
+// Subscribe to signals if any.
+subscribe(RTCC_CALENDAR_EVENT_ALARM_SIG);
+subscribe(RTCC_TIME_TICK_ALARM_SIG);
+subscribe(FEED_MGR_MANUAL_FEED_CMD_SIG);
+subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
+subscribe(LWIP_IP_CHANGED_SIG);
+
+// Set logging category.
+//LOGGER.AddCategory(FEED_MGR_LOG_SIG, &amp;sLogCategory[0]);
+</action>
+      <initial_glyph conn="4,6,5,0,8,6">
+       <action box="0,-2,10,2"/>
+      </initial_glyph>
+     </initial>
+     <state name="Running">
+      <documentation>Top state.</documentation>
+      <entry brief="DisplayFrame();">char const *lFrameStr = &quot;Last feed time:&quot;;
+Display::Event::DisplayText * const lFrameEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 50,
+    0xF,
+    lFrameStr,
+    false
+);
+QP::QF::PUBLISH(lFrameEvent, this);
+</entry>
+      <initial target="../8">
+       <initial_glyph conn="32,18,5,0,6,6">
+        <action box="0,-2,10,2"/>
+       </initial_glyph>
+      </initial>
+      <tran trig="FEED_MGR_TIMEOUT" target="../8">
+       <tran_glyph conn="4,28,3,3,28">
+        <action box="0,-2,22,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../10">
+       <tran_glyph conn="4,88,3,3,28">
+        <action box="0,-2,28,4"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="FEED_MGR_MANUAL_FEED_CMD">
+       <action brief="GetState();">PFPP::Event::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::ManualFeedCmd const * const&gt;(e);
+</action>
+       <choice target="../../9">
+        <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
+        <choice_glyph conn="18,46,5,3,14">
+         <action box="0,-2,24,2"/>
+        </choice_glyph>
+       </choice>
+       <choice target="../../8">
+        <guard brief="else"/>
+        <choice_glyph conn="18,46,4,3,-16,14">
+         <action box="0,-16,10,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="4,46,3,-1,14">
+        <action box="0,1,25,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="FEED_MGR_TIMED_FEED_CMD">
+       <choice target="../../10">
+        <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
+        <choice_glyph conn="18,94,5,3,14">
+         <action box="1,0,13,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="4,94,3,-1,14">
+        <action box="0,-2,26,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="RTCC_TIME_TICK_ALARM">
+       <action brief="^DISPLAY_TEXT(Time, Date);">RTCC::Event::TimeAndDate const * const lEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;( e );
+mDate = lEvent-&gt;mDate;
+mTime = lEvent-&gt;mTime;
+
+char lDateStr[32] = {0};
+DateHelper::ToStr(lEvent-&gt;mDate, &amp;lDateStr[0]);
+Display::Event::DisplayText * const lDateChangedEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 10,
+    0xF,
+    &amp;lDateStr[0],
+    false
+);
+QP::QF::PUBLISH(lDateChangedEvent, this);
+
+char lTimeStr[32] = {0};
+TimeHelper::ToStr(lEvent-&gt;mTime, &amp;lTimeStr[0]);
+Display::Event::DisplayText * const lTimeChangedEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 20,
+    0xF,
+    &amp;lTimeStr[0],
+    false
+);
+QP::QF::PUBLISH(lTimeChangedEvent, this);</action>
+       <tran_glyph conn="4,106,3,-1,50">
+        <action box="0,-2,42,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="LWIP_IP_CHANGED">
+       <action brief="^DISPLAY_TEXT(IPAddress);">LwIP::Event::IPAddressChanged const * const lEvent = static_cast&lt;LwIP::Event::IPAddressChanged const * const&gt;( e );
+IPAddress lIPAddress(lEvent-&gt;mIPAddress);
+char lIPAddressStr[32] = {0};
+// Erase previous IP address, in case this one is longer.
+memset(&amp;lIPAddressStr[0], ' ', 15);
+lIPAddress.GetString(&amp;lIPAddressStr[0]);
+Display::Event::DisplayText * const lEraseLineEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 30,
+    0xF,
+    &amp;lIPAddressStr[0],
+    false
+);
+QP::QF::PUBLISH(lEraseLineEvent, this);
+
+Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
+    Display::Event::DisplayText,
+    DISPLAY_TEXT_SIG,
+    0, 30,
+    0xF,
+    &amp;lIPAddressStr[0],
+    true
+);
+QP::QF::PUBLISH(lLwIPChangedEvent, this);</action>
+       <tran_glyph conn="4,110,3,-1,50">
+        <action box="0,-2,40,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="TERMINATE">
+       <tran_glyph conn="72,12,0,-1,-6,8">
+        <action box="0,-4,10,2"/>
+       </tran_glyph>
+      </tran>
+      <state name="Waiting">
+       <documentation>// Waiting here for anything to happen.</documentation>
+       <entry brief="recall();">recall(&amp;mDeferredEventQueue);</entry>
+       <state_glyph node="32,24,44,8">
+        <entry box="1,2,13,2"/>
+       </state_glyph>
+      </state>
+      <state name="ManualFeed">
+       <documentation>Feeding state triggered by manual action.</documentation>
+       <exit brief="StopFeeder(); StopTimer();">StopTimedFeed();</exit>
+       <initial target="../3">
+        <initial_glyph conn="44,42,5,0,4,4">
+         <action box="0,-2,10,2"/>
+        </initial_glyph>
+       </initial>
+       <tran trig="RTCC_CALENDAR_EVENT_ALARM">
+        <action brief="Log(); defer();">if (defer(&amp;mDeferredEventQueue, e)) {
+    // Event deferred: log event.
+} else {
+    // Event NOT deferred because of no room in the defer queue: Log event.
+}</action>
+        <tran_glyph conn="32,70,3,-1,40">
+         <action box="0,-2,39,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="FEED_MGR_TIMED_FEED_CMD">
+        <action brief="DoNothing();">// Intercept this signal discard it.
+// We consider this ok since we're already in a timed feeding sequence.</action>
+        <tran_glyph conn="32,74,3,-1,40">
+         <action box="0,-2,40,2"/>
+        </tran_glyph>
+       </tran>
+       <state name="WaitPeriod">
+        <documentation>The wait period before starting the feeder.</documentation>
+        <entry brief="StartTimer(WaitTime);">QP::QTimeEvtCtr lManualWaitPeriod = GetManualWaitPeriod();
+mFeedTimer.armX(lManualWaitPeriod);</entry>
+        <tran trig="FEED_MGR_TIMEOUT" target="../../4">
+         <tran_glyph conn="42,50,3,3,-4,12,4">
+          <action box="-4,5,20,2"/>
+         </tran_glyph>
+        </tran>
+        <state_glyph node="42,46,30,8">
+         <entry box="1,2,22,2"/>
+        </state_glyph>
+       </state>
+       <state name="TimedCappedFeed">
+        <documentation>The feeding state for a manual feed.
+Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
+        <entry brief="StartTimer(MaxFeedTime); StartFeeder();">QP::QTimeEvtCtr lManualMaxFeedPeriod = GetManualMaxFeedPeriod();
+StartTimedFeed(lManualMaxFeedPeriod);</entry>
+        <exit brief="DisplayFeedTime();">DisplayFeedTime();</exit>
+        <state_glyph node="42,58,30,8">
+         <entry box="1,2,25,4"/>
+         <exit box="1,6,25,2"/>
+        </state_glyph>
+       </state>
+       <state_glyph node="32,36,44,42">
+        <exit box="1,2,13,4"/>
+       </state_glyph>
+      </state>
+      <state name="TimedFeed">
+       <documentation>State describing behavior for events triggering a fixed timed feeding period.</documentation>
+       <entry brief="StartTimer(FeedTime); StartFeeder();">QP::QTimeEvtCtr lTimedFeedPeriod = GetTimedFeedPeriod();
+StartTimedFeed(lTimedFeedPeriod);</entry>
+       <exit brief="StopFeeder(); StopTimer(); DisplayFeedTime();">StopTimedFeed();
+DisplayFeedTime();</exit>
+       <tran trig="RTCC_CALENDAR_EVENT_ALARM">
+        <action brief="Log(); defer();">if (defer(&amp;mDeferredEventQueue, e)) {
+    // Event deferred: log event.
+} else {
+    // Event NOT deferred because of no room in the defer queue: Log event.
+}</action>
+        <tran_glyph conn="32,92,3,-1,40">
+         <action box="0,-2,40,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
+        <action brief="DoNothing();">// Discard any manual feeding action while we're already in a timed feeding sequence.</action>
+        <tran_glyph conn="32,96,3,-1,40">
+         <action box="0,-2,40,2"/>
+        </tran_glyph>
+       </tran>
+       <state_glyph node="32,82,44,18">
+        <entry box="1,2,31,2"/>
+        <exit box="1,4,39,2"/>
+       </state_glyph>
+      </state>
+      <state_glyph node="4,12,76,108">
+       <entry box="1,2,17,2"/>
+      </state_glyph>
+     </state>
+     <state_diagram size="84,124"/>
+    </statechart>
+   </class>
+  </package>
+  <package name="Events" stereotype="0x01" namespace="Event::">
+   <class name="Init" superclass="qpcpp::QEvt">
+    <documentation>Init event to pass to pseudo initial transition.</documentation>
+    <operation name="Init" type="" visibility="0x00" properties="0x02">
+     <documentation>Ctor.</documentation>
+     <parameter name="aSig" type="QP::QSignal"/>
+     <code>    : QP::QEvt(aSig)
+    , mManualWaitPeriod(aManualWaitPeriod)
+    , mTimeFeedPeriod(aTimeFeedPeriod)
+    , mManualMaxFeedPeriod(aManualMaxFeedPeriod)
+
+// Ctor body left empty.</code>
+    </operation>
+   </class>
+   <class name="ManualFeedCmd" superclass="qpcpp::QEvt">
+    <documentation>An event for manual feed commands.</documentation>
+    <attribute name="mIsActive" type="bool" visibility="0x00" properties="0x00">
+     <documentation>The state of the command: true when on, false when off.</documentation>
+    </attribute>
+    <operation name="ManualFeedCmd" type="" visibility="0x00" properties="0x02">
+     <documentation>Ctor.</documentation>
+     <parameter name="aSig" type="QP::QSignal"/>
+     <parameter name="aIsActive" type="bool"/>
+     <code>    : QP::QEvt(aSig)
+    , mIsActive(aIsActive)
+
+// Ctor body left empty.</code>
+    </operation>
+   </class>
+   <class name="TimedFeedCmd" superclass="qpcpp::QEvt">
+    <documentation>An event for timed feed commands.</documentation>
+    <attribute name="mDuration" type="QP::QTimeEvtCtr" visibility="0x00" properties="0x00">
+     <documentation>An event for timed event commands.</documentation>
+    </attribute>
+    <operation name="TimedFeedCmd" type="" visibility="0x00" properties="0x02">
+     <documentation>Ctor.</documentation>
+     <parameter name="aSig" type="QP::QSignal"/>
+     <parameter name="aDuration" type="QP::QTimeEvtCtr"/>
+     <code>    : QP::QEvt(aSig)
+    , mDuration(aDuration)
+
+// Ctor body left empty.</code>
+    </operation>
+   </class>
+  </package>
+  <directory name="codegen">
+   <file name="PFPP_AOs.h">
+    <text>#include &lt;qpcpp.h&gt;
+
+
+#include &lt;db/FeedCfgRec.h&gt;
+#include &lt;IMotorControl.h&gt;
+
+
+$declare${project::AOs::Mgr_AO}
+
+</text>
+   </file>
+   <file name="PFPP_AOs.cpp">
+    <text>#include &quot;BSP.h&quot;
+#include &quot;Signals.h&quot;
+
+#include &quot;net/IPAddress.h&quot;
+
+#include &quot;Display_Events.h&quot;
+#include &quot;LwIP_Events.h&quot;
+#include &quot;RTCC_Events.h&quot;
+
+#include &quot;PFPP_AOs.h&quot;
+#include &quot;PFPP_Events.h&quot;
+
+
+$define${project::AOs::Mgr_AO}
+</text>
+   </file>
+   <file name="PFPP_Events.h">
+    <text>#include &lt;qpcpp.h&gt;
+
+
+// Add Init event here if ever needed.
+$declare${project::Events::ManualFeedCmd}
+$declare${project::Events::TimedFeedCmd}
+//$declare${project::Events::Init}</text>
+   </file>
+  </directory>
+ </package>
+ <package file="./../../../../../firmware/qp_ao/model/Display.qmp"/>
+ <package file="./../../../../../firmware/qp_ao/model/RTCC.qmp"/>
+ <package file="./../../../../../firmware/qp_ao/model/Logging.qmp"/>
+ <package file="./../../../../../firmware/qp_ao/model/LwIP.qmp"/>
+</model>

@@ -2,17 +2,17 @@
 //
 // Project: Utilities.
 //
-// Module: Button class.
+// Module: GPIO.
 //
 // *****************************************************************************
 
 //! \file
 //! \brief MyClass device class.
-//! \ingroup module_group
+//! \ingroup utils_gpio
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -21,13 +21,14 @@
 // *****************************************************************************
 
 // TI Library.
-#include "hw_types.h"
-#include "gpio.h"
-#include "interrupt.h"
+#include <hw_types.h>
+#include <hw_memmap.h>
+#include <driverlib/sysctl.h>
+#include <driverlib/gpio.h>
+#include <driverlib/interrupt.h>
 
 // This project.
-#include "GPIOs.h"
-#include "Button.h"
+#include "inc/Button.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -49,72 +50,91 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Button::Button(unsigned long const aGPIOPort,
-               unsigned int  const aGPIOPin,
-               unsigned long const aIntNbr,
-               unsigned int  const aID)
-  : GPIOs(aGPIOPort, aGPIOPin)
-  , mIntNbr(aIntNbr)
-  , mID(aID) {
+Button::Button(
+    unsigned long const aGPIOPort,
+    unsigned int  const aGPIOPin,
+    unsigned long const aIntNbr,
+    unsigned int  const aID
+)
+    : GPIO(aGPIOPort, aGPIOPin)
+    , mIntNbr(aIntNbr)
+    , mID(aID) {
 
-  DisableInt();
+    // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
+    SysCtlPeripheralEnable(PortToSysClockPeripheral(aGPIOPort));
 
-  // Set specified GPIO as edge triggered input.
-  // Don't enable interrupt just yet.
-  GPIOPinTypeGPIOInput(mPort, mPin);
-  GPIOIntTypeSet(mPort, mPin, GPIO_BOTH_EDGES);
-  GPIOPadConfigSet(mPort,
-                   mPin,
-                   GPIO_STRENGTH_2MA,
-                   GPIO_PIN_TYPE_STD_WPU);
+    DisableInt();
 
-  // Enable the interrupt of the selected GPIO.
-  // Don't enable the interrupt globally yet.
-  GPIOPinIntEnable(mPort, mPin);
-  GPIOPinIntClear(mPort, mPin);
+    // Set specified GPIO as edge triggered input.
+    // Don't enable interrupt just yet.
+    GPIOPinTypeGPIOInput(GetPort(), GetPin());
+    GPIOIntTypeSet(GetPort(), GetPin(), GPIO_BOTH_EDGES);
+    GPIOPadConfigSet(
+        GetPort(),
+        GetPin(),
+        GPIO_STRENGTH_2MA,
+        GPIO_PIN_TYPE_STD_WPU
+    );
+
+    // Enable the interrupt of the selected GPIO.
+    // Don't enable the interrupt globally yet.
+    GPIOPinIntEnable(GetPort(), GetPin());
+    GPIOPinIntClear(GetPort(), GetPin());
 }
 
 
-Button::Button(GPIOs         const &aGPIO,
-               unsigned long const aIntNbr,
-               unsigned int  const aID)
-  : Button(aGPIO.GetPort(),
-           aGPIO.GetPin(),
-           aIntNbr,
-           aID) {
-  // Ctor body left intentionally empty.
+Button::Button(
+    GPIO          const &aGPIO,
+    unsigned long const aIntNbr,
+    unsigned int  const aID
+)   : Button(aGPIO.GetPort(), aGPIO.GetPin(), aIntNbr, aID) {
+    // Ctor body left intentionally empty.
 }
 
 
-unsigned int Button::GetGPIOPinState(void) {
+Button::State Button::GetGPIOPinState(void) const {
 
-  unsigned long lGPIOPin = GPIOPinRead(mPort, mPin);
-  unsigned int  lState = RELEASED;
-  if (lGPIOPin & mPin) {
-    lState = PRESSED;
-  }
+    unsigned long lGPIOPin = GPIOPinRead(GetPort(), GetPin());
+    if (lGPIOPin & GetPin()) {
+        return IS_HIGH;
+    }
 
-  return lState;
+    return IS_LOW;
 }
 
 
-void Button::DisableInt(void) {
-  IntDisable(mIntNbr);
+void Button::DisableInt(void) const {
+    IntDisable(mIntNbr);
 }
 
 
-void Button::EnableInt(void) {
-  IntEnable(mIntNbr);
+void Button::EnableInt(void) const {
+    IntEnable(mIntNbr);
 }
 
 
-void Button::ClrInt(void) {
-  GPIOPinIntClear(mPort, mPin);
+void Button::ClrInt(void) const {
+    GPIOPinIntClear(GetPort(), GetPin());
 }
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+unsigned int Button::PortToSysClockPeripheral(unsigned long aPort) {
+    switch (aPort) {
+    case GPIO_PORTA_BASE: return SYSCTL_PERIPH_GPIOA;
+    case GPIO_PORTB_BASE: return SYSCTL_PERIPH_GPIOB;
+    case GPIO_PORTC_BASE: return SYSCTL_PERIPH_GPIOC;
+    case GPIO_PORTD_BASE: return SYSCTL_PERIPH_GPIOD;
+    case GPIO_PORTE_BASE: return SYSCTL_PERIPH_GPIOE;
+    case GPIO_PORTF_BASE: return SYSCTL_PERIPH_GPIOF;
+    case GPIO_PORTG_BASE: return SYSCTL_PERIPH_GPIOG;
+    case GPIO_PORTH_BASE: return SYSCTL_PERIPH_GPIOH;
+    }
+
+    return 0;
+}
 
 // *****************************************************************************
 //                                END OF FILE

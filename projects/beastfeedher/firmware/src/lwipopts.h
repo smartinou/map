@@ -62,6 +62,12 @@
 //****************************************************************************
 //#define HOST_TMR_INTERVAL
 //#define TX_PBUF_QUEUE_LEN               8
+//#define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
+
+#ifdef __GNUC__
+#define lwip_htonl(a) __builtin_bswap32(a)
+#define lwip_htons(a) __builtin_bswap16(a)
+#endif // __GNUC__
 
 //****************************************************************************
 //

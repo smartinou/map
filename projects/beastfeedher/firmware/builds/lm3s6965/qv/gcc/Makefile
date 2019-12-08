@@ -59,7 +59,7 @@ include $(LWIPDIR)/Filelists.mk
 
 # Location of the QP/C++ framework (if not provided in an environemnt var.)
 ifeq ($(QPCPP),)
-QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp
+QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp_6_5_1
 endif
 
 # QP port used in this project
@@ -77,17 +77,22 @@ CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 VPATH = \
         ../../ \
         $(PROJECT_FW_DIR)/src \
+        $(PROJECT_FW_DIR)/src/models/codegen \
         $(PROJECT_FW_DIR)/src/lwip_port/arch \
         $(PROJECT_FW_DIR)/src/lwip_port/netif \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
+        $(FIRMWARE_PATH)/qp_ao/codegen \
         $(FIRMWARE_PATH)/qp_ao/src \
-        $(FIRMWARE_PATH)/qp_ao/model/src \
         $(FIRMWARE_PATH)/utils/date \
+        $(FIRMWARE_PATH)/utils/db \
+        $(FIRMWARE_PATH)/utils/net \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
         $(STELLARIS_LIB)/inc \
-        $(QPCPP)/source \
+        $(QPCPP)/src/qf \
+        $(QPCPP)/src/qs \
+        $(QPCPP)/src/qv \
         $(QP_PORT_DIR) \
         $(CMSIS_LIB)/lm3s \
         $(CMSIS_LIB)/lm3s/GCC \
@@ -104,19 +109,17 @@ INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
+        -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
         -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
-        -I$(FIRMWARE_PATH)/qp_ao/model/inc \
-        -I$(FIRMWARE_PATH)/utils/date \
-        -I$(FIRMWARE_PATH)/utils/inc \
-        -I$(FIRMWARE_PATH)/utils/time \
+        -I$(FIRMWARE_PATH)/qp_ao/codegen \
+        -I$(FIRMWARE_PATH)/utils \
         -I$(STELLARIS_LIB) \
         -I$(STELLARIS_LIB)/inc \
-        -I$(STELLARIS_LIB)/driverlib \
         -I$(QPCPP)/include \
-        -I$(QPCPP)/source \
+        -I$(QPCPP)/src \
         -I$(QP_PORT_DIR) \
         -I$(CMSIS_LIB)/lm3s \
         -I$(CMSIS_LIB)/core \
@@ -154,29 +157,32 @@ C_SRCS := \
 CPP_SRCS := \
         App.cpp \
         Main.cpp \
-        BFHMgr_AO.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
-        DB.cpp \
         DBRec.cpp \
-        DisplayMgr_AO.cpp \
+        Display_AOs.cpp \
         DS3234.cpp \
-        eth_driver.cpp \
+        EthernetAddress.cpp \
+        EthDrv.cpp \
+        FatFSDisk.cpp \
         FeedCfgRec.cpp \
-        FileLogSink_AO.cpp \
-        GPIOs.cpp \
+        GPIO.cpp \
+        IPAddress.cpp \
         Limit.cpp \
-        LogEvt.cpp \
+        Logging_AOs.cpp \
         Logger.cpp \
-        LwIPMgr_AO.cpp \
+        LogLevel.cpp \
+        LwIP_AOs.cpp \
         LwIPDrv.cpp \
         Month.cpp \
+        Net.cpp \
         NetIFRec.cpp \
-        RTCC.cpp \
-        RTCC_AO.cpp \
+        PFPP_AOs.cpp \
+        IRTCC.cpp \
+        RTCC_AOs.cpp \
         SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
@@ -184,6 +190,9 @@ CPP_SRCS := \
         Time.cpp \
         Weekday.cpp
 
+#        Logging_Events.cpp \
+#        eth_driver.cpp \
+#        RTCC_Events.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \
@@ -198,7 +207,8 @@ QP_SRCS := \
         qf_qeq.cpp \
         qf_qmact.cpp \
         qf_time.cpp \
-        qv.cpp
+        qv.cpp \
+        qv_port.cpp
 
 QP_ASMS :=
 QS_SRCS := \
@@ -232,7 +242,8 @@ FLOAT_ABI :=
 ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
+GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -277,12 +288,12 @@ ASFLAGS = $(ARM_CPU) $(ASM_FPU)
 
 CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++11 \
-	-O1 $(INCLUDES) $(DEFINES) -DNDEBUG
+	-std=c++14 \
+	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 
 else ifeq (spy, $(CONF))
@@ -300,12 +311,11 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++11 \
+	-std=c++14 \
 	-O $(INCLUDES) $(DEFINES) -DQ_SPY
 
 else
 # Default Debug configuration.
-
 BIN_DIR := dbg
 
 ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
@@ -316,7 +326,7 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++11 \
+	-std=c++14 \
 	-O $(INCLUDES) $(DEFINES)
 
 endif
@@ -372,13 +382,15 @@ MODEL_IN_FILES := \
   $(FIRMWARE_PATH)/qp_ao/model/Logging.qm
 
 MODEL_OUT_FILES := \
-  FileLogSink_AO.h \
-	FileLogSink_AO.cpp
 
-	#Logger.h \
-	#Logger.cpp \
-	#LogEvt.h \
-	#LogEvt.cpp
+
+#FileLogSink_AO.h \
+#FileLogSink_AO.cpp \
+#RTCC_AOs.cpp \
+#Logger.h \
+#Logger.cpp \
+#LogEvt.h \
+#LogEvt.cpp
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Targets.

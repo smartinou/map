@@ -2,17 +2,17 @@
 //
 // Project: Component drivers.
 //
-// Module: Motor controller class.
+// Module: TB6612.
 //
-// *****************************************************************************
+// *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief TB6612 class.
+//! \ingroup ext_peripherals
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -21,11 +21,10 @@
 // *****************************************************************************
 
 // TI Library.
-#include "hw_types.h"
-#include "gpio.h"
+#include <hw_types.h>
+#include <driverlib/gpio.h>
 
 // This project.
-#include "GPIOs.h"
 #include "TB6612.h"
 
 // *****************************************************************************
@@ -107,69 +106,73 @@ TB6612::TB6612(unsigned long aIn1GPIOPort,
 }
 #endif
 
-TB6612::TB6612(GPIOs &aIn1,
-               GPIOs &aIn2,
-               GPIOs &aPWM)
-  : mIn1(aIn1)
-  , mIn2(aIn2)
-  , mPWM(aPWM) {
+TB6612::TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM)
+    : mIn1(aIn1)
+    , mIn2(aIn2)
+    , mPWM(aPWM) {
 
-  // In1.
-  GPIOPinTypeGPIOOutput(mIn1.GetPort(), mIn1.GetPin());
-  GPIOPadConfigSet(mIn1.GetPort(),
-                   mIn1.GetPin(),
-                   GPIO_STRENGTH_4MA,
-                   GPIO_PIN_TYPE_STD);
+    // In1.
+    GPIOPinTypeGPIOOutput(mIn1.GetPort(), mIn1.GetPin());
+    GPIOPadConfigSet(
+        mIn1.GetPort(),
+        mIn1.GetPin(),
+        GPIO_STRENGTH_4MA,
+        GPIO_PIN_TYPE_STD
+    );
 
-  // In2.
-  GPIOPinTypeGPIOOutput(mIn2.GetPort(), mIn2.GetPin());
-  GPIOPadConfigSet(mIn2.GetPort(),
-                   mIn2.GetPin(),
-                   GPIO_STRENGTH_4MA,
-                   GPIO_PIN_TYPE_STD);
+    // In2.
+    GPIOPinTypeGPIOOutput(mIn2.GetPort(), mIn2.GetPin());
+    GPIOPadConfigSet(
+        mIn2.GetPort(),
+        mIn2.GetPin(),
+        GPIO_STRENGTH_4MA,
+        GPIO_PIN_TYPE_STD
+    );
 
-  // PWM.
-  GPIOPinTypeGPIOOutput(mPWM.GetPort(), mPWM.GetPin());
-  GPIOPadConfigSet(mPWM.GetPort(),
-                   mPWM.GetPin(),
-                   GPIO_STRENGTH_4MA,
-                   GPIO_PIN_TYPE_STD);
+    // PWM.
+    GPIOPinTypeGPIOOutput(mPWM.GetPort(), mPWM.GetPin());
+    GPIOPadConfigSet(
+        mPWM.GetPort(),
+        mPWM.GetPin(),
+        GPIO_STRENGTH_4MA,
+        GPIO_PIN_TYPE_STD
+    );
 }
 
 
-void TB6612::TurnOnCW(unsigned int aDutyCycle) const {
+void TB6612::TurnOnCW(unsigned int const aDutyCycle) const {
 
-  // PWM: H
-  // In1: H
-  // In2: L
-  //PWMGenEnable(PWM_BASE, PWM_GEN_1);
-  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
-  GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), mIn1.GetPin());
-  GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
+    // PWM: H
+    // In1: H
+    // In2: L
+    //PWMGenEnable(PWM_BASE, PWM_GEN_1);
+    GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
+    GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), mIn1.GetPin());
+    GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
 }
 
 
-void TB6612::TurnOnCCW(unsigned int aDutyCycle) const {
+void TB6612::TurnOnCCW(unsigned int const aDutyCycle) const {
 
-  // PWM: H
-  // In1: L
-  // In2: H
-  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
-  //PWMGenEnable(PWM_BASE, PWM_GEN_1);
-  GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), 0);
-  GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), mIn2.GetPin());
+    // PWM: H
+    // In1: L
+    // In2: H
+    GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
+    //PWMGenEnable(PWM_BASE, PWM_GEN_1);
+    GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), 0);
+    GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), mIn2.GetPin());
 }
 
 
 void TB6612::TurnOff(void) const {
 
-  // PWM: H
-  // In1: L
-  // In2: L
-  //PWMGenDisable(PWM_BASE, PWM_GEN_1);
-  GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
-  GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), 0);
-  GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
+    // PWM: H
+    // In1: L
+    // In2: L
+    //PWMGenDisable(PWM_BASE, PWM_GEN_1);
+    GPIOPinWrite(mPWM.GetPort(), mPWM.GetPin(), mPWM.GetPin());
+    GPIOPinWrite(mIn1.GetPort(), mIn1.GetPin(), 0);
+    GPIOPinWrite(mIn2.GetPort(), mIn2.GetPin(), 0);
 }
 
 // *****************************************************************************

@@ -41,16 +41,17 @@
 #endif // #if 0
 
 #include <stdarg.h>
-#include "hw_types.h"
-#include "hw_memmap.h"
-#include "hw_uart.h"
-#include "hw_ints.h"
-#include "uart.h"
-#include "debug.h"
-#include "rom.h"
-#include "rom_map.h"
-#include "sysctl.h"
-#include "interrupt.h"
+#include <hw_types.h>
+#include <hw_memmap.h>
+#include <hw_uart.h>
+#include <hw_ints.h>
+#include <driverlib/uart.h>
+#include <driverlib/debug.h>
+#include <driverlib/rom.h>
+#include <driverlib/rom_map.h>
+#include <driverlib/sysctl.h>
+#include <driverlib/interrupt.h>
+
 #include "uartstdio.h"
 
 //*****************************************************************************

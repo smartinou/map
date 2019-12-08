@@ -76,7 +76,7 @@ enum EthDriverSignals {
     LWIP_RX_OVERRUN_SIG
 };
 #else
-#include "BSP.h"
+#include "Signals.h"
 #endif
 
 /**

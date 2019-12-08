@@ -70,13 +70,21 @@ void Reset_Handler(void);                            /* Reset Handler */
 /*----------------------------------------------------------------------------
   User Initial Stack & Heap
  *----------------------------------------------------------------------------*/
+// Those should really be called "min" values:
+// In linker file, the start of heap is specified after the RAM variables,
+// while the start of stack is set at the end of the RAM memory (growing downward).
+// This leaves whatever is free in RAM for both the heap and stack.
+// Defining a .stack and .heap regions will reserve those in memory,
+// but they are not monitored if they grow out of this allocated space.
 #ifndef __STACK_SIZE
   #define	__STACK_SIZE  0x00000400
 #endif
+#if __STACK_SIZE > 0
 static uint8_t stack[__STACK_SIZE] __attribute__ ((aligned(8), used, section(".stack")));
+#endif
 
 #ifndef __HEAP_SIZE
-  #define	__HEAP_SIZE   0x00000C00
+  #define	__HEAP_SIZE   0x00001000
 #endif
 #if __HEAP_SIZE > 0
 static uint8_t heap[__HEAP_SIZE]   __attribute__ ((aligned(8), used, section(".heap")));
@@ -324,51 +332,67 @@ void Reset_Handler(void) {
 /* fault exception handlers ------------------------------------------------*/
 __attribute__((naked)) void NMI_Handler(void);
 void NMI_Handler(void) {
+    static char const * const __attribute__((used)) str_nmi = "NMI";
+
     __asm volatile (
-        "    ldr r0,=str_nmi\n\t"
+        "    ldr r0,%0\n\t"
         "    mov r1,#1\n\t"
         "    b assert_failed\n\t"
-        "str_nmi: .asciz \"NMI\"\n\t"
+        : // No outputs.
+        : "m" (str_nmi)
     );
+
 }
 /*..........................................................................*/
 __attribute__((naked)) void MemManage_Handler(void);
 void MemManage_Handler(void) {
+    static char const * const __attribute__((used)) str_mem = "MemManage";
+
     __asm volatile (
-        "    ldr r0,=str_mem\n\t"
+        "    ldr r0,%0\n\t"
         "    mov r1,#1\n\t"
         "    b assert_failed\n\t"
-        "str_mem: .asciz \"MemManage\"\n\t"
-    );
+        : // No outputs.
+        : "m" (str_mem)
+        );
 }
 /*..........................................................................*/
 __attribute__((naked)) void HardFault_Handler(void);
 void HardFault_Handler(void) {
+    static char const * const __attribute__((used)) str_hrd = "HardFault";
+
     __asm volatile (
-        "    ldr r0,=str_hrd\n\t"
+        "    ldr r0,%0\n\t"
         "    mov r1,#1\n\t"
         "    b assert_failed\n\t"
-        "str_hrd: .asciz \"HardFault\"\n\t"
+        : // No outputs.
+        : "m" (str_hrd)
     );
 }
 /*..........................................................................*/
 __attribute__((naked)) void BusFault_Handler(void);
 void BusFault_Handler(void) {
+    static char const * const __attribute__((used)) str_bus = "BusFault";
+
     __asm volatile (
-        "    ldr r0,=str_bus\n\t"
+        "    ldr r0,%0\n\t"
         "    mov r1,#1\n\t"
         "    b assert_failed\n\t"
-        "str_bus: .asciz \"BusFault\"\n\t"
+        : // No outputs.
+        : "m" (str_bus)
     );
 }
 /*..........................................................................*/
 __attribute__((naked)) void UsageFault_Handler(void);
 void UsageFault_Handler(void) {
+    static char const * const __attribute__((used)) str_usage = "UsageFault";
+
     __asm volatile (
-        "    ldr r0,=str_usage\n\t"
+        "    ldr r0,%0\n\t"
         "    mov r1,#1\n\t"
         "    b assert_failed\n\t"
-        "str_usage: .asciz \"UsageFault\"\n\t"
+        : // No outputs.
+        : "m" (str_usage)
     );
 }
 #if 0
@@ -377,17 +401,21 @@ void UsageFault_Handler(void) {
  *----------------------------------------------------------------------------*/
 void Default_Handler(void) {
 
-	while(1);
+    while (1);
 }
 #endif
+
 /*..........................................................................*/
 __attribute__((naked)) void Default_Handler(void);
 void Default_Handler(void) {
+    static char const * const __attribute__((used)) str_dflt = "Default";
+
     __asm volatile (
-        "    ldr r0,=str_dflt\n\t"
+        "    ldr r0,%0\n\t"
         "    mov r1,#1\n\t"
         "    b assert_failed\n\t"
-        "str_dflt: .asciz \"Default\"\n\t"
+        : // No outputs.
+        : "m" (str_dflt)
     );
 }
 

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>Network</title>
     <link href="Styles.css" rel="stylesheet">
+    <style>
+        table { border: 0; }
+        th { border: 0; }
+        td { border: 0; }
+    </style>
   </head>
   <body>
     <header>
@@ -73,7 +78,7 @@
 	    Gateway:
 	  </td>
 	  <td>
-	    <!--#n_gateway-->
+	    <!--#n_dfltgw-->
 	  </td>
 	</tr>
       </table>
