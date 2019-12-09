@@ -274,8 +274,10 @@ LOG_INFO(mLogCategory, mDate, mTime, &amp;lIPAddressStr[0]);</action>
        </tran_glyph>
       </tran>
       <tran trig="TERMINATE">
+       <action brief="Stop();">// Requires QF_ACTIVE_STOP to be defined.
+stop();</action>
        <tran_glyph conn="72,12,0,-1,-6,8">
-        <action box="0,-4,10,2"/>
+        <action box="0,-6,10,4"/>
        </tran_glyph>
       </tran>
       <state name="Waiting">

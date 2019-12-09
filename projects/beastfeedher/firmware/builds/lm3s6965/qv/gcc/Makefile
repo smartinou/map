@@ -230,6 +230,7 @@ LIBS      := -ldriver-cm3
 DEFINES   := -DQ_NASSERT
 DEFINES   += -D__STARTUP_CLEAR_BSS
 DEFINES   += -DQ_EVT_CTOR
+DEFINES   += -DQF_ACTIVE_STOP
 
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3

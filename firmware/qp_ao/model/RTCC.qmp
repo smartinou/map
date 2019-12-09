@@ -182,8 +182,8 @@ InitInterrupt(e);
 // Set logging category.
 //LOGGER.AddCategory(RTCC_LOG, &amp;sLogCategory[0]);
 </action>
-     <initial_glyph conn="4,2,5,0,6,4">
-      <action box="0,-2,12,4"/>
+     <initial_glyph conn="4,4,5,0,6,6">
+      <action box="0,-2,12,2"/>
      </initial_glyph>
     </initial>
     <state name="Running">
@@ -191,8 +191,10 @@ InitInterrupt(e);
      <entry brief="EnableRTCCInterrupt();">mRTCC.SetInterrupt(true);</entry>
      <exit brief="DisableRTCCInterrupt();">mRTCC.SetInterrupt(false);</exit>
      <tran trig="TERMINATE">
-      <tran_glyph conn="70,6,0,-1,-4,6">
-       <action box="0,-2,10,2"/>
+      <action brief="Stop();">// Requires QF_ACTIVE_STOP to be defined.
+stop();</action>
+      <tran_glyph conn="70,10,0,-1,-6,6">
+       <action box="0,-6,10,4"/>
       </tran_glyph>
      </tran>
      <tran trig="RTCC_SET_TIME">
@@ -201,7 +203,7 @@ RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Even
 mRTCC.WrTime(lSetTimeEvent-&gt;mTime);
 SetNextCalendarEvent();
 </action>
-      <tran_glyph conn="4,16,3,-1,40">
+      <tran_glyph conn="4,20,3,-1,40">
        <action box="0,-2,36,2"/>
       </tran_glyph>
      </tran>
@@ -211,7 +213,7 @@ RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Even
 mRTCC.WrDate(lSetEventDate-&gt;mDate);
 SetNextCalendarEvent();
 </action>
-      <tran_glyph conn="4,20,3,-1,40">
+      <tran_glyph conn="4,24,3,-1,40">
        <action box="0,-2,36,2"/>
       </tran_glyph>
      </tran>
@@ -251,11 +253,11 @@ QP::QF::PUBLISH(lCalendarEvent, this);
 
 SetNextCalendarEvent();
 </action>
-       <choice_glyph conn="44,24,5,-1,28">
+       <choice_glyph conn="44,28,5,-1,28">
         <action box="1,0,28,4"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="4,24,3,-1,40">
+      <tran_glyph conn="4,28,3,-1,40">
        <action box="0,-2,35,4"/>
       </tran_glyph>
      </tran>
@@ -267,20 +269,20 @@ SetNextCalendarEvent();
        <action brief="WriteToNvMemory();">// Save to NV mem.
 WrToNVMem();
 </action>
-       <choice_glyph conn="44,30,5,-1,28">
+       <choice_glyph conn="44,34,5,-1,28">
         <action box="1,0,27,4"/>
        </choice_glyph>
       </choice>
-      <tran_glyph conn="4,30,3,-1,40">
+      <tran_glyph conn="4,34,3,-1,40">
        <action box="0,-2,34,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="4,6,72,30">
+     <state_glyph node="4,10,72,32">
       <entry box="1,2,23,2"/>
       <exit box="1,4,23,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="80,40"/>
+    <state_diagram size="80,44"/>
    </statechart>
   </class>
  </package>

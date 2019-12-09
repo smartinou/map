@@ -156,13 +156,15 @@ mDate != lEvt-&gt;mDate</guard>
       </tran_glyph>
      </tran>
      <tran trig="TERMINATE">
+      <action brief="Stop();">// Requires QF_ACTIVE_STOP to be defined.
+stop();</action>
       <tran_glyph conn="62,10,0,-1,-6,6">
-       <action box="0,-4,10,2"/>
+       <action box="0,-6,11,4"/>
       </tran_glyph>
      </tran>
      <state_glyph node="4,10,64,54">
-      <entry box="1,2,15,3"/>
-      <exit box="1,5,25,3"/>
+      <entry box="1,2,15,2"/>
+      <exit box="1,4,23,2"/>
      </state_glyph>
     </state>
     <state_diagram size="72,68"/>

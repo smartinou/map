@@ -669,6 +669,15 @@ void QP::QV::onIdle(void) {
 }
 
 
+#ifdef QF_ACTIVE_STOP
+void QP::QActive::stop(void) {
+    // Unsubscribe from all events.
+    // Remove this object from QF.
+    QP::QActive::unsubscribeAll();
+    QP::QF::remove_(this);
+}
+#endif // QF_ACTIVE_STOP
+
 // QS callbacks ==============================================================
 #ifdef Q_SPY
 
