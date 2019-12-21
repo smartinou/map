@@ -62,6 +62,7 @@ The following tables show the allocated usage for each breakout connectors.
 | SPI Tx signal.                   | SSITX    | PA5/SSI0TX* | 6      | 5      | PA6/SCL1     |          | RTCC SQW.               |
 | RTCC CSn                         |          | PA7/SDA1    | 4      | 3      | GND          |          |                         |
 |                                  |          | GND         | 2      | 1      | +5V          |          |                         |
+
 * * *
     
 | Comment                 | EK Usage   | Description | Pad No | Pad No | Description | EK Usage  | Comment                      |
