@@ -404,7 +404,7 @@ bool SDC::Select(void) {
     // These extra clocks shouldn't be necessary right after asserting CSn,
     // but they do not hurt either.
     mSPICfg.AssertCSn();
-    mSPIDev.PushPullByte(sDummyByte);
+    mSPIDev.PushPullByte(sDummyByte, mSPICfg);
 
     if (1) {
         // Leading busy check.

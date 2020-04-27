@@ -51,6 +51,8 @@
 
 #define LOGGER (Logger::Instance())
 
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 // TODO: Verify that release builds with gcc define NDEBUG.
 #if defined(_DEBUG) || !defined(NDEBUG)
 #define LOG_DEBUG(aCategory, aDate, aTime, ...); \
@@ -76,7 +78,7 @@
         LogLevel::prio::INFO,     \
         aDate,                    \
         aTime,                    \
-        __FILE__,                 \
+        __FILENAME__,             \
         __LINE__,                 \
         __FUNCTION__,             \
         aCategory,                \

@@ -250,7 +250,7 @@ void CoreLink::SPIDev::SetCfg(ISPISlaveCfg &aSPISlaveCfgRef) {
         uint32_t lBaseAddr = GetBaseAddr();
         SSIDisable(lBaseAddr);
 
-        // Could check that data wiDth is in range [4, 16].
+        // Could check that data width is in range [4, 16].
         ISPISlaveCfg::PROTOCOL lProtocol = aSPISlaveCfgRef.GetProtocol();
         unsigned int lNativeProtocol = ToNativeProtocol(lProtocol);
         SSIConfigSetExpClk(
