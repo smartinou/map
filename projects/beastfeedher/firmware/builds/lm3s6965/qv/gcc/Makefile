@@ -245,6 +245,7 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
 GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
+GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -259,7 +260,7 @@ LINK  := $(GNU_ARM)/bin/arm-none-eabi-g++
 BIN   := $(GNU_ARM)/bin/arm-none-eabi-objcopy
 SIZE  := $(GNU_ARM)/bin/arm-none-eabi-size
 
-# Basic utilities (included in Qtools for Windows), see:
+# Basic utilities (included in Windows bin tools), see:
 MKDIR := mkdir
 RM    := rm
 
