@@ -1,0 +1,6 @@
+archives/
+build/
+build_make/
+build_vs/
+gtest/
+time/gtest/
