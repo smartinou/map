@@ -108,6 +108,7 @@ VPATH = \
 INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
+        -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
         -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
         -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
@@ -150,13 +151,15 @@ C_SRCS := \
 	$(APIFILES) \
 	$(LWIPDIR)/netif/ethernet.c \
 	$(HTTPDFILES) \
-        $(FAT_FS_SRCS)
+    $(FAT_FS_SRCS)
 
 
 # C++ source files.
 CPP_SRCS := \
         App.cpp \
+        BLE.cpp \
         Main.cpp \
+        BLE_AOs.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \

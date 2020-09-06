@@ -33,13 +33,13 @@
 
 // Forward declaration.
 class CalendarRec;
-//class NetIFRec;
+class NetIFRec;
 class FeedCfgRec;
 
 namespace RTCC {
-  namespace AO {
-    class RTCC_AO;
-  }
+    namespace AO {
+        class RTCC_AO;
+    }
 }
 
 // ******************************************************************************
@@ -60,6 +60,7 @@ namespace Net {
 void InitCallback(
     std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
     CalendarRec * const aCalendar,
+    NetIFRec * const aNetIFRec,
     FeedCfgRec * const aFeedCfgRec
 );
 #endif

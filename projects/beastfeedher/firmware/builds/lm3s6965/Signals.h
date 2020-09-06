@@ -63,6 +63,9 @@ enum PFPP_SIGS_ENUM_TAG {
     LOG_EVENT_SIG,
     LOG_TIMER_SIG,
 
+    // BLE signals.
+    BLE_INTERRUPT_SIG,
+
     QTY_SIG
 };
 

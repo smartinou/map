@@ -53,6 +53,7 @@
 
 #include "Display_AOs.h"
 #include "Logging_AOs.h"
+#include "BLE_AOs.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AOs.h"
 #include "LwIP_AOs.h"
@@ -196,6 +197,9 @@ public:
     QP::QActive *GetOpaqueRTCCAO(void) override { return mRTCCAO.get(); }
 
 
+    QP::QActive *GetOpaqueBLEAO(void) override { return mBLEAO.get(); }
+
+
     unsigned int CreateDisks(void) override {
         // This BSP has one SDC device.
         if (mSDC.get() == nullptr) {
@@ -248,8 +252,18 @@ public:
     }
 
 
+    std::shared_ptr<QP::QActive> CreateBLEAO(void) override {
+        if (mBLE.get() == nullptr) {
+            mBLE = CreateBLE();
+            mBLEAO = std::make_shared<PFPP::AO::BLE_AO>(*mBLE);
+        }
+        return mBLEAO;
+    }
+
+
     // Local interface.
     static GPIO const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
+    static GPIO const &GetBLEInterruptPin(void) { return mBLEInterruptPin; }
 
 private:
     Factory(const Factory&) = delete;
@@ -269,6 +283,8 @@ private:
         // Ctor.
         // SPIDev is required with several devices.
         mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(0));
+
+        // TODO: CONSIDER CREATING RTCC HERE TOO.
     }
 
 
@@ -350,6 +366,20 @@ private:
     }
 
 
+    std::unique_ptr<BLE::BLE> CreateBLE(void) {
+        unsigned long lInterruptNumber = INT_GPIOB;
+        GPIO lCSnPin(GPIO_PORTB_BASE, GPIO_PIN_4);
+        auto lBLE = std::make_unique<BLE::BLE>(
+            lInterruptNumber,
+            mBLEInterruptPin,
+            *mSPIDev,
+            lCSnPin
+        );
+
+        return lBLE;
+    }
+
+
     EthernetAddress GetMACAddress(void) {
         // For the Stellaris Eval Kits, the MAC address will be stored in the
         // non-volatile USER0 and USER1 registers. These registers can be read
@@ -387,8 +417,11 @@ private:
     std::shared_ptr<SDC> mSDC;
     std::unique_ptr<EthDrv> mEthDrv;
     std::shared_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO;
+    std::unique_ptr<BLE::BLE> mBLE;
+    std::shared_ptr<PFPP::AO::BLE_AO> mBLEAO;
 
     static GPIO const mRTCCInterruptPin;
+    static GPIO const mBLEInterruptPin;
 
     static std::shared_ptr<IBSPFactory> mInstance;
 };
@@ -425,6 +458,7 @@ static uint8_t const sGPIOPortA_IRQHandler = 0U;
 // Button class should become GPIO class.
 std::shared_ptr<IBSPFactory> BSP::Factory::mInstance = nullptr;
 GPIO const BSP::Factory::mRTCCInterruptPin(GPIO_PORTA_BASE, GPIO_PIN_6);
+GPIO const BSP::Factory::mBLEInterruptPin(GPIO_PORTB_BASE, GPIO_PIN_1);
 
 
 namespace BSP {
@@ -598,6 +632,7 @@ void QP::QF::onStartup(void) {
     //NVIC_SetPriorityGrouping(0U); from CMSIS
     IntPriorityGroupingSet(0U);
     IntPrioritySet(INT_GPIOA, 0x20); //GPIOPORTA_PRIO);
+    IntPrioritySet(INT_GPIOB, 0x20); //GPIOPORTA_PRIO);
     IntPrioritySet(INT_GPIOC, 0x60); //GPIOPORTA_PRIO);
     IntPrioritySet(INT_GPIOD, 0x60); //GPIOPORTA_PRIO);
     IntPrioritySet(INT_GPIOE, 0x40); //GPIOPORTE_PRIO);
@@ -832,10 +867,28 @@ void GPIOPortA_IRQHandler(void) {
         // Signal to AO that RTCC generated an interrupt.
         // This can be done with direct POST to known RTCC AO, but since there's a single instance,
         // broadcasting the event/signal is just fine too.
-        // Otherwise, would require something like: BSP::Factory::Instance()->GetOpaqueRTCCAO()->Post();
         static QP::QEvt const sRTCCAlarmIntEvent(RTCC_INTERRUPT_SIG);
         //QP::QF::PUBLISH(&sRTCCAlarmIntEvent, 0);
         BSP::Factory::Instance()->GetOpaqueRTCCAO()->POST(&sRTCCAlarmIntEvent, 0);
+    }
+}
+
+
+// GPIO port B interrupt handler.
+void GPIOPortB_IRQHandler(void);
+void GPIOPortB_IRQHandler(void) {
+
+    // Get the state of the GPIO and issue the corresponding event.
+    static const bool lIsMasked = true;
+    unsigned long lIntStatus = GPIOPinIntStatus(GPIO_PORTB_BASE, lIsMasked);
+    unsigned int lPin = BSP::Factory::GetBLEInterruptPin().GetPin();
+    if (lPin & lIntStatus) {
+        GPIOPinIntClear(GPIO_PORTB_BASE, lPin);
+
+        // Signal to AO that BLE generated an interrupt.
+        static QP::QEvt const sBLEIntEvent(BLE_INTERRUPT_SIG);
+        //QP::QF::PUBLISH(&sBLEIntEvent, 0);
+        BSP::Factory::Instance()->GetOpaqueBLEAO()->POST(&sBLEIntEvent, 0);
     }
 }
 
@@ -851,8 +904,8 @@ void GPIOPortC_IRQHandler(void) {
     if (lPin & lIntStatus) {
         GPIOPinIntClear(GPIO_PORTC_BASE, lPin);
 
-        static PFPP::Event::ManualFeedCmd const sOnEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
-        static PFPP::Event::ManualFeedCmd const sOffEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
+        static PFPP::Event::Mgr::ManualFeedCmd const sOnEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
+        static PFPP::Event::Mgr::ManualFeedCmd const sOffEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
         // Decouple using framework PUBLISH() method instead of direct posting to AO.
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
@@ -882,7 +935,7 @@ void GPIOPortD_IRQHandler(void) {
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
             if (Button::IS_HIGH == BSP::mTimedFeedButton.GetGPIOPinState()) {
-                static PFPP::Event::TimedFeedCmd const sEvent(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
+                static PFPP::Event::Mgr::TimedFeedCmd const sEvent(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
                 //QP::QF::PUBLISH(&sEvent, 0);
                 lPFPPAO->POST(&sEvent, 0);
             }

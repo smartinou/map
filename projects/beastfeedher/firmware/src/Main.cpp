@@ -62,7 +62,7 @@ int main(void) {
     QP::QF::init();
 
     // Initialize event pool.
-    static QF_MPOOL_EL(PFPP::Event::ManualFeedCmd) sSmallPoolSto[20];
+    static QF_MPOOL_EL(PFPP::Event::Mgr::ManualFeedCmd) sSmallPoolSto[20];
     QP::QF::poolInit(
         sSmallPoolSto,
         sizeof(sSmallPoolSto),
@@ -105,6 +105,7 @@ int main(void) {
         return QP::QF::run();
     }
 
+    // Should never get here, except if Init() went wrong.
     while (1);
     return 1;
 }

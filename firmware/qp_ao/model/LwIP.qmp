@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package name="LwIP" stereotype="0x04" namespace="LwIP">
+<package name="LwIP" stereotype="0x04" namespace="LwIP::">
  <package name="AOs" stereotype="0x02" namespace="AO::">
   <class name="Mgr_AO" superclass="qpcpp::QActive">
    <documentation>Main manager of the LwIP stack.</documentation>
