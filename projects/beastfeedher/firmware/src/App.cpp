@@ -32,9 +32,11 @@
 #include <db/FeedCfgRec.h>
 #include <db/NetIFRec.h>
 
+#ifdef NET_SUPPORT
 // LwIP stack.
 #include "lwip/apps/httpd.h"
 #include "lwip/stats.h"
+#endif // NET_SUPPORT
 
 // This project.
 #include "App.h"
@@ -220,7 +222,9 @@ bool App::Init(void) {
 // *****************************************************************************
 
 void App::NetInitCallback(void) {
+#if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(App::mRTCC_AO, App::sCalendar, App::sNetIFRec, App::sFeedCfgRec);
+#endif
 }
 
 

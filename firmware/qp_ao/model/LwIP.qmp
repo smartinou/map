@@ -318,11 +318,6 @@ extern &quot;C&quot; {
 #endif // __cplusplus
 
 
-// TI Library.
-#include &lt;hw_types.h&gt;
-#include &lt;driverlib/flash.h&gt;
-
-
 // Common libraries.
 #include &lt;db/NetIFRec.h&gt;
 

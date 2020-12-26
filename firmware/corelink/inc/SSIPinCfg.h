@@ -1,19 +1,19 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Drivers.
+// Project: ARM Cortex-M.
 //
-// Module: RTCC.
+// Module: CoreLink Peripherals.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief RTCC interface class.
-//! \ingroup ext_peripherals
+//! \brief CoreLink peripheral SPI device class declaration.
+//! \ingroup corelink_peripherals
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,10 +21,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <string>
-
-#include <time/Time.h>
-#include <date/Date.h>
+namespace CoreLink {
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -34,38 +31,20 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class IRTCC {
+class SSIPinCfg {
 public:
-    virtual ~IRTCC() {}
-    virtual void Init(void) = 0;
-    virtual void SetInterrupt(bool aEnable) = 0;
-    virtual void AckInterrupt(void) = 0;
-    virtual void SetImpure(void) = 0;
+    SSIPinCfg(unsigned int aSSIID) : mID(aSSIID) {}
+    virtual ~SSIPinCfg() {}
 
-    virtual void RdTime(Time &aTimeRef) = 0;
-    virtual void RdDate(Date &aDateRef) = 0;
-    virtual void RdTimeAndDate(Time &aTimeRef, Date &aDateRef) = 0;
+    unsigned int GetID(void) const { return mID; }
+    virtual void SetPins(void) const = 0;
 
-    virtual void WrTime(Time const &aTimeRef) = 0;
-    virtual void WrDate(Date const &aDateRef) = 0;
-    virtual void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef) = 0;
-    virtual void GetTimeAndDate(Time &aTimeRef, Date &aDateRef) = 0;
-    virtual float GetTemperature(void) = 0;
-
-    virtual bool WrAlarm(Time const &aTimeRef, Date const &aDateRef) = 0;
-    virtual bool WrAlarm(Time const &aTimeRef, Weekday const &aWeekdayRef) = 0;
-    virtual bool IsAlarmOn(void) = 0;
-    virtual void DisableAlarm(void) = 0;
-    virtual void ClrAlarmFlag(void) = 0;
-
-protected:
-    static unsigned int BinaryToBCD(unsigned int aBinVal);
-    static unsigned int BCDToBinary(unsigned int aBCDVal);
+private:
+    unsigned int mID;
 };
+
+
+} // namespace CoreLink
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -82,3 +61,4 @@ protected:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
+

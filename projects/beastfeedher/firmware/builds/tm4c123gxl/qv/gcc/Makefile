@@ -44,17 +44,13 @@ help:
 #
 
 # Project name
-PROJECT := beastfeedher
+PROJECT := pfpp
 
 # Directories/paths.
 REPO_ROOT_DIR := ../../../../../../..
 FIRMWARE_PATH := $(REPO_ROOT_DIR)/firmware
 PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
 PROJECT_FW_DIR   := $(PROJECT_ROOT_DIR)/firmware
-
-# LwIP library.
-LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.0.3/lwip-2.0.3/src
-include $(LWIPDIR)/Filelists.mk
 
 
 # Location of the QP/C++ framework (if not provided in an environemnt var.)
@@ -65,21 +61,16 @@ endif
 # QP port used in this project
 QP_PORT_DIR := $(QPCPP)/ports/arm-cm/qv/gnu
 
-# Stellaris/TI driver library.
-ifeq ($(STELLARIS_LIB),)
-STELLARIS_LIB := $(FIRMWARE_PATH)/3rdparty/StellarisWare/
+# TivaWare/TI driver library.
+ifeq ($(TIVAWARE_LIB),)
+TIVAWARE_LIB := $(FIRMWARE_PATH)/3rdparty/TivaWare_C_Series-2.2.0.295
 endif
-
-# CMSIS library.
-CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 
 # List of all source directories used by this project.
 VPATH = \
         ../../ \
         $(PROJECT_FW_DIR)/src \
         $(PROJECT_FW_DIR)/src/models/codegen \
-        $(PROJECT_FW_DIR)/src/lwip_port/arch \
-        $(PROJECT_FW_DIR)/src/lwip_port/netif \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/codegen \
@@ -92,44 +83,36 @@ VPATH = \
         $(QPCPP)/src/qf \
         $(QPCPP)/src/qs \
         $(QPCPP)/src/qv \
+        $(QPCPP)/3rd_party/ek-tm4c123gxl \
+        $(QPCPP)/3rd_party/ek-tm4c123gxl/gnu \
         $(QP_PORT_DIR) \
-        $(CMSIS_LIB)/lm3s \
-        $(CMSIS_LIB)/lm3s/GCC \
-        $(CMSIS_LIB)/core \
-        $(LWIPDIR)/core \
-        $(LWIPDIR)/core/ipv4 \
-        $(LWIPDIR)/api \
-        $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/httpd \
         $(FAT_FS_SRC_DIR)
+
+#        $(QPCPP)/3rd_party/gnu_cpp \
 
 # List of all include directories needed by this project.
 INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
-        -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
         -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
-        -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
+        -I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c123gxl \
         -I$(FIRMWARE_PATH)/corelink/inc \
         -I$(FIRMWARE_PATH)/drivers/inc \
         -I$(FIRMWARE_PATH)/qp_ao/inc \
         -I$(FIRMWARE_PATH)/qp_ao/codegen \
         -I$(FIRMWARE_PATH)/utils \
-        -I$(STELLARIS_LIB) \
+        -I$(TIVAWARE_LIB) \
+        -I$(QPCPP)/3rd_party/CMSIS/Include \
+        -I$(QPCPP)/3rd_party/ek-tm4c123gxl \
         -I$(QPCPP)/include \
         -I$(QPCPP)/src \
         -I$(QP_PORT_DIR) \
-        -I$(CMSIS_LIB)/lm3s \
-        -I$(CMSIS_LIB)/core \
-        -I$(CMSIS_LIB) \
-        -I$(LWIPDIR)/include \
         -I$(FAT_FS_INC_DIR)
 
 # Files
 # Assembler source files.
 ASM_SRCS :=
-
 
 
 FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff13a
@@ -141,33 +124,24 @@ FAT_FS_SRCS := \
 
 # C source files.
 C_SRCS := \
-	startup_lm3s6965.c \
-	system_lm3s.c \
+    startup_TM4C123GH6PM.c \
+    system_TM4C123GH6PM.c \
 	uartstdio.c \
-	$(COREFILES) \
-	$(CORE4FILES) \
-	$(APIFILES) \
-	$(LWIPDIR)/netif/ethernet.c \
-	$(HTTPDFILES) \
     $(FAT_FS_SRCS)
 
 
 # C++ source files.
 CPP_SRCS := \
         App.cpp \
-        BLE.cpp \
-        Main.cpp \
-        BLE_AOs.cpp \
         BSP.cpp \
         Button.cpp \
+        Main.cpp \
         CalendarRec.cpp \
         CoreLinkPeripheralDev.cpp \
         Date.cpp \
         DBRec.cpp \
         Display_AOs.cpp \
         DS3234.cpp \
-        EthernetAddress.cpp \
-        EthDrv.cpp \
         FatFSDisk.cpp \
         FeedCfgRec.cpp \
         GPIO.cpp \
@@ -176,25 +150,18 @@ CPP_SRCS := \
         Logging_AOs.cpp \
         Logger.cpp \
         LogLevel.cpp \
-        LwIP_AOs.cpp \
-        LwIPDrv.cpp \
         Month.cpp \
-        Net.cpp \
         NetIFRec.cpp \
         PFPP_AOs.cpp \
         IRTCC.cpp \
         RTCC_AOs.cpp \
         SDC.cpp \
-        SSD1329.cpp \
         SPI.cpp \
         SPISlaveCfg.cpp \
         TB6612.cpp \
         Time.cpp \
         Weekday.cpp
 
-#        Logging_Events.cpp \
-#        eth_driver.cpp \
-#        RTCC_Events.cpp \
 
 QP_SRCS := \
         qep_hsm.cpp \
@@ -220,26 +187,37 @@ QS_SRCS := \
 
 
 OUTPUT    := $(PROJECT)
-LD_SCRIPT := lm3s6965_gcc.ld
+LD_SCRIPT := $(PROJECT).ld
 
-#LIB_DIRS  := -Lc:/apps/DriverLib3416/src/gcc
-LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3
-#LIBS      := -ldriver
-LIBS      := -ldriver-cm3
+DRIVER_LIB_DIR := -L$(TIVAWARE_LIB)/driverlib/gcc
+DRIVER_LIB     := -ldriver
 
-# defines
-# [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
+GFX_LIB_DIR := -L$(TIVAWARE_LIB)/grlib/gcc
+GFX_LIB     := -lgr
+
+LIB_DIRS := $(DRIVER_LIB_DIR)
+LIBS     := $(DRIVER_LIB)
+
+# Defines.
 DEFINES   := -DQ_NASSERT
 DEFINES   += -D__STARTUP_CLEAR_BSS
 DEFINES   += -DQ_EVT_CTOR
 DEFINES   += -DQF_ACTIVE_STOP
-DEFINES   += -DNET_SUPPORT
+DEFINES   += -DARMCM4_FP
+DEFINES   += -DPART_TM4C123GH6PGE
+DEFINES   += -DUSE_TIVAWARE
+DEFINES   += -DTARGET_IS_TM4C123_RB1
 
-# ARM CPU, FPU, and Float-ABI types
-ARM_CPU   := -mcpu=cortex-m3
-ARM_FPU   :=
-FLOAT_ABI :=
 
+# ARM CPU, ARCH, FPU, and Float-ABI types...
+# ARM_CPU:   [cortex-m0 | cortex-m0plus | cortex-m1 | cortex-m3 | cortex-m4]
+# ARM_ARCH:  [6 | 7] (NOTE: must match ARM_CPU!)
+# ARM_FPU:   [ | vfp]
+# FLOAT_ABI: [ | soft | softfp | hard]
+ARM_CPU   := -mcpu=cortex-m4
+ARM_ARCH  := 7   # NOTE: must match the ARM_CPU!
+ARM_FPU   := -mfpu=vfp
+FLOAT_ABI := -mfloat-abi=hard
 
 # GNU-ARM toolset (NOTE: You need to adjust to your machine)
 # see http://gnutoolchains.com/arm-eabi/
@@ -272,15 +250,13 @@ RM    := rm
 
 # Combine all the sources...
 #VPATH    += $(QPCPP)/3rd_party/gnu_cpp
-VPATH    += $(QPCPP)/3rd_party/gnu
-#CPP_SRCS += $(QP_SRCS) mini_cpp.cpp
 CPP_SRCS += $(QP_SRCS)
 ASM_SRCS += $(QP_ASMS)
 
 # Add the pre-defined symbol __FPU_PRESENT if needed...
 ifneq (,$(ARM_FPU))
-DEFINES += -D__FPU_PRESENT
-ASM_FPU += -defsym=__FPU_PRESENT=1
+#DEFINES += -D__FPU_PRESENT
+#ASM_FPU += -defsym=__FPU_PRESENT=1
 endif
 
 
@@ -289,7 +265,7 @@ ifeq (rel, $(CONF))
 
 BIN_DIR := rel
 
-ASFLAGS = $(ARM_CPU) $(ASM_FPU)
+ASFLAGS = $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
@@ -308,7 +284,7 @@ BIN_DIR := spy
 
 CPP_SRCS += $(QS_SRCS)
 
-ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
+ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
@@ -323,7 +299,7 @@ else
 # Default Debug configuration.
 BIN_DIR := dbg
 
-ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
+ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
@@ -339,7 +315,7 @@ endif
 
 LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 	-mthumb \
-	--specs=nosys.specs \
+	-specs=nosys.specs -specs=nano.specs \
 	-Wl,-Map,$(BIN_DIR)/$(OUTPUT).map,--cref,--gc-sections $(LIB_DIRS)
 
 
@@ -359,25 +335,6 @@ CPP_DEPS_EXT := $(patsubst %.o, %.d, $(CPP_OBJS_EXT))
 ifeq ("$(wildcard $(BIN_DIR))","")
 $(shell $(MKDIR) $(BIN_DIR))
 endif
-
-# Web & HTML variables.
-WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
-WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
-MAKE_FSDATA_DIR := $(LWIPDIR)/apps/httpd/makefsdata
-
-WEB_HTML_FILES := \
-  config.shtml \
-  index.shtml \
-  network.shtml \
-  stats.shtml \
-  Styles.css
-
-WEB_BIN_FILES := \
-  BGround.png
-
-HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
-
-BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
 
 QM_PATH := c:/apps/qm/bin
 QM_BIN := $(QM_PATH)/qmc.exe
@@ -401,36 +358,12 @@ MODEL_OUT_FILES := \
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: show version generate_fsdata $(TARGET_BIN)
+all: show version $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
 .PHONY: version
 version:
 	./make_version.sh
-
-
-remove_white_space: $(HTML_OUTPUT_FILES)
-
-copy_binary_files: $(BIN_OUTPUT_FILES)
-
-generate_fsdata: remove_white_space copy_binary_files
-	cd $(PROJECT_ROOT_DIR)/firmware/src/html && \
-  $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
-  mv fsdata.c ../fsdata_custom.c
-
-# Remove leading white spaces and tabs from files.
-$(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
-	mkdir -p $(WEB_OUTPUT_DIR)
-	cat $(WEB_INPUT_DIR)/$(notdir $@) | sed 's/^[ \t]*//;s/[ \t]*$$//' > $@
-
-$(BIN_OUTPUT_FILES):
-	cp $(WEB_INPUT_DIR)/$(notdir $@) $@
-
-
-
-$(MODEL_OUT_FILES): $(MODEL_IN_FILES)
-	$(QM_BIN) $?
-
 
 
 $(TARGET_BIN): $(TARGET_ELF)
@@ -471,7 +404,6 @@ clean:
   $(BIN_DIR)/*.bin \
   $(BIN_DIR)/*.elf \
   $(BIN_DIR)/*.map
-	-$(RM) -rf $(WEB_OUTPUT_DIR)
 
 show:
 	@echo PROJECT = $(PROJECT)

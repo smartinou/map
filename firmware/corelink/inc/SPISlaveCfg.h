@@ -1,19 +1,19 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Drivers.
+// Project: ARM Cortex-M.
 //
-// Module: RTCC.
+// Module: CoreLink Peripherals.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief RTCC interface class.
-//! \ingroup ext_peripherals
+//! \brief CoreLink peripheral SPI device class declaration.
+//! \ingroup corelink_peripherals
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,10 +21,13 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <string>
 
-#include <time/Time.h>
-#include <date/Date.h>
+#include "inc/GPIO.h"
+
+#include "ISPISlaveCfg.h"
+
+
+namespace CoreLink {
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -34,38 +37,43 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
-class IRTCC {
+class SPISlaveCfg
+    : public ISPISlaveCfg {
 public:
-    virtual ~IRTCC() {}
-    virtual void Init(void) = 0;
-    virtual void SetInterrupt(bool aEnable) = 0;
-    virtual void AckInterrupt(void) = 0;
-    virtual void SetImpure(void) = 0;
+    //SPISlaveCfg(uint32_t aPort, uint8_t aPin);
+    SPISlaveCfg(GPIO const &aGPIO);
+    ~SPISlaveCfg() {}
 
-    virtual void RdTime(Time &aTimeRef) = 0;
-    virtual void RdDate(Date &aDateRef) = 0;
-    virtual void RdTimeAndDate(Time &aTimeRef, Date &aDateRef) = 0;
+    // ISPISlaveCfg interface.
+    void SetProtocol(protocol_t aProtocol) override { mProtocol = aProtocol; }
+    void SetBitRate(unsigned int aBitRate) override { mBitRate = aBitRate; }
+    void SetDataWidth(unsigned int aDataWidth) override { mDataWidth = aDataWidth; }
 
-    virtual void WrTime(Time const &aTimeRef) = 0;
-    virtual void WrDate(Date const &aDateRef) = 0;
-    virtual void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef) = 0;
-    virtual void GetTimeAndDate(Time &aTimeRef, Date &aDateRef) = 0;
-    virtual float GetTemperature(void) = 0;
+    protocol_t GetProtocol(void) const override { return mProtocol; }
+    unsigned int GetBitRate(void) const override { return mBitRate; }
+    unsigned int GetDataWidth(void) const override { return mDataWidth; }
 
-    virtual bool WrAlarm(Time const &aTimeRef, Date const &aDateRef) = 0;
-    virtual bool WrAlarm(Time const &aTimeRef, Weekday const &aWeekdayRef) = 0;
-    virtual bool IsAlarmOn(void) = 0;
-    virtual void DisableAlarm(void) = 0;
-    virtual void ClrAlarmFlag(void) = 0;
+    void AssertCSn(void) override;
+    void DeassertCSn(void) override;
 
-protected:
-    static unsigned int BinaryToBCD(unsigned int aBinVal);
-    static unsigned int BCDToBinary(unsigned int aBCDVal);
+private:
+    void SetCSnGPIO(void);
+
+    SPISlaveCfg() = delete;
+
+    protocol_t mProtocol;
+    unsigned long mBitRate;
+    unsigned long mDataWidth;
+#if 0
+    uint32_t mCSnGPIOPort;
+    uint8_t mCSnGPIOPin;
+#else
+    GPIO const mCSnGPIO;
+#endif
 };
+
+
+} // namespace CoreLink
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -82,3 +90,4 @@ protected:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
+
