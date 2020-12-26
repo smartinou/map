@@ -20,12 +20,16 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+#include <stdio.h>
+
 // TI Library.
-#include <hw_types.h>
-#include <hw_memmap.h>
+#include <inc/hw_types.h>
+#include <inc/hw_memmap.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/gpio.h>
 #include <driverlib/interrupt.h>
+#include <driverlib/rom.h>
+#include <driverlib/rom_map.h>
 
 // This project.
 #include "inc/Button.h"
@@ -61,15 +65,15 @@ Button::Button(
     , mID(aID) {
 
     // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
-    SysCtlPeripheralEnable(PortToSysClockPeripheral(aGPIOPort));
+    MAP_SysCtlPeripheralEnable(PortToSysClockPeripheral(aGPIOPort));
 
     DisableInt();
 
     // Set specified GPIO as edge triggered input.
     // Don't enable interrupt just yet.
-    GPIOPinTypeGPIOInput(GetPort(), GetPin());
-    GPIOIntTypeSet(GetPort(), GetPin(), GPIO_BOTH_EDGES);
-    GPIOPadConfigSet(
+    MAP_GPIOPinTypeGPIOInput(GetPort(), GetPin());
+    MAP_GPIOIntTypeSet(GetPort(), GetPin(), GPIO_BOTH_EDGES);
+    MAP_GPIOPadConfigSet(
         GetPort(),
         GetPin(),
         GPIO_STRENGTH_2MA,
@@ -78,8 +82,13 @@ Button::Button(
 
     // Enable the interrupt of the selected GPIO.
     // Don't enable the interrupt globally yet.
-    GPIOPinIntEnable(GetPort(), GetPin());
-    GPIOPinIntClear(GetPort(), GetPin());
+#ifdef USE_TIVAWARE
+    MAP_GPIOIntEnable(GetPort(), GetPin());
+    MAP_GPIOIntClear(GetPort(), GetPin());
+#elif defined (USE_STELLARISWARE)
+    MAP_GPIOPinIntEnable(GetPort(), GetPin());
+    MAP_GPIOPinIntClear(GetPort(), GetPin());
+#endif
 }
 
 
@@ -94,7 +103,7 @@ Button::Button(
 
 Button::State Button::GetGPIOPinState(void) const {
 
-    unsigned long lGPIOPin = GPIOPinRead(GetPort(), GetPin());
+    unsigned long lGPIOPin = MAP_GPIOPinRead(GetPort(), GetPin());
     if (lGPIOPin & GetPin()) {
         return IS_HIGH;
     }
@@ -104,17 +113,21 @@ Button::State Button::GetGPIOPinState(void) const {
 
 
 void Button::DisableInt(void) const {
-    IntDisable(mIntNbr);
+    MAP_IntDisable(mIntNbr);
 }
 
 
 void Button::EnableInt(void) const {
-    IntEnable(mIntNbr);
+    MAP_IntEnable(mIntNbr);
 }
 
 
 void Button::ClrInt(void) const {
-    GPIOPinIntClear(GetPort(), GetPin());
+#ifdef USE_TIVAWARE
+    MAP_GPIOIntClear(GetPort(), GetPin());
+#elif defined (USE_STELLARISWARE)
+    MAP_GPIOPinIntClear(GetPort(), GetPin());
+#endif
 }
 
 // *****************************************************************************

@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -23,6 +23,7 @@
 
 #include "CoreLinkPeripheralDev.h"
 
+#include "ISPISlaveCfg.h"
 
 namespace CoreLink {
 
@@ -33,52 +34,6 @@ namespace CoreLink {
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
-
-class ISPISlaveCfg {
-public:
-    virtual ~ISPISlaveCfg() {}
-
-    enum class PROTOCOL {
-        MOTO_0 = 0,
-        MOTO_1,
-        MOTO_2,
-        MOTO_3,
-        TI,
-        NMW
-    };
-
-#ifdef _WIN32
-    typedef enum class PROTOCOL protocol_t;
-#else
-    typedef enum PROTOCOL protocol_t;
-#endif
-    virtual void SetProtocol(protocol_t aProtocol) = 0;
-    virtual void SetBitRate(unsigned int aBitRate) = 0;
-    virtual void SetDataWidth(unsigned int aDataWidth) = 0;
-
-    virtual protocol_t GetProtocol(void) const = 0;
-    virtual unsigned int GetBitRate(void) const = 0;
-    virtual unsigned int GetDataWidth(void) const = 0;
-
-    virtual void AssertCSn(void) = 0;
-    virtual void DeassertCSn(void) = 0;
-};
-
-
-// [MG] STARTING TO WONDER IF THIS WHOLE CLASS IS USEFULL AT ALL.
-// [MG] WOULDN'T SETTING THE PINS DIRECTLY IN SPIDev BE MORE EFFICIENT?
-class SSIPinCfg {
-public:
-    SSIPinCfg(unsigned int aSSIID) : mID(aSSIID) {}
-    virtual ~SSIPinCfg() {}
-
-    unsigned int GetID(void) const { return mID; }
-    virtual void SetPins(void) const = 0;
-
-private:
-    unsigned int mID;
-};
-
 
 class ISPIDev {
 public:
@@ -132,4 +87,3 @@ public:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-

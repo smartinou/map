@@ -8,7 +8,7 @@
 // *******************************************************************************
 
 //! \file
-//! \brief BSP class.
+//! \brief BSP Factory class.
 //! \ingroup application_bsp
 
 // ******************************************************************************
@@ -32,9 +32,6 @@
 // ******************************************************************************
 
 // Forward declaration.
-class SDC;
-
-
 namespace QP {
     class QActive;
 }
@@ -48,6 +45,7 @@ public:
 
     virtual std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) = 0;
     virtual QP::QActive *GetOpaqueRTCCAO(void) = 0;
+    virtual QP::QActive *GetOpaqueBLEAO(void) = 0;
     virtual unsigned int CreateDisks(void) = 0;
 
     virtual std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) = 0;
@@ -56,6 +54,7 @@ public:
     virtual std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) = 0;
     virtual QP::QActive *GetOpaqueDisplayMgrAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) = 0;
+    virtual std::shared_ptr<QP::QActive> CreateBLEAO(void) = 0;
 };
 
 // ******************************************************************************

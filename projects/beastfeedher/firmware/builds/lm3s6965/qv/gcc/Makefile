@@ -4,7 +4,7 @@
 #
 # ***************************************************************************************
 #
-#     Copyright (c) 2017, Pleora Technologies Inc., All rights reserved.
+#     Copyright (c) 2017-2020, Pleora Technologies Inc., All rights reserved.
 #
 # ***************************************************************************************
 #
@@ -89,7 +89,6 @@ VPATH = \
         $(FIRMWARE_PATH)/utils/net \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
-        $(STELLARIS_LIB)/inc \
         $(QPCPP)/src/qf \
         $(QPCPP)/src/qs \
         $(QPCPP)/src/qv \
@@ -108,6 +107,7 @@ VPATH = \
 INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
+        -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
         -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
         -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
@@ -117,7 +117,6 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/qp_ao/codegen \
         -I$(FIRMWARE_PATH)/utils \
         -I$(STELLARIS_LIB) \
-        -I$(STELLARIS_LIB)/inc \
         -I$(QPCPP)/include \
         -I$(QPCPP)/src \
         -I$(QP_PORT_DIR) \
@@ -150,13 +149,15 @@ C_SRCS := \
 	$(APIFILES) \
 	$(LWIPDIR)/netif/ethernet.c \
 	$(HTTPDFILES) \
-        $(FAT_FS_SRCS)
+    $(FAT_FS_SRCS)
 
 
 # C++ source files.
 CPP_SRCS := \
         App.cpp \
+        BLE.cpp \
         Main.cpp \
+        BLE_AOs.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
@@ -186,6 +187,7 @@ CPP_SRCS := \
         SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
+        SPISlaveCfg.cpp \
         TB6612.cpp \
         Time.cpp \
         Weekday.cpp
@@ -231,6 +233,7 @@ DEFINES   := -DQ_NASSERT
 DEFINES   += -D__STARTUP_CLEAR_BSS
 DEFINES   += -DQ_EVT_CTOR
 DEFINES   += -DQF_ACTIVE_STOP
+DEFINES   += -DNET_SUPPORT
 
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package name="LwIP" stereotype="0x04" namespace="LwIP">
+<package name="LwIP" stereotype="0x04" namespace="LwIP::">
  <package name="AOs" stereotype="0x02" namespace="AO::">
   <class name="Mgr_AO" superclass="qpcpp::QActive">
    <documentation>Main manager of the LwIP stack.</documentation>
@@ -316,11 +316,6 @@ extern &quot;C&quot; {
 } // extern &quot;C&quot;
 #include &quot;netif/EthDrv.h&quot;
 #endif // __cplusplus
-
-
-// TI Library.
-#include &lt;hw_types.h&gt;
-#include &lt;driverlib/flash.h&gt;
 
 
 // Common libraries.

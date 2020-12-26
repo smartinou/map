@@ -62,18 +62,6 @@ public:
     virtual void DisableAlarm(void) = 0;
     virtual void ClrAlarmFlag(void) = 0;
 
-    virtual unsigned int GetNVMemSize(void) const = 0;
-    virtual void RdFromNVMem(
-        uint8_t * const aDataPtr,
-        unsigned int aOffset,
-        unsigned int aSize
-    ) = 0;
-    virtual void WrToNVMem(
-        uint8_t const * const aDataPtr,
-        unsigned int aOffset,
-        unsigned int aSize
-    ) = 0;
-
 protected:
     static unsigned int BinaryToBCD(unsigned int aBinVal);
     static unsigned int BCDToBinary(unsigned int aBCDVal);

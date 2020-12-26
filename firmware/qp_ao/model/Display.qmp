@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package name="Display" stereotype="0x04" namespace="Display::">
- <package name="AOs" stereotype="0x02" namespace="AO">
+ <package name="AOs" stereotype="0x02" namespace="AO::">
   <class name="Mgr_AO" superclass="qpcpp::QActive">
    <documentation>The manager AO of the display.</documentation>
    <attribute name="mDisplayTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
@@ -114,7 +114,7 @@ stop();</action>
    </statechart>
   </class>
  </package>
- <package name="Events" stereotype="0x01" namespace="Event">
+ <package name="Events" stereotype="0x01" namespace="Event::">
   <class name="DisplayText" superclass="qpcpp::QEvt">
    <documentation>Event to display text.</documentation>
    <attribute name="mPosX" type="unsigned int const" visibility="0x00" properties="0x00">

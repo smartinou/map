@@ -1,19 +1,19 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: PFPP
+// Project: ARM Cortex-M.
 //
-// Module: Board Support Package.
+// Module: CoreLink Peripherals.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief CoreLink peripheral SPI device class declaration.
+//! \ingroup corelink_peripherals
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,54 +21,59 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <qpcpp.h>
+
+#include "inc/GPIO.h"
+
+#include "ISPISlaveCfg.h"
+
+
+namespace CoreLink {
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
 
-enum PFPP_SIGS_ENUM_TAG {
-    DUMMY_SIG = QP::Q_USER_SIG,
-    TERMINATE_SIG,
-    TIME_TICK_SIG,
-
-    // RTCC signals.
-    RTCC_INTERRUPT_SIG,
-    RTCC_TIME_TICK_ALARM_SIG,
-    RTCC_CALENDAR_EVENT_ALARM_SIG,
-    RTCC_SAVE_TO_NV_MEMORY_SIG,
-    RTCC_SET_TIME_SIG,
-    RTCC_SET_DATE_SIG,
-
-    // Feed manager signals.
-    FEED_MGR_TIMED_FEED_CMD_SIG,
-    FEED_MGR_MANUAL_FEED_CMD_SIG,
-    FEED_MGR_TIMEOUT_SIG,
-    FEED_MGR_LOG_SIG,
-
-    // LwIP manager signals.
-    LWIP_SLOW_TICK_SIG,
-    LWIP_RX_READY_SIG,
-    LWIP_TX_READY_SIG,
-    LWIP_RX_OVERRUN_SIG,
-    LWIP_MGR_LOG_SIG,
-    LWIP_IP_CHANGED_SIG,
-
-    // Display signals.
-    DISPLAY_TIMEOUT_SIG,
-    DISPLAY_REFRESH_SIG,
-    DISPLAY_TEXT_SIG,
-
-    // Log event generation/sinks.
-    LOG_EVENT_SIG,
-    LOG_TIMER_SIG,
-
-    QTY_SIG
-};
-
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
+
+class SPISlaveCfg
+    : public ISPISlaveCfg {
+public:
+    //SPISlaveCfg(uint32_t aPort, uint8_t aPin);
+    SPISlaveCfg(GPIO const &aGPIO);
+    ~SPISlaveCfg() {}
+
+    // ISPISlaveCfg interface.
+    void SetProtocol(protocol_t aProtocol) override { mProtocol = aProtocol; }
+    void SetBitRate(unsigned int aBitRate) override { mBitRate = aBitRate; }
+    void SetDataWidth(unsigned int aDataWidth) override { mDataWidth = aDataWidth; }
+
+    protocol_t GetProtocol(void) const override { return mProtocol; }
+    unsigned int GetBitRate(void) const override { return mBitRate; }
+    unsigned int GetDataWidth(void) const override { return mDataWidth; }
+
+    void AssertCSn(void) override;
+    void DeassertCSn(void) override;
+
+private:
+    void SetCSnGPIO(void);
+
+    SPISlaveCfg() = delete;
+
+    protocol_t mProtocol;
+    unsigned long mBitRate;
+    unsigned long mDataWidth;
+#if 0
+    uint32_t mCSnGPIOPort;
+    uint8_t mCSnGPIOPin;
+#else
+    GPIO const mCSnGPIO;
+#endif
+};
+
+
+} // namespace CoreLink
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
@@ -85,3 +90,4 @@ enum PFPP_SIGS_ENUM_TAG {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
+

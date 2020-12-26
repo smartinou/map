@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -21,11 +21,16 @@
 // *****************************************************************************
 
 #include <stddef.h>
+#include <stdio.h>
 
 // TI Library.
-#include <hw_types.h>
+#include <inc/hw_types.h>
 #include <driverlib/gpio.h>
 #include <driverlib/interrupt.h>
+#include <driverlib/rom.h>
+#include <driverlib/rom_map.h>
+
+#include "SPI.h"
 
 #include "DS3234.h"
 
@@ -82,26 +87,6 @@ enum L_LIMITS {
 // *****************************************************************************
 
 // Ctor.
-#if 0
-DS3234::DS3234(
-    unsigned int const aBaseYear,
-    unsigned long const aInterruptNumber,
-    GPIO const &aInterruptGPIO,
-    CoreLink::ISPIDev &aSPIDev,
-    CoreLink::SPISlaveCfg const &aSPICfg
-    )
-    : mBaseYear(aBaseYear)
-    , mSPIDev(aSPIDev)
-    , mSPICfg(aSPICfg)
-    , mInterruptNumber(aInterruptNumber)
-    , mInterruptGPIO(aInterruptGPIO)
-{
-    // Ctor body intentionally left empty.
-}
-
-#endif // 0
-
-
 DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
@@ -224,25 +209,29 @@ void DS3234::IsValid(void) {
 
 void DS3234::SetInterrupt(bool aEnable) {
 
-    IntDisable(mInterruptNumber);
+    MAP_IntDisable(mInterruptNumber);
     if (aEnable) {
-        GPIOPinTypeGPIOInput(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
-        GPIOIntTypeSet(
+        MAP_GPIOPinTypeGPIOInput(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+        MAP_GPIOIntTypeSet(
             mInterruptGPIO.GetPort(),
             mInterruptGPIO.GetPin(),
             GPIO_FALLING_EDGE
         );
-        GPIOPadConfigSet(
+        MAP_GPIOPadConfigSet(
             mInterruptGPIO.GetPort(),
             mInterruptGPIO.GetPin(),
             GPIO_STRENGTH_2MA,
             GPIO_PIN_TYPE_STD
         );
-        GPIOPinIntEnable(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+#ifdef USE_TIVAWARE
+        MAP_GPIOIntEnable(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+#elif defined (USE_STELLARISWARE)
+        MAP_GPIOPinIntEnable(mInterruptGPIO.GetPort(), mInterruptGPIO.GetPin());
+#endif
         // [MG] THIS CLEARS THE 1ST INTERRUPT. IT DOESN'T COME UP UNTIL FLAGS ARE CLEARED.
-        //GPIOPinIntClear(mInterrupt->GetPort(), lGPIOInitEvtPtr->mIRQGPIOPin);
+        //MAP_GPIOPinIntClear(mInterrupt->GetPort(), lGPIOInitEvtPtr->mIRQGPIOPin);
 
-        IntEnable(mInterruptNumber);
+        MAP_IntEnable(mInterruptNumber);
 
         // Alarm1 is dedicated to periodic interrupt.
         Time lTime;

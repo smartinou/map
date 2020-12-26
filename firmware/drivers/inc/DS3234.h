@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -22,7 +22,8 @@
 // ******************************************************************************
 
 #include "IRTCC.h"
-#include "SPI.h"
+#include "INVMem.h"
+#include "SPISlaveCfg.h"
 #include "inc/GPIO.h"
 
 // ******************************************************************************
@@ -33,24 +34,20 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+// Forward declaration.
+namespace CoreLink {
+    class ISPIDev;
+}
+
+
+//! \brief DS3234 Real-time clock.
+//! Implements INVMem interface.
 class DS3234
-    : public IRTCC {
+    : public IRTCC
+    , public INVMem {
 
  public:
-#if 0
-     DS3234(
-         unsigned int const aBaseYear,
-         unsigned long const aInterruptNumber,
-         GPIO const &aInterruptGPIO,
-         CoreLink::ISPIDev &aSPIDev,
-         CoreLink::SPISlaveCfg const &aSPICfg
-         );
-
-#endif // 0
-     DS3234(
+    DS3234(
         unsigned int const aBaseYear,
         unsigned long const aInterruptNumber,
         GPIO const &aInterruptPin,
@@ -82,6 +79,7 @@ class DS3234
     void DisableAlarm(void) override;
     void ClrAlarmFlag(void) override;
 
+    // INVMem Interface.
     unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
     void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
     void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;

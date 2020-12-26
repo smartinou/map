@@ -72,6 +72,7 @@ private:
     QP::QEvt const *mFileLogSinkEventQueue[sLargeQueueSize] = {nullptr};
     QP::QEvt const *mLwIPEventQueue[sLargeQueueSize] = {nullptr};
     QP::QEvt const *mDisplayMgrEventQueue[sSmallQueueSize] = {nullptr};
+    QP::QEvt const *mBLEMgrEventQueue[sSmallQueueSize] = {nullptr};
 
     // When this object gets out of scope,
     // the Factory is destroyed and all that is responsible for as well.
