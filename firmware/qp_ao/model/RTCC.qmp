@@ -23,6 +23,9 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     <documentation>Reference to a IRTCC-compatible interface.
 </documentation>
    </attribute>
+   <attribute name="mITemperature" type="ITemperature &amp;" visibility="0x02" properties="0x00">
+    <documentation>Reference to a ITemperature-compatible interface.</documentation>
+   </attribute>
    <attribute name="mNVMem" type="INVMem &amp;" visibility="0x02" properties="0x00">
     <documentation>Reference to object implementing INVMem interface.</documentation>
    </attribute>
@@ -37,12 +40,14 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     <documentation>Ctor.
 </documentation>
     <parameter name="aRTCC" type="IRTCC &amp;"/>
+    <parameter name="aTemperature" type="ITemperature &amp;"/>
     <parameter name="aNVMem" type="INVMem &amp;"/>
     <code>    : QP::QActive(Q_STATE_CAST(&amp;RTCC::AO::RTCC_AO::initial))
     , mTime()
     , mDate()
     , mTemperature(-1000.0)
     , mRTCC(aRTCC)
+    , mITemperature(aTemperature)
     , mNVMem(aNVMem)
     , mCalendarRec(nullptr)
     , mNVMemBuf(nullptr)
@@ -92,7 +97,7 @@ if (lNVMemSize) {
 // -Populate calendar.
 // -Set next alarm.
 mRTCC.RdTimeAndDate(mTime, mDate);
-mTemperature = mRTCC.GetTemperature();
+mTemperature = mITemperature.GetTemperature();
 
 RTCC::Event::Init const * const lInitEvent = static_cast&lt;RTCC::Event::Init const * const&gt;(e);
 if ((nullptr != lInitEvent) &amp;&amp; (nullptr != lInitEvent-&gt;mCalendarRec)) {
@@ -226,7 +231,7 @@ SetNextCalendarEvent();
       <action brief="ReadTimeAndTemp(); PublishTick();">// Set data as impure to force refresh of data read from RTCC.
 mRTCC.SetImpure();
 mRTCC.GetTimeAndDate(mTime, mDate);
-mTemperature = mRTCC.GetTemperature();
+mTemperature = mITemperature.GetTemperature();
 
 // Publish Tick Alarm Event.
 RTCC::Event::TimeAndDate * const lTickAlarmEvent =
@@ -361,6 +366,7 @@ $declare${RTCC::Events::SaveToRAM}
 // Forward declaration.
 class IRTCC;
 class INVMem;
+class ITemperature;
 class CalendarRec;
 
 $declare${RTCC::AOs::RTCC_AO}
@@ -370,6 +376,7 @@ $declare${RTCC::AOs::RTCC_AO}
    <text>#include &lt;db/CalendarRec.h&gt;
 #include &quot;IRTCC.h&quot;
 #include &quot;INVMem.h&quot;
+#include &quot;ITemperature.h&quot;
 
 #include &quot;Signals.h&quot;
 #include &quot;RTCC_Events.h&quot;

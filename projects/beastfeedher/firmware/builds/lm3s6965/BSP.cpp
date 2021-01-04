@@ -184,8 +184,8 @@ public:
     std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) override {
         if (mRTCCAO.get() == nullptr) {
             mRTCC = CreateRTCC();
-            // RTCC also implements the INVMem interface.
-            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC);
+            // RTCC also implements both ITemperature and INVMem interfaces.
+            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC, *mRTCC);
         }
         return mRTCCAO;
     }

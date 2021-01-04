@@ -23,6 +23,7 @@
 
 #include "IRTCC.h"
 #include "INVMem.h"
+#include "ITemperature.h"
 #include "SPISlaveCfg.h"
 #include "inc/GPIO.h"
 
@@ -44,7 +45,8 @@ namespace CoreLink {
 //! Implements INVMem interface.
 class DS3234
     : public IRTCC
-    , public INVMem {
+    , public INVMem
+    , public ITemperature {
 
  public:
     DS3234(
@@ -71,7 +73,6 @@ class DS3234
     void WrDate(Date const &aDate) override;
     void WrTimeAndDate(Time const &aTime, Date const &aDate) override;
     void GetTimeAndDate(Time &aTime, Date &aDate) override;
-    float GetTemperature(void) override;
 
     bool WrAlarm(Time const &aTime, Date const &aDate) override;
     bool WrAlarm(Time const &aTime, Weekday const &aWeekday) override;
@@ -83,6 +84,9 @@ class DS3234
     unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
     void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
     void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
+
+    // ITemperature Interface.
+    float GetTemperature(void) override;
 
 private:
     enum class ALARM_ID : unsigned int {
