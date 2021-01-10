@@ -88,6 +88,8 @@ Button::Button(
 #elif defined (USE_STELLARISWARE)
     MAP_GPIOPinIntEnable(GetPort(), GetPin());
     MAP_GPIOPinIntClear(GetPort(), GetPin());
+#else
+#error Must either define USE_TIVAWARE or USE_STELLARISWARE.
 #endif
 }
 

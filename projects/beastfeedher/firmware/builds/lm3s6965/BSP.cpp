@@ -385,6 +385,9 @@ private:
         // For the Stellaris Eval Kits, the MAC address will be stored in the
         // non-volatile USER0 and USER1 registers. These registers can be read
         // using the FlashUserGet function, as illustrated below.
+        // See https://maclookup.app/vendors/texas-instruments
+        // ...for MAC address lookup.
+        // 00:1A:B6:XX:XX:XX is own by TI, 2012-12-12.
         unsigned long lUser0 = 0;
         unsigned long lUser1 = 0;
         FlashUserGet(&lUser0, &lUser1);
@@ -394,15 +397,16 @@ private:
             static_cast<uint8_t>((lUser0 & 0x000000FFL) >>  0),
             static_cast<uint8_t>((lUser0 & 0x0000FF00L) >>  8),
             static_cast<uint8_t>((lUser0 & 0x00FF0000L) >> 16),
-            static_cast<uint8_t>((lUser0 & 0xFF000000L) >> 24),
             static_cast<uint8_t>((lUser1 & 0x000000FFL) >>  0),
-            static_cast<uint8_t>((lUser1 & 0x0000FF00L) >>  8)
+            static_cast<uint8_t>((lUser1 & 0x0000FF00L) >>  8),
+            static_cast<uint8_t>((lUser1 & 0x00FF0000L) >> 16)
         );
 
         if (lMAC.IsValid()) {
             return lMAC;
         }
 
+        // Return a default MAC address is flash is empty, MAC invalid.
         return EthernetAddress(0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff);
     }
 
