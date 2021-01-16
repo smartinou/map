@@ -24,16 +24,15 @@
 #include "qpcpp.h"
 
 // CMSIS Library.
-//#include "lm3s_cmsis.h"
-#define PART_TM4C123GH6PM
-//#include "tm4c123gh6pm.h"
-//#include "core_cm4.h"
-#include "TM4C123GH6PM.h"
+#include "TM4C129ENCPDT.h"
 
 // TI Library.
+#define TARGET_IS_BLIZZARD_RA1
+//#define PART_TM4C129ENCPDT
 #include <inc/hw_ints.h>
-//#include <inc/hw_memmap.h> // duplicated defines core_cm4.h
+//#include "inc/hw_memmap.h" // duplicated defines in TM4C129ENCPDT.h
 #include <inc/hw_types.h>
+#include <driverlib/flash.h>
 #include <driverlib/gpio.h>
 #include <driverlib/interrupt.h>
 #include <driverlib/rom.h>
@@ -41,6 +40,8 @@
 #include <driverlib/sysctl.h>
 #include <driverlib/systick.h>
 #include <driverlib/uart.h>
+
+#include <net/EthernetAddress.h>
 
 #include "inc/Button.h"
 #include "inc/GPIO.h"
@@ -54,6 +55,7 @@
 #include "Display_AOs.h"
 #include "Logging_AOs.h"
 #include "BLE_AOs.h"
+#include "LwIP_AOs.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AOs.h"
 #include "LwIP_AOs.h"
@@ -62,6 +64,8 @@
 #include "Signals.h"
 #include "IBSP.h"
 #include "BSP.h"
+
+#include "netif/EthDrv.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -88,13 +92,14 @@ enum KernelAwareISRs {
     SYSTICK_PRIO = QF_AWARE_ISR_CMSIS_PRI,
     GPIOPORTA_PRIO,
     GPIOPORTE_PRIO,
+    //GPIOPORTF_PRIO,
     // ...
     // Keep always last.
     MAX_KERNEL_AWARE_CMSIS_PRI
 };
 
 // "kernel-aware" interrupts should not overlap the PendSV priority.
-Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-NUM_PRIORITY_BITS)));//__NVIC_PRIO_BITS)));
+Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 
 
 #define UART_BAUD_RATE      115200U
@@ -119,21 +124,21 @@ public:
     ~SSI0PinCfg() {}
 
     void SetPins(void) const override {
-        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-        MAP_GPIOPinTypeSSI(
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+        GPIOPinTypeSSI(
             sSSIPins.mPort,
             sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin
         );
 
         // Set a weak pull-up on MISO pin for SD Card's proper operation.
-        MAP_GPIOPadConfigSet(
+        GPIOPadConfigSet(
             sSSIPins.mPort,
             sSSIPins.mRxPin,
             GPIO_STRENGTH_2MA,
             GPIO_PIN_TYPE_STD_WPU
         );
 
-        MAP_GPIOPadConfigSet(
+        GPIOPadConfigSet(
             sSSIPins.mPort,
             sSSIPins.mClkPin | sSSIPins.mTxPin,
             GPIO_STRENGTH_2MA,
@@ -142,19 +147,19 @@ public:
     }
 
 private:
-    // PA2: SSI0CLK
-    // PA4: SSI0RX
-    // PA5: SSI0TX
+    // PQ0: SSI0CLK
+    // PQ3: SSI0RX
+    // PQ2: SSI0TX
     static struct SSIGPIO {
         unsigned long mPort;
         unsigned int  mClkPin;
         unsigned int  mRxPin;
         unsigned int  mTxPin;
     } constexpr sSSIPins = {
-        GPIOA_BASE,
-        GPIO_PIN_2, // Clk.
-        GPIO_PIN_4, // Rx.
-        GPIO_PIN_5  // Tx.
+        GPIOQ_BASE,
+        GPIO_PIN_0, // Clk.
+        GPIO_PIN_3, // Rx.
+        GPIO_PIN_2  // Tx.
     };
 };
 
@@ -198,12 +203,13 @@ public:
 
 
     QP::QActive *GetOpaqueBLEAO(void) override { return nullptr; }
+    //QP::QActive *GetOpaqueBLEAO(void) override { return mBLEAO.get(); }
 
 
     unsigned int CreateDisks(void) override {
         // This BSP has one SDC device.
         if (mSDC.get() == nullptr) {
-            GPIO lCSnPin(GPIOD_BASE, GPIO_PIN_0);
+            GPIO lCSnPin(GPIOD_AHB_BASE, GPIO_PIN_0);
             mSDC = std::make_shared<SDC>(0, *mSPIDev, lCSnPin);
         }
 
@@ -240,7 +246,11 @@ public:
 
 
     std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
-        return std::shared_ptr<LwIP::AO::Mgr_AO>(nullptr);
+        if (mEthDrv.get() == nullptr) {
+            mEthDrv = CreateEthDrv();
+            mLwIPMgrAO = std::make_shared<LwIP::AO::Mgr_AO>(*mEthDrv);
+        }
+        return mLwIPMgrAO;
     }
 
 
@@ -251,6 +261,7 @@ public:
 
     // Local interface.
     static GPIO const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
+    //static GPIO const &GetBLEInterruptPin(void) { return mBLEInterruptPin; }
 
 private:
     Factory(const Factory&) = delete;
@@ -263,6 +274,7 @@ private:
         , mFileLogSink(nullptr)
         , mMotorControl(nullptr)
         , mPFPPAO(nullptr)
+        , mDisplayMgrAO(nullptr)
         , mSDC(nullptr) {
 
         // Ctor.
@@ -278,12 +290,11 @@ private:
         case 0:
             // Create pin configuration.
             // Initialize SPI Master.
-            MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
+            SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
             mSSIPinCfg = std::make_unique<SSI0PinCfg>();
             return new CoreLink::SPIDev(SSI0_BASE, *mSSIPinCfg);
 
         case 1:
-        case 2:
         default:
             return nullptr;
         }
@@ -295,7 +306,7 @@ private:
         // Calls the Ctor that uses default SPI slave configuration,
         // with specified CSn pin.
         unsigned long lInterruptNumber = INT_GPIOA;
-        GPIO lCSnPin(GPIOA_BASE, GPIO_PIN_7);
+        GPIO lCSnPin(GPIOA_AHB_BASE, GPIO_PIN_7);
         auto lRTCC = std::make_unique<DS3234>(
             2000,
             lInterruptNumber,
@@ -308,11 +319,70 @@ private:
     }
 
     std::unique_ptr<TB6612> CreateMotorControl(void) {
-        GPIO lIn1(GPIOB_BASE, GPIO_PIN_6);
-        GPIO lIn2(GPIOB_BASE, GPIO_PIN_5);
-        GPIO lPWM(GPIOB_BASE, GPIO_PIN_0);
+        GPIO lIn1(GPIOB_AHB_BASE, GPIO_PIN_6);
+        GPIO lIn2(GPIOB_AHB_BASE, GPIO_PIN_5);
+        GPIO lPWM(GPIOB_AHB_BASE, GPIO_PIN_0);
 
         return std::make_unique<TB6612>(lIn1, lIn2, lPWM);
+    }
+
+
+    // When LwIP::AO::Mgr can get rid of any local reference to LwIPDrv,
+    // it won't be necessary for this function to return a pointer to EthDrv.
+    // It will be referenced via LwIPDrv static functions.
+    std::unique_ptr<EthDrv> CreateEthDrv(void) {
+        EthernetAddress lMAC = GetMACAddress();
+        unsigned int lMyNetIFIndex = 0;
+        unsigned int lPBufQueueSize = 8;
+        auto lEthDrv = std::make_unique<EthDrv>(
+            lMyNetIFIndex,
+            lMAC,
+            lPBufQueueSize
+        );
+
+        return lEthDrv;
+    }
+
+
+#if 0
+    std::unique_ptr<BLE::BLE> CreateBLE(void) {
+        unsigned long lInterruptNumber = INT_GPIOB;
+        GPIO lCSnPin(GPIOB_AHB_BASE, GPIO_PIN_4);
+        auto lBLE = std::make_unique<BLE::BLE>(
+            lInterruptNumber,
+            mBLEInterruptPin,
+            *mSPIDev,
+            lCSnPin
+        );
+
+        return lBLE;
+    }
+#endif
+
+
+    EthernetAddress GetMACAddress(void) {
+        // For the Stellaris Eval Kits, the MAC address will be stored in the
+        // non-volatile USER0 and USER1 registers. These registers can be read
+        // using the FlashUserGet function, as illustrated below.
+        unsigned long lUser0 = 0;
+        unsigned long lUser1 = 0;
+        FlashUserGet(&lUser0, &lUser1);
+
+        // Convert the 24/24 split MAC address from NV ram into a 32/16 split MAC address.
+        EthernetAddress lMAC(
+            static_cast<uint8_t>((lUser0 & 0x000000FFL) >>  0),
+            static_cast<uint8_t>((lUser0 & 0x0000FF00L) >>  8),
+            static_cast<uint8_t>((lUser0 & 0x00FF0000L) >> 16),
+            static_cast<uint8_t>((lUser0 & 0xFF000000L) >> 24),
+            static_cast<uint8_t>((lUser1 & 0x000000FFL) >>  0),
+            static_cast<uint8_t>((lUser1 & 0x0000FF00L) >>  8)
+        );
+
+        if (lMAC.IsValid()) {
+            return lMAC;
+        }
+
+        return EthernetAddress(0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff);
     }
 
     std::unique_ptr<CoreLink::SSIPinCfg> mSSIPinCfg;
@@ -322,9 +392,15 @@ private:
     std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSink;
     std::unique_ptr<TB6612> mMotorControl;
     std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
+    std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
     std::shared_ptr<SDC> mSDC;
+    std::unique_ptr<EthDrv> mEthDrv;
+    std::shared_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO;
+    //std::unique_ptr<BLE::BLE> mBLE;
+    //std::shared_ptr<PFPP::AO::BLE_AO> mBLEAO;
 
     static GPIO const mRTCCInterruptPin;
+    //static GPIO const mBLEInterruptPin;
 
     static std::shared_ptr<IBSPFactory> mInstance;
 };
@@ -336,6 +412,7 @@ private:
 // *****************************************************************************
 
 namespace BSP {
+static void InitEtherLED(void);
 static void InitUserLED(void);
 static void SetUserLED(void);
 static void ClrUserLED(void);
@@ -359,17 +436,18 @@ static uint8_t const sGPIOPortA_IRQHandler = 0U;
 
 // Button class should become GPIO class.
 std::shared_ptr<IBSPFactory> BSP::Factory::mInstance = nullptr;
-GPIO const BSP::Factory::mRTCCInterruptPin(GPIOA_BASE, GPIO_PIN_6);
-//GPIO const BSP::Factory::mBLEInterruptPin(GPIOB_BASE, GPIO_PIN_1);
+GPIO const BSP::Factory::mRTCCInterruptPin(GPIOA_AHB_BASE, GPIO_PIN_6);
+//GPIO const BSP::Factory::mBLEInterruptPin(GPIOB_AHB_BASE, GPIO_PIN_1);
 
 
 namespace BSP {
 
 // Those variables are used locally in various stubs and IRQ handlers.
-static Button const mManualFeedButton(GPIOF_BASE, GPIO_PIN_4, INT_GPIOF, 0);
-static Button const mTimedFeedButton(GPIOF_BASE, GPIO_PIN_0, INT_GPIOF, 0);
+static Button const mManualFeedButton(GPIOC_AHB_BASE, GPIO_PIN_4, INT_GPIOC, 0);
+static Button const mTimedFeedButton(GPIOD_AHB_BASE, GPIO_PIN_4, INT_GPIOD, 0);
+//static Button const mSelectButton(GPIOF_AHB_BASE, GPIO_PIN_1, INT_GPIOF, 0);
 
-static GPIO const sUserLEDPin(GPIOF_BASE, GPIO_PIN_3);
+static GPIO const sUserLEDPin(GPIOF_AHB_BASE, GPIO_PIN_0);
 } // namespace BSP
 
 // *****************************************************************************
@@ -384,7 +462,7 @@ std::shared_ptr<IBSPFactory> Init(void) {
     // SystemCoreClockUpdate() also called from there.
     // Settings done for 50MHz system clock.
 #if 0
-    MAP_SysCtlClockSet(
+    SysCtlClockSet(
         SYSCTL_SYSDIV_1
         | SYSCTL_USE_OSC
         | SYSCTL_OSC_MAIN
@@ -405,8 +483,8 @@ std::shared_ptr<IBSPFactory> Init(void) {
     //MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
 
     // Debug UART port.
-    GPIO lU0RxGPIO(GPIOA_BASE, GPIO_PIN_0);
-    GPIO lU0TxGPIO(GPIOA_BASE, GPIO_PIN_1);
+    GPIO lU0RxGPIO(GPIOA_AHB_BASE, GPIO_PIN_0);
+    GPIO lU0TxGPIO(GPIOA_AHB_BASE, GPIO_PIN_1);
     MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
     MAP_GPIOPinTypeUART(lU0RxGPIO.GetPort(), lU0RxGPIO.GetPin() | lU0TxGPIO.GetPin());
     //UARTStdioInit(0);
@@ -439,6 +517,7 @@ std::shared_ptr<IBSPFactory> Init(void) {
     //QS_OBJ_DICTIONARY(&sGPIOPortA_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortC_IRQHandler);
     //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
+    //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
 
     return Factory::Instance();
 }
@@ -451,6 +530,34 @@ std::shared_ptr<IBSPFactory> Init(void) {
 // *****************************************************************************
 
 namespace BSP {
+
+
+static void InitEtherLED(void) {
+
+    // GPIO for Ethernet LEDs.
+    GPIO const lLinkLEDPin(GPIOF_AHB_BASE, GPIO_PIN_3);
+    MAP_GPIOPinTypeGPIOOutput(lLinkLEDPin.GetPort(), lLinkLEDPin.GetPin());
+    MAP_GPIOPadConfigSet(
+        lLinkLEDPin.GetPort(),
+        lLinkLEDPin.GetPin(),
+        GPIO_STRENGTH_2MA,
+        GPIO_PIN_TYPE_STD
+    );
+    MAP_GPIOPinTypeEthernetLED(lLinkLEDPin.GetPort(), lLinkLEDPin.GetPin());
+
+    GPIO const lActivityLEDPin(GPIOF_AHB_BASE, GPIO_PIN_0);
+    MAP_GPIOPinTypeGPIOOutput(lActivityLEDPin.GetPort(), lActivityLEDPin.GetPin());
+    MAP_GPIOPadConfigSet(
+        lActivityLEDPin.GetPort(),
+        lActivityLEDPin.GetPin(),
+        GPIO_STRENGTH_2MA,
+        GPIO_PIN_TYPE_STD
+    );
+    MAP_GPIOPinTypeEthernetLED(lActivityLEDPin.GetPort(), lActivityLEDPin.GetPin());
+
+    MAP_IntEnable(INT_EMAC0);
+}
+
 
 static void InitUserLED(void) {
     // GPIO for user LED toggling during idle.
@@ -508,18 +615,21 @@ void QP::QF::onStartup(void) {
     MAP_IntPrioritySet(INT_GPIOC, 0x60); //GPIOPORTA_PRIO);
     MAP_IntPrioritySet(INT_GPIOD, 0x60); //GPIOPORTA_PRIO);
     MAP_IntPrioritySet(INT_GPIOE, 0x40); //GPIOPORTE_PRIO);
-    //MAP_IntPrioritySet(INT_ETH, 0x60);
+    //MAP_IntPrioritySet(INT_GPIOF, 0x60); //GPIOPORTF_PRIO);
+    MAP_IntPrioritySet(INT_EMAC0, 0x60);
 
     NVIC_SetPriority(UART0_IRQn, UART0_PRIO);
 
     // Init user LED.
     // Init Ethernet LEDs.
     BSP::InitUserLED();
+    BSP::InitEtherLED();
 
     // Manual Feed cap sensor input.
     // Timed Feed cap sensor input.
     BSP::mManualFeedButton.EnableInt();
     BSP::mTimedFeedButton.EnableInt();
+    //BSP::mSelectButton.EnableInt();
 
 #ifdef Q_SPY
     // UART0 interrupt used for QS-RX.
@@ -543,7 +653,7 @@ void QP::QV::onIdle(void) {
     QS::rxParse();
 
     // TX done?
-    if (MAP_UARTSpaceAvail(UART0_BASE)) {
+    if (UARTSpaceAvail(UART0_BASE)) {
         // Max bytes we can accept.
         uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
 
@@ -555,7 +665,7 @@ void QP::QV::onIdle(void) {
         // Any bytes in the block?
         while (lFIFOLen-- != 0U) {
             // Put into the FIFO.
-            MAP_UARTCharPut(UART0_BASE, *lBlockPtr++);
+            UARTCharPut(UART0_BASE, *lBlockPtr++);
         }
     }
 
@@ -611,7 +721,7 @@ bool QP::QS::onStartup(void const *aArgPtr) {
     // To start timestamp at zero.
     uint32_t volatile lTmp = SysTick->CTRL;
     static_cast<void>(lTmp);
-    //QS_tickPeriod_ = MAP_SysTickPeriodGet();
+    //QS_tickPeriod_ = SysTickPeriodGet();
     QS_tickTime_ = QS_tickPeriod_;
 
     // Setup the QS filters...
@@ -644,11 +754,11 @@ QP::QSTimeCtr QP::QS::onGetTime(void) {
     // TODO: Check if can be done via API call.
 
     if ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0) {
-        return QS_tickTime_ - static_cast<QSTimeCtr>(MAP_SysTickValueGet());
+        return QS_tickTime_ - static_cast<QSTimeCtr>(SysTickValueGet());
     } else {
         // The rollover occured, but the SysTick_ISR did not run yet.
         return QS_tickTime_ + QS_tickPeriod_
-            - static_cast<QSTimeCtr>(MAP_SysTickValueGet()); //SysTick->VAL);
+            - static_cast<QSTimeCtr>(SysTickValueGet()); //SysTick->VAL);
     }
 }
 
@@ -664,13 +774,13 @@ void QP::QS::onFlush(void) {
     while ((lBlockPtr = QS::getBlock(&lFIFOPtr)) != nullptr) {
         QF_INT_ENABLE();
         // Busy-wait until TX FIFO empty.
-        while (!MAP_UARTSpaceAvail(UART0_BASE)) {
+        while (!UARTSpaceAvail(UART0_BASE)) {
         }
 
         // Any bytes in the block?
         while (lFIFOPtr-- != 0U) {
             // Put into the TX FIFO.
-            MAP_UARTCharPut(UART0_BASE, *lBlockPtr++);
+            UARTCharPut(UART0_BASE, *lBlockPtr++);
         }
 
         // Re-load the Tx FIFO depth.
@@ -703,6 +813,13 @@ void QP::QS::onCommand(uint8_t aCmdId, uint32_t aParam1, uint32_t aParam2, uint3
 
 
 extern "C" {
+
+// LwIP
+u32_t sys_now() {
+    return SysTickValueGet();
+}
+
+
 void SysTick_Handler(void);
 void SysTick_Handler(void) {
 
@@ -733,10 +850,10 @@ void GPIOPortA_IRQHandler(void) {
 
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked = true;
-    unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOA_BASE, lIsMasked);
+    unsigned long lIntStatus = GPIOIntStatus(GPIOA_AHB_BASE, lIsMasked);
     unsigned int lPin = BSP::Factory::GetRTCCInterruptPin().GetPin();
     if (lPin & lIntStatus) {
-        MAP_GPIOIntClear(GPIOA_BASE, lPin);
+        GPIOIntClear(GPIOA_AHB_BASE, lPin);
 
         // Signal to AO that RTCC generated an interrupt.
         // This can be done with direct POST to known RTCC AO, but since there's a single instance,
@@ -747,16 +864,37 @@ void GPIOPortA_IRQHandler(void) {
     }
 }
 
+
+// GPIO port B interrupt handler.
+void GPIOPortB_IRQHandler(void);
+void GPIOPortB_IRQHandler(void) {
+#if 0
+    // Get the state of the GPIO and issue the corresponding event.
+    static const bool lIsMasked = true;
+    unsigned long lIntStatus = GPIOIntStatus(GPIOB_AHB_BASE, lIsMasked);
+    unsigned int lPin = BSP::Factory::GetBLEInterruptPin().GetPin();
+    if (lPin & lIntStatus) {
+        GPIOIntClear(GPIOB_AHB_BASE, lPin);
+
+        // Signal to AO that BLE generated an interrupt.
+        static QP::QEvt const sBLEIntEvent(BLE_INTERRUPT_SIG);
+        //QP::QF::PUBLISH(&sBLEIntEvent, 0);
+        BSP::Factory::Instance()->GetOpaqueBLEAO()->POST(&sBLEIntEvent, 0);
+    }
+#endif
+}
+
+
 // GPIO port C interrupt handler.
 void GPIOPortC_IRQHandler(void);
 void GPIOPortC_IRQHandler(void) {
 
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked = true;
-    unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOC_BASE, lIsMasked);
+    unsigned long lIntStatus = GPIOIntStatus(GPIOC_AHB_BASE, lIsMasked);
     unsigned int lPin = BSP::mManualFeedButton.GetPin();
     if (lPin & lIntStatus) {
-        MAP_GPIOIntClear(GPIOC_BASE, lPin);
+        GPIOIntClear(GPIOC_AHB_BASE, lPin);
 
         static PFPP::Event::Mgr::ManualFeedCmd const sOnEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
         static PFPP::Event::Mgr::ManualFeedCmd const sOffEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
@@ -781,10 +919,10 @@ void GPIOPortD_IRQHandler(void) {
 
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked = true;
-    unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOD_BASE, lIsMasked);
+    unsigned long lIntStatus = GPIOIntStatus(GPIOD_AHB_BASE, lIsMasked);
     unsigned int lPin = BSP::mTimedFeedButton.GetPin();
     if (lPin & lIntStatus) {
-        MAP_GPIOIntClear(GPIOD_BASE, lPin);
+        GPIOIntClear(GPIOD_AHB_BASE, lPin);
         // Only interested in the pin coming high.
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
@@ -797,6 +935,28 @@ void GPIOPortD_IRQHandler(void) {
     }
 }
 
+#if 0
+// GPIO port F interrupt handler.
+void GPIOPortF_IRQHandler(void);
+void GPIOPortF_IRQHandler(void) {
+
+    // Get the state of the GPIO and issue the corresponding event.
+    static const bool lIsMasked = true;
+    unsigned long lIntStatus = GPIOIntStatus(GPIOF_AHB_BASE, lIsMasked);
+    unsigned int lPin = BSP::mSelectButton.GetPin();
+    if (lPin & lIntStatus) {
+        GPIOIntClear(GPIOF_AHB_BASE, lPin);
+        // Only interested in the pin coming high.
+        QP::QActive * const lDisplayMgrAO = BSP::Factory::Instance()->GetOpaqueDisplayMgrAO();
+        if (nullptr != lDisplayMgrAO) {
+            if (Button::IS_HIGH == BSP::mSelectButton.GetGPIOPinState()) {
+                static QP::QEvt const sEvent(DISPLAY_REFRESH_SIG);
+                lDisplayMgrAO->POST(&sEvent, 0);
+            }
+        }
+    }
+}
+#endif
 
 #ifdef Q_SPY
 void UART0_IRQHandler(void);
@@ -809,12 +969,12 @@ void UART0_IRQHandler(void);
 void UART0_IRQHandler(void) {
     // Get the raw interrupt status.
     // Clear the asserted interrupts.
-    unsigned long lStatus = MAP_UARTIntStatus(UART0_BASE, true);
-    MAP_UARTIntStatus(UART0_BASE, lStatus);
+    unsigned long lStatus = UARTIntStatus(UART0_BASE, true);
+    UARTIntStatus(UART0_BASE, lStatus);
 
     // While RX FIFO NOT empty.
-    while (MAP_UARTCharsAvail(UART0_BASE)) {
-        unsigned long lLongByte = MAP_UARTCharGet(UART0_BASE);
+    while (UARTCharsAvail(UART0_BASE)) {
+        unsigned long lLongByte = UARTCharGet(UART0_BASE);
         uint8_t lByte = static_cast<uint8_t>(lLongByte);
         QP::QS::rxPut(lByte);
     }
@@ -822,6 +982,13 @@ void UART0_IRQHandler(void) {
 #else // Q_SPY
 // Intentional undefined function body.
 #endif // Q_SPY
+
+
+// TODO: make this conditional to Ethernet support.
+void Ethernet_IRQHandler(void);
+void Ethernet_IRQHandler(void) {
+    LwIPDrv::StaticISR(0);
+}
 
 
 } // extern C
