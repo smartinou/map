@@ -65,7 +65,7 @@
 #include "IBSP.h"
 #include "BSP.h"
 
-#include "netif/EthDrv.h"
+#include "netif/tm4c129/EthDrv.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS

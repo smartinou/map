@@ -78,7 +78,7 @@ VPATH = \
         $(PROJECT_FW_DIR)/src \
         $(PROJECT_FW_DIR)/src/models/codegen \
         $(PROJECT_FW_DIR)/src/lwip_port/arch \
-        $(PROJECT_FW_DIR)/src/lwip_port/netif \
+        $(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/codegen \
@@ -106,6 +106,7 @@ VPATH = \
 # List of all include directories needed by this project.
 INCLUDES  = \
         -I. \
+        -I../.. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
@@ -142,14 +143,14 @@ FAT_FS_SRCS := \
 
 # C source files.
 C_SRCS := \
+    startup_TM4C129ENCPDT.c \
     system_TM4C129.c \
     uartstdio.c \
     $(COREFILES) \
     $(CORE4FILES) \
     $(APIFILES) \
-	$(LWIPDIR)/netif/ethernet.c \
+    $(LWIPDIR)/netif/ethernet.c \
     $(HTTPDFILES) \
-	startup_TM4C129ENCPDT.c \
     $(FAT_FS_SRCS)
 
 
@@ -166,6 +167,7 @@ CPP_SRCS := \
     Display_AOs.cpp \
     DS3234.cpp \
     EthernetAddress.cpp \
+    EthDrv.cpp \
     FatFSDisk.cpp \
     FeedCfgRec.cpp \
     GPIO.cpp \
@@ -177,6 +179,7 @@ CPP_SRCS := \
 	LwIP_AOs.cpp \
 	LwIPDrv.cpp \
     Month.cpp \
+    Net.cpp \
     NetIFRec.cpp \
     PFPP_AOs.cpp \
     IRTCC.cpp \
@@ -186,7 +189,6 @@ CPP_SRCS := \
     SPISlaveCfg.cpp \
     TB6612.cpp \
     Time.cpp \
-    TWEthDrv.cpp \
     Weekday.cpp
 
 
@@ -233,6 +235,7 @@ DEFINES   += -DQF_ACTIVE_STOP
 
 DEFINES   += -DNET_SUPPORT
 DEFINES   += -DARMCM4_FP
+DEFINES   += -DNET_SUPPORT
 DEFINES   += -DPART_TM4C129ENCPDT
 DEFINES   += -DUSE_TIVAWARE
 #DEFINES   += -DTARGET_IS_TM4C123_RB1

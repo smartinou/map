@@ -314,7 +314,7 @@ $declare${LwIP::AOs::Mgr_AO}
 #ifdef __cplusplus
 extern &quot;C&quot; {
 } // extern &quot;C&quot;
-#include &quot;netif/EthDrv.h&quot;
+#include &quot;LwIPDrv.h&quot;
 #endif // __cplusplus
 
 
