@@ -87,10 +87,7 @@ App::~App() {
 }
 
 
-bool App::Init(void) {
-
-    // Initialize the Board Support Package.
-    mFactory = BSP::Init();
+bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
     // Create records and assign them to DB.
     sCalendar = new CalendarRec();
@@ -99,7 +96,7 @@ bool App::Init(void) {
 
     // Create all AOs.
     // RTCC AO.
-    App::mRTCC_AO = mFactory->CreateRTCCAO();
+    App::mRTCC_AO = aFactory->CreateRTCCAO();
     if (mRTCC_AO.get() != nullptr) {
         RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
         App::mRTCC_AO->start(
@@ -117,13 +114,13 @@ bool App::Init(void) {
 
 
     // Create SDC instance to use in FS stubs.
-    unsigned int lDiskQty = mFactory->CreateDisks();
+    unsigned int lDiskQty = aFactory->CreateDisks();
     if (0 != lDiskQty) {
         // Disks found: mount the default drive.
         FRESULT lResult = f_mount(&mFatFS, "", 1);
         if (FR_OK == lResult) {
             // Found some disks and FS mounted: add log sink.
-            auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
+            auto mFileLogSink_AO = aFactory->CreateLogFileSinkAO();
             if (mFileLogSink_AO.get() != nullptr) {
                 reinterpret_cast<Logging::AO::FileSink_AO * const>(
                     mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
@@ -139,7 +136,7 @@ bool App::Init(void) {
     }
 
 
-    auto lPFPPMgr_AO = mFactory->CreatePFPPAO(*App::sFeedCfgRec);
+    auto lPFPPMgr_AO = aFactory->CreatePFPPAO(*App::sFeedCfgRec);
     if (lPFPPMgr_AO.get() != nullptr) {
         lPFPPMgr_AO->start(
             3U,
@@ -157,7 +154,7 @@ bool App::Init(void) {
     // Network makes sense in the following cases:
     // -if we use support web pages.
     // -For larger IoT support.
-    auto lLwIPMgr_AO = mFactory->CreateLwIPMgrAO();
+    auto lLwIPMgr_AO = aFactory->CreateLwIPMgrAO();
     if (lLwIPMgr_AO.get() != nullptr) {
         LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
         lLwIPMgr_AO->start(
@@ -171,7 +168,7 @@ bool App::Init(void) {
     }
 
 
-    std::shared_ptr<QP::QActive> lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();
+    std::shared_ptr<QP::QActive> lDisplayMgr_AO = aFactory->CreateDisplayMgrAO();
     if (lDisplayMgr_AO.get() != nullptr) {
         lDisplayMgr_AO->start(
             5U,
@@ -183,7 +180,7 @@ bool App::Init(void) {
     }
 
 
-    std::shared_ptr<QP::QActive> lBLEMgr_AO = mFactory->CreateBLEAO();
+    std::shared_ptr<QP::QActive> lBLEMgr_AO = aFactory->CreateBLEAO();
     if (lBLEMgr_AO.get() != nullptr) {
         PFPP::Event::BLE::Init lBLEInitEvent(
             DUMMY_SIG,

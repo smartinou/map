@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -65,7 +65,7 @@ Button::Button(
     , mID(aID) {
 
     // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
-    MAP_SysCtlPeripheralEnable(PortToSysClockPeripheral(aGPIOPort));
+    GPIO::EnableSysCtlPeripheral(aGPIOPort);
 
     DisableInt();
 
@@ -135,21 +135,6 @@ void Button::ClrInt(void) const {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
-
-unsigned int Button::PortToSysClockPeripheral(unsigned long aPort) {
-    switch (aPort) {
-    case GPIO_PORTA_BASE: return SYSCTL_PERIPH_GPIOA;
-    case GPIO_PORTB_BASE: return SYSCTL_PERIPH_GPIOB;
-    case GPIO_PORTC_BASE: return SYSCTL_PERIPH_GPIOC;
-    case GPIO_PORTD_BASE: return SYSCTL_PERIPH_GPIOD;
-    case GPIO_PORTE_BASE: return SYSCTL_PERIPH_GPIOE;
-    case GPIO_PORTF_BASE: return SYSCTL_PERIPH_GPIOF;
-    case GPIO_PORTG_BASE: return SYSCTL_PERIPH_GPIOG;
-    case GPIO_PORTH_BASE: return SYSCTL_PERIPH_GPIOH;
-    }
-
-    return 0;
-}
 
 // *****************************************************************************
 //                                END OF FILE

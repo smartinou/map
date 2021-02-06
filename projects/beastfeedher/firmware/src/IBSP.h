@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2019-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -44,15 +44,15 @@ public:
     virtual ~IBSPFactory() {}
 
     virtual std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) = 0;
-    virtual QP::QActive *GetOpaqueRTCCAO(void) = 0;
-    virtual QP::QActive *GetOpaqueBLEAO(void) = 0;
+    virtual QP::QActive *GetOpaqueRTCCAO(void) const = 0;
+    virtual QP::QActive *GetOpaqueBLEAO(void) const = 0;
     virtual unsigned int CreateDisks(void) = 0;
 
     virtual std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) = 0;
-    virtual QP::QActive *GetOpaquePFPPAO(void) = 0;
+    virtual QP::QActive *GetOpaquePFPPAO(void) const = 0;
     virtual std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) = 0;
-    virtual QP::QActive *GetOpaqueDisplayMgrAO(void) = 0;
+    virtual QP::QActive *GetOpaqueDisplayMgrAO(void) const = 0;
     virtual std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreateBLEAO(void) = 0;
 };

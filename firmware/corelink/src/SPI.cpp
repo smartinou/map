@@ -55,8 +55,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef)
-    : PeripheralDev(aBaseAddr)
+CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg &aSPIMasterPinCfgRef)
+    : PeripheralDev(aBaseAddr, aClkRate)
     , mLastSPICfgPtr(nullptr) {
 
     MAP_SSIDisable(aBaseAddr);
@@ -213,7 +213,7 @@ void CoreLink::SPIDev::SetCfg(ISPISlaveCfg &aSPISlaveCfgRef) {
         unsigned int lNativeProtocol = ToNativeProtocol(lProtocol);
         MAP_SSIConfigSetExpClk(
             lBaseAddr,
-            MAP_SysCtlClockGet(),
+            GetClkRate(),
             lNativeProtocol,
             SSI_MODE_MASTER,
             aSPISlaveCfgRef.GetBitRate(),

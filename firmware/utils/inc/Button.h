@@ -13,7 +13,7 @@
 
 // ****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -61,8 +61,6 @@ public:
     void ClrInt(void) const;
 
 private:
-    static unsigned int PortToSysClockPeripheral(unsigned long aPort);
-
     unsigned long const mIntNbr;
     unsigned int  const mID;
 };

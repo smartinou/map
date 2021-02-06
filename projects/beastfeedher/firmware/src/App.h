@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -52,7 +52,7 @@ public:
     App();
     ~App();
 
-    bool Init(void);
+    bool Init(std::shared_ptr<IBSPFactory> mFactory);
 
     static RTCC::AO::RTCC_AO *GetRTCCAO(void) { return mRTCC_AO.get(); }
 
@@ -73,10 +73,6 @@ private:
     QP::QEvt const *mLwIPEventQueue[sLargeQueueSize] = {nullptr};
     QP::QEvt const *mDisplayMgrEventQueue[sSmallQueueSize] = {nullptr};
     QP::QEvt const *mBLEMgrEventQueue[sSmallQueueSize] = {nullptr};
-
-    // When this object gets out of scope,
-    // the Factory is destroyed and all that is responsible for as well.
-    std::shared_ptr<IBSPFactory> mFactory;
 
     static std::shared_ptr<RTCC::AO::RTCC_AO> mRTCC_AO;
 

@@ -41,7 +41,7 @@ namespace CoreLink {
 class SPIDev
     : public ISPIDev, public PeripheralDev {
 public:
-    SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef);
+    SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg &aSPIMasterPinCfgRef);
     ~SPIDev();
 
     void RdData(

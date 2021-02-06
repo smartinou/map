@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -22,9 +22,6 @@
 
 // QP Library.
 #include "qpcpp.h"
-
-// TI Library.
-//#include "uartstdio.h"
 
 // This application.
 #include "App.h"
@@ -60,6 +57,10 @@ int main(void) {
 
     // Initialize the framework and the underlying RT kernel.
     QP::QF::init();
+
+    // BSP::Init() has to be called early.
+    // QS has to be initialized before creating dictionary items.
+    std::shared_ptr<IBSPFactory> lFactory = BSP::Init();
 
     // Initialize event pool.
     static QF_MPOOL_EL(PFPP::Event::Mgr::ManualFeedCmd) sSmallPoolSto[20];
@@ -97,16 +98,17 @@ int main(void) {
     // Start master record.
     // Contains all AOs.
     App * const lAppPtr = new App();
-    bool lInitGood = lAppPtr->Init();
+    bool lInitGood = lAppPtr->Init(lFactory);
 
     // Run the QF application.
     if (lInitGood) {
-        //UARTprintf("QF version: %s", QP::QF::getVersion());
         return QP::QF::run();
     }
 
+    // When lFactory gets out of scope,
+    // the Factory is destroyed and all that is responsible for as well.
+
     // Should never get here, except if Init() went wrong.
-    while (1);
     return 1;
 }
 

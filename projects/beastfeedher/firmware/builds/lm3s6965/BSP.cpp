@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2020, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -26,7 +26,7 @@
 // CMSIS Library.
 #include "lm3s_cmsis.h"
 
-#include "netif/EthDrv.h"
+#include "netif/lm3s/EthDrv.h"
 
 // TI Library.
 #include <inc/hw_ints.h>
@@ -120,7 +120,7 @@ public:
     ~SSI0PinCfg() {}
 
     void SetPins(void) const override {
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+        GPIO::EnableSysCtlPeripheral(sSSIPins.mPort);
         GPIOPinTypeSSI(
             sSSIPins.mPort,
             sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin
@@ -195,10 +195,10 @@ public:
     // For direct posting to AO for instance:
     //     QP::QActive * lPtr = GetOpaqueRTCCAO();
     //     lPtr->Post(myEvent);
-    QP::QActive *GetOpaqueRTCCAO(void) override { return mRTCCAO.get(); }
+    QP::QActive *GetOpaqueRTCCAO(void) const override { return mRTCCAO.get(); }
 
 
-    QP::QActive *GetOpaqueBLEAO(void) override { return mBLEAO.get(); }
+    QP::QActive *GetOpaqueBLEAO(void) const override { return mBLEAO.get(); }
 
 
     unsigned int CreateDisks(void) override {
@@ -229,7 +229,7 @@ public:
     }
 
 
-    QP::QActive *GetOpaquePFPPAO(void) override { return mPFPPAO.get(); }
+    QP::QActive *GetOpaquePFPPAO(void) const override { return mPFPPAO.get(); }
 
 
     std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) override {
@@ -241,7 +241,7 @@ public:
     }
 
 
-    QP::QActive *GetOpaqueDisplayMgrAO(void) override { return mDisplayMgrAO.get(); }
+    QP::QActive *GetOpaqueDisplayMgrAO(void) const override { return mDisplayMgrAO.get(); }
 
 
     std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
@@ -266,11 +266,15 @@ public:
     static GPIO const &GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
     static GPIO const &GetBLEInterruptPin(void) { return mBLEInterruptPin; }
 
+    static uint8_t const sSysTick_Handler;
+    static uint8_t const sGPIOPortA_IRQHandler;
+
 private:
     Factory(const Factory&) = delete;
     Factory& operator=(const Factory&) = delete;
     explicit Factory()
-        : mSSIPinCfg(nullptr)
+        : mClkRate(0)
+        , mSSIPinCfg(nullptr)
         , mSPIDev(nullptr)
         , mRTCC(nullptr)
         , mRTCCAO(nullptr)
@@ -289,6 +293,76 @@ private:
     }
 
 
+    void Init(void) {
+        // NOTE: SystemInit() already called from the startup code,
+        // where clock already set (CLOCK_SETUP in lm3s_config.h)
+        // SystemCoreClockUpdate() also called from there.
+        // Settings done for 50MHz system clock.
+    #if 0
+        SysCtlClockSet(
+            SYSCTL_SYSDIV_1
+            | SYSCTL_USE_OSC
+            | SYSCTL_OSC_MAIN
+            | SYSCTL_XTAL_8MHZ
+        );
+    #endif
+        mClkRate = 50000000;
+
+        // Enable the clock to the peripherals used by the application.
+
+        // Enable all required GPIO.
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+        //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+        //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
+        //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
+
+#ifdef Q_SPY
+        // Debug UART port.
+        GPIO lU0RxGPIO(GPIO_PORTA_BASE, GPIO_PIN_0);
+        GPIO lU0TxGPIO(GPIO_PORTA_BASE, GPIO_PIN_1);
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+        GPIOPinTypeUART(lU0RxGPIO.GetPort(), lU0RxGPIO.GetPin() | lU0TxGPIO.GetPin());
+        //UARTStdioInit(0);
+        // Enable UART0:
+        // @115200, 8-N-1.
+        // Interrupt on rx FIFO half-full.
+        // UART interrupts: rx and rx-to.
+        // Flush the buffers.
+        UARTConfigSetExpClk(
+            UART0_BASE,
+            SysCtlClockGet(),
+            UART_BAUD_RATE,
+            (UART_CONFIG_PAR_NONE
+            | UART_CONFIG_STOP_ONE
+            | UART_CONFIG_WLEN_8)
+        );
+        UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);
+        UARTEnable(UART0_BASE);
+
+        // Enable interrupts.
+        UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
+        UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+        IntEnable(INT_UART0);
+
+        // Initialize the QS software tracing.
+        if (0U == QS_INIT(nullptr)) {
+            Q_ERROR();
+        }
+        QS_OBJ_DICTIONARY(&BSP::Factory::sSysTick_Handler);
+        //QS_OBJ_DICTIONARY(&sGPIOPortA_IRQHandler);
+        //QS_OBJ_DICTIONARY(&sGPIOPortC_IRQHandler);
+        //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
+        //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
+#endif // Q_SPY
+
+        //return Factory::Instance();
+    }
+
+
     CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
         switch (aSSIID) {
         case 0:
@@ -296,7 +370,7 @@ private:
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI0);
             mSSIPinCfg = std::make_unique<SSI0PinCfg>();
-            return new CoreLink::SPIDev(SSI0_BASE, *mSSIPinCfg);
+            return new CoreLink::SPIDev(SSI0_BASE, mClkRate, *mSSIPinCfg);
 
         case 1:
         default:
@@ -410,6 +484,7 @@ private:
         return EthernetAddress(0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff);
     }
 
+    uint32_t mClkRate;
     std::unique_ptr<CoreLink::SSIPinCfg> mSSIPinCfg;
     std::unique_ptr<CoreLink::SPIDev> mSPIDev;
     std::unique_ptr<DS3234> mRTCC;
@@ -453,9 +528,11 @@ static void ClrUserLED(void);
 static QP::QSTimeCtr QS_tickTime_ = 0;
 static QP::QSTimeCtr const QS_tickPeriod_ = SystemCoreClock / BSP::TICKS_PER_SEC;
 
-// event-source identifiers used for tracing
-static uint8_t const sSysTick_Handler = 0U;
-static uint8_t const sGPIOPortA_IRQHandler = 0U;
+namespace BSP {
+    // event-source identifiers used for tracing
+    uint8_t const Factory::sSysTick_Handler = 0U;
+    uint8_t const Factory::sGPIOPortA_IRQHandler = 0U;
+}
 
 #endif // Q_SPY
 
@@ -483,68 +560,6 @@ static GPIO const sUserLEDPin(GPIO_PORTF_BASE, GPIO_PIN_0);
 namespace BSP {
 
 std::shared_ptr<IBSPFactory> Init(void) {
-    // NOTE: SystemInit() already called from the startup code,
-    // where clock already set (CLOCK_SETUP in lm3s_config.h)
-    // SystemCoreClockUpdate() also called from there.
-    // Settings done for 50MHz system clock.
-#if 0
-    SysCtlClockSet(
-        SYSCTL_SYSDIV_1
-        | SYSCTL_USE_OSC
-        | SYSCTL_OSC_MAIN
-        | SYSCTL_XTAL_8MHZ
-    );
-#endif
-
-    // Enable the clock to the peripherals used by the application.
-
-    // Enable all required GPIO.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
-    //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-    //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
-    //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
-
-    // Debug UART port.
-    GPIO lU0RxGPIO(GPIO_PORTA_BASE, GPIO_PIN_0);
-    GPIO lU0TxGPIO(GPIO_PORTA_BASE, GPIO_PIN_1);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    GPIOPinTypeUART(lU0RxGPIO.GetPort(), lU0RxGPIO.GetPin() | lU0TxGPIO.GetPin());
-    //UARTStdioInit(0);
-    // Enable UART0:
-    // @115200, 8-N-1.
-    // Interrupt on rx FIFO half-full.
-    // UART interrupts: rx and rx-to.
-    // Flush the buffers.
-    UARTConfigSetExpClk(
-        UART0_BASE,
-        SysCtlClockGet(),
-        UART_BAUD_RATE,
-        (UART_CONFIG_PAR_NONE
-        | UART_CONFIG_STOP_ONE
-        | UART_CONFIG_WLEN_8)
-    );
-    UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);
-    UARTEnable(UART0_BASE);
-
-    // Enable interrupts.
-    UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
-    UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-    IntEnable(INT_UART0);
-
-    // Initialize the QS software tracing.
-    if (0U == QS_INIT(nullptr)) {
-        Q_ERROR();
-    }
-    QS_OBJ_DICTIONARY(&sSysTick_Handler);
-    //QS_OBJ_DICTIONARY(&sGPIOPortA_IRQHandler);
-    //QS_OBJ_DICTIONARY(&sGPIOPortC_IRQHandler);
-    //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
-    //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
-
     return Factory::Instance();
 }
 
@@ -848,7 +863,7 @@ void SysTick_Handler(void) {
 #endif // Q_SPY
 
     // Call QF Tick function.
-    QP::QF::TICK_X(0U, &sSysTick_Handler);
+    QP::QF::TICK_X(0U, &BSP::Factory::sSysTick_Handler);
 
     // Uncomment those line if need to publish every single tick.
     // Process time events for rate 0.
