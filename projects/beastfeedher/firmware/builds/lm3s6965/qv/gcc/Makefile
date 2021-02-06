@@ -79,7 +79,7 @@ VPATH = \
         $(PROJECT_FW_DIR)/src \
         $(PROJECT_FW_DIR)/src/models/codegen \
         $(PROJECT_FW_DIR)/src/lwip_port/arch \
-        $(PROJECT_FW_DIR)/src/lwip_port/netif \
+        $(PROJECT_FW_DIR)/src/lwip_port/netif/lm3s \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/codegen \

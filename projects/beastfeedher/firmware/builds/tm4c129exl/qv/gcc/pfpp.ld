@@ -44,7 +44,7 @@ MEMORY { /* memory map of Tiva TM4C129ENCPDT */
 STACK_SIZE = 1024;
 
 /* The size of the heap used by the application. NOTE: you need to adjust   */
-HEAP_SIZE = 0;
+HEAP_SIZE = 0x00001000;
 
 SECTIONS {
 
