@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -29,32 +29,20 @@
 extern "C" {
 // LwIP.
 #include "lwip/opt.h"
-#include "lwip/ip.h"
 #include "lwip/def.h"
-#include "lwip/mem.h"
-#include "lwip/pbuf.h"
-#include "lwip/sys.h"
-#include "lwip/stats.h"
-#include "lwip/snmp.h"
-#include "lwip/dhcp.h"
-#include "lwip/autoip.h"
+} // extern "C"
 
 // TI Library.
-#include <hw_ethernet.h>
-#include <hw_ints.h>
-#include <hw_memmap.h>
-#include <hw_types.h>
+#include <inc/hw_ethernet.h>
+#include <inc/hw_ints.h>
+#include <inc/hw_memmap.h>
+#include <inc/hw_types.h>
 #include <driverlib/ethernet.h>
-#include <driverlib/interrupt.h>
 #include <driverlib/sysctl.h>
 
 #include "netif/etharp.h"
-} // extern "C"
 
-#include "Signals.h"
-
-#include "LwIP_Events.h"
-#include "EthDrv.h"
+#include "netif/lm3s/EthDrv.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -92,117 +80,14 @@ void lwIPHostGetTime(u32_t *time_s, u32_t *time_ns);
 // *****************************************************************************
 
 EthDrv::EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize)
-    : LwIPDrv(aIndex, aBufQueueSize) {
+    : LwIPDrv(aIndex, aEthernetAddress, aBufQueueSize) {
 
-    // Set MAC address in the network interface...
-    GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
-    memcpy(&GetNetIF().hwaddr[0], aEthernetAddress.GetData(), NETIF_MAX_HWADDR_LEN);
+    // Ctor body.
 }
 
-
-// TODO: should return error.
-void EthDrv::DrvInit(
-    QP::QActive * const aAO,
-    bool aUseDHCP,
-    uint32_t aIPAddr,
-    uint32_t aSubnetMask,
-    uint32_t aGWAddr
-) {
-    // Save the active object associated with this driver.
-    SetAO(aAO);
-
-#if LWIP_NETIF_HOSTNAME
-    // Initialize interface hostname.
-    GetNetIF().hostname = "LwIP";
-#endif
-    GetNetIF().name[0] = 'Q';
-    GetNetIF().name[1] = 'P';
-
-    // Initialize the snmp variables and counters inside the struct netif.
-    // The last argument should be replaced with your link speed, in units
-    // of bits per second.
-    NETIF_INIT_SNMP(&mNetIF, snmp_ifType_ethernet_csmacd, 1000000);
-
-    // We directly use etharp_output() here to save a function call.
-    // You can instead declare your own function an call etharp_output()
-    // from it if you have to do some checks before sending (e.g. if link is available...)
-    GetNetIF().output = &etharp_output;
-    GetNetIF().linkoutput = &LwIPDrv::StaticEtherIFOut;
-
-    ip_addr_t lIPAddr;
-    ip_addr_t lSubnetMask;
-    ip_addr_t lGWAddr;
-
-    if (aUseDHCP) {
-        IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
-        IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
-        IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
-    } else if (IPADDR_ANY != (aIPAddr & aSubnetMask)) {
-        // IP Address from persistence.
-        lIPAddr.addr = htonl(aIPAddr);
-        lSubnetMask.addr = htonl(aSubnetMask);
-        lGWAddr.addr = htonl(aGWAddr);
-    } else {
-#if (LWIP_DHCP == 0) && (LWIP_AUTOIP == 0)
-        // No mechanism of obtaining IP address specified, use static IP.
-        IP4_ADDR(
-            &lIPAddr,
-            STATIC_IPADDR0, STATIC_IPADDR1,
-            STATIC_IPADDR2, STATIC_IPADDR3
-        );
-        IP4_ADDR(
-            &lSubnetMask,
-            STATIC_NET_MASK0, STATIC_NET_MASK1,
-            STATIC_NET_MASK2, STATIC_NET_MASK3
-        );
-        IP4_ADDR(
-            &lGWAddr,
-            STATIC_GW_IPADDR0, STATIC_GW_IPADDR1,
-            STATIC_GW_IPADDR2, STATIC_GW_IPADDR3
-        );
-#else
-        // Either DHCP or AUTOIP are configured, start with zero IP addresses.
-        IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
-        IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
-        IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
-#endif
-    }
-
-    // Add and configure the Ethernet interface with default settings.
-    // Use AO* as the state.
-    netif_add(
-        &GetNetIF(),
-	    &lIPAddr,
-	    &lSubnetMask,
-	    &lGWAddr,
-	    &GetAO(),
-	    &LwIPDrv::StaticEtherIFInit,
-        &ip_input
-    );
-
-    // Bring the interface up.
-    netif_set_default(&GetNetIF());
-    netif_set_up(&GetNetIF());
-
-#if (LWIP_DHCP != 0)
-    // Start DHCP if configured in lwipopts.h.
-    dhcp_start(&GetNetIF());
-    // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
-    // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
-    // AutoIP after DHCP fails for 59 seconds.
-#elif (LWIP_AUTOIP != 0)
-    // Start AutoIP if configured in lwipopts.h.
-    autoip_start(&mNetIF);
-#endif
-
-    // Enable Ethernet TX and RX Packet Interrupts.
-    HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX);
-
-#if LINK_STATS
-    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RXOF;
-#endif
-}
-
+// *****************************************************************************
+//                              LOCAL FUNCTIONS
+// *****************************************************************************
 
 err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 
@@ -248,76 +133,6 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 }
 
 
-void EthDrv::Rd(void) {
-
-    // New packet received into the pbuf?
-    struct pbuf * const lPBuf = LowLevelRx();
-    if (lPBuf != nullptr) {
-        // pbuf handled?
-        if (ethernet_input(lPBuf, &GetNetIF()) != ERR_OK) {
-            // Free the pbuf.
-            pbuf_free(lPBuf);
-        }
-        // Try to output a packet if TX fifo is empty and pbuf is available.
-        Wr();
-    }
-
-    // Re-enable the RX interrupt.
-    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RX;
-}
-
-
-void EthDrv::Wr(void) {
-
-    // TX fifo empty? Should be since we likely got here by TxEmpty int.
-    if ((HWREG(ETH_BASE + MAC_O_TR) & MAC_TR_NEWTX) == 0) {
-        struct pbuf * const lPBuf = GetPBufQ().Get();
-        // pbuf found in the queue?
-        if (lPBuf != nullptr) {
-            // Send and free the pbuf: lwIP knows nothing of it.
-            LowLevelTx(lPBuf);
-            pbuf_free(lPBuf);
-        }
-    }
-}
-
-
-// This function will either write the pbuf into the Stellaris TX FIFO,
-// or will put the packet in the TX queue of pbufs for subsequent
-// transmission when the transmitter becomes idle.
-//
-// @param netif the lwip network interface structure for this ethernetif
-// @param p the pbuf to send
-// @return ERR_OK if the packet could be sent
-//         an err_t value if the packet couldn't be sent
-err_t EthDrv::EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
-
-    // Nothing in the TX queue?
-    // TX empty?
-    if (GetPBufQ().IsEmpty() && ((HWREG(ETH_BASE + MAC_O_TR) & MAC_TR_NEWTX) == 0)) {
-        // Send the pbuf right away.
-        LowLevelTx(aPBuf);
-        // The pbuf will be freed by the lwIP code.
-    } else {
-        // Otherwise post the pbuf to the transmit queue.
-        // Could the TX queue take the pbuf?
-        if (GetPBufQ().Put(aPBuf)) {
-            // Reference the pbuf to spare it from freeing.
-            pbuf_ref(aPBuf);
-        } else {
-            // No room in the queue.
-            // The pbuf will be freed by the lwIP code.
-            return ERR_MEM;
-        }
-    }
-
-    return ERR_OK;
-}
-
-// *****************************************************************************
-//                              LOCAL FUNCTIONS
-// *****************************************************************************
-
 void EthDrv::ISR(void) {
 
     unsigned long lEthStatus = HWREG(ETH_BASE + MAC_O_RIS);
@@ -329,25 +144,65 @@ void EthDrv::ISR(void) {
     lEthStatus &= HWREG(ETH_BASE + MAC_O_IM);
 
     if ((lEthStatus & ETH_INT_RX) != 0) {
-        static LwIP::Event::Interrupt const sRxEvent(LWIP_RX_READY_SIG, GetIndex());
         // Send to the AO.
-        GetAO().POST(&sRxEvent, this);
+        PostRxEvent();
         // Disable further RX.
         HWREG(ETH_BASE + MAC_O_IM) &= ~ETH_INT_RX;
     }
   
     if ((lEthStatus & ETH_INT_TX) != 0) {
-        static LwIP::Event::Interrupt const sTxEvent(LWIP_TX_READY_SIG, GetIndex());
         // Send to the AO.
-        GetAO().POST(&sTxEvent, this);
+        PostTxEvent();
     }
 #if LINK_STATS
     if ((lEthStatus & ETH_INT_RXOF) != 0) {
-        static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, GetIndex());
         // Send to the AO.
-        GetAO().POST(&sOverrunEvent, this);
+        PostOverrunEvent();
     }
 #endif
+
+#if 0
+    if ((lEthStatus & ETH_INT_PHY) != 0) {
+        unsigned long lPHYInt = EthernetPHYRead(ETH_BASE, PHY_MR17);
+        if (lPHYInt | PHY_MR17_LSCHG_INT) {
+            // Link status changed: determine new state.
+            unsigned int lPHYStatus = EthernetPHYRead(ETH_BASE, PHY_MR1);
+            if (lPHYStatus | PHY_MR1_LINK) {
+                // Signal the link is up. Callback will do the rest.
+                netif_set_link_up(&GetNetIF());
+            } else if (lPHYStatus | PHY_MR1_ANEGC) {
+                // Not sure which should come 1st: link of autoneg?
+            } else if ((lPHYStatus & PHY_MR1_LINK) == 0) {
+                // Signal the link is up. Callback will do the rest.
+                netif_set_link_down(&GetNetIF());
+            }
+        }
+#endif
+    }
+}
+
+
+void EthDrv::EnableRxInt(void) {
+    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RX;
+    //EthernetIntEnable(ETH_BASE, ETH_INT_RX);
+}
+
+
+void EthDrv::EnableAllInt(void) {
+    // Enable PHY interrupts: auto-negotiation complete, link status change.
+    //EthernetPHYWrite(ETH_BASE, PHY_MR17, PHY_MR17_LSCHG_IE | PHY_MR17_ANEGCOMP_IE);
+
+    // Enable Ethernet TX and RX Packet Interrupts.
+    HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX | ETH_INT_PHY);
+
+#if LINK_STATS
+    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RXOF;
+#endif
+}
+
+
+bool EthDrv::IsTxEmpty(void) const {
+    return ((HWREG(ETH_BASE + MAC_O_TR) & MAC_TR_NEWTX) == 0);
 }
 
 
@@ -374,6 +229,7 @@ void EthDrv::LowLevelTx(struct pbuf * const aPBuf) {
     unsigned char * const lWordGatherPtr = reinterpret_cast<unsigned char *>(&lWordGather);
 
     // Copy data from the pbuf(s) into the TX Fifo.
+    //for (struct pbuf *lQueuePtr = aPBuf; lQueuePtr->len != lQueuePtr->tot_len; lQueuePtr = lQueuePtr->next) {
     for (struct pbuf *lQueuePtr = aPBuf; lQueuePtr != nullptr; lQueuePtr = lQueuePtr->next) {
         // Intialize a char pointer and index to the pbuf payload data.
         unsigned char * const lByteBufPtr = reinterpret_cast<unsigned char *>(lQueuePtr->payload);
@@ -456,6 +312,10 @@ struct pbuf *EthDrv::LowLevelRx(void) {
     // If a pbuf was allocated, read the packet into the pbuf.
     if (lPBuf != nullptr) {
         // Place the first word into the first pbuf location.
+        // 2 bytes represent the total length of the received Ethernet frame,
+        // including the FCS and Frame Length bytes.
+        // 2 bytes represent the DA bytes 1 and 2.
+        // To save all 4 bytes in the payload, ETH_PAD_SIZE must be set to 2.
         unsigned long * const lPayload = static_cast<unsigned long * const>(lPBuf->payload);
         *lPayload = lTemp;
         lPBuf->payload = reinterpret_cast<char *>(lPBuf->payload) + 4;
@@ -476,6 +336,8 @@ struct pbuf *EthDrv::LowLevelRx(void) {
             // Link in the next pbuf in the chain.
             lQueuePtr = lQueuePtr->next;
         } while (lQueuePtr != nullptr);
+        // [MG] DOUBLE CHECK: THIS SHOULD BE:
+        //} while (lQueuePtr->len != lQueuePtr->tot_len);
 
         // Restore the first pbuf parameters to their original values.
         lPBuf->payload = reinterpret_cast<char *>(lPBuf->payload) - 4;
@@ -501,6 +363,12 @@ struct pbuf *EthDrv::LowLevelRx(void) {
     }
 
     return lPBuf;
+}
+
+
+void EthDrv::FreePBuf(struct pbuf * const aPBuf) {
+    // Free the pbuf.
+    pbuf_free(aPBuf);
 }
 
 

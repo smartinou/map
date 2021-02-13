@@ -1015,7 +1015,8 @@ void UART0_IRQHandler(void) {
 // TODO: make this conditional to Ethernet support.
 void Ethernet_IRQHandler(void);
 void Ethernet_IRQHandler(void) {
-    LwIPDrv::StaticISR(0);
+    static constexpr unsigned int sIndex = 0;
+    LwIPDrv::StaticISR(sIndex);
 }
 
 

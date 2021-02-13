@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -68,6 +68,18 @@ public:
     uint32_t GetSubnetMask(void) const;
     uint32_t GetDefaultGW(void) const;
 
+protected:
+    LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aPBufQueueSize);
+
+    void PostRxEvent(void);
+    void PostTxEvent(void);
+    void PostOverrunEvent(void);
+
+    unsigned int GetIndex(void) const { return mMyIndex; }
+    struct netif &GetNetIF(void) { return mNetIF; }
+    QP::QActive &GetAO(void) const { return *mAO; }
+    void SetAO(QP::QActive * const aAO) { mAO = aAO; }
+
 private:
     // Internal PBuf Q-ring class.
     class PBufQ {
@@ -86,39 +98,43 @@ private:
         unsigned int mQOverflow;
     };
 
-protected:
-    // Static functions to hook to 'C' code.
-    // Specific to an Ethernet IF.
-    static err_t StaticEtherIFInit(struct netif * const aNetIF);
-    static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
-
-    LwIPDrv(unsigned int mMyIndex, unsigned int aPBufQSize);
-
-    virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
-    virtual err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) = 0;
-
-    virtual void DrvInit(
+    void DrvInit(
         QP::QActive * const aAO,
         bool aUseDHCP,
         uint32_t aIPAddress,
         uint32_t aSubnetMask,
         uint32_t aGWAddress
-    ) = 0;
-    virtual void Rd(void) = 0;
-    virtual void Wr(void) = 0;
+    );
+
+    // Static functions to hook to 'C' code.
+    // Specific to an Ethernet IF.
+    static err_t StaticEtherIFInit(struct netif * const aNetIF);
+    static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
+
+    static void StaticStatusCallback(struct netif * const aNetIF);
+    static void StaticLinkCallback(struct netif * const aNetIF);
+
+    err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
+    void Rd(void);
+    void Wr(void);
+
+    virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
     virtual void ISR(void) = 0;
 
-    PBufQ &GetPBufQ(void) const { return *mPBufQ; }
-    unsigned int GetIndex(void) const { return mMyIndex; }
-    struct netif &GetNetIF(void) { return mNetIF; }
-    QP::QActive &GetAO(void) const { return *mAO; }
-    void SetAO(QP::QActive * const aAO) { mAO = aAO; }
+    virtual void LowLevelTx(struct pbuf * const aPBuf) = 0;
+    virtual struct pbuf *LowLevelRx(void) = 0;
+    virtual void FreePBuf(struct pbuf * const aPBuf) = 0;
 
-private:
+    virtual void EnableRxInt(void) = 0;
+    virtual void EnableAllInt(void) = 0;
+    virtual bool IsTxEmpty(void) const = 0;
+
     LwIPDrv(LwIPDrv const &) = delete;
     LwIPDrv const &operator=(LwIPDrv const &) = delete;
 
-    static std::map<struct netif * const, LwIPDrv * const> sMap;
+    PBufQ &GetPBufQ(void) const { return *mPBufQ; }
+
+    //static std::map<struct netif * const, LwIPDrv * const> sMap;
     static std::vector<LwIPDrv *> sVector;
 
     // Queue of pbufs for transmission.

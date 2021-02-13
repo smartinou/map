@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -31,35 +31,24 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declarations.
-namespace QP {
-    class QActive;
-} // namespace QP
-
-
 class EthDrv
     : public LwIPDrv {
 public:
     EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize);
     ~EthDrv() {}
 
-    void DrvInit(
-        QP::QActive * const aAO,
-        bool aUseDHCP,
-        uint32_t aIPAddr,
-        uint32_t aSubnetMask,
-        uint32_t aGWAddr
-    ) override;
+private:
+    // LwIP Interface.
     err_t EtherIFInit(struct netif * const aNetIF) override;
-    err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) override;
-    void Rd(void) override;
-    void Wr(void) override;
     void ISR(void) override;
 
-private:
+    void LowLevelTx(struct pbuf * const aPBuf) override;
+    struct pbuf *LowLevelRx(void) override;
+    void FreePBuf(struct pbuf * const aPBuf) override;
 
-    void LowLevelTx(struct pbuf * const aPBuf);
-    struct pbuf *LowLevelRx(void);
+    void EnableRxInt(void) override;
+    void EnableAllInt(void) override;
+    bool IsTxEmpty(void) const override;
 };
 
 // ******************************************************************************

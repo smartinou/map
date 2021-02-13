@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -53,6 +53,8 @@ enum PFPP_SIGS_ENUM_TAG {
     LWIP_RX_OVERRUN_SIG,
     LWIP_MGR_LOG_SIG,
     LWIP_IP_CHANGED_SIG,
+    LWIP_NETIF_CHANGED,
+    LWIP_LINK_CHANGED,
 
     // Display signals.
     DISPLAY_TIMEOUT_SIG,
