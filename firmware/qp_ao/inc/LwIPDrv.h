@@ -63,6 +63,12 @@ public:
     static uint32_t StaticGetSubnetMask(unsigned int aIndex);
     static uint32_t StaticGetDefaultGW(unsigned int aIndex);
 
+    static void DNSFoundCallback(
+        const char *aName,
+        const ip_addr_t *aIPAddr,
+        void *aArgs
+    );
+
     uint8_t const *GetMACAddress(void) const;
     uint32_t GetIPAddress(void) const;
     uint32_t GetSubnetMask(void) const;

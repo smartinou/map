@@ -286,6 +286,8 @@ private:
         , mSDC(nullptr) {
 
         // Ctor.
+        Init();
+
         // SPIDev is required with several devices.
         mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(0));
 
@@ -358,8 +360,6 @@ private:
         //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
         //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
 #endif // Q_SPY
-
-        //return Factory::Instance();
     }
 
 

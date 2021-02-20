@@ -101,6 +101,7 @@ VPATH = \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
         $(LWIPDIR)/apps/httpd \
+        $(LWIPDIR)/apps/sntp \
         $(FAT_FS_SRC_DIR)
 
 # List of all include directories needed by this project.
@@ -144,6 +145,7 @@ C_SRCS := \
 	startup_lm3s6965.c \
 	system_lm3s.c \
 	uartstdio.c \
+	$(SNTPFILES) \
 	$(COREFILES) \
 	$(CORE4FILES) \
 	$(APIFILES) \

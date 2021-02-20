@@ -97,6 +97,7 @@ VPATH = \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
         $(LWIPDIR)/apps/httpd \
+        $(LWIPDIR)/apps/sntp \
         $(FAT_FS_SRC_DIR)
 
 #        $(QPCPP)/3rd_party/gnu_cpp \
@@ -146,6 +147,7 @@ C_SRCS := \
     startup_TM4C129ENCPDT.c \
     system_TM4C129.c \
     uartstdio.c \
+    $(SNTPFILES) \
     $(COREFILES) \
     $(CORE4FILES) \
     $(APIFILES) \

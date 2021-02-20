@@ -31,6 +31,8 @@ extern "C" {
 #include "lwip/opt.h"
 #include "lwip/init.h"
 #include "lwip/def.h"
+#include "lwip/err.h"
+#include "lwip/dns.h"
 #include "lwip/mem.h"
 #include "lwip/pbuf.h"
 #include "lwip/sys.h"
@@ -120,13 +122,33 @@ uint32_t LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
 }
 
 
+void LwIPDrv::DNSFoundCallback(
+    const char *aName,
+    const ip_addr_t *aIPAddr,
+    void *aArgs
+) {
+    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aArgs);
+
+    // DNS found a matching IP address.
+    LwIP::Event::HostNameFound * const lEvent = Q_NEW(
+        LwIP::Event::HostNameFound,
+        LWIP_HOST_NAME_FOUND_SIG,
+        lThis->GetIndex(),
+        aName,
+        aIPAddr
+    );
+
+    lThis->GetAO().POST(lEvent, lThis);
+}
+
+
 void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     // Check the current state of the network interface.
     // We end up here as a result to call to either:
     // netif_set_up(), netif_set_down(), netif_set_ipaddr().
     // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    static QP::QEvt const sNetIFEvent(LWIP_NETIF_CHANGED);
+    static QP::QEvt const sNetIFEvent(LWIP_NETIF_CHANGED_SIG);
     lThis->GetAO().POST(&sNetIFEvent, lThis);
 }
 
@@ -136,7 +158,7 @@ void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
     // netif_set_link_up(), netif_set_link_down().
     // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    static QP::QEvt const sLinkEvent(LWIP_LINK_CHANGED);
+    static QP::QEvt const sLinkEvent(LWIP_LINK_CHANGED_SIG);
     lThis->GetAO().POST(&sLinkEvent, lThis);
 }
 
@@ -171,7 +193,6 @@ LwIPDrv::LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, u
     mPBufQ = new PBufQ(aPBufQueueSize);
 
     // Associate this <struct netif *, LwIPDrv>.
-    //LwIPDrv::sMap.insert(std::pair<struct netif * const, LwIPDrv *const>(&mNetIF, this));
     LwIPDrv::sVector[aIndex] = this;
 
     // Set MAC address in the network interface...
@@ -266,6 +287,16 @@ void LwIPDrv::DrvInit(
     // Set link callback.
     // Called after netif_set_link_up(), netif_set_link_down().
     netif_set_link_callback(&GetNetIF(), LwIPDrv::StaticLinkCallback);
+
+#if (LWIP_DNS != 0)
+    // Add Google DNS.
+    ip_addr_t lDNS;
+    IP4_ADDR(&lDNS, 8, 8, 8, 8);
+    dns_setserver(0, &lDNS);
+    IP4_ADDR(&lDNS, 8, 8, 4, 4);
+    dns_setserver(1, &lDNS);
+    dns_init();
+#endif
 
     // Bring the interface up.
     netif_set_default(&GetNetIF());

@@ -177,8 +177,8 @@ void EthDrv::ISR(void) {
                 netif_set_link_down(&GetNetIF());
             }
         }
-#endif
     }
+#endif
 }
 
 

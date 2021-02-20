@@ -283,12 +283,12 @@ private:
         , mSDC(nullptr) {
 
         // Ctor.
+        Init();
+
         // SPIDev is required with several devices.
         mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(0));
 
         // TODO: CONSIDER CREATING RTCC HERE TOO.
-
-        Init();
     }
 
 
