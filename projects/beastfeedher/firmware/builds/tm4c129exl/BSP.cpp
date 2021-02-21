@@ -837,7 +837,8 @@ extern "C" {
 
 // LwIP
 u32_t sys_now() {
-    return SysTickValueGet();
+    // Returns the current time in milliseconds.
+    return SysTickValueGet() * BSP::MS_PER_TICK;
 }
 
 

@@ -471,4 +471,13 @@ extern void UARTprintf(const char *pcString, ...);
 //#define SNMP_MIB_DEBUG                  LWIP_DBG_OFF
 //#define DNS_DEBUG                       LWIP_DBG_OFF
 
+
+//****************************************************************************
+//
+// ---------- CNTP options ----------
+//
+//****************************************************************************
+#define SNTP_SET_SYSTEM_TIME(t) sntp_set_system_time(t);
+
+
 #endif /* __LWIPOPTS_H__ */

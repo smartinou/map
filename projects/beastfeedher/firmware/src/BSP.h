@@ -48,6 +48,7 @@ std::shared_ptr<IBSPFactory> Init(void);
 
 namespace BSP {
   unsigned int constexpr TICKS_PER_SEC = 100;
+  unsigned int constexpr MS_PER_TICK = 1 / 100 * 1000;
 } // namespace BSP
 
 // ******************************************************************************
