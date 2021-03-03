@@ -399,8 +399,12 @@ ip_addr_copy(mIPV4, *aIPV4);</code>
   <file name="LwIP_AOs.h">
    <text>#pragma once
 
+// LwIP stack.
+#include &quot;lwip/ip_addr.h&quot;
+
 // Forward declaration.
 class LwIPDrv;
+
 
 $declare${LwIP::AOs::Mgr_AO}
 </text>

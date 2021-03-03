@@ -182,6 +182,7 @@ subscribe(RTCC_INTERRUPT_SIG);
 subscribe(RTCC_SET_TIME_SIG);
 subscribe(RTCC_SET_DATE_SIG);
 subscribe(RTCC_SET_TIME_SIG);
+subscribe(RTCC_SET_TIME_AND_DATE_SIG);
 subscribe(RTCC_SAVE_TO_NV_MEMORY_SIG);
 
 // Init database and calendar.
@@ -208,7 +209,7 @@ stop();</action>
       </tran_glyph>
      </tran>
      <tran trig="RTCC_SET_TIME">
-      <action brief="SetTime(Time const &amp;aTime);">//LOG_INFO(&amp;sLogCategory[0], &quot;New time set.&quot;);
+      <action brief="SetTime(aTime);">//LOG_INFO(&amp;sLogCategory[0], &quot;New time set.&quot;);
 RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrTime(lSetTimeEvent-&gt;mTime);
 SetNextCalendarEvent();
@@ -218,7 +219,7 @@ SetNextCalendarEvent();
       </tran_glyph>
      </tran>
      <tran trig="RTCC_SET_DATE">
-      <action brief="SetDate(Date const aDate);">//LOG_INFO(&amp;sLogCategory[0], &quot;New date set.&quot;);
+      <action brief="SetDate(aDate);">//LOG_INFO(&amp;sLogCategory[0], &quot;New date set.&quot;);
 RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrDate(lSetEventDate-&gt;mDate);
 SetNextCalendarEvent();
@@ -287,6 +288,15 @@ WrToNVMem();
        <action box="0,-2,34,2"/>
       </tran_glyph>
      </tran>
+     <tran trig="RTCC_SET_TIME_AND_DATE">
+      <action brief="SetTimeAndDate(aTime, aDate)">RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+mRTCC.WrTimeAndDate(lSetTimeEvent-&gt;mTime, lSetTimeEvent-&gt;mDate);
+SetNextCalendarEvent();
+</action>
+      <tran_glyph conn="4,38,3,-1,40">
+       <action box="0,-2,28,4"/>
+      </tran_glyph>
+     </tran>
      <state_glyph node="4,10,72,32">
       <entry box="1,2,23,2"/>
       <exit box="1,4,23,2"/>
@@ -322,8 +332,8 @@ WrToNVMem();
    <operation name="TimeAndDate" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSignal" type="QP::QSignal const"/>
-    <parameter name="aTime" type="Time const"/>
-    <parameter name="aDate" type="Date const"/>
+    <parameter name="aTime" type="Time const &amp;"/>
+    <parameter name="aDate" type="Date const &amp;"/>
     <code>    : QP::QEvt(aSignal)
     , mTime(aTime)
     , mDate(aDate)

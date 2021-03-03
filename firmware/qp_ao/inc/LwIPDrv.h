@@ -140,7 +140,6 @@ private:
 
     PBufQ &GetPBufQ(void) const { return *mPBufQ; }
 
-    //static std::map<struct netif * const, LwIPDrv * const> sMap;
     static std::vector<LwIPDrv *> sVector;
 
     // Queue of pbufs for transmission.

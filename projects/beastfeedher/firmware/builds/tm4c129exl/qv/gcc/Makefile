@@ -53,7 +53,7 @@ PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
 PROJECT_FW_DIR   := $(PROJECT_ROOT_DIR)/firmware
 
 # LwIP library.
-LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.0.3/lwip-2.0.3/src
+LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.1.2/src
 include $(LWIPDIR)/Filelists.mk
 
 
@@ -96,7 +96,10 @@ VPATH = \
         $(LWIPDIR)/core/ipv4 \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/httpd \
+        $(LWIPDIR)/apps/altcp_tls \
+        $(LWIPDIR)/apps/http \
+        $(LWIPDIR)/apps/mqtt \
+        $(LWIPDIR)/apps/snmp \
         $(LWIPDIR)/apps/sntp \
         $(FAT_FS_SRC_DIR)
 
@@ -152,7 +155,9 @@ C_SRCS := \
     $(CORE4FILES) \
     $(APIFILES) \
     $(LWIPDIR)/netif/ethernet.c \
-    $(HTTPDFILES) \
+    $(HTTPFILES) \
+    $(MQTTFILES) \
+    $(MBEDTLS_FILES) \
     $(FAT_FS_SRCS)
 
 
@@ -374,7 +379,7 @@ endif
 # Web & HTML variables.
 WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
 WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
-MAKE_FSDATA_DIR := $(LWIPDIR)/apps/httpd/makefsdata
+MAKE_FSDATA_DIR := $(LWIPDIR)/apps/http/makefsdata
 
 WEB_HTML_FILES := \
   config.shtml \

@@ -211,24 +211,6 @@ void LwIPDrv::DrvInit(
     // Save the active object associated with this driver.
     SetAO(aAO);
 
-#if LWIP_NETIF_HOSTNAME
-    // Initialize interface hostname.
-    GetNetIF().hostname = "LwIP";
-#endif
-    GetNetIF().name[0] = 'Q';
-    GetNetIF().name[1] = 'P';
-
-    // Initialize the snmp variables and counters inside the struct netif.
-    // The last argument should be replaced with your link speed, in units
-    // of bits per second.
-    NETIF_INIT_SNMP(&mNetIF, snmp_ifType_ethernet_csmacd, 1000000);
-
-    // We directly use etharp_output() here to save a function call.
-    // You can instead declare your own function an call etharp_output()
-    // from it if you have to do some checks before sending (e.g. if link is available...)
-    GetNetIF().output = &etharp_output;
-    GetNetIF().linkoutput = &LwIPDrv::StaticEtherIFOut;
-
     ip_addr_t lIPAddr;
     ip_addr_t lSubnetMask;
     ip_addr_t lGWAddr;
@@ -280,6 +262,24 @@ void LwIPDrv::DrvInit(
         &ip_input
     );
 
+#if LWIP_NETIF_HOSTNAME
+    // Initialize interface hostname.
+    GetNetIF().hostname = "LwIP";
+#endif
+    GetNetIF().name[0] = 'Q';
+    GetNetIF().name[1] = 'P';
+
+    // Initialize the snmp variables and counters inside the struct netif.
+    // The last argument should be replaced with your link speed, in units
+    // of bits per second.
+    NETIF_INIT_SNMP(&mNetIF, snmp_ifType_ethernet_csmacd, 1000000);
+
+    // We directly use etharp_output() here to save a function call.
+    // You can instead declare your own function an call etharp_output()
+    // from it if you have to do some checks before sending (e.g. if link is available...)
+    GetNetIF().output = &etharp_output;
+    GetNetIF().linkoutput = &LwIPDrv::StaticEtherIFOut;
+
     // Set status callback.
     // Called after: netif_set_ipaddr(), netif_set_up(), netif_set_down().
     netif_set_status_callback(&GetNetIF(), LwIPDrv::StaticStatusCallback);
@@ -321,34 +321,14 @@ void LwIPDrv::DrvInit(
 // Low-level init.
 // Will be called by LwIP at init stage, everytime a netif is added.
 err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
-#if 0
-    // Find the instance in hash that owns this struct netif.
-    auto lIt = LwIPDrv::sMap.find(aNetIF);
-    if (lIt != LwIPDrv::sMap.end()) {
-        return lIt->second->EtherIFInit(aNetIF);
-    }
-
-    return ERR_ARG;
-#else
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     return lThis->EtherIFInit(aNetIF);
-#endif
 }
 
 
 err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
-#if 0
-    // Find the instance in hash that owns this struct netif.
-    auto lIt = LwIPDrv::sMap.find(aNetIF);
-    if (lIt != LwIPDrv::sMap.end()) {
-        return lIt->second->EtherIFOut(aNetIF, aPBuf);
-    }
-
-    return ERR_ARG;
-#else
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     return lThis->EtherIFOut(aNetIF, aPBuf);
-#endif
 }
 
 

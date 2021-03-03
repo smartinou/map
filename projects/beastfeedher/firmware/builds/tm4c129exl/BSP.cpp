@@ -57,9 +57,9 @@
 #include "Logging_AOs.h"
 #include "BLE_AOs.h"
 #include "LwIP_AOs.h"
+#include "LwIP_Events.h"
 #include "PFPP_AOs.h"
 #include "RTCC_AOs.h"
-#include "LwIP_AOs.h"
 
 #include "PFPP_Events.h"
 #include "Signals.h"
@@ -503,6 +503,8 @@ static void ClrUserLED(void);
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
+static time_t sSystemTime = 0;
+
 #ifdef Q_SPY
 // For local extern "C" functions, not part of any namespace.
 static QP::QSTimeCtr QS_tickTime_ = 0;
@@ -839,6 +841,20 @@ extern "C" {
 u32_t sys_now() {
     // Returns the current time in milliseconds.
     return SysTickValueGet() * BSP::MS_PER_TICK;
+}
+
+
+void sntp_set_system_time(time_t aTime) {
+    sSystemTime = aTime;
+
+    // Send event with new system time from SNTP.
+    LwIP::Event::SystemTimeUpdate * const lEvent = Q_NEW(
+        LwIP::Event::SystemTimeUpdate,
+        LWIP_SYSTEM_TIME_UPDATE_SIG,
+        aTime
+    );
+
+    QP::QF::PUBLISH(lEvent, nullptr);
 }
 
 

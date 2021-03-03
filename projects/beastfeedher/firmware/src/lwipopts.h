@@ -474,10 +474,26 @@ extern void UARTprintf(const char *pcString, ...);
 
 //****************************************************************************
 //
-// ---------- CNTP options ----------
+// ---------- SNTP options ----------
 //
 //****************************************************************************
+#include <time.h>
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+void sntp_set_system_time(time_t aSystemTime);
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 #define SNTP_SET_SYSTEM_TIME(t) sntp_set_system_time(t);
+#define SNTP_STARTUP_DELAY (0)
 
+//****************************************************************************
+//
+// ---------- ALTCP options ----------
+//
+//****************************************************************************
+//#define LWIP_ALTCP                      1
+//#define LWIP_ALTCP_TLS                  1
 
 #endif /* __LWIPOPTS_H__ */
