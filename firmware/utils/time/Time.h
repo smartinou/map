@@ -13,13 +13,15 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include <time.h>
 
 #include "Hour.h"
 #include "Minute.h"
@@ -34,13 +36,13 @@
 // ******************************************************************************
 
 class ITime {
- public:
-  virtual unsigned int GetHours(void)   const = 0;
-  virtual unsigned int GetMinutes(void) const = 0;
-  virtual unsigned int GetSeconds(void) const = 0;
+public:
+    virtual unsigned int GetHours(void)   const = 0;
+    virtual unsigned int GetMinutes(void) const = 0;
+    virtual unsigned int GetSeconds(void) const = 0;
 
-  virtual bool Is24H(void) const = 0;
-  virtual bool IsPM(void)  const = 0;
+    virtual bool Is24H(void) const = 0;
+    virtual bool IsPM(void)  const = 0;
 };
 
 
@@ -50,35 +52,42 @@ class ITime {
 // It will not properly overflow and keep time if two objects
 // are added together.
 class Time
-  : public ITime {
- public:
-  explicit Time(Hour   aHours,
-                Minute aMinutes,
-                Second aSeconds,
-                bool   aIs24H = true,
-                bool   aIsPM  = false);
-  explicit Time(unsigned int aHours = 0,
-                unsigned int aMinutes = 0,
-                unsigned int aSeconds = 0,
-                bool         aIs24H = true,
-                bool         aIsPM  = false);
-  ~Time();
+    : public ITime {
+public:
+    explicit Time(
+        Hour   aHours,
+        Minute aMinutes,
+        Second aSeconds,
+        bool   aIs24H = true,
+        bool   aIsPM  = false
+    );
 
-  // ITime.
-  unsigned int GetHours(void)   const;
-  unsigned int GetMinutes(void) const;
-  unsigned int GetSeconds(void) const;
+    explicit Time(
+        unsigned int aHours = 0,
+        unsigned int aMinutes = 0,
+        unsigned int aSeconds = 0,
+        bool         aIs24H = true,
+        bool         aIsPM  = false
+    );
 
-  bool Is24H(void) const;
-  bool IsPM(void)  const;
+    explicit Time(struct tm const * const aTime);
+    ~Time();
 
- private:
-  Hour   mHours;
-  Minute mMinutes;
-  Second mSeconds;
+    // ITime.
+    unsigned int GetHours(void)   const;
+    unsigned int GetMinutes(void) const;
+    unsigned int GetSeconds(void) const;
 
-  bool   mIs24H;
-  bool   mIsPM;
+    bool Is24H(void) const;
+    bool IsPM(void)  const;
+
+private:
+    Hour   mHours;
+    Minute mMinutes;
+    Second mSeconds;
+
+    bool   mIs24H;
+    bool   mIsPM;
 };
 
 // ******************************************************************************
