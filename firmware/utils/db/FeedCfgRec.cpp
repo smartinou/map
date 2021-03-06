@@ -92,6 +92,7 @@ void FeedCfgRec::ResetDflt(void) {
     mRec.mTimedFeedPeriod = 4;
     mRec.mIsManualFeedEnable = true;
     mRec.mIsTimedFeedEnable = true;
+    mRec.mUseSystemTime = true;
 
     mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
     SetIsDirty();
@@ -146,6 +147,11 @@ bool FeedCfgRec::IsTimedFeedEnable(void) const {
 }
 
 
+bool FeedCfgRec::UseSystemTime(void) const {
+    return mRec.mUseSystemTime;
+}
+
+
 void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
     mRec.mTimedFeedPeriod = aPeriod;
 }
@@ -160,6 +166,10 @@ void FeedCfgRec::SetTimedFeedEnabled(bool aIsEnabled) {
     mRec.mIsTimedFeedEnable = aIsEnabled;
 }
 
+
+void FeedCfgRec::SetUseSystemTime(bool aUseSystemTime) {
+    mRec.mUseSystemTime = aUseSystemTime;
+}
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS

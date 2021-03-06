@@ -246,9 +246,13 @@ public:
 
 
     std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
-        if (mEthDrv.get() == nullptr) {
-            mEthDrv = CreateEthDrv();
-            mLwIPMgrAO = std::make_shared<LwIP::AO::Mgr_AO>(*mEthDrv);
+        // Only one instance of this object can exist.
+        if (mLwIPMgrAO.get() == nullptr) {
+            // Create all Ethernet drivers required before the AO.
+            // LwIP::AO::Mgr doesn't use any local references to LwIPDrv.
+            // They are referenced via LwIPDrv static functions.
+            CreateEthDrv();
+            mLwIPMgrAO = std::make_shared<LwIP::AO::Mgr_AO>();
         }
         return mLwIPMgrAO;
     }
@@ -425,20 +429,15 @@ private:
     }
 
 
-    // When LwIP::AO::Mgr can get rid of any local reference to LwIPDrv,
-    // it won't be necessary for this function to return a pointer to EthDrv.
-    // It will be referenced via LwIPDrv static functions.
-    std::unique_ptr<EthDrv> CreateEthDrv(void) {
+    void CreateEthDrv(void) {
         EthernetAddress lMAC = GetMACAddress();
         unsigned int lMyNetIFIndex = 0;
         unsigned int lPBufQueueSize = 8;
-        auto lEthDrv = std::make_unique<EthDrv>(
+        mEthDrv = std::make_unique<EthDrv>(
             lMyNetIFIndex,
             lMAC,
             lPBufQueueSize
         );
-
-        return lEthDrv;
     }
 
 

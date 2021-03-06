@@ -42,6 +42,9 @@ public:
     EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize);
     ~EthDrv() {}
 
+    void DisableAllInt(void) override;
+    void EnableAllInt(void) override;
+
 private:
     class Descriptor
         : public tEMACDMADescriptor {
@@ -131,7 +134,6 @@ private:
     void FreePBuf(struct pbuf * const aPBuf) override;
 
     void EnableRxInt(void) override;
-    void EnableAllInt(void) override;
     bool IsTxEmpty(void) const override;
 
     tEMACDMADescriptor mRxDescriptorTbl[4];

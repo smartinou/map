@@ -74,6 +74,9 @@ public:
     uint32_t GetSubnetMask(void) const;
     uint32_t GetDefaultGW(void) const;
 
+    virtual void DisableAllInt(void) = 0;
+    virtual void EnableAllInt(void) = 0;
+
 protected:
     LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aPBufQueueSize);
 
@@ -119,6 +122,7 @@ private:
 
     static void StaticStatusCallback(struct netif * const aNetIF);
     static void StaticLinkCallback(struct netif * const aNetIF);
+    void StatusCallback(struct netif * const aNetIF);
 
     err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
     void Rd(void);
@@ -132,7 +136,6 @@ private:
     virtual void FreePBuf(struct pbuf * const aPBuf) = 0;
 
     virtual void EnableRxInt(void) = 0;
-    virtual void EnableAllInt(void) = 0;
     virtual bool IsTxEmpty(void) const = 0;
 
     LwIPDrv(LwIPDrv const &) = delete;
@@ -147,6 +150,12 @@ private:
     PBufQ       *mPBufQ = nullptr;
     struct netif mNetIF;
     QP::QActive *mAO = nullptr;
+
+    ip_addr_t mIPAddress;
+    ip_addr_t mSubnetMask;
+    ip_addr_t mGWAddress;
+
+    bool mIsNetIFUp;
 };
 
 // ******************************************************************************

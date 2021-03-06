@@ -85,6 +85,24 @@ EthDrv::EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, uns
     // Ctor body.
 }
 
+
+void EthDrv::DisableAllInt(void) {
+    EthernetIntEnable(ETH_BASE, ETH_INT_RX | ETH_INT_TX | ETH_INT_PHY);
+}
+
+
+void EthDrv::EnableAllInt(void) {
+    // Enable PHY interrupts: auto-negotiation complete, link status change.
+    //EthernetPHYWrite(ETH_BASE, PHY_MR17, PHY_MR17_LSCHG_IE | PHY_MR17_ANEGCOMP_IE);
+
+    // Enable Ethernet TX and RX Packet Interrupts.
+    HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX | ETH_INT_PHY);
+
+#if LINK_STATS
+    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RXOF;
+#endif
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -185,19 +203,6 @@ void EthDrv::ISR(void) {
 void EthDrv::EnableRxInt(void) {
     HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RX;
     //EthernetIntEnable(ETH_BASE, ETH_INT_RX);
-}
-
-
-void EthDrv::EnableAllInt(void) {
-    // Enable PHY interrupts: auto-negotiation complete, link status change.
-    //EthernetPHYWrite(ETH_BASE, PHY_MR17, PHY_MR17_LSCHG_IE | PHY_MR17_ANEGCOMP_IE);
-
-    // Enable Ethernet TX and RX Packet Interrupts.
-    HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX | ETH_INT_PHY);
-
-#if LINK_STATS
-    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RXOF;
-#endif
 }
 
 

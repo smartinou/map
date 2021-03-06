@@ -37,6 +37,9 @@ public:
     EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize);
     ~EthDrv() {}
 
+    void DisableAllInt(void) override;
+    void EnableAllInt(void) override;
+
 private:
     // LwIP Interface.
     err_t EtherIFInit(struct netif * const aNetIF) override;
@@ -47,7 +50,6 @@ private:
     void FreePBuf(struct pbuf * const aPBuf) override;
 
     void EnableRxInt(void) override;
-    void EnableAllInt(void) override;
     bool IsTxEmpty(void) const override;
 };
 

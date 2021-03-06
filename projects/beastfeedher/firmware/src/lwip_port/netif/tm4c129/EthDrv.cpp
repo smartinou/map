@@ -92,6 +92,22 @@ EthDrv::EthDrv(
     // Ctor body.
 }
 
+
+void EthDrv::DisableAllInt(void) {
+
+}
+
+
+void EthDrv::EnableAllInt(void) {
+    // Enable Ethernet TX and RX Packet Interrupts.
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RECEIVE);
+    //HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX);
+
+#if LINK_STATS
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
+#endif
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -354,17 +370,6 @@ void EthDrv::ISR(void) {
 
 void EthDrv::EnableRxInt(void) {
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RECEIVE);
-}
-
-
-void EthDrv::EnableAllInt(void) {
-    // Enable Ethernet TX and RX Packet Interrupts.
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RECEIVE);
-    //HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX);
-
-#if LINK_STATS
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
-#endif
 }
 
 

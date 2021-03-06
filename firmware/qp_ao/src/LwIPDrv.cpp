@@ -64,7 +64,6 @@ extern "C" {
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-//std::map<struct netif * const, LwIPDrv * const> LwIPDrv::sMap;
 std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
 
 // *****************************************************************************
@@ -127,17 +126,15 @@ void LwIPDrv::DNSFoundCallback(
     const ip_addr_t *aIPAddr,
     void *aArgs
 ) {
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aArgs);
-
     // DNS found a matching IP address.
     LwIP::Event::HostNameFound * const lEvent = Q_NEW(
         LwIP::Event::HostNameFound,
         LWIP_HOST_NAME_FOUND_SIG,
-        lThis->GetIndex(),
         aName,
         aIPAddr
     );
 
+    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aArgs);
     lThis->GetAO().POST(lEvent, lThis);
 }
 
@@ -148,8 +145,7 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     // netif_set_up(), netif_set_down(), netif_set_ipaddr().
     // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    static QP::QEvt const sNetIFEvent(LWIP_NETIF_CHANGED_SIG);
-    lThis->GetAO().POST(&sNetIFEvent, lThis);
+    lThis->StatusCallback(aNetIF);
 }
 
 
@@ -160,6 +156,45 @@ void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     static QP::QEvt const sLinkEvent(LWIP_LINK_CHANGED_SIG);
     lThis->GetAO().POST(&sLinkEvent, lThis);
+}
+
+
+void LwIPDrv::StatusCallback(struct netif * const aNetIF) {
+
+    // This object already holds the variable for the previous state.
+    // Might as well perform tests here and parametrize events.
+    if (!mIsNetIFUp && (aNetIF->flags & NETIF_FLAG_UP)) {
+        // Network turned up.
+        mIsNetIFUp = true;
+        static const LwIP::Event::NetIFChanged sEvent(LWIP_NETIF_CHANGED_SIG, aNetIF, true);
+        GetAO().POST(&sEvent, this);
+
+    } else if (mIsNetIFUp && !(aNetIF->flags & NETIF_FLAG_UP)) {
+        // Network turned down.
+        mIsNetIFUp = false;
+        static const LwIP::Event::NetIFChanged sEvent(LWIP_NETIF_CHANGED_SIG, aNetIF, false);
+        GetAO().POST(&sEvent, this);
+    }
+
+    // Finally, check if IP address changed.
+    if (!ip_addr_cmp(&mNetIF.ip_addr, &mIPAddress)
+        || !ip_addr_cmp(&mNetIF.netmask, &mSubnetMask)
+        || !ip_addr_cmp(&mNetIF.gw, &mGWAddress)) {
+        // Some components of IP address changed.
+        // Use copy macros.
+        ip_addr_copy(mIPAddress, mNetIF.ip_addr);
+        ip_addr_copy(mSubnetMask, mNetIF.netmask);
+        ip_addr_copy(mGWAddress, mNetIF.gw);
+
+        LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
+            LwIP::Event::IPAddressChanged,
+            LWIP_NETIF_CHANGED_SIG,
+            mIPAddress.addr,
+            mSubnetMask.addr,
+            mGWAddress.addr
+        );
+        QP::QF::PUBLISH(lEvent, this);
+    }
 }
 
 
@@ -186,9 +221,16 @@ uint32_t LwIPDrv::GetDefaultGW(void) const {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-LwIPDrv::LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aPBufQueueSize)
-    : mMyIndex(aIndex)
-    , mNetIF{0} {
+LwIPDrv::LwIPDrv(
+    unsigned int aIndex,
+    EthernetAddress const &aEthernetAddress,
+    unsigned int aPBufQueueSize
+)   : mMyIndex(aIndex)
+    , mNetIF{0}
+    , mIPAddress{0}
+    , mSubnetMask{0}
+    , mGWAddress{0}
+    , mIsNetIFUp(false) {
 
     mPBufQ = new PBufQ(aPBufQueueSize);
 
@@ -198,6 +240,10 @@ LwIPDrv::LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, u
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
     memcpy(&GetNetIF().hwaddr[0], aEthernetAddress.GetData(), NETIF_MAX_HWADDR_LEN);
+
+    IP4_ADDR(&mIPAddress, 0, 0, 0, 0);
+    IP4_ADDR(&mSubnetMask, 0, 0, 0, 0);
+    IP4_ADDR(&mGWAddress, 0, 0, 0, 0);
 }
 
 

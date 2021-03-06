@@ -143,6 +143,7 @@ subscribe(RTCC_TIME_TICK_ALARM_SIG);
 subscribe(FEED_MGR_MANUAL_FEED_CMD_SIG);
 subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
 subscribe(LWIP_IP_CHANGED_SIG);
+subscribe(LWIP_SYSTEM_TIME_UPDATE_SIG);
 
 // Set logging category.
 LOGGER.AddCategory(LOG_EVENT_SIG, mLogCategory, LogLevel::prio::INFO);
@@ -164,17 +165,17 @@ Display::Event::DisplayText * const lFrameEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lFrameEvent, this);
 </entry>
-      <initial target="../8">
+      <initial target="../9">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
        </initial_glyph>
       </initial>
-      <tran trig="FEED_MGR_TIMEOUT" target="../8">
+      <tran trig="FEED_MGR_TIMEOUT" target="../9">
        <tran_glyph conn="4,28,3,3,28">
         <action box="0,-2,22,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../10">
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../11">
        <tran_glyph conn="4,88,3,3,28">
         <action box="0,-2,28,4"/>
        </tran_glyph>
@@ -182,13 +183,13 @@ QP::QF::PUBLISH(lFrameEvent, this);
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
        <action brief="GetState();">PFPP::Event::Mgr::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::Mgr::ManualFeedCmd const * const&gt;(e);
 </action>
-       <choice target="../../9">
+       <choice target="../../10">
         <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
         <choice_glyph conn="18,46,5,3,14">
          <action box="0,-2,24,2"/>
         </choice_glyph>
        </choice>
-       <choice target="../../8">
+       <choice target="../../9">
         <guard brief="else"/>
         <choice_glyph conn="18,46,4,3,-16,14">
          <action box="0,-16,10,2"/>
@@ -199,7 +200,7 @@ QP::QF::PUBLISH(lFrameEvent, this);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_TIMED_FEED_CMD">
-       <choice target="../../10">
+       <choice target="../../11">
         <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
         <choice_glyph conn="18,94,5,3,14">
          <action box="1,0,13,2"/>
@@ -278,6 +279,35 @@ LOG_INFO(mLogCategory, mDate, mTime, &amp;lIPAddressStr[0]);</action>
 stop();</action>
        <tran_glyph conn="72,12,0,-1,-6,8">
         <action box="0,-6,10,4"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="LWIP_SYSTEM_TIME_UPDATE">
+       <action>LwIP::Event::SystemTimeUpdate const * const lEvent = static_cast&lt;LwIP::Event::SystemTimeUpdate const * const&gt;(e);
+</action>
+       <choice>
+        <guard brief="UseSystemType == true">mFeedCfgRec-&gt;UseSystemTime() == true</guard>
+        <action brief="^RTCC_SET_TIME_AND_DATE(Time, Date)">// Convert to local time.
+struct tm * const lTimeInfo = localtime(&amp;lEvent-&gt;mSystemTime);
+//struct tm * const lTimeInfo = gmtime(&amp;lEvent-&gt;mSystemTime);
+
+Time lTime(lTimeInfo);
+Date lDate(lTimeInfo);
+
+RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
+    RTCC::Event::TimeAndDate,
+    RTCC_SET_TIME_AND_DATE_SIG,
+    lTime,
+    lDate
+);
+
+QP::QF::PUBLISH(lEvtPtr, this);
+</action>
+        <choice_glyph conn="32,114,5,-1,22">
+         <action box="1,-2,33,4"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="4,114,3,-1,28">
+        <action box="0,-2,24,2"/>
        </tran_glyph>
       </tran>
       <state name="Waiting">
@@ -521,7 +551,9 @@ $declare${project::AOs::Mgr_AO}
 </text>
    </file>
    <file name="PFPP_AOs.cpp">
-    <text>#include &quot;BSP.h&quot;
+    <text>#include &lt;time.h&gt;
+
+#include &quot;BSP.h&quot;
 #include &quot;Signals.h&quot;
 
 #include &quot;net/IPAddress.h&quot;

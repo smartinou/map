@@ -50,10 +50,12 @@ public:
     uint8_t GetTimedFeedPeriod(void) const;
     bool IsManualFeedEnable(void) const;
     bool IsTimedFeedEnable(void) const;
+    bool UseSystemTime(void) const;
 
     void SetTimedFeedPeriod(uint8_t aPeriod);
     void SetManualFeedEnabled(bool aIsEnabled);
     void SetTimedFeedEnabled(bool aIsEnabled);
+    void SetUseSystemTime(bool aUseSystemTime);
 
 private:
     // DBRec.
@@ -68,6 +70,7 @@ private:
         uint8_t mTimedFeedPeriod;
         bool mIsManualFeedEnable;
         bool mIsTimedFeedEnable;
+        bool mUseSystemTime;
     };
 
     struct RecData mRec;
