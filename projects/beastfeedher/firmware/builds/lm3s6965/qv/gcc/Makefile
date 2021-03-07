@@ -4,7 +4,7 @@
 #
 # ***************************************************************************************
 #
-#     Copyright (c) 2017, Pleora Technologies Inc., All rights reserved.
+#     Copyright (c) 2017-2020, Pleora Technologies Inc., All rights reserved.
 #
 # ***************************************************************************************
 #
@@ -53,7 +53,7 @@ PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
 PROJECT_FW_DIR   := $(PROJECT_ROOT_DIR)/firmware
 
 # LwIP library.
-LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.0.3/lwip-2.0.3/src
+LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.1.2/src
 include $(LWIPDIR)/Filelists.mk
 
 
@@ -79,7 +79,7 @@ VPATH = \
         $(PROJECT_FW_DIR)/src \
         $(PROJECT_FW_DIR)/src/models/codegen \
         $(PROJECT_FW_DIR)/src/lwip_port/arch \
-        $(PROJECT_FW_DIR)/src/lwip_port/netif \
+        $(PROJECT_FW_DIR)/src/lwip_port/netif/lm3s \
         $(FIRMWARE_PATH)/corelink/src \
         $(FIRMWARE_PATH)/drivers/src \
         $(FIRMWARE_PATH)/qp_ao/codegen \
@@ -89,7 +89,6 @@ VPATH = \
         $(FIRMWARE_PATH)/utils/net \
         $(FIRMWARE_PATH)/utils/src \
         $(FIRMWARE_PATH)/utils/time \
-        $(STELLARIS_LIB)/inc \
         $(QPCPP)/src/qf \
         $(QPCPP)/src/qs \
         $(QPCPP)/src/qv \
@@ -101,13 +100,18 @@ VPATH = \
         $(LWIPDIR)/core/ipv4 \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/httpd \
+        $(LWIPDIR)/apps/altcp_tls \
+        $(LWIPDIR)/apps/http \
+        $(LWIPDIR)/apps/mqtt \
+        $(LWIPDIR)/apps/snmp \
+        $(LWIPDIR)/apps/sntp \
         $(FAT_FS_SRC_DIR)
 
 # List of all include directories needed by this project.
 INCLUDES  = \
         -I. \
         -I$(PROJECT_ROOT_DIR)/firmware/src \
+        -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
         -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
         -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
         -I$(PROJECT_ROOT_DIR)/firmware/builds/lm3s6965 \
@@ -117,7 +121,6 @@ INCLUDES  = \
         -I$(FIRMWARE_PATH)/qp_ao/codegen \
         -I$(FIRMWARE_PATH)/utils \
         -I$(STELLARIS_LIB) \
-        -I$(STELLARIS_LIB)/inc \
         -I$(QPCPP)/include \
         -I$(QPCPP)/src \
         -I$(QP_PORT_DIR) \
@@ -145,18 +148,23 @@ C_SRCS := \
 	startup_lm3s6965.c \
 	system_lm3s.c \
 	uartstdio.c \
+	$(SNTPFILES) \
 	$(COREFILES) \
 	$(CORE4FILES) \
 	$(APIFILES) \
 	$(LWIPDIR)/netif/ethernet.c \
-	$(HTTPDFILES) \
-        $(FAT_FS_SRCS)
+	$(HTTPFILES) \
+    $(MQTTFILES) \
+    $(MBEDTLS_FILES) \
+    $(FAT_FS_SRCS)
 
 
 # C++ source files.
 CPP_SRCS := \
         App.cpp \
+        BLE.cpp \
         Main.cpp \
+        BLE_AOs.cpp \
         BSP.cpp \
         Button.cpp \
         CalendarRec.cpp \
@@ -186,6 +194,7 @@ CPP_SRCS := \
         SDC.cpp \
         SSD1329.cpp \
         SPI.cpp \
+        SPISlaveCfg.cpp \
         TB6612.cpp \
         Time.cpp \
         Weekday.cpp
@@ -231,6 +240,8 @@ DEFINES   := -DQ_NASSERT
 DEFINES   += -D__STARTUP_CLEAR_BSS
 DEFINES   += -DQ_EVT_CTOR
 DEFINES   += -DQF_ACTIVE_STOP
+DEFINES   += -DNET_SUPPORT
+DEFINES   += -DUSE_STELLARISWARE
 
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3
@@ -360,7 +371,7 @@ endif
 # Web & HTML variables.
 WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
 WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
-MAKE_FSDATA_DIR := $(LWIPDIR)/apps/httpd/makefsdata
+MAKE_FSDATA_DIR := $(LWIPDIR)/apps/http/makefsdata
 
 WEB_HTML_FILES := \
   config.shtml \

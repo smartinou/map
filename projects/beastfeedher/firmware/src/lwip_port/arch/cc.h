@@ -86,4 +86,7 @@ typedef u32_t               mem_ptr_t;
     #define LWIP_PLATFORM_ASSERT(msg) ((void)0)
 #endif
 
+
+#define LWIP_RAND() ((u32_t)rand())
+
 #endif                                                          /* __CC_H__ */

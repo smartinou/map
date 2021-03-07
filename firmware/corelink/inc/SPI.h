@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -25,7 +25,8 @@
 #include "inc/GPIO.h"
 
 #include "ISPI.h"
-
+#include "ISPISlaveCfg.h"
+#include "SSIPinCfg.h"
 
 namespace CoreLink {
 
@@ -37,44 +38,10 @@ namespace CoreLink {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPISlaveCfg
-    : public ISPISlaveCfg {
-public:
-    SPISlaveCfg(unsigned int aPort, unsigned int aPin);
-    SPISlaveCfg(GPIO const &aGPIO);
-    ~SPISlaveCfg() {}
-
-    //typedef enum PROTOCOL_ENUM_TAG protocol_t;
-
-    void SetProtocol(protocol_t aProtocol) override { mProtocol = aProtocol; }
-    void SetBitRate(unsigned int aBitRate) override { mBitRate = aBitRate; }
-    void SetDataWidth(unsigned int aDataWidth) override { mDataWidth = aDataWidth; }
-
-    protocol_t GetProtocol(void) const override { return mProtocol; }
-    unsigned int GetBitRate(void) const override { return mBitRate; }
-    unsigned int GetDataWidth(void) const override { return mDataWidth; }
-
-    void AssertCSn(void) override;
-    void DeassertCSn(void) override;
-
-private:
-    void SetCSnGPIO(void);
-
-    SPISlaveCfg() = delete;
-
-    protocol_t mProtocol;
-    unsigned long mBitRate;
-    unsigned long mDataWidth;
-
-    unsigned long mCSnGPIOPort;
-    unsigned int mCSnGPIOPin;
-};
-
-
 class SPIDev
     : public ISPIDev, public PeripheralDev {
 public:
-    SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef);
+    SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg &aSPIMasterPinCfgRef);
     ~SPIDev();
 
     void RdData(

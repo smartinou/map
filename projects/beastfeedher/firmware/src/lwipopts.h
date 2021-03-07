@@ -226,7 +226,7 @@
 // ---------- DNS options -----------
 //
 //****************************************************************************
-//#define LWIP_DNS                        0
+#define LWIP_DNS                        1
 //#define DNS_TABLE_SIZE                  4
 //#define DNS_MAX_NAME_LENGTH             256
 //#define DNS_MAX_SERVERS                 2
@@ -239,7 +239,7 @@
 // ---------- UDP options ----------
 //
 //****************************************************************************
-//#define LWIP_UDP                        1
+#define LWIP_UDP                        1
 //#define LWIP_UDPLITE                    0
 //#define UDP_TTL                         (IP_DEFAULT_TTL)
 
@@ -286,8 +286,8 @@
 //****************************************************************************
 #define LWIP_NETIF_HOSTNAME             1           // default is 0
 //#define LWIP_NETIF_API                  0
-//#define LWIP_NETIF_STATUS_CALLBACK      0
-//#define LWIP_NETIF_LINK_CALLBACK        0
+#define LWIP_NETIF_STATUS_CALLBACK      1           // default is 0
+#define LWIP_NETIF_LINK_CALLBACK        1           // default is 0
 //#define LWIP_NETIF_HWADDRHINT           0
 
 //****************************************************************************
@@ -470,5 +470,30 @@ extern void UARTprintf(const char *pcString, ...);
 //#define SNMP_MSG_DEBUG                  LWIP_DBG_OFF
 //#define SNMP_MIB_DEBUG                  LWIP_DBG_OFF
 //#define DNS_DEBUG                       LWIP_DBG_OFF
+
+
+//****************************************************************************
+//
+// ---------- SNTP options ----------
+//
+//****************************************************************************
+#include <time.h>
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+void sntp_set_system_time(time_t aSystemTime);
+#ifdef __cplusplus
+}
+#endif // __cplusplus
+#define SNTP_SET_SYSTEM_TIME(t) sntp_set_system_time(t);
+#define SNTP_STARTUP_DELAY (0)
+
+//****************************************************************************
+//
+// ---------- ALTCP options ----------
+//
+//****************************************************************************
+//#define LWIP_ALTCP                      1
+//#define LWIP_ALTCP_TLS                  1
 
 #endif /* __LWIPOPTS_H__ */

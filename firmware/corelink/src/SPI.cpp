@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,13 +20,18 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+#include <stdio.h>
+
 // TI Library.
-#include <hw_memmap.h>
-#include <hw_ssi.h>
-#include <hw_sysctl.h>
-#include <hw_types.h>
+#include <inc/hw_memmap.h>
+#include <inc/hw_ssi.h>
+#include <inc/hw_sysctl.h>
+#include <inc/hw_types.h>
 #include <driverlib/gpio.h>
+#include <driverlib/rom.h>
+#include <driverlib/rom_map.h>
 #include <driverlib/ssi.h>
+#include <driverlib/sysctl.h>
 
 #include "SPI.h"
 
@@ -50,61 +55,13 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CoreLink::SPISlaveCfg::SPISlaveCfg(unsigned int aPort, unsigned int aPin)
-    : mProtocol(PROTOCOL::MOTO_0)
-    , mBitRate(0)
-    , mDataWidth(8)
-    , mCSnGPIOPort(aPort)
-    , mCSnGPIOPin(aPin) {
-
-    SetCSnGPIO();
-}
-
-
-CoreLink::SPISlaveCfg::SPISlaveCfg(GPIO const &aGPIO)
-    : SPISlaveCfg(aGPIO.GetPort(), aGPIO.GetPin()) {
-    // Ctor body.
-}
-
-
-void CoreLink::SPISlaveCfg::SetCSnGPIO(void) {
-
-    // Enable and configures the GPIO pin used for CSn.
-    // The proper GPIO peripheral must be enabled using
-    // SysCtlPeripheralEnable() prior to the following calls,
-    // otherwise CPU will rise a HW fault.
-    GPIOPinTypeGPIOOutput(mCSnGPIOPort, mCSnGPIOPin);
-    GPIOPadConfigSet(
-        mCSnGPIOPort,
-        mCSnGPIOPin,
-        GPIO_STRENGTH_2MA,
-        GPIO_PIN_TYPE_STD
-    );
-
-    // Put the CSn pin in deasserted state.
-    DeassertCSn();
-}
-
-
-void CoreLink::SPISlaveCfg::AssertCSn(void) {
-
-    GPIOPinWrite(mCSnGPIOPort, mCSnGPIOPin, 0);
-}
-
-
-void CoreLink::SPISlaveCfg::DeassertCSn(void) {
-
-    GPIOPinWrite(mCSnGPIOPort, mCSnGPIOPin, mCSnGPIOPin);
-}
-
-
-CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, SSIPinCfg &aSPIMasterPinCfgRef)
-    : PeripheralDev(aBaseAddr)
+CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg &aSPIMasterPinCfgRef)
+    : PeripheralDev(aBaseAddr, aClkRate)
     , mLastSPICfgPtr(nullptr) {
 
-    SSIDisable(aBaseAddr);
+    MAP_SSIDisable(aBaseAddr);
         aSPIMasterPinCfgRef.SetPins();
-    SSIEnable(aBaseAddr);
+    MAP_SSIEnable(aBaseAddr);
 }
 
 
@@ -118,7 +75,8 @@ void CoreLink::SPIDev::RdData(
     uint8_t * const aData,
     unsigned int aLen,
     CoreLink::ISPISlaveCfg &aSPICfgRef
-) {
+)
+{
 
     SetCfg(aSPICfgRef);
 
@@ -224,8 +182,8 @@ uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte) {
 
     unsigned int const lBaseAddr = GetBaseAddr();
     unsigned long lRxData = 0UL;
-    SSIDataPut(lBaseAddr, aByte);
-    SSIDataGet(lBaseAddr, &lRxData);
+    MAP_SSIDataPut(lBaseAddr, aByte);
+    MAP_SSIDataGet(lBaseAddr, &lRxData);
 
     return static_cast<uint8_t>(lRxData);
 }
@@ -248,14 +206,14 @@ void CoreLink::SPIDev::SetCfg(ISPISlaveCfg &aSPISlaveCfgRef) {
         // Reconfigure with the newly specified config.
         // Set the new SPI config as the new one.
         uint32_t lBaseAddr = GetBaseAddr();
-        SSIDisable(lBaseAddr);
+        MAP_SSIDisable(lBaseAddr);
 
         // Could check that data width is in range [4, 16].
         ISPISlaveCfg::PROTOCOL lProtocol = aSPISlaveCfgRef.GetProtocol();
         unsigned int lNativeProtocol = ToNativeProtocol(lProtocol);
-        SSIConfigSetExpClk(
+        MAP_SSIConfigSetExpClk(
             lBaseAddr,
-            SysCtlClockGet(),
+            GetClkRate(),
             lNativeProtocol,
             SSI_MODE_MASTER,
             aSPISlaveCfgRef.GetBitRate(),
@@ -265,7 +223,7 @@ void CoreLink::SPIDev::SetCfg(ISPISlaveCfg &aSPISlaveCfgRef) {
         // Make this the "new" slave configuration and
         // enable SPI operations.
         mLastSPICfgPtr = &aSPISlaveCfgRef;
-        SSIEnable(lBaseAddr);
+        MAP_SSIEnable(lBaseAddr);
     }
 }
 

@@ -44,8 +44,9 @@ using namespace CoreLink;
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-PeripheralDev::PeripheralDev(uint32_t aBaseAddr)
+PeripheralDev::PeripheralDev(uint32_t aBaseAddr, uint32_t aClkRate)
     : mBaseAddr(aBaseAddr)
+    , mClkRate(aClkRate)
     , mPeripheralID{ 0 }
     , mPrimeCellID(0) {
 

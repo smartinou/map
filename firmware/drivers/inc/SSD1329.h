@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -26,7 +26,7 @@
 
 #include "inc/GPIO.h"
 #include "ILCD.h"
-#include "SPI.h"
+#include "SPISlaveCfg.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -35,6 +35,13 @@
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
+
+// Forward declaration.
+namespace CoreLink {
+    class ISPIDev;
+    //class SPISlaveCfg;
+}
+
 
 //! \brief Brief description.
 //! Details follow...

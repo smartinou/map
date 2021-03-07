@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<package name="LwIP" stereotype="0x04" namespace="LwIP">
+<package name="LwIP" stereotype="0x04" namespace="LwIP::">
  <package name="AOs" stereotype="0x02" namespace="AO::">
   <class name="Mgr_AO" superclass="qpcpp::QActive">
    <documentation>Main manager of the LwIP stack.</documentation>
@@ -21,21 +21,11 @@
    <attribute name="mAutoIPTimer?def LWIP_AUTOIP" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
     <documentation>Auto IP event timer.</documentation>
    </attribute>
-   <attribute name="mInstance" type="Mgr_AO *" visibility="0x02" properties="0x01">
-    <documentation>Singleton instance.</documentation>
-   </attribute>
-   <attribute name="mEtherDrv" type="LwIPDrv &amp;" visibility="0x02" properties="0x00">
-    <documentation>Reference to LwIP ethernet driver.
-
-TODO: Eventually work toward removing this reference, and only use LwIP static functions.
-</documentation>
-   </attribute>
-   <attribute name="mIPAddress" type="uint32_t" visibility="0x02" properties="0x00">
-    <documentation>Network IP address in network order.</documentation>
+   <attribute name="mDNSTimer?def LWIP_DNS" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+    <documentation>Timer for DNS events.</documentation>
    </attribute>
    <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
     <documentation>private ctor.</documentation>
-    <parameter name="aEtherDrv" type="LwIPDrv &amp;"/>
     <code>    : QP::QActive(Q_STATE_CAST(&amp;LwIP::AO::Mgr_AO::initial))
     , mSlowTickTimer(this, LWIP_SLOW_TICK_SIG, 0U)
 #ifdef LWIP_TCP
@@ -51,13 +41,8 @@ TODO: Eventually work toward removing this reference, and only use LwIP static f
 #ifdef LWIP_AUTOIP
     , mAutoIPTimer()
 #endif // LWIP_AUTOIP
-    , mEtherDrv(aEtherDrv)
-    , mIPAddress(0)
 
 // Ctor body.</code>
-   </operation>
-   <operation name="Mgr_AO" type="" visibility="0x02" properties="0x00">
-    <documentation>// Default Ctor (disabled).</documentation>
    </operation>
    <operation name="Mgr_AO?def _UNUSED_" type="" visibility="0x02" properties="0x00">
     <documentation>// Default copy Ctor (disabled).</documentation>
@@ -71,14 +56,15 @@ TODO: Eventually work toward removing this reference, and only use LwIP static f
     <documentation>// Default assignment operator (disabled).</documentation>
     <parameter name="" type="Mgr_AO const &amp;"/>
    </operation>
-   <operation name="Instance" type="Mgr_AO &amp;" visibility="0x00" properties="0x01">
-    <documentation>The singleton instance handler.</documentation>
-    <parameter name="aEtherDrv" type="LwIPDrv &amp;"/>
-    <code>if (nullptr == mInstance) {
-    mInstance = new Mgr_AO(aEtherDrv);
-}
-
-return *mInstance;</code>
+   <operation name="InitSNTP" type="void" visibility="0x02" properties="0x00">
+    <documentation>Initialize SNTP.</documentation>
+    <parameter name="aIPV4" type="ip_addr_t const * const"/>
+    <code>// SNTP operating modes: default is to poll using unicast.
+// The mode has to be set before calling sntp_init().
+sntp_setoperatingmode(SNTP_OPMODE_POLL);
+sntp_setserver(0, aIPV4);
+sntp_init();
+</code>
    </operation>
    <statechart properties="0x02">
     <initial target="../1">
@@ -101,7 +87,6 @@ if (nullptr != e) {
 // Initialize the lwIP stack.
 lwip_init();
 
-//mEtherDrv.DrvInit(
 LwIPDrv::StaticInit(
     (QP::QActive *)this,
     lUseDHCP,
@@ -142,25 +127,7 @@ LwIPDrv::StaticWr(lEvent-&gt;mIndex);</action>
       </tran_glyph>
      </tran>
      <tran trig="LWIP_SLOW_TICK">
-      <action brief="CheckIPAddr, ProcTimers();">// Has IP address changed?
-if (mIPAddress != mEtherDrv.GetIPAddress()) {
-    // IP address in the network byte order.
-    // Save the IP addr.
-    mIPAddress = mEtherDrv.GetIPAddress();
-
-    // Publish the text event to display the new IP address.
-    LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
-        LwIP::Event::IPAddressChanged,
-        LWIP_IP_CHANGED_SIG,
-        mIPAddress,
-        mEtherDrv.GetSubnetMask(),
-        mEtherDrv.GetDefaultGW()
-    );
-
-    QP::QF::PUBLISH(lEvent, this);
-}
-
-#if LWIP_TCP
+      <action brief="ProcTimers();">#if LWIP_TCP
     mTCPTimer += LWIP_SLOW_TICK_MS;
     if (mTCPTimer &gt;= TCP_TMR_INTERVAL) {
         mTCPTimer = 0;
@@ -193,7 +160,13 @@ if (mIPAddress != mEtherDrv.GetIPAddress()) {
         autoip_tmr();
     }
 #endif
-</action>
+#if LWIP_DNS
+    mDNSTimer += LWIP_SLOW_TICK_MS;
+    if (mDNSTimer &gt;= DNS_TMR_INTERVAL) {
+        mDNSTimer = 0;
+        dns_tmr();
+    }
+#endif</action>
       <tran_glyph conn="4,28,3,-1,34">
        <action box="0,-2,36,2"/>
       </tran_glyph>
@@ -208,15 +181,65 @@ if (mIPAddress != mEtherDrv.GetIPAddress()) {
       <action brief="Stop();">// Requires QF_ACTIVE_STOP to be defined.
 stop();</action>
       <tran_glyph conn="36,10,0,-1,-6,6">
-       <action box="0,-6,11,4"/>
+       <action box="0,-8,11,4"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="4,10,38,26">
+     <tran trig="LWIP_HOST_NAME_FOUND">
+      <action brief="StartNTP();">// The host name to solve is an NTP server.
+LwIP::Event::HostNameFound const * const lEvent = static_cast&lt;LwIP::Event::HostNameFound const * const&gt;(e);
+
+// SNTP operating modes: default is to poll using unicast.
+// The mode has to be set before calling sntp_init().
+InitSNTP(&amp;lEvent-&gt;mIPV4);
+</action>
+      <tran_glyph conn="4,36,3,-1,34">
+       <action box="0,-2,34,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="LWIP_NETIF_CHANGED">
+      <action brief="CheckStatus();">// Must inspect netif flags and IP address to determine the new state.
+LwIP::Event::NetIFChanged const * const lEvent = static_cast&lt;LwIP::Event::NetIFChanged const * const&gt;(e);
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+
+// Look if the network interface is up or down:
+if (lEvent-&gt;mIsNetIFUp) {
+    lEtherDrv-&gt;EnableAllInt();
+
+#if LWIP_DNS
+    // Get the IP address of the NTP server:
+    // -time.nrc.ca
+    // -time.chu.nrc.ca
+    static const char *sNTPServer = &quot;time.nrc.ca&quot;;
+    ip_addr_t lIPAddr;
+    err_t lErr = dns_gethostbyname(
+        sNTPServer,
+        &amp;lIPAddr,
+        LwIPDrv::DNSFoundCallback,
+        static_cast&lt;void *&gt;(lEtherDrv)
+    );
+
+    // Since the name is resolved after acquiring 1st IP address,
+    // we don't expect it to be solved right away.
+    // But just in case the network IF was restarted and it still in cache.
+    if (lErr == ERR_OK) {
+        InitSNTP(&amp;lIPAddr);
+    }
+#endif // LWIP_DNS
+
+} else {
+    lEtherDrv-&gt;DisableAllInt();
+}
+</action>
+      <tran_glyph conn="4,40,3,-1,34">
+       <action box="0,-2,34,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="4,10,38,34">
       <entry box="1,2,23,2"/>
       <exit box="1,4,16,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="46,40"/>
+    <state_diagram size="46,48"/>
    </statechart>
   </class>
  </package>
@@ -280,13 +303,72 @@ stop();</action>
 </code>
    </operation>
   </class>
+  <class name="HostNameFound" superclass="qpcpp::QEvt">
+   <documentation>Host name is found by DNS server.</documentation>
+   <attribute name="mName" type="std::string" visibility="0x00" properties="0x00">
+    <documentation>The name that was looked up.</documentation>
+   </attribute>
+   <attribute name="mIPV4" type="ip_addr_t" visibility="0x00" properties="0x00">
+    <documentation>Pointer to an ip_addr_t containing the IP address of the hostname, or NULL if the name could not be found (or on any other error).</documentation>
+   </attribute>
+   <operation name="HostNameFound" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aName" type="const char * const"/>
+    <parameter name="aIPV4" type="const ip_addr_t * const"/>
+    <code>    : QP::QEvt(aSig)
+    //, mIndex(aIndex)
+    , mName(aName)
+    , mIPV4()
+
+// Assign IP address.
+ip_addr_copy(mIPV4, *aIPV4);</code>
+   </operation>
+  </class>
+  <class name="SystemTimeUpdate" superclass="qpcpp::QEvt">
+   <documentation>// SNTP returned a new system time.</documentation>
+   <attribute name="mSystemTime" type="time_t" visibility="0x00" properties="0x00">
+    <documentation>The new system time.</documentation>
+   </attribute>
+   <operation name="SystemTimeUpdate" type="" visibility="0x00" properties="0x02">
+    <documentation>// Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aSystemTime" type="time_t"/>
+    <code>    : QP::QEvt(aSig)
+    , mSystemTime(aSystemTime)
+</code>
+   </operation>
+  </class>
+  <class name="NetIFChanged" superclass="qpcpp::QEvt">
+   <documentation>// Network interface changed.</documentation>
+   <attribute name="mNetIF" type="struct netif *" visibility="0x00" properties="0x00">
+    <documentation>Pointer to the struct netif that triggered the event.</documentation>
+   </attribute>
+   <attribute name="mIsNetIFUp" type="bool" visibility="0x00" properties="0x00">
+    <documentation>// True if net IF is up.</documentation>
+   </attribute>
+   <operation name="NetIFChanged" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aNetIF" type="struct netif  * const"/>
+    <parameter name="aIsNetIFUp" type="bool"/>
+    <code>    : QP::QEvt(aSig)
+    , mNetIF(aNetIF)
+    , mIsNetIFUp(aIsNetIFUp)
+</code>
+   </operation>
+  </class>
  </package>
  <directory name="../codegen">
   <file name="LwIP_AOs.h">
    <text>#pragma once
 
+// LwIP stack.
+#include &quot;lwip/ip_addr.h&quot;
+
 // Forward declaration.
 class LwIPDrv;
+
 
 $declare${LwIP::AOs::Mgr_AO}
 </text>
@@ -305,6 +387,7 @@ $declare${LwIP::AOs::Mgr_AO}
 #include &quot;lwip/autoip.h&quot;
 #include &quot;lwip/def.h&quot;
 #include &quot;lwip/dhcp.h&quot;
+#include &quot;lwip/dns.h&quot;
 #include &quot;lwip/init.h&quot;
 #include &quot;lwip/stats.h&quot;
 #include &quot;lwip/apps/httpd.h&quot;
@@ -314,13 +397,8 @@ $declare${LwIP::AOs::Mgr_AO}
 #ifdef __cplusplus
 extern &quot;C&quot; {
 } // extern &quot;C&quot;
-#include &quot;netif/EthDrv.h&quot;
+#include &quot;LwIPDrv.h&quot;
 #endif // __cplusplus
-
-
-// TI Library.
-#include &lt;hw_types.h&gt;
-#include &lt;driverlib/flash.h&gt;
 
 
 // Common libraries.
@@ -342,6 +420,10 @@ $define${LwIP::AOs::Mgr_AO}</text>
   <file name="LwIP_Events.h">
    <text>#pragma once
 
+#include &lt;string&gt;
+
+#include &quot;lwip/apps/sntp.h&quot;
+
 // Forward declaration
 class NetIFRec;
 
@@ -349,6 +431,9 @@ class NetIFRec;
 $declare${LwIP::Events::Init}
 $declare${LwIP::Events::IPAddressChanged}
 $declare${LwIP::Events::Interrupt}
+$declare${LwIP::Events::HostNameFound}
+$declare${LwIP::Events::SystemTimeUpdate}
+$declare${LwIP::Events::NetIFChanged}
 </text>
   </file>
  </directory>

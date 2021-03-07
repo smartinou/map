@@ -26,7 +26,7 @@
 #include "FatFSDisk.h"
 
 #include "inc/GPIO.h"
-#include "SPI.h"
+#include "SPISlaveCfg.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -38,8 +38,7 @@
 
 // Forward declaration.
 namespace CoreLink {
-    class SPIDev;
-    class SPISlaveCfg;
+    class ISPIDev;
 }
 
 

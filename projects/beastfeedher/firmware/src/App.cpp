@@ -32,23 +32,21 @@
 #include <db/FeedCfgRec.h>
 #include <db/NetIFRec.h>
 
+#ifdef NET_SUPPORT
 // LwIP stack.
 #include "lwip/apps/httpd.h"
 #include "lwip/stats.h"
+#endif // NET_SUPPORT
 
 // This project.
 #include "App.h"
+#include "BLE_Events.h"
 #include "BSP.h"
-#include "Display_AOs.h"
 #include "FatFSDisk.h"
 #include "Logging_AOs.h"
 #include "IBSP.h"
-#include "ILCD.h"
-#include "IRTCC.h"
-#include "LwIP_AOs.h"
 #include "LwIP_Events.h"
 #include "Net.h"
-#include "PFPP_AOs.h"
 #include "RTCC_AOs.h"
 #include "RTCC_Events.h"
 #include "Signals.h"
@@ -89,10 +87,7 @@ App::~App() {
 }
 
 
-bool App::Init(void) {
-
-    // Initialize the Board Support Package.
-    mFactory = BSP::Init();
+bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
     // Create records and assign them to DB.
     sCalendar = new CalendarRec();
@@ -101,25 +96,31 @@ bool App::Init(void) {
 
     // Create all AOs.
     // RTCC AO.
-    App::mRTCC_AO = mFactory->CreateRTCCAO();
-    RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
-    App::mRTCC_AO->start(
-        1U,
-        mRTCCEventQueue,
-        Q_DIM(mRTCCEventQueue),
-        nullptr,
-        0U,
-        &lRTCCInitEvent
-    );
+    App::mRTCC_AO = aFactory->CreateRTCCAO();
+    if (mRTCC_AO.get() != nullptr) {
+        RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
+        App::mRTCC_AO->start(
+            1U,
+            mRTCCEventQueue,
+            Q_DIM(mRTCCEventQueue),
+            nullptr,
+            0U,
+            &lRTCCInitEvent
+        );
+    } else {
+        // This application can't be w/o RTCC.
+        return false;
+    }
+
 
     // Create SDC instance to use in FS stubs.
-    unsigned int lDiskQty = mFactory->CreateDisks();
+    unsigned int lDiskQty = aFactory->CreateDisks();
     if (0 != lDiskQty) {
         // Disks found: mount the default drive.
         FRESULT lResult = f_mount(&mFatFS, "", 1);
         if (FR_OK == lResult) {
             // Found some disks and FS mounted: add log sink.
-            auto mFileLogSink_AO = mFactory->CreateLogFileSinkAO();
+            auto mFileLogSink_AO = aFactory->CreateLogFileSinkAO();
             if (mFileLogSink_AO.get() != nullptr) {
                 reinterpret_cast<Logging::AO::FileSink_AO * const>(
                     mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
@@ -135,22 +136,27 @@ bool App::Init(void) {
     }
 
 
-    auto lPFPPMgr_AO = mFactory->CreatePFPPAO(*App::sFeedCfgRec);
-    lPFPPMgr_AO->start(
-        3U,
-        mPFPPMgrEventQueue,
-        Q_DIM(mPFPPMgrEventQueue),
-        nullptr,
-        0U
-    );
+    auto lPFPPMgr_AO = aFactory->CreatePFPPAO(*App::sFeedCfgRec);
+    if (lPFPPMgr_AO.get() != nullptr) {
+        lPFPPMgr_AO->start(
+            3U,
+            mPFPPMgrEventQueue,
+            Q_DIM(mPFPPMgrEventQueue),
+            nullptr,
+            0U
+        );
+    } else {
+        // This application can't be w/o PFPP Manager.
+        return false;
+    }
 
 
     // Network makes sense in the following cases:
     // -if we use support web pages.
     // -For larger IoT support.
-    LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
-    auto lLwIPMgr_AO = mFactory->CreateLwIPMgrAO();
+    auto lLwIPMgr_AO = aFactory->CreateLwIPMgrAO();
     if (lLwIPMgr_AO.get() != nullptr) {
+        LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
         lLwIPMgr_AO->start(
             4U,
             mLwIPEventQueue,
@@ -162,14 +168,37 @@ bool App::Init(void) {
     }
 
 
-    std::shared_ptr<QP::QActive> lDisplayMgr_AO = mFactory->CreateDisplayMgrAO();
-    lDisplayMgr_AO->start(
-        5U,
-        mDisplayMgrEventQueue,
-        Q_DIM(mDisplayMgrEventQueue),
-        nullptr,
-        0U
-    );
+    std::shared_ptr<QP::QActive> lDisplayMgr_AO = aFactory->CreateDisplayMgrAO();
+    if (lDisplayMgr_AO.get() != nullptr) {
+        lDisplayMgr_AO->start(
+            5U,
+            mDisplayMgrEventQueue,
+            Q_DIM(mDisplayMgrEventQueue),
+            nullptr,
+            0U
+        );
+    }
+
+
+    std::shared_ptr<QP::QActive> lBLEMgr_AO = aFactory->CreateBLEAO();
+    if (lBLEMgr_AO.get() != nullptr) {
+        PFPP::Event::BLE::Init lBLEInitEvent(
+            DUMMY_SIG,
+            App::mRTCC_AO,
+            sCalendar,
+            sNetIFRec,
+            sFeedCfgRec
+        );
+        lBLEMgr_AO->start(
+            6U,
+            mBLEMgrEventQueue,
+            Q_DIM(mBLEMgrEventQueue),
+            nullptr,
+            0U,
+            &lBLEInitEvent
+        );
+    }
+
 
     // Send signal dictionaries for globally published events...
     //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
@@ -180,6 +209,7 @@ bool App::Init(void) {
     QS_OBJ_DICTIONARY(mLwIPEventQueue);
     QS_OBJ_DICTIONARY(mDisplayMgrEventQueue);
     QS_OBJ_DICTIONARY(mFileLogSinkEventQueue);
+    QS_OBJ_DICTIONARY(mBLEMgrEventQueue);
 
     return true;
 }
@@ -189,7 +219,9 @@ bool App::Init(void) {
 // *****************************************************************************
 
 void App::NetInitCallback(void) {
-    Net::InitCallback(App::mRTCC_AO, App::sCalendar, App::sFeedCfgRec);
+#if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
+    Net::InitCallback(App::mRTCC_AO, App::sCalendar, App::sNetIFRec, App::sFeedCfgRec);
+#endif
 }
 
 

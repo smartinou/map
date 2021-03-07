@@ -25,6 +25,10 @@
 // This is part of revision 3416 of the Stellaris Peripheral Driver Library.
 //
 //*****************************************************************************
+
+#include <stdio.h>
+#include <stdbool.h>
+
 #if 0
 #include <stdarg.h>
 #include "../hw_types.h"
@@ -41,10 +45,10 @@
 #endif // #if 0
 
 #include <stdarg.h>
-#include <hw_types.h>
-#include <hw_memmap.h>
-#include <hw_uart.h>
-#include <hw_ints.h>
+#include <inc/hw_types.h>
+#include <inc/hw_memmap.h>
+#include <inc/hw_uart.h>
+#include <inc/hw_ints.h>
 #include <driverlib/uart.h>
 #include <driverlib/debug.h>
 #include <driverlib/rom.h>

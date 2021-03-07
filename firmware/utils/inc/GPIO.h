@@ -13,13 +13,15 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+#include <stdio.h>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -39,6 +41,8 @@ public:
 
     unsigned long GetPort(void) const;
     unsigned int  GetPin(void)  const;
+
+    static void EnableSysCtlPeripheral(uint32_t aPort);
 
 private:
     unsigned long const mPort;

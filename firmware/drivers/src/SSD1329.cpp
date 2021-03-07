@@ -23,8 +23,12 @@
 #include <stdint.h>
 
 // Peripheral Driver Library.
-#include <hw_types.h>
+#include <inc/hw_types.h>
 #include <driverlib/gpio.h>
+#include <driverlib/rom.h>
+#include <driverlib/rom_map.h>
+
+#include "SPI.h"
 
 #include "SSD1329.h"
 
@@ -162,14 +166,15 @@ SSD1329::SSD1329(
     GPIO const &aDCnGPIO,
     GPIO const &aEn15VGPIO,
     unsigned int const aDisplayWidth,
-    unsigned int const aDisplayHeight)
+    unsigned int const aDisplayHeight
+)
     : mSPIDev(aSPIDev)
     , mSPICfg(aSPICfg)
     , mDCnGPIO(aDCnGPIO)
     , mEn15VGPIO(aEn15VGPIO)
     , mDisplayWidth(aDisplayWidth)
-    , mDisplayHeight(aDisplayHeight
-) {
+    , mDisplayHeight(aDisplayHeight)
+{
     // Ctor body left intentionally empty.
 }
 
@@ -187,8 +192,8 @@ SSD1329::SSD1329(
     , mDCnGPIO(aDCnGPIO)
     , mEn15VGPIO(aEn15VGPIO)
     , mDisplayWidth(aDisplayWidth)
-    , mDisplayHeight(aDisplayHeight) {
-
+    , mDisplayHeight(aDisplayHeight)
+{
     // Create an SPI slave to operate at maximum device speed.
     mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_3);
     mSPICfg.SetBitRate(4000000);
@@ -206,24 +211,24 @@ SSD1329::~SSD1329() {
 void SSD1329::Init(void) {
 
     // Configure the GPIO port pin used as D/Cn signal for controller.
-    GPIOPinTypeGPIOOutput(mDCnGPIO.GetPort(), mDCnGPIO.GetPin());
-    GPIOPadConfigSet(
+    MAP_GPIOPinTypeGPIOOutput(mDCnGPIO.GetPort(), mDCnGPIO.GetPin());
+    MAP_GPIOPadConfigSet(
         mDCnGPIO.GetPort(),
         mDCnGPIO.GetPin(),
         GPIO_STRENGTH_8MA,
         GPIO_PIN_TYPE_STD
     );
-    GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), mDCnGPIO.GetPin());
+    MAP_GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), mDCnGPIO.GetPin());
 
     // Configure the GPIO port pin used to enable power to the OLED panel.
-    GPIOPinTypeGPIOOutput(mEn15VGPIO.GetPort(), mEn15VGPIO.GetPin());
-    GPIOPadConfigSet(
+    MAP_GPIOPinTypeGPIOOutput(mEn15VGPIO.GetPort(), mEn15VGPIO.GetPin());
+    MAP_GPIOPadConfigSet(
         mEn15VGPIO.GetPort(),
         mEn15VGPIO.GetPin(),
         GPIO_STRENGTH_8MA,
         GPIO_PIN_TYPE_STD
     );
-    GPIOPinWrite(mEn15VGPIO.GetPort(), mEn15VGPIO.GetPin(), mEn15VGPIO.GetPin());
+    MAP_GPIOPinWrite(mEn15VGPIO.GetPort(), mEn15VGPIO.GetPin(), mEn15VGPIO.GetPin());
 
     // Clear screen.
     Clr();
@@ -485,13 +490,13 @@ void SSD1329::WrData(uint8_t const *aDataBufPtr, unsigned int aLen) {
 
 inline void SSD1329::AssertCmdLine(void) {
 
-    GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), 0);
+    MAP_GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), 0);
 }
 
 
 inline void SSD1329::AssertDataLine(void) {
 
-    GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), mDCnGPIO.GetPin());
+    MAP_GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), mDCnGPIO.GetPin());
 }
 
 // *****************************************************************************

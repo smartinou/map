@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -45,9 +45,10 @@ public:
     virtual ~PeripheralDev() {}
 
 protected:
-    PeripheralDev(uint32_t aBaseAddr);
+    PeripheralDev(uint32_t aBaseAddr, uint32_t aClkRate);
 
-    uint32_t GetBaseAddr(void) { return mBaseAddr; }
+    uint32_t GetBaseAddr(void) const { return mBaseAddr; }
+    uint32_t GetClkRate(void) const {return mClkRate;}
 
 private:
     typedef uint32_t volatile reg_t;
@@ -59,6 +60,7 @@ private:
     typedef struct ID_REG_MAP_STRUCT_TAG id_reg_map_t;
 
     uint32_t mBaseAddr;
+    uint32_t mClkRate;
     uint32_t mPeripheralID[1];
     uint32_t mPrimeCellID;
 };

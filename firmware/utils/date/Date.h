@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -22,6 +22,7 @@
 // ******************************************************************************
 
 #include <stdio.h>
+#include <time.h>
 
 #include "Day.h"
 #include "Month.h"
@@ -37,45 +38,48 @@
 // ******************************************************************************
 
 class IDate {
- public:
-  virtual unsigned int GetYear(void)    const = 0;
-  virtual unsigned int GetMonth(void)   const = 0;
-  virtual unsigned int GetDate(void)    const = 0;
-  virtual unsigned int GetWeekday(void) const = 0;
+public:
+    virtual unsigned int GetYear(void)    const = 0;
+    virtual unsigned int GetMonth(void)   const = 0;
+    virtual unsigned int GetDate(void)    const = 0;
+    virtual unsigned int GetWeekday(void) const = 0;
 
-  virtual Month::Name   GetMonthName(void)   const = 0;
-  virtual Weekday::Name GetWeekdayName(void) const = 0;
+    virtual Month::Name   GetMonthName(void)   const = 0;
+    virtual Weekday::Name GetWeekdayName(void) const = 0;
 };
 
 
 //! \brief Date class as aggregate class.
 class Date
-  : public IDate {
- public:
-  explicit Date(
-    unsigned int  aYear    = 2000,
-    Month::Name   aMonth   = Month::Name::January,
-    unsigned int  aDate    = 1,
-    Weekday::Name aWeekday = Weekday::Name::Saturday);
-  ~Date();
+    : public IDate {
+public:
+    explicit Date(
+        unsigned int  aYear    = 2000,
+        Month::Name   aMonth   = Month::Name::January,
+        unsigned int  aDate    = 1,
+        Weekday::Name aWeekday = Weekday::Name::Saturday
+    );
 
-  // IDate.
-  unsigned int GetYear(void)    const;
-  unsigned int GetMonth(void)   const;
-  unsigned int GetDate(void)    const;
-  unsigned int GetWeekday(void) const;
+    explicit Date(struct tm const * const aDate);
+    ~Date();
 
-  Month::Name   GetMonthName(void)   const;
-  Weekday::Name GetWeekdayName(void) const;
+    // IDate.
+    unsigned int GetYear(void)    const;
+    unsigned int GetMonth(void)   const;
+    unsigned int GetDate(void)    const;
+    unsigned int GetWeekday(void) const;
 
-  bool operator==(Date const &rhs);
-  inline bool operator!=(Date const &rhs){ return !(*this == rhs); }
+    Month::Name   GetMonthName(void)   const;
+    Weekday::Name GetWeekdayName(void) const;
 
- private:
-  Year    mYear;
-  Month   mMonth;
-  Day     mDate;
-  Weekday mWeekday;
+    bool operator==(Date const &rhs);
+    inline bool operator!=(Date const &rhs){ return !(*this == rhs); }
+
+private:
+    Year    mYear;
+    Month   mMonth;
+    Day     mDate;
+    Weekday mWeekday;
 };
 
 // ******************************************************************************

@@ -226,8 +226,7 @@ namespace Net {
 
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
 // QP AOs.
-//static RTCC::AO::RTCC_AO *sRTCC_AO = nullptr;
-    static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO(nullptr);
+static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO(nullptr);
 #endif
 
 #if LWIP_HTTPD_SSI
@@ -314,6 +313,7 @@ tCGI const sCGIEntries[] = {
 };
 
 static CalendarRec *sCalendarRec = nullptr;
+static NetIFRec *sNetIFRec = nullptr;
 static FeedCfgRec *sFeedCfgRec = nullptr;
 
 #endif // LWIP_HTTPD_CGI
@@ -330,15 +330,9 @@ namespace Net {
 void InitCallback(
     std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
     CalendarRec * const aCalendarRec,
+    NetIFRec * const aNetIFRec,
     FeedCfgRec * const aFeedCfgRec
 ) {
-
-#if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
-    // QP AOs.
-    sRTCC_AO = aRTCC_AO;
-#else
-    static_cast<void>(aRTCC_AO);
-#endif
 
 #if LWIP_HTTPD_SSI
     http_set_ssi_handler(
@@ -346,10 +340,6 @@ void InitCallback(
         Net::sSSITags,
         Q_DIM(Net::sSSITags)
     );
-
-    sCalendarRec = aCalendarRec;
-#else
-    static_cast<void *>(aCalendarRec);
 #endif // LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
@@ -357,11 +347,19 @@ void InitCallback(
         Net::sCGIEntries,
         Q_DIM(Net::sCGIEntries)
     );
+#endif // LWIP_HTTPD_CGI
 
+#if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
+    sRTCC_AO = aRTCC_AO;
+    sCalendarRec = aCalendarRec;
+    sNetIFRec = aNetIFRec;
     sFeedCfgRec = aFeedCfgRec;
 #else
+    static_cast<void>(aRTCC_AO);
+    static_cast<void *>(aCalendarRec);
+    static_cast<void *>(aNetIFRec);
     static_cast<void *>(aFeedCfgRec);
-#endif // LWIP_HTTPD_CGI
+#endif
 }
 
 } // namespace Net
@@ -562,7 +560,7 @@ static uint16_t SSIHandler(
             aInsertStr,
             aInsertStrLen,
             "use_dhcp\" value=\"y\"",
-            true
+            sNetIFRec->UseDHCP()
         );
 
     case SSI_TAG_IX_NET_USE_MANUAL:
@@ -571,7 +569,7 @@ static uint16_t SSIHandler(
             aInsertStr,
             aInsertStrLen,
             "use_dhcp\" value=\"n\"",
-            false
+            !sNetIFRec->UseDHCP()
         );
 
     case SSI_TAG_IX_NET_STATIC_IPV4_ADD_0:
@@ -765,8 +763,8 @@ static char const *DispIndex(
         // Send event with value as parameter.
         unsigned int lTime = 0;
         sscanf(aValsVec[0], "%d", &lTime);
-        PFPP::Event::TimedFeedCmd *lEvtPtr = Q_NEW(
-            PFPP::Event::TimedFeedCmd,
+        PFPP::Event::Mgr::TimedFeedCmd *lEvtPtr = Q_NEW(
+            PFPP::Event::Mgr::TimedFeedCmd,
             FEED_MGR_TIMED_FEED_CMD_SIG,
             lTime
         );
