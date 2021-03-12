@@ -3857,7 +3857,9 @@
  *
  */
 #if defined(MBEDTLS_USER_CONFIG_FILE)
-#include MBEDTLS_USER_CONFIG_FILE
+#define xstr(s) str(s)
+#define str(s) #s
+#include xstr(MBEDTLS_USER_CONFIG_FILE)
 #endif
 
 #if defined(MBEDTLS_PSA_CRYPTO_CONFIG)

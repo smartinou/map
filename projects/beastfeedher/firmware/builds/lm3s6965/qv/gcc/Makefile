@@ -70,6 +70,13 @@ ifeq ($(STELLARIS_LIB),)
 STELLARIS_LIB := $(FIRMWARE_PATH)/3rdparty/StellarisWare/
 endif
 
+# Mbed TLS library.
+MBEDTLS_PATH := $(FIRMWARE_PATH)/3rdparty/mbedtls-2.25.0
+MBEDTLS_LIB := mbedtls
+MBEDCRYPTO_LIB := mbedcrypto
+MBEDX509_LIB := mbedx509
+MBEDTLS_USER_CONFIG_FILE := mbedtls_user_config.h
+
 # CMSIS library.
 CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 
@@ -232,7 +239,7 @@ LD_SCRIPT := lm3s6965_gcc.ld
 #LIB_DIRS  := -Lc:/apps/DriverLib3416/src/gcc
 LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3
 #LIBS      := -ldriver
-LIBS      := -ldriver-cm3
+LIBS      := -ldriver-cm3 -l$(MBEDTLS_LIB) -l$(MBEDCRYPTO_LIB) -l$(MBEDX509_LIB)
 
 # defines
 # [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
@@ -255,7 +262,7 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
 endif
 
@@ -266,6 +273,7 @@ endif
 
 CC    := $(GNU_ARM)/bin/arm-none-eabi-gcc
 CPP   := $(GNU_ARM)/bin/arm-none-eabi-g++
+AR    := $(GNU_ARM)/bin/arm-none-eabi-ar
 AS    := $(GNU_ARM)/bin/arm-none-eabi-as
 LINK  := $(GNU_ARM)/bin/arm-none-eabi-g++
 BIN   := $(GNU_ARM)/bin/arm-none-eabi-objcopy
@@ -299,15 +307,20 @@ BIN_DIR := rel
 
 ASFLAGS = $(ARM_CPU) $(ASM_FPU)
 
-CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+	-O2
 
-CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++14 \
-	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+	-O2
 
+DEFINES += -DNDEBUG
+
+LIB_DIRS += -L$(BIN_DIR)
 
 else ifeq (spy, $(CONF))
 # Spy configuration.
@@ -318,14 +331,20 @@ CPP_SRCS += $(QS_SRCS)
 
 ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
 
-CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+	-O
 
-CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++14 \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+	-O
+
+DEFINES += -DQ_SPY
+
+LIB_DIRS += -L$(BIN_DIR)
 
 else
 # Default Debug configuration.
@@ -333,14 +352,18 @@ BIN_DIR := dbg
 
 ASFLAGS = -g $(ARM_CPU) $(ASM_FPU)
 
-CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES)
+	-O
 
-CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
+CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++14 \
-	-O $(INCLUDES) $(DEFINES)
+	-O
+
+LIB_DIRS += -L$(BIN_DIR)
 
 endif
 
@@ -409,7 +432,7 @@ MODEL_OUT_FILES := \
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: show version generate_fsdata $(TARGET_BIN)
+all: show version generate_fsdata mbedtls $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
 .PHONY: version
@@ -426,6 +449,14 @@ generate_fsdata: remove_white_space copy_binary_files
   $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
   mv fsdata.c ../fsdata_custom.c
 
+CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=$(MBEDTLS_USER_CONFIG_FILE) -I$(shell cygpath -w $(PWD))\..\..
+
+mbedtls:
+	$(MAKE) -C $(MBEDTLS_PATH) CC="$(CC)" AR="$(AR)" CFLAGS="$(CFLAGS)" lib
+	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDTLS_LIB).a ./$(BIN_DIR)
+	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDCRYPTO_LIB).a ./$(BIN_DIR)
+	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDX509_LIB).a ./$(BIN_DIR)
+
 # Remove leading white spaces and tabs from files.
 $(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
 	mkdir -p $(WEB_OUTPUT_DIR)
@@ -433,8 +464,6 @@ $(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
 
 $(BIN_OUTPUT_FILES):
 	cp $(WEB_INPUT_DIR)/$(notdir $@) $@
-
-
 
 $(MODEL_OUT_FILES): $(MODEL_IN_FILES)
 	$(QM_BIN) $?
@@ -450,19 +479,19 @@ $(TARGET_ELF) : $(ASM_OBJS_EXT) $(C_OBJS_EXT) $(CPP_OBJS_EXT)
 	$(LINK) $(LINKFLAGS) -o $@ $^ $(BIN_DIR)/qstamp.o $(LIBS)
 
 $(BIN_DIR)/%.d : %.c
-	$(CC) -MM -MT $(@:.d=.o) $(CFLAGS) $< > $@
+	$(CC) -MM -MT $(@:.d=.o) $(CFLAGS) $(INCLUDES) $(DEFINES) $< > $@
 
 $(BIN_DIR)/%.d : %.cpp
-	$(CPP) -MM -MT $(@:.d=.o) $(CPPFLAGS) $< > $@
+	$(CPP) -MM -MT $(@:.d=.o) $(CPPFLAGS) $(INCLUDES) $(DEFINES) $< > $@
 
 $(BIN_DIR)/%.o : %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BIN_DIR)/%.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(DEFINES) -c $< -o $@
 
 $(BIN_DIR)/%.o : %.cpp
-	$(CPP) $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) $(INCLUDES) $(DEFINES) -c $< -o $@
 
 # Include dependency files only if our goal depends on their existence
 ifneq ($(MAKECMDGOALS),clean)
@@ -472,19 +501,27 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 
-.PHONY: clean
-clean:
+.PHONY: clean clean_mbedtls
+clean: clean_mbedtls
 	-$(RM) $(BIN_DIR)/*.o \
-  $(BIN_DIR)/*.d \
-  $(BIN_DIR)/*.bin \
-  $(BIN_DIR)/*.elf \
-  $(BIN_DIR)/*.map
+        $(BIN_DIR)/*.d \
+        $(BIN_DIR)/*.bin \
+        $(BIN_DIR)/*.elf \
+        $(BIN_DIR)/*.map
 	-$(RM) -rf $(WEB_OUTPUT_DIR)
+
+clean_mbedtls:
+	$(MAKE) -C $(MBEDTLS_PATH) clean
+	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDTLS_LIB).a
+	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDCRYPTO_LIB).a
+	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDX509_LIB).a
 
 show:
 	@echo PROJECT = $(PROJECT)
 	@echo CONF = $(CONF)
 	@echo DEFINES = $(DEFINES)
+	@echo CFLAGS = $(CFLAGS)
+	@echo CPPFLAGS = $(CPPFLAGS)
 	@echo ASM_FPU = $(ASM_FPU)
 	@echo ASM_SRCS = $(ASM_SRCS)
 	@echo C_SRCS = $(C_SRCS)
