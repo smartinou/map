@@ -96,7 +96,6 @@ LwIPDrv::StaticInit(
 );
 
 // Initialize the lwIP applications...
-httpd_init();
 if (nullptr != lCallbackInit) {
     lCallbackInit();
 }
@@ -390,7 +389,6 @@ $declare${LwIP::AOs::Mgr_AO}
 #include &quot;lwip/dns.h&quot;
 #include &quot;lwip/init.h&quot;
 #include &quot;lwip/stats.h&quot;
-#include &quot;lwip/apps/httpd.h&quot;
 #include &quot;lwip/priv/tcp_priv.h&quot;
 
 // lwIP application.
