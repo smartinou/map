@@ -70,13 +70,6 @@ ifeq ($(STELLARIS_LIB),)
 STELLARIS_LIB := $(FIRMWARE_PATH)/3rdparty/StellarisWare/
 endif
 
-# Mbed TLS library.
-MBEDTLS_PATH := $(FIRMWARE_PATH)/3rdparty/mbedtls-2.25.0
-MBEDTLS_LIB := mbedtls
-MBEDCRYPTO_LIB := mbedcrypto
-MBEDX509_LIB := mbedx509
-MBEDTLS_USER_CONFIG_FILE := mbedtls_user_config.h
-
 # CMSIS library.
 CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_LM3S-32/CMSIS_LM3S
 
@@ -107,7 +100,6 @@ VPATH = \
         $(LWIPDIR)/core/ipv4 \
         $(LWIPDIR)/api \
         $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/altcp_tls \
         $(LWIPDIR)/apps/http \
         $(LWIPDIR)/apps/mqtt \
         $(LWIPDIR)/apps/snmp \
@@ -162,7 +154,6 @@ C_SRCS := \
 	$(LWIPDIR)/netif/ethernet.c \
 	$(HTTPFILES) \
     $(MQTTFILES) \
-    $(MBEDTLS_FILES) \
     $(FAT_FS_SRCS)
 
 
@@ -235,11 +226,6 @@ QS_SRCS := \
 
 OUTPUT    := $(PROJECT)
 LD_SCRIPT := lm3s6965_gcc.ld
-
-#LIB_DIRS  := -Lc:/apps/DriverLib3416/src/gcc
-LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3
-#LIBS      := -ldriver
-LIBS      := -ldriver-cm3 -l$(MBEDTLS_LIB) -l$(MBEDCRYPTO_LIB) -l$(MBEDX509_LIB)
 
 # defines
 # [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
@@ -432,7 +418,7 @@ MODEL_OUT_FILES := \
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: show version generate_fsdata mbedtls $(TARGET_BIN)
+all: show version generate_fsdata $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
 .PHONY: version
@@ -448,14 +434,6 @@ generate_fsdata: remove_white_space copy_binary_files
 	cd $(PROJECT_ROOT_DIR)/firmware/src/html && \
   $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
   mv fsdata.c ../fsdata_custom.c
-
-CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=$(MBEDTLS_USER_CONFIG_FILE) -I$(shell cygpath -w $(PWD))\..\..
-
-mbedtls:
-	$(MAKE) -C $(MBEDTLS_PATH) CC="$(CC)" AR="$(AR)" CFLAGS="$(CFLAGS)" lib
-	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDTLS_LIB).a ./$(BIN_DIR)
-	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDCRYPTO_LIB).a ./$(BIN_DIR)
-	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDX509_LIB).a ./$(BIN_DIR)
 
 # Remove leading white spaces and tabs from files.
 $(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
@@ -501,20 +479,14 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 
-.PHONY: clean clean_mbedtls
-clean: clean_mbedtls
+.PHONY: clean
+clean:
 	-$(RM) $(BIN_DIR)/*.o \
         $(BIN_DIR)/*.d \
         $(BIN_DIR)/*.bin \
         $(BIN_DIR)/*.elf \
         $(BIN_DIR)/*.map
 	-$(RM) -rf $(WEB_OUTPUT_DIR)
-
-clean_mbedtls:
-	$(MAKE) -C $(MBEDTLS_PATH) clean
-	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDTLS_LIB).a
-	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDCRYPTO_LIB).a
-	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDX509_LIB).a
 
 show:
 	@echo PROJECT = $(PROJECT)

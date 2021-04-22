@@ -495,5 +495,7 @@ void sntp_set_system_time(time_t aSystemTime);
 //****************************************************************************
 //#define LWIP_ALTCP                      1
 //#define LWIP_ALTCP_TLS                  1
+//#define LWIP_ALTCP_TLS_MBEDTLS          1
+//#define HTTPD_ENABLE_HTTPS              1
 
 #endif /* __LWIPOPTS_H__ */

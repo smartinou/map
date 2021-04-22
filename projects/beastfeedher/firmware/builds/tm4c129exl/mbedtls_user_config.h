@@ -70,6 +70,20 @@
 #undef MBEDTLS_PSA_CRYPTO_STORAGE_C
 
 /**
+ * \def MBEDTLS_PSA_CRYPTO_STORAGE_C
+ *
+ * Enable the Platform Security Architecture persistent key storage.
+ *
+ * Module:  library/psa_crypto_storage.c
+ *
+ * Requires: MBEDTLS_PSA_CRYPTO_C,
+ *           either MBEDTLS_PSA_ITS_FILE_C or a native implementation of
+ *           the PSA ITS interface
+ */
+#define MBEDTLS_PSA_CRYPTO_STORAGE_C
+#undef MBEDTLS_PSA_CRYPTO_STORAGE_C
+
+/**
  * \def MBEDTLS_PSA_ITS_FILE_C
  *
  * Enable the emulation of the Platform Security Architecture
