@@ -227,6 +227,9 @@ QS_SRCS := \
 OUTPUT    := $(PROJECT)
 LD_SCRIPT := lm3s6965_gcc.ld
 
+LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3
+LIBS      := -ldriver-cm3
+
 # defines
 # [MG] SEE IF CAN BE MOVED SPECIFICALLY TO QP FILES.
 DEFINES   := -DQ_NASSERT

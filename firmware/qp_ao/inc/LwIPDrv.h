@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -26,7 +26,6 @@
 #include "lwip/err.h"
 #include "lwip/netif.h"
 
-#include <map>
 #include <vector>
 
 // ******************************************************************************
@@ -78,7 +77,7 @@ public:
     virtual void EnableAllInt(void) = 0;
 
 protected:
-    LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aPBufQueueSize);
+    LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress);
 
     void PostRxEvent(void);
     void PostTxEvent(void);
@@ -90,23 +89,6 @@ protected:
     void SetAO(QP::QActive * const aAO) { mAO = aAO; }
 
 private:
-    // Internal PBuf Q-ring class.
-    class PBufQ {
-    public:
-        PBufQ(unsigned int aQSize);
-
-        bool IsEmpty(void) const;
-        bool Put(struct pbuf * const aPBufPtr);
-        struct pbuf *Get(void);
-
-    private:
-        struct pbuf **mPBufRing;
-        unsigned int mRingSize;
-        unsigned int mQWrIx;
-        unsigned int mQRdIx;
-        unsigned int mQOverflow;
-    };
-
     void DrvInit(
         QP::QActive * const aAO,
         bool aUseDHCP,
@@ -124,30 +106,19 @@ private:
     static void StaticLinkCallback(struct netif * const aNetIF);
     void StatusCallback(struct netif * const aNetIF);
 
-    err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
-    void Rd(void);
-    void Wr(void);
+    virtual err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) = 0;
+    virtual void Rd(void) = 0;
+    virtual void Wr(void) = 0;
 
     virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
     virtual void ISR(void) = 0;
 
-    virtual void LowLevelTx(struct pbuf * const aPBuf) = 0;
-    virtual struct pbuf *LowLevelRx(void) = 0;
-    virtual void FreePBuf(struct pbuf * const aPBuf) = 0;
-
-    virtual void EnableRxInt(void) = 0;
-    virtual bool IsTxEmpty(void) const = 0;
-
     LwIPDrv(LwIPDrv const &) = delete;
     LwIPDrv const &operator=(LwIPDrv const &) = delete;
 
-    PBufQ &GetPBufQ(void) const { return *mPBufQ; }
-
     static std::vector<LwIPDrv *> sVector;
 
-    // Queue of pbufs for transmission.
     unsigned int mMyIndex;
-    PBufQ       *mPBufQ = nullptr;
     struct netif mNetIF;
     QP::QActive *mAO = nullptr;
 

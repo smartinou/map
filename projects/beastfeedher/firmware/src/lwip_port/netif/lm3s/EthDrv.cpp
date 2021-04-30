@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -79,8 +79,9 @@ void lwIPHostGetTime(u32_t *time_s, u32_t *time_ns);
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-EthDrv::EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize)
-    : LwIPDrv(aIndex, aEthernetAddress, aBufQueueSize) {
+EthDrv::EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aPBufQueueSize)
+    : LwIPDrv(aIndex, aEthernetAddress)
+    , mPBufQ(new PBufQ(aPBufQueueSize)) {
 
     // Ctor body.
 }
@@ -106,6 +107,78 @@ void EthDrv::EnableAllInt(void) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+// This function will either write the pbuf into the Stellaris TX FIFO,
+// or will put the packet in the TX queue of pbufs for subsequent
+// transmission when the transmitter becomes idle.
+//
+// @param netif the lwip network interface structure for this ethernetif
+// @param p the pbuf to send
+// @return ERR_OK if the packet could be sent
+//         an err_t value if the packet couldn't be sent
+err_t EthDrv::EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
+
+    // Nothing in the TX queue?
+    // TX empty?
+    if (GetPBufQ().IsEmpty() && IsTxEmpty()) {
+        // Send the pbuf right away.
+        LowLevelTx(aPBuf);
+        // The pbuf will be freed by the lwIP code.
+    } else {
+        // Otherwise post the pbuf to the transmit queue.
+        // Could the TX queue take the pbuf?
+        if (GetPBufQ().Put(aPBuf)) {
+            // Reference the pbuf to spare it from freeing.
+            pbuf_ref(aPBuf);
+        } else {
+            // No room in the queue.
+            // The pbuf will be freed by the lwIP code.
+            return ERR_MEM;
+        }
+    }
+
+    return ERR_OK;
+}
+
+
+void EthDrv::Rd(void) {
+
+    // New packet received into the pbuf?
+    struct pbuf * const lPBuf = LowLevelRx();
+    if (lPBuf != nullptr) {
+        // pbuf handled?
+        if (ethernet_input(lPBuf, &GetNetIF()) != ERR_OK) {
+            // Free the pbuf.
+            // [MG] SHOULD CALL EthDrv::FreePBuf()???
+            pbuf_free(lPBuf);
+        }
+        // [MG] UNE FOIS QUE PBUF_FREE(), IL FAUT REDONNER LE DESCRIPTEUR. OUIN...
+        // PIS LA, C'EST CHIEN, PARCE == nullptr.
+        // Try to output a packet if TX fifo is empty and pbuf is available.
+        Wr();
+    }
+
+    // Re-enable the RX interrupt.
+    //EnableRxInt();
+    //HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RX;
+    EthernetIntEnable(ETH_BASE, ETH_INT_RX);
+}
+
+
+void EthDrv::Wr(void) {
+
+    // TX fifo empty? Should be since we likely got here by TxEmpty int.
+    if (IsTxEmpty()) {
+        struct pbuf * const lPBuf = GetPBufQ().Get();
+        // pbuf found in the queue?
+        if (lPBuf != nullptr) {
+            // Send and free the pbuf: lwIP knows nothing of it.
+            LowLevelTx(lPBuf);
+            pbuf_free(lPBuf);
+        }
+    }
+}
+
 
 err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 
@@ -197,12 +270,6 @@ void EthDrv::ISR(void) {
         }
     }
 #endif
-}
-
-
-void EthDrv::EnableRxInt(void) {
-    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RX;
-    //EthernetIntEnable(ETH_BASE, ETH_INT_RX);
 }
 
 
@@ -374,6 +441,66 @@ struct pbuf *EthDrv::LowLevelRx(void) {
 void EthDrv::FreePBuf(struct pbuf * const aPBuf) {
     // Free the pbuf.
     pbuf_free(aPBuf);
+}
+
+
+EthDrv::PBufQ::PBufQ(unsigned int aQSize)
+    : mPBufRing(nullptr)
+    , mRingSize(aQSize)
+    , mQWrIx(0)
+    , mQRdIx(0)
+    , mQOverflow(0) {
+
+    // Ctor body.
+    mPBufRing = new struct pbuf *[aQSize];
+}
+
+
+bool EthDrv::PBufQ::IsEmpty(void) const {
+    return (mQWrIx == mQRdIx);
+}
+
+
+bool EthDrv::PBufQ::Put(struct pbuf * const aPBufPtr) {
+    unsigned int lNextQWr = mQWrIx + 1;
+
+    if (lNextQWr == mRingSize) {
+        lNextQWr = 0;
+    }
+
+    if (lNextQWr != mQRdIx) {
+        // The queue isn't full so we add the new frame at the current
+        // write position and move the write pointer.
+        mPBufRing[mQWrIx] = aPBufPtr;
+        if ((++mQWrIx) == mRingSize) {
+            mQWrIx = 0;
+        }
+
+        // Successfully posted the pbuf.
+        return true;
+    } else {
+        // The stack is full so we are throwing away this value.
+        // Keep track of the number of times this happens.
+        mQOverflow++;
+        // Could not post the pbuf.
+        return false;
+    }
+}
+
+
+struct pbuf *EthDrv::PBufQ::Get(void) {
+    struct pbuf *lPBuf = nullptr;
+
+    if (!IsEmpty()) {
+        // The queue is not empty so return the next frame from it.
+        // Adjust the read pointer accordingly.
+        lPBuf = mPBufRing[mQRdIx];
+        if ((++mQRdIx) == mRingSize) {
+            mQRdIx = 0;
+        }
+    }
+
+    return lPBuf;
 }
 
 

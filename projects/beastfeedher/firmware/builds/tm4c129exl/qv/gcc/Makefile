@@ -234,9 +234,7 @@ QS_SRCS := \
 OUTPUT    := $(PROJECT)
 LD_SCRIPT := $(PROJECT).ld
 
-#LIB_DIRS  := -Lc:/apps/DriverLib3416/src/gcc
 LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3 -L.
-#LIBS      := -ldriver
 LIBS      := -ldriver-cm3 -l$(MBEDTLS_LIB) -l$(MBEDCRYPTO_LIB) -l$(MBEDX509_LIB)
 
 DRIVER_LIB_DIR := -L$(TIVAWARE_LIB)/driverlib/gcc
