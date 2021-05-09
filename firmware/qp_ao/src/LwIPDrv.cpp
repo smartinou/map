@@ -160,22 +160,6 @@ void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
 
 
 void LwIPDrv::StatusCallback(struct netif * const aNetIF) {
-
-    // This object already holds the variable for the previous state.
-    // Might as well perform tests here and parametrize events.
-    if (!mIsNetIFUp && (aNetIF->flags & NETIF_FLAG_UP)) {
-        // Network turned up.
-        mIsNetIFUp = true;
-        static const LwIP::Event::NetIFChanged sEvent(LWIP_NETIF_CHANGED_SIG, aNetIF, true);
-        GetAO().POST(&sEvent, this);
-
-    } else if (mIsNetIFUp && !(aNetIF->flags & NETIF_FLAG_UP)) {
-        // Network turned down.
-        mIsNetIFUp = false;
-        static const LwIP::Event::NetIFChanged sEvent(LWIP_NETIF_CHANGED_SIG, aNetIF, false);
-        GetAO().POST(&sEvent, this);
-    }
-
     // Finally, check if IP address changed.
     if (!ip_addr_cmp(&mNetIF.ip_addr, &mIPAddress)
         || !ip_addr_cmp(&mNetIF.netmask, &mSubnetMask)
@@ -217,6 +201,22 @@ uint32_t LwIPDrv::GetDefaultGW(void) const {
     return mNetIF.gw.addr;
 }
 
+
+void LwIPDrv::StartIPCfg(void) {
+    if (IsUsingDHCP()) {
+#if (LWIP_DHCP != 0)
+        // Start DHCP if configured in lwipopts.h.
+        dhcp_start(&GetNetIF());
+        // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
+        // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
+        // AutoIP after DHCP fails for 59 seconds.
+#elif (LWIP_AUTOIP != 0)
+        // Start AutoIP if configured in lwipopts.h.
+        autoip_start(&GetNetIF());
+#endif
+    }
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
@@ -226,10 +226,10 @@ LwIPDrv::LwIPDrv(
     EthernetAddress const &aEthernetAddress
 )   : mMyIndex(aIndex)
     , mNetIF{0}
+    , mUseDHCP(false)
     , mIPAddress{0}
     , mSubnetMask{0}
-    , mGWAddress{0}
-    , mIsNetIFUp(false) {
+    , mGWAddress{0} {
 
     // Associate this <struct netif *, LwIPDrv>.
     LwIPDrv::sVector[aIndex] = this;
@@ -253,6 +253,7 @@ void LwIPDrv::DrvInit(
 ) {
     // Save the active object associated with this driver.
     SetAO(aAO);
+    UseDHCP(aUseDHCP);
 
     ip_addr_t lIPAddr;
     ip_addr_t lSubnetMask;
@@ -329,7 +330,7 @@ void LwIPDrv::DrvInit(
 
     // Set link callback.
     // Called after netif_set_link_up(), netif_set_link_down().
-    netif_set_link_callback(&GetNetIF(), LwIPDrv::StaticLinkCallback);
+    //netif_set_link_callback(&GetNetIF(), LwIPDrv::StaticLinkCallback);
 
 #if (LWIP_DNS != 0)
     // Add Google DNS.
@@ -343,21 +344,8 @@ void LwIPDrv::DrvInit(
 
     // Bring the interface up.
     netif_set_default(&GetNetIF());
-    netif_set_up(&GetNetIF());
-
-#if (LWIP_DHCP != 0)
-    // Start DHCP if configured in lwipopts.h.
-    dhcp_start(&GetNetIF());
-    // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
-    // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
-    // AutoIP after DHCP fails for 59 seconds.
-#elif (LWIP_AUTOIP != 0)
-    // Start AutoIP if configured in lwipopts.h.
-    autoip_start(&GetNetIF());
-#endif
-
-    // Everything is initialized: enable all interrupts.
-    EnableAllInt();
+    // Enable one-self: this should be done by an external object.
+    PostNetIFChangedEvent(true);
 }
 
 
@@ -371,7 +359,7 @@ err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
 
 err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    return lThis->EtherIFOut(aNetIF, aPBuf);
+    return lThis->EtherIFOut(aPBuf);
 }
 
 
@@ -393,6 +381,28 @@ void LwIPDrv::PostOverrunEvent(void) {
     static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, GetIndex());
     // Send to the AO.
     GetAO().POST(&sOverrunEvent, this);
+}
+
+
+void LwIPDrv::PostNetIFChangedEvent(bool aIsUp) {
+    if (aIsUp) {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_NETIF_CHANGED_SIG, &GetNetIF(), true);
+        GetAO().POST(&sEvent, this);
+    } else {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_NETIF_CHANGED_SIG, &GetNetIF(), false);
+        GetAO().POST(&sEvent, this);
+    }
+}
+
+
+void LwIPDrv::PostLinkChangedEvent(bool aIsUp) {
+    if (aIsUp) {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), true);
+        GetAO().POST(&sEvent, this);
+    } else {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), false);
+        GetAO().POST(&sEvent, this);
+    }
 }
 
 // *****************************************************************************

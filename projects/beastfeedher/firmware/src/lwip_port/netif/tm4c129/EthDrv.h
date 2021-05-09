@@ -3,17 +3,18 @@
 //
 // Project: LwIP
 //
-// Module: LM3S6965 low-level Ethernet driver.
+// Module: TivaWare low-level Ethernet driver.
 //
 // *******************************************************************************
 
 //! \file
 //! \brief Ethernet driver class.
+//! Compatible with TivaWare library.
 //! \ingroup lwip
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -22,7 +23,6 @@
 // ******************************************************************************
 
 #include <map>
-#include <vector>
 
 #include "LwIPDrv.h"
 
@@ -46,19 +46,28 @@ public:
     void EnableAllInt(void) override;
 
 private:
-    class Descriptor
+    // LwIP Interface.
+    err_t EtherIFOut(struct pbuf * const aPBuf) override;
+    void Rd(void) override;
+    void Wr(void) override;
+
+    err_t EtherIFInit(struct netif * const aNetIF) override;
+    void ISR(void) override;
+
+    // Local interface.
+    bool LowLevelTx(struct pbuf * const aPBuf, bool aIsFirstPBuf);
+    struct pbuf *LowLevelRx(void);
+    void FreePBuf(struct pbuf * const aPBuf);
+
+    void EnableRxInt(void);
+
+    class RxDescriptor
         : public tEMACDMADescriptor {
     public:
-        Descriptor() {}
-        ~Descriptor() {}
+        RxDescriptor(struct pbuf * const aBuffer);
+        ~RxDescriptor() {}
 
-        void *GetBuffer(void) const {return pvBuffer1;}
-        void SetBuffer(struct pbuf * const aBuffer) {
-            ui32CtrlStatus = 0;
-            ui32Count = (DES1_RX_CTRL_CHAINED |
-                (aBuffer->len << DES1_RX_CTRL_BUFF1_SIZE_S));
-            pvBuffer1 = static_cast<struct pbuf * const>(aBuffer)->payload;
-        }
+        struct pbuf *GetPBuf(void) const {return mPBuf;}
         void GiveToHW(void) {ui32CtrlStatus |= DES0_RX_CTRL_OWN;}
         bool IsHWOwned(void) const {return ui32CtrlStatus & DES0_RX_CTRL_OWN;}
         bool IsFrameValid(void) const { return !(ui32CtrlStatus & DES0_RX_STAT_ERR);}
@@ -67,13 +76,15 @@ private:
             int32_t lLen = ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M;
             return (lLen >>= DES0_RX_STAT_FRAME_LENGTH_S);
         }
-        void ChainTo(Descriptor * const aDescriptor) {DES3.pLink = aDescriptor;}
+
+        RxDescriptor *GetNext(void) const {return static_cast<RxDescriptor *>(DES3.pLink);}
+        void ChainTo(RxDescriptor * const aDescriptor) {DES3.pLink = aDescriptor;}
     
         // Operators.
-        operator Descriptor*() {return this;}
-        operator const Descriptor*() {return this;}
+        operator RxDescriptor*() {return this;}
+        operator const RxDescriptor*() {return this;}
 #if 0
-        Descriptor& operator=(const Descriptor& d) {
+        RxDescriptor& operator=(const RxDescriptor& d) {
             ui32CtrlStatus = d.ui32CtrlStatus;
             ui32Count = d.ui32Count;
             pvBuffer1 = d.pvBuffer1;
@@ -85,61 +96,89 @@ private:
             return *this;
         }
 #endif
-    };
-#if 0
-    // [MG] COMPOSITION-BASED CLASS: BAAAAAD!!!
-    class RxDescriptor {
-    public:
-        RxDescriptor(void * const aBuffer);
-        ~RxDescriptor() {}
-
-        tEMACDMADescriptor &GetDescriptor(void) {return mDescriptor;}
-        void *GetBuffer(void) const {return mDescriptor.pvBuffer1;}
-
-        void GiveToHW(void);
-        bool IsHWOwned(void) const;
-        bool IsFrameValid(void) const;
-        bool IsLastFrame(void) const;
-        int32_t GetFrameLen(void) const;
-        void ChainTo(RxDescriptor * const aRxDescriptor);
-
     private:
-        tEMACDMADescriptor mDescriptor = {0};
+        struct pbuf * const mPBuf;
     };
-#endif
+
 
     class RxDescriptorChain {
     public:
-        RxDescriptorChain(uint32_t aBaseAddr, unsigned int aChainSize, unsigned int aPktSize);
+        RxDescriptorChain() {mMap.clear();}
         ~RxDescriptorChain();
 
-        Descriptor &GetNext(void);
-        Descriptor &GetDescriptor(struct pbuf * const aPBuf) {return *mMap[aPBuf];}
-        void Init(void);
+        RxDescriptor &GetNext(void);
+        RxDescriptor &GetDescriptor(struct pbuf * const aPBuf) {return *(mMap[aPBuf]);}
+        RxDescriptor *Create(uint32_t aBaseAddr, unsigned int aChainSize, unsigned int aPktSize);
+
+        struct pbuf * GetPBuf(RxDescriptor *aDescriptor) const {return aDescriptor->GetPBuf();}
 
     private:
-        std::vector<Descriptor *> mRxDescriptors;
-        //std::map<struct pbuf * const, tEMACDMADescriptor> mMap;
-        std::map<struct pbuf *, Descriptor *> mMap;
-        unsigned int mIndex = 0;
+        void Add(unsigned int aPktSize);
+
+        RxDescriptor *mCurrentDescriptor = nullptr;
+        std::map<struct pbuf *, RxDescriptor *> mMap;
+    };
+
+    RxDescriptorChain mRxDescriptors;
+
+    class TxDescriptor
+        : public tEMACDMADescriptor {
+    public:
+        TxDescriptor();
+        ~TxDescriptor() {}
+
+        void SetPBuf(struct pbuf * const aBuffer) {mPBuf = aBuffer;}
+        struct pbuf *GetPBuf(void) const {return mPBuf;}
+        void SetPayload(void *aPayload) {pvBuffer1 = aPayload;}
+        void FreePBuf(void);
+        void GiveToHW(void) {ui32CtrlStatus |= DES0_TX_CTRL_OWN;}
+        bool IsHWOwned(void) const {return ui32CtrlStatus & DES0_TX_CTRL_OWN;}
+        void SetFrameStart(void) {ui32CtrlStatus |= DES0_TX_CTRL_FIRST_SEG;}
+        void SetFrameEnd(void) {ui32CtrlStatus |= DES0_TX_CTRL_LAST_SEG;}
+        void SetLen(uint32_t aLen) {
+            ui32Count &= (~(DES1_TX_CTRL_BUFF1_SIZE_M << DES1_TX_CTRL_BUFF1_SIZE_S));
+            ui32Count |= ((aLen & DES1_TX_CTRL_BUFF1_SIZE_M) << DES1_TX_CTRL_BUFF1_SIZE_S);
+        }
+
+        TxDescriptor *GetNext(void) const {return static_cast<TxDescriptor *>(DES3.pLink);}
+        void ChainTo(TxDescriptor * const aDescriptor) {DES3.pLink = aDescriptor;}
+
+    private:
+        struct pbuf *mPBuf = nullptr;
     };
 
 
-    // LwIP Interface.
-    err_t EtherIFInit(struct netif * const aNetIF) override;
-    void ISR(void) override;
+    // Ring of Tx descriptors.
+    // Uses (=wastes) one spare descriptor to detect the full condition.
+    // PutPBufs attempts to attach (=put) a chain of pbufs in as many descriptors.
+    // The pbufs are given to HW for transmission.
+    // Overflow will cause NEWER pbufs (packets) to be lost.
+    // Once the packets are out, GetPBufs() is called to remove and free the pbufs.
+    // It will move the Tail pointer forward for as many elements of pbuf chain.
+    // The descriptors are created in a circular chained-list.
+    class TxRingBuf {
+    public:
+        TxRingBuf() : mSize(0) {}
+        ~TxRingBuf() {Free();}
 
-    void LowLevelTx(struct pbuf * const aPBuf) override;
-    struct pbuf *LowLevelRx(void) override;
-    void FreePBuf(struct pbuf * const aPBuf) override;
+        TxDescriptor *Create(size_t aSize);
+        TxDescriptor *PutPBufs(struct pbuf *aPBuf, bool aIsFirstPBuf);
+        struct pbuf *GetPBufs(TxDescriptor * const aCurrent);
+        void SaveHead(void) {mBkp = mHead;}
+        void RestoreHead(void) {mHead = mBkp;}
 
-    void EnableRxInt(void) override;
-    bool IsTxEmpty(void) const override;
+    private:
+        bool IsEmpty(void) const {return (mHead == mTail);}
+        bool IsFull(void) const {return (mHead->GetNext() == mTail);}
+        void Free(void) {}
 
-    tEMACDMADescriptor mRxDescriptorTbl[4];
-    uint32_t mRxDescriptorIx = 0;
+        size_t mSize;
+        TxDescriptor *mHead = nullptr;
+        TxDescriptor *mTail = nullptr;
+        TxDescriptor *mBkp = nullptr;
+    };
 
-    RxDescriptorChain mRxDescriptors;
+    TxRingBuf mTxDescriptors;
 };
 
 // ******************************************************************************

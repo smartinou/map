@@ -72,6 +72,7 @@ public:
     uint32_t GetIPAddress(void) const;
     uint32_t GetSubnetMask(void) const;
     uint32_t GetDefaultGW(void) const;
+    void StartIPCfg(void);
 
     virtual void DisableAllInt(void) = 0;
     virtual void EnableAllInt(void) = 0;
@@ -82,11 +83,15 @@ protected:
     void PostRxEvent(void);
     void PostTxEvent(void);
     void PostOverrunEvent(void);
+    void PostNetIFChangedEvent(bool aIsUp);
+    void PostLinkChangedEvent(bool aIsUp);
 
-    unsigned int GetIndex(void) const { return mMyIndex; }
-    struct netif &GetNetIF(void) { return mNetIF; }
-    QP::QActive &GetAO(void) const { return *mAO; }
-    void SetAO(QP::QActive * const aAO) { mAO = aAO; }
+    unsigned int GetIndex(void) const {return mMyIndex;}
+    struct netif &GetNetIF(void) {return mNetIF;}
+    QP::QActive &GetAO(void) const {return *mAO;}
+    bool IsUsingDHCP(void) const{return mUseDHCP;}
+    void SetAO(QP::QActive * const aAO) {mAO = aAO;}
+    void UseDHCP(bool aUseDHCP) {mUseDHCP = aUseDHCP;}
 
 private:
     void DrvInit(
@@ -106,7 +111,7 @@ private:
     static void StaticLinkCallback(struct netif * const aNetIF);
     void StatusCallback(struct netif * const aNetIF);
 
-    virtual err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) = 0;
+    virtual err_t EtherIFOut(struct pbuf * const aPBuf) = 0;
     virtual void Rd(void) = 0;
     virtual void Wr(void) = 0;
 
@@ -120,13 +125,12 @@ private:
 
     unsigned int mMyIndex;
     struct netif mNetIF;
+    bool mUseDHCP;
     QP::QActive *mAO = nullptr;
 
     ip_addr_t mIPAddress;
     ip_addr_t mSubnetMask;
     ip_addr_t mGWAddress;
-
-    bool mIsNetIFUp;
 };
 
 // ******************************************************************************

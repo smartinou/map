@@ -13,7 +13,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -44,7 +44,6 @@ extern "C" {
 #include <driverlib/sysctl.h>
 
 #include "netif/etharp.h"
-
 #include "netif/tm4c129/EthDrv.h"
 
 // *****************************************************************************
@@ -53,12 +52,12 @@ extern "C" {
 
 // Sanity Check:  This interface driver will NOT work if the following defines
 // are incorrect.
-#if (PBUF_LINK_HLEN != 16)
-#error "PBUF_LINK_HLEN must be 16 for this interface driver!"
+#if (PBUF_LINK_HLEN != 14)
+#error "PBUF_LINK_HLEN must be 14 for this interface driver!"
 #endif
 
-#if (ETH_PAD_SIZE != 2)
-#error "ETH_PAD_SIZE must be 2 for this interface driver!"
+#if (ETH_PAD_SIZE != 0)
+#error "ETH_PAD_SIZE must be 0 for this interface driver!"
 #endif
 
 // *****************************************************************************
@@ -86,8 +85,9 @@ EthDrv::EthDrv(
     unsigned int aIndex,
     EthernetAddress const &aEthernetAddress,
     unsigned int aBufQueueSize
-)   : LwIPDrv(aIndex, aEthernetAddress, aBufQueueSize)
-    , mRxDescriptors(EMAC0_BASE, 10, 540) {
+)   : LwIPDrv(aIndex, aEthernetAddress)
+    , mRxDescriptors()
+    , mTxDescriptors() {
 
     // Ctor body.
 }
@@ -100,8 +100,7 @@ void EthDrv::DisableAllInt(void) {
 
 void EthDrv::EnableAllInt(void) {
     // Enable Ethernet TX and RX Packet Interrupts.
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RECEIVE);
-    //HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX);
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT);// | EMAC_INT_RECEIVE);
 
 #if LINK_STATS
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
@@ -111,104 +110,39 @@ void EthDrv::EnableAllInt(void) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
-#if 0
-#define RX_BUFFER_SIZE 1536
-EthDrv::RxDescriptor::RxDescriptor(void * const aBuffer) {
 
-    // Mark descriptor as unavailable to HW.
-    mDescriptor.ui32CtrlStatus = 0;
-    mDescriptor.ui32Count = (DES1_RX_CTRL_CHAINED |
-        (RX_BUFFER_SIZE << DES1_RX_CTRL_BUFF1_SIZE_S));
-    mDescriptor.pvBuffer1 = static_cast<struct pbuf * const>(aBuffer)->payload;
-}
+err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
 
-
-void EthDrv::RxDescriptor::GiveToHW(void) {
-    mDescriptor.ui32CtrlStatus |= DES0_RX_CTRL_OWN;
-}
-
-
-bool EthDrv::RxDescriptor::IsHWOwned(void) const {
-    return mDescriptor.ui32CtrlStatus & DES0_RX_CTRL_OWN;
-}
-
-
-bool EthDrv::RxDescriptor::IsFrameValid(void) const {
-    return !(mDescriptor.ui32CtrlStatus & DES0_RX_STAT_ERR);
-}
-
-
-bool EthDrv::RxDescriptor::IsLastFrame(void) const {
-    return mDescriptor.ui32CtrlStatus & DES0_RX_STAT_LAST_DESC;
-}
-
-
-int32_t EthDrv::RxDescriptor::GetFrameLen(void) const {
-    int32_t lLen = mDescriptor.ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M;
-    lLen >>= DES0_RX_STAT_FRAME_LENGTH_S;
-    return lLen;
-}
-
-
-void EthDrv::RxDescriptor::ChainTo(RxDescriptor * const aRxDescriptor) {
-    // [MG] PAS SUR QUE CA MARCHE DE MEME.
-    // [MG] DESCRIPTOR EST PRIVATE.
-    // [MG] DEVRAIT RETOURNER POINTEUR.
-    // [MG] OU FAIRE UNE FONCTION STATIQUE (EUH, POURQUOI?)
-    mDescriptor.DES3.pLink = aRxDescriptor->mDescriptor;
-}
-#endif
-
-EthDrv::RxDescriptorChain::RxDescriptorChain(uint32_t aBaseAddr, unsigned int aQty, unsigned int aPktSize) {
-
-    // Fill the vector and map of descriptors.
-    for (unsigned int lIx = 0; lIx < aQty; lIx++) {
-        struct pbuf *lPBuf = pbuf_alloc(PBUF_RAW, aPktSize, PBUF_POOL);
-        Descriptor *lDescriptor = new Descriptor();
-        lDescriptor->SetBuffer(lPBuf);
-        mRxDescriptors.push_back(lDescriptor);
-        mMap[lPBuf] = lDescriptor;
+    // Chain pbufs elements to transmit into as many descriptors:
+    // Each pbuf element is attached to a descriptor of the tx chain.
+    if (aPBuf != nullptr) {
+        static constexpr bool sIsFirstElement = true;
+        mTxDescriptors.SaveHead();
+        bool lResult = LowLevelTx(aPBuf, sIsFirstElement);
+        if (lResult) {
+            // ethernet_output() must not release the pbuf after this call.
+            // It will be released once the packet is out.
+            pbuf_ref(aPBuf);
+            // Unblock the transmitter potentially in suspended state.
+            MAP_EMACTxDMAPollDemand(EMAC0_BASE);
+        } else {
+            // Error while assigning pbuf to descriptor chain.
+            mTxDescriptors.RestoreHead();
+            return ERR_BUF;
+        }
     }
 
-    // Chain the descriptors of the vector.
-    for (unsigned int lIx = 0; lIx < (mRxDescriptors.size() - 1); lIx++) {
-        mRxDescriptors[lIx]->ChainTo(mRxDescriptors[lIx + 1]);
-    }
-
-    mRxDescriptors.back()->ChainTo(mRxDescriptors.front());
-
-    // Set the descriptor pointers in the hardware.
-    Descriptor *lDescriptor = mRxDescriptors.front();
-    MAP_EMACRxDMADescriptorListSet(aBaseAddr, lDescriptor);//mRxDescriptors.front());
+    return ERR_OK;
 }
 
 
-EthDrv::RxDescriptorChain::~RxDescriptorChain() {
-
-    // Free all pbufs and descriptors.
-    for (auto lIt = mMap.begin(); lIt != mMap.end(); ++lIt) {
-        pbuf_free(lIt->first);
-        delete lIt->second;
-    }
+void EthDrv::Rd(void) {
+    // TODO.
 }
 
 
-EthDrv::Descriptor &EthDrv::RxDescriptorChain::GetNext(void) {
-    // Get the next free descriptor.
-    Descriptor * const lDescriptor = mRxDescriptors[mIndex];
-    mIndex++;
-    if (mIndex >= mRxDescriptors.size()) {
-        mIndex = 0;
-    }
-    return *lDescriptor;
-}
-
-
-void EthDrv::RxDescriptorChain::Init(void) {
-
-    for (auto lIt = mRxDescriptors.begin(); lIt != mRxDescriptors.end(); ++lIt) {
-        (*lIt)->GiveToHW();
-    }
+void EthDrv::Wr(void) {
+    // We should never get here from a Tx interrupt.
 }
 
 
@@ -221,42 +155,56 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_EPHY0);
 
     MAP_SysCtlPeripheralReset(SYSCTL_PERIPH_EMAC0);
+#if 0
     MAP_SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
 
-    // Ensure the MAC is completed its reset.
+    // Ensure the MAC has completed its reset.
     while (!MAP_SysCtlPeripheralReady(SYSCTL_PERIPH_EMAC0)) {
     }
-
+#endif
     // This driver uses the internal PHY.
     // Configure for use with the internal PHY.
     // Set the PHY type and configuration options.
     MAP_EMACPHYConfigSet(
         EMAC0_BASE,
         (EMAC_PHY_TYPE_INTERNAL |
-        EMAC_PHY_INT_MDIX_EN |
-        EMAC_PHY_AN_100B_T_FULL_DUPLEX)
+            EMAC_PHY_INT_MDIX_EN |
+            EMAC_PHY_AN_100B_T_FULL_DUPLEX)
     );
 
+    // Configure PHY interrupts.
+    // Listen to "Change of link status" interrupt.
+    static uint8_t constexpr sPHYAddr = EMAC_PHY_ADDR;
+    MAP_EMACPHYWrite(EMAC0_BASE, sPHYAddr, EPHY_SCR, EPHY_SCR_INTEN);
+    MAP_EMACPHYWrite(EMAC0_BASE, sPHYAddr, EPHY_MISR1, EPHY_MISR1_LINKSTATEN);
     // Reset the MAC to latch the PHY configuration.
-    MAP_EMACReset(EMAC0_BASE);
+    //MAP_EMACReset(EMAC0_BASE);
 
     // Maximum transfer unit.
     aNetIF->mtu = 1500;
 
     // Set device capabilities.
-    aNetIF->flags = (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP);
+    // NETIF_FLAG_UP and NETIF_FLAG_LINK_UP will be set when turning on the
+    // network interface and when the link comes up respectively.
+    aNetIF->flags |= (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP);
 
     // Disable all Ethernet interrupts.
     uint32_t lAllInts =
-        (EMAC_INT_PHY | EMAC_INT_EARLY_RECEIVE | EMAC_INT_BUS_ERROR
-        | EMAC_INT_EARLY_TRANSMIT | EMAC_INT_RX_WATCHDOG | EMAC_INT_RX_STOPPED | EMAC_INT_RX_NO_BUFFER
-        | EMAC_INT_RECEIVE | EMAC_INT_TX_UNDERFLOW | EMAC_INT_RX_OVERFLOW | EMAC_INT_TX_JABBER
-        | EMAC_INT_TX_NO_BUFFER | EMAC_INT_TX_STOPPED | EMAC_INT_TRANSMIT);
+        // PHY interrupts.
+        (EMAC_INT_PHY
+        // Normal interrupts.
+        | EMAC_INT_TRANSMIT | EMAC_INT_TX_NO_BUFFER | EMAC_INT_RECEIVE | EMAC_INT_EARLY_RECEIVE
+        // Abnormal interrupts.
+        | EMAC_INT_TX_STOPPED | EMAC_INT_TX_JABBER | EMAC_INT_RX_OVERFLOW | EMAC_INT_TX_UNDERFLOW
+        | EMAC_INT_RX_NO_BUFFER | EMAC_INT_RX_STOPPED | EMAC_INT_RX_WATCHDOG | EMAC_INT_EARLY_TRANSMIT
+        | EMAC_INT_BUS_ERROR);
     MAP_EMACIntDisable(EMAC0_BASE, lAllInts);
 
-    // Acknolwedge all interrupts.
+    // Acknowledge all interrupts.
     // Clear any pending interrupts.
-    MAP_EMACIntClear(EMAC0_BASE, MAP_EMACIntStatus(EMAC0_BASE, false));
+    uint32_t lIntStatus = MAP_EMACIntStatus(EMAC0_BASE, false);
+    MAP_EMACIntClear(EMAC0_BASE, lIntStatus);
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_PHY);
 
     // Initialize the MAC and set the DMA mode.
     static uint32_t constexpr sRxBurstSize = 4;
@@ -276,27 +224,21 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     MAP_EMACConfigSet(
         EMAC0_BASE,
         (EMAC_CONFIG_FULL_DUPLEX |
-        EMAC_CONFIG_CHECKSUM_OFFLOAD |
-        EMAC_CONFIG_7BYTE_PREAMBLE |
-        EMAC_CONFIG_IF_GAP_96BITS |
-        EMAC_CONFIG_USE_MACADDR0 |
-        EMAC_CONFIG_SA_FROM_DESCRIPTOR |
-        EMAC_CONFIG_BO_LIMIT_1024),
+            EMAC_CONFIG_CHECKSUM_OFFLOAD |
+            EMAC_CONFIG_7BYTE_PREAMBLE |
+            EMAC_CONFIG_IF_GAP_96BITS |
+            EMAC_CONFIG_USE_MACADDR0 |
+            EMAC_CONFIG_SA_FROM_DESCRIPTOR |
+            EMAC_CONFIG_BO_LIMIT_1024),
         (EMAC_MODE_RX_STORE_FORWARD |
-        EMAC_MODE_TX_STORE_FORWARD |
-        EMAC_MODE_TX_THRESHOLD_64_BYTES |
-        EMAC_MODE_RX_THRESHOLD_64_BYTES),
+            EMAC_MODE_TX_STORE_FORWARD |
+            EMAC_MODE_TX_THRESHOLD_64_BYTES |
+            EMAC_MODE_RX_THRESHOLD_64_BYTES),
         sRxMaxFrameSize
     );
 
     // Program the hardware with its MAC address (for filtering).
     MAP_EMACAddrSet(EMAC0_BASE, 0, &aNetIF->hwaddr[0]);
-
-    // Wait for the link to become active.
-    // [MG] POTENTIAL DEADLOCK IF NO CABLE CONNECTED?
-    static uint8_t constexpr sPHYAddr = 0;
-    while ((MAP_EMACPHYRead(EMAC0_BASE, sPHYAddr, EPHY_BMSR) & EPHY_BMSR_LINKSTAT) == 0) {
-    }
 
     // Set MAC filtering options. We receive all broadcast and multicast
     // packets along with those addressed specifically for us.
@@ -308,63 +250,72 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     );
 
     // Initialize the Ethernet DMA descriptors.
-    mRxDescriptors.Init();
+    static constexpr unsigned int sDescriptorQty = 8;
+    RxDescriptor *lRxList = mRxDescriptors.Create(EMAC0_BASE, sDescriptorQty, 540);
+    MAP_EMACRxDMADescriptorListSet(EMAC0_BASE, lRxList);
+    TxDescriptor *lTxList = mTxDescriptors.Create(sDescriptorQty);
+    MAP_EMACTxDMADescriptorListSet(EMAC0_BASE, lTxList);
 
     // Enable the Ethernet MAC transmitter and receiver.
     MAP_EMACTxEnable(EMAC0_BASE);
-    MAP_EMACRxEnable(EMAC0_BASE);
-
+    //MAP_EMACRxEnable(EMAC0_BASE);
     return ERR_OK;
 }
 
 
 void EthDrv::ISR(void) {
-#if 0
-    unsigned long lEthStatus = HWREG(ETH_BASE + MAC_O_RIS);
-
-    // Clear the interrupt sources.
-    HWREG(ETH_BASE + MAC_O_IACK) = lEthStatus; 
-
-    // Mask only the enabled sources.
-    lEthStatus &= HWREG(ETH_BASE + MAC_O_IM);
-
-    if ((lEthStatus & ETH_INT_RX) != 0) {
-        // Send to the AO.
-        PostRxEvent();
-        // Disable further RX.
-        HWREG(ETH_BASE + MAC_O_IM) &= ~ETH_INT_RX;
-    }
-  
-    if ((lEthStatus & ETH_INT_TX) != 0) {
-        // Send to the AO.
-        PostTxEvent();
-    }
-#if LINK_STATS
-    if ((lEthStatus & ETH_INT_RXOF) != 0) {
-        // Send to the AO.
-        PostOverrunEvent();
-    }
-#endif
-
-#else
     // Get and clear the interrupt sources.
     uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, true);
     MAP_EMACIntClear(EMAC0_BASE, lStatus);
 
-    if ((lStatus & EMAC_INT_RECEIVE)) {
+    // Process normal interrupts.
+    if (lStatus & EMAC_INT_RECEIVE) {
         // Send to the AO.
         PostRxEvent();
         // Disable further RX.
         MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_RECEIVE);
     }
 
+    if (lStatus & EMAC_INT_TRANSMIT) {
+        // Frame transmission is complete.
+        // Try to advance the end pointer of the free descriptor list.
+        //mTxDescriptors.UpdateFreeList();
+        TxDescriptor * const lTxDMACurrentDescriptor =
+            static_cast<TxDescriptor * const>(MAP_EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
+        struct pbuf *lPBuf = mTxDescriptors.GetPBufs(lTxDMACurrentDescriptor);
+        if (lPBuf) {
+            pbuf_free(lPBuf);
+        }
+    }
+
+    // Process abnormal interrupts.
 #if LINK_STATS
     if (lStatus & EMAC_INT_RX_OVERFLOW) {
         // Send to the AO.
         PostOverrunEvent();
     }
 #endif
-#endif
+
+    // Process PHY interrupts.
+    if (lStatus & EMAC_INT_PHY) {
+        // Reading the interrupt status clears the bits.
+        static constexpr uint8_t sPHYAddr = EMAC_PHY_ADDR;
+        uint16_t lEPHYMISR1 = MAP_EMACPHYRead(EMAC0_BASE, sPHYAddr, EPHY_MISR1);
+        if (lEPHYMISR1 & EPHY_MISR1_LINKSTAT) {
+            uint16_t lStatus = MAP_EMACPHYRead(EMAC0_BASE, sPHYAddr, EPHY_BMSR);
+            // Call the proper netif function. This will internally set the right flag.
+            // Eventually, this will also trigger a callback.
+            if (lStatus & EPHY_BMSR_LINKSTAT) {
+                //static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), true);
+                //GetAO().POST(&sEvent, this);
+                PostNetIFChangedEvent(true);
+            } else {
+                //static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), false);
+                //GetAO().POST(&sEvent, this);
+                PostNetIFChangedEvent(false);
+            }
+        }
+    }
 }
 
 
@@ -373,83 +324,48 @@ void EthDrv::EnableRxInt(void) {
 }
 
 
-bool EthDrv::IsTxEmpty(void) const {
-    return true;//((HWREG(ETH_BASE + MAC_O_TR) & MAC_TR_NEWTX) == 0);
-}
-
-
 // This function should do the actual transmission of the packet. The packet is
 // contained in the pbuf that is passed to the function. This pbuf might be
 // chained.
 //
 // @param p the MAC packet to send (e.g. IP packet including MAC addr and type)
-// @return ERR_OK if the packet could be sent
-//         an err_t value if the packet couldn't be sent
-// @note This function MUST be called with interrupts disabled or with the
-//       Stellaris Ethernet transmit fifo protected.
-void EthDrv::LowLevelTx(struct pbuf * const aPBuf) {
-#if 0
-    // Fill in the first two bytes of the payload data (configured as padding
-    // with ETH_PAD_SIZE = 2) with the total length of the payload data
-    // (minus the Ethernet MAC layer header).
-    unsigned short * const lPayload = static_cast<unsigned short * const>(aPBuf->payload);
-    *lPayload = aPBuf->tot_len - 16;
+// @return true if descriptors were allocated for the chain of pbufs.
+//         false otherwise.
+bool EthDrv::LowLevelTx(struct pbuf * const aPBuf, bool aIsFirstPBuf) {
 
-    // Initialize the gather register.
-    unsigned int  lByteGatherIx = 0;
-    unsigned long lWordGather = 0;
-    unsigned char * const lWordGatherPtr = reinterpret_cast<unsigned char *>(&lWordGather);
-
-    // Copy data from the pbuf(s) into the TX Fifo.
-    for (struct pbuf *lQueuePtr = aPBuf; lQueuePtr != nullptr; lQueuePtr = lQueuePtr->next) {
-        // Intialize a char pointer and index to the pbuf payload data.
-        unsigned char * const lByteBufPtr = reinterpret_cast<unsigned char *>(lQueuePtr->payload);
-        unsigned int lByteBufIx = 0;
-
-        // If the gather buffer has leftover data from a previous pbuf
-        // in the chain, fill it up and write it to the Tx FIFO.
-        while ((lByteBufIx < lQueuePtr->len) && (lByteGatherIx != 0)) {
-            // Copy a byte from the pbuf into the gather buffer.
-            lWordGatherPtr[lByteGatherIx] = lByteBufPtr[lByteBufIx++];
-
-            // Increment the gather buffer index modulo 4.
-            lByteGatherIx = ((lByteGatherIx + 1) % 4);
+    // Before start, keep track of Head, in case we need to revert back.
+    TxDescriptor * const lDescriptor = mTxDescriptors.PutPBufs(aPBuf, aIsFirstPBuf);
+    if (lDescriptor) {
+        // Operation succeeded. Check if this is a chained pbuf.
+        if (aPBuf->next != nullptr) {
+            // There's more pbuf element: try to assign it to a descriptor right away.
+            bool lResult = LowLevelTx(aPBuf->next, false);
+            if (!lResult) {
+                // There was an error while attempting the next link:
+                // Reassign the pointer to the current descriptor.
+                // Propagate error back to top of chain.
+                return false;
+            }
+        } else {
+            // This is the end of the chain of pbufs. Mark it.
+            lDescriptor->SetFrameEnd();
         }
 
-        // If the gather index is 0 and the pbuf index is non-zero,
-        // we have a gather buffer to write into the Tx FIFO.
-        if ((lByteGatherIx == 0) && (lByteBufIx != 0)) {
-            HWREG(ETH_BASE + MAC_O_DATA) = lWordGather;
-            lWordGather = 0;
+        if (aIsFirstPBuf) {
+            // This is the 1st descriptor of the chain. Mark it.
+            lDescriptor->SetFrameStart();
         }
 
-        // Initialze a long pointer into the pbuf for 32-bit access.
-        unsigned long *lULongBufPtr = reinterpret_cast<unsigned long *>(&lByteBufPtr[lByteBufIx]);
+        // Give to HW last: this way, if failing to allocate a descriptor in the chain,
+        // it will be easier to reclaim them for SW usage.
+        lDescriptor->GiveToHW();
 
-        // Copy words of pbuf data into the Tx FIFO, but don't go past
-        // the end of the pbuf.
-        while ((lByteBufIx + 4) <= lQueuePtr->len) {
-            HWREG(ETH_BASE + MAC_O_DATA) = *lULongBufPtr++;
-            lByteBufIx += 4;
-        }
-
-        // Check if leftover data in the pbuf and save it in the gather
-        // buffer for the next time.
-        while (lByteBufIx < lQueuePtr->len) {
-            // Copy a byte from the pbuf into the gather buffer.
-            lWordGatherPtr[lByteGatherIx] = lByteBufPtr[lByteBufIx++];
-
-            // Increment the gather buffer index modulo 4.
-            lByteGatherIx = ((lByteGatherIx + 1) % 4);
-        }
+        // Move to handling of TRANSMIT_INT.
+        LINK_STATS_INC(link.xmit);
+        return true;
     }
 
-    // Send any leftover data to the FIFO.
-    // Wakeup the transmitter.
-    HWREG(ETH_BASE + MAC_O_DATA) = lWordGather;
-    HWREG(ETH_BASE + MAC_O_TR) = MAC_TR_NEWTX;
-#endif
-    LINK_STATS_INC(link.xmit);
+    return false;
 }
 
 
@@ -459,14 +375,15 @@ void EthDrv::LowLevelTx(struct pbuf * const aPBuf) {
 // * @return pointer to pbuf packet if available, nullptr otherswise.
 struct pbuf *EthDrv::LowLevelRx(void) {
 
-    Descriptor &lDescriptor = mRxDescriptors.GetNext();
+    RxDescriptor &lDescriptor = mRxDescriptors.GetNext();
 
     // SW should always own the current descriptor since rx interrupt triggered this call.
     // If not, then the pointer got out of sync?
     if (!lDescriptor.IsHWOwned()) {
         if (lDescriptor.IsFrameValid()) {
             // Get the pbuf assigned as payload of the descriptor.
-            struct pbuf *lPBuf = static_cast<struct pbuf *>(lDescriptor.GetBuffer());
+            // It should never be null.
+            struct pbuf *lPBuf = mRxDescriptors.GetPBuf(&lDescriptor);
             if (!lDescriptor.IsLastFrame()) {
                 // Get the next descriptor.
                 struct pbuf *lTailPBuf = LowLevelRx();
@@ -512,15 +429,183 @@ void EthDrv::FreePBuf(struct pbuf *const aPBuf) {
     // Follow the chain of pbuf to give back RxDescriptors to HW.
     struct pbuf *lQueuePtr = aPBuf;
     do {
-        EthDrv::Descriptor * const lDescriptor = mRxDescriptors.GetDescriptor(lQueuePtr);
+        EthDrv::RxDescriptor * const lDescriptor = mRxDescriptors.GetDescriptor(lQueuePtr);
         lDescriptor->GiveToHW();
         // Link in the next pbuf in the chain.
         lQueuePtr = lQueuePtr->next;
     //} while (lQueuePtr != nullptr);
     } while (lQueuePtr->len != lQueuePtr->tot_len);
 
-    // Finally, free the pbuf.
+    // Finally, free the pbuf. The reference count should be 0 afterward.
     pbuf_free(aPBuf);
+}
+
+
+EthDrv::RxDescriptor::RxDescriptor(struct pbuf * const aBuffer)
+    : tEMACDMADescriptor {
+        .ui32CtrlStatus = 0
+        , .ui32Count = (DES1_RX_CTRL_CHAINED | (static_cast<uint32_t>(aBuffer->len) << DES1_RX_CTRL_BUFF1_SIZE_S))
+        , .pvBuffer1 = aBuffer->payload
+        , .DES3 = {0}
+        , .ui32ExtRxStatus = 0
+        , .ui32Reserved = 0
+        , .ui32IEEE1588TimeLo = 0
+        , .ui32IEEE1588TimeHi = 0
+    }
+    , mPBuf(aBuffer) {
+
+    // Ctor body.
+}
+
+
+EthDrv::TxDescriptor::TxDescriptor()
+    : tEMACDMADescriptor {
+        .ui32CtrlStatus = DES0_TX_CTRL_INTERRUPT | DES0_TX_CTRL_CHAINED | DES0_TX_CTRL_IP_ALL_CKHSUMS
+        , .ui32Count = 0
+        , .pvBuffer1 = nullptr
+        , .DES3 = {0}
+        , .ui32ExtRxStatus = 0
+        , .ui32Reserved = 0
+        , .ui32IEEE1588TimeLo = 0
+        , .ui32IEEE1588TimeHi = 0
+    }
+{
+    // Ctor body.
+}
+
+
+void EthDrv::TxDescriptor::FreePBuf(void) {
+    if (mPBuf != nullptr) {
+        pbuf_free(mPBuf);
+        pvBuffer1 = nullptr;
+    }
+}
+
+
+EthDrv::TxDescriptor *EthDrv::TxRingBuf::Create(size_t aSize) {
+    // Fill the map of descriptors.
+    for (size_t lIx = 0; lIx < aSize; lIx++) {
+        TxDescriptor *lDescriptor = new TxDescriptor;
+        if (lDescriptor != nullptr) {
+            if (mHead == nullptr) {
+                // Add to empty.
+                mHead = lDescriptor;
+                lDescriptor->ChainTo(mHead);
+            } else {
+                // Insert at "end" of circular list.
+                lDescriptor->ChainTo(static_cast<TxDescriptor *>(mHead->DES3.pLink));
+                mHead->ChainTo(lDescriptor);
+            }
+            // Don't give descriptor to HW yet: this will be done when pbufs are assigned.
+        } else {
+            // Failed to allocated number of requested descriptors in the chain.
+            // Free them and bailout.
+            Free();
+            return nullptr;
+        }
+    }
+
+    mSize = aSize;
+    mTail = mHead;
+    mBkp = mHead;
+    return mHead;
+}
+
+
+EthDrv::TxDescriptor *EthDrv::TxRingBuf::PutPBufs(struct pbuf *aPBuf, bool aIsFirstPBuf) {
+    TxDescriptor *lDescriptor = mHead;
+    if (aPBuf && !IsFull() && !lDescriptor->IsHWOwned()) {
+        lDescriptor->SetPBuf(aPBuf);
+        lDescriptor->SetPayload(aPBuf->payload);
+        lDescriptor->SetLen(aPBuf->len);
+        mHead = lDescriptor->GetNext();
+        return lDescriptor;
+    }
+
+    // Either no pbuf, ring full or descriptor owned by HW.
+    return nullptr;
+}
+
+
+struct pbuf *EthDrv::TxRingBuf::GetPBufs(TxDescriptor * const aCurrent) {
+
+    // Should be SW-owned now, but check anyway.
+    if ((mTail != aCurrent) && !mTail->IsHWOwned()) {
+        // This descriptor was released from the HW.
+        // Increment Tail as far as the pbuf spans.
+        struct pbuf *lPBuf = mTail->GetPBuf();
+        mTail = mTail->GetNext();
+        while (lPBuf->next != nullptr) {
+            // Opt: check that the stored pbuf for this descriptor is null as expected.
+            lPBuf = lPBuf->next;
+            mTail = mTail->GetNext();
+        }
+
+        return lPBuf;
+    }
+
+    // Reached current descriptor or hit a busy descriptor prematurely: bail out.
+    return nullptr;
+}
+
+
+EthDrv::RxDescriptorChain::~RxDescriptorChain() {
+
+    // Free all pbufs and descriptors. Use the map.
+    for (auto lIt = mMap.begin(); lIt != mMap.end(); ++lIt) {
+        pbuf_free(lIt->first);
+        delete lIt->second;
+    }
+}
+
+
+EthDrv::RxDescriptor &EthDrv::RxDescriptorChain::GetNext(void) {
+    mCurrentDescriptor = mCurrentDescriptor->GetNext();
+    return *mCurrentDescriptor;
+}
+
+
+EthDrv::RxDescriptor *EthDrv::RxDescriptorChain::Create(uint32_t aBaseAddr, unsigned int aChainSize, unsigned int aPktSize) {
+
+    // Fill the map of descriptors.
+    for (unsigned int lIx = 0; lIx < aChainSize; lIx++) {
+        Add(aPktSize);
+    }
+
+    // Return the next descriptor already, since this is the one that will be requested
+    // on the 1st call to lowLevelRx().
+    return mCurrentDescriptor->GetNext();
+}
+
+
+void EthDrv::RxDescriptorChain::Add(unsigned int aPktSize) {
+
+    struct pbuf *lPBuf = nullptr;
+    if (aPktSize) {
+        lPBuf = pbuf_alloc(PBUF_RAW, aPktSize, PBUF_RAM);
+    }
+
+    if (lPBuf != nullptr) {
+        RxDescriptor *lDescriptor = new RxDescriptor(lPBuf);
+        // Add to circular list. Leverage the chain pointer part of the descriptor.
+        if (lDescriptor != nullptr) {
+            if (mCurrentDescriptor == nullptr) {
+                // Add to empty.
+                mCurrentDescriptor = lDescriptor;
+                lDescriptor->ChainTo(mCurrentDescriptor);
+            } else {
+                // Insert at "end" of circular list.
+                lDescriptor->ChainTo(static_cast<RxDescriptor *>(mCurrentDescriptor->DES3.pLink));
+                mCurrentDescriptor->ChainTo(lDescriptor);
+            }
+            lDescriptor->GiveToHW();
+
+            // Keep a reference of the pbuf assigned to the descriptor.
+            mMap[lPBuf] = lDescriptor;
+        } else {
+            pbuf_free(lPBuf);
+        }
+    }
 }
 
 

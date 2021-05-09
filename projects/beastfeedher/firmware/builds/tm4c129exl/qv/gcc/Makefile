@@ -234,11 +234,8 @@ QS_SRCS := \
 OUTPUT    := $(PROJECT)
 LD_SCRIPT := $(PROJECT).ld
 
-LIB_DIRS  := -L$(STELLARIS_LIB)/driverlib/gcc-cm3 -L.
-LIBS      := -ldriver-cm3 -l$(MBEDTLS_LIB) -l$(MBEDCRYPTO_LIB) -l$(MBEDX509_LIB)
-
 DRIVER_LIB_DIR := -L$(TIVAWARE_LIB)/driverlib/gcc
-DRIVER_LIB     := -ldriver
+DRIVER_LIB     := -ldriver -l$(MBEDTLS_LIB) -l$(MBEDCRYPTO_LIB) -l$(MBEDX509_LIB)
 
 GFX_LIB_DIR := -L$(TIVAWARE_LIB)/grlib/gcc
 GFX_LIB     := -lgr
@@ -277,7 +274,7 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
 endif
 
@@ -363,6 +360,8 @@ CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-O $(INCLUDES) $(DEFINES)
 
 endif
+
+LIB_DIRS += -L$(BIN_DIR)
 
 
 LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \

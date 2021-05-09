@@ -239,6 +239,10 @@ DEFINES   += -DQF_ACTIVE_STOP
 DEFINES   += -DNET_SUPPORT
 DEFINES   += -DUSE_STELLARISWARE
 
+# Override heap value (see startup_lm3s6965.c)
+# This does not appear in the .bss or .data section.
+DEFINES   += -D__HEAP_SIZE=0x4000
+
 # ARM CPU, FPU, and Float-ABI types
 ARM_CPU   := -mcpu=cortex-m3
 ARM_FPU   :=
@@ -309,8 +313,6 @@ CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 
 DEFINES += -DNDEBUG
 
-LIB_DIRS += -L$(BIN_DIR)
-
 else ifeq (spy, $(CONF))
 # Spy configuration.
 
@@ -333,8 +335,6 @@ CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 
 DEFINES += -DQ_SPY
 
-LIB_DIRS += -L$(BIN_DIR)
-
 else
 # Default Debug configuration.
 BIN_DIR := dbg
@@ -351,8 +351,6 @@ CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++14 \
 	-O
-
-LIB_DIRS += -L$(BIN_DIR)
 
 endif
 
