@@ -278,6 +278,7 @@
 //#define PBUF_LINK_HLEN                  16          // default is  14
 //#define PBUF_POOL_BUFSIZE     LWIP_MEM_ALIGN_SIZE(TCP_MSS+40+PBUF_LINK_HLEN)
 //#define ETH_PAD_SIZE                    2           // default is 0
+#define LWIP_SUPPORT_CUSTOM_PBUF       1
 
 //****************************************************************************
 //
@@ -400,12 +401,15 @@
 // ---------- checksum options ----------
 //
 //****************************************************************************
-//#define CHECKSUM_GEN_IP                 1
-//#define CHECKSUM_GEN_UDP                1
-//#define CHECKSUM_GEN_TCP                1
-//#define CHECKSUM_CHECK_IP               1
-//#define CHECKSUM_CHECK_UDP              1
-//#define CHECKSUM_CHECK_TCP              1
+// Let the HW offload engine handle the insertion of checksum.
+#define CHECKSUM_GEN_IP                 0
+#define CHECKSUM_GEN_UDP                0
+#define CHECKSUM_GEN_TCP                0
+#define CHECKSUM_GEN_ICMP               0
+// ... and the validation too.
+#define CHECKSUM_CHECK_IP               0
+#define CHECKSUM_CHECK_UDP              0
+#define CHECKSUM_CHECK_TCP              0
 
 //****************************************************************************
 //

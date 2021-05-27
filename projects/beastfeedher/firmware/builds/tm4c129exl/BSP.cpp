@@ -128,20 +128,20 @@ public:
 
     void SetPins(void) const override {
         GPIO::EnableSysCtlPeripheral(sSSIPins.mPort);
-        GPIOPinTypeSSI(
+        MAP_GPIOPinTypeSSI(
             sSSIPins.mPort,
             sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin
         );
 
         // Set a weak pull-up on MISO pin for SD Card's proper operation.
-        GPIOPadConfigSet(
+        MAP_GPIOPadConfigSet(
             sSSIPins.mPort,
             sSSIPins.mRxPin,
             GPIO_STRENGTH_2MA,
             GPIO_PIN_TYPE_STD_WPU
         );
 
-        GPIOPadConfigSet(
+        MAP_GPIOPadConfigSet(
             sSSIPins.mPort,
             sSSIPins.mClkPin | sSSIPins.mTxPin,
             GPIO_STRENGTH_2MA,
@@ -583,7 +583,7 @@ static void InitEtherLED(void) {
     MAP_GPIOPinConfigure(GPIO_PF0_EN0LED0);
     MAP_GPIOPinTypeEthernetLED(lActivityLEDPin.GetPort(), lActivityLEDPin.GetPin());
 
-    IntEnable(INT_EMAC0);
+    MAP_IntEnable(INT_EMAC0);
 }
 
 
@@ -892,12 +892,12 @@ void GPIOPortA_IRQHandler(void);
 void GPIOPortA_IRQHandler(void) {
 
     // Get the state of the GPIO and issue the corresponding event.
-    static const bool lIsMasked = true;
+    static constexpr bool sIsMasked = true;
     GPIO lRTCCInterruptPin = BSP::Factory::GetRTCCInterruptPin();
-    unsigned long lIntStatus = GPIOIntStatus(lRTCCInterruptPin.GetPort(), lIsMasked);
+    unsigned long lIntStatus = MAP_GPIOIntStatus(lRTCCInterruptPin.GetPort(), sIsMasked);
     unsigned int lPin = lRTCCInterruptPin.GetPin();
     if (lPin & lIntStatus) {
-        GPIOIntClear(lRTCCInterruptPin.GetPort(), lPin);
+        MAP_GPIOIntClear(lRTCCInterruptPin.GetPort(), lPin);
 
         // Signal to AO that RTCC generated an interrupt.
         // This can be done with direct POST to known RTCC AO, but since there's a single instance,
@@ -915,10 +915,10 @@ void GPIOPortB_IRQHandler(void) {
 #if 0
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked = true;
-    unsigned long lIntStatus = GPIOIntStatus(GPIOB_AHB_BASE, lIsMasked);
+    unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOB_AHB_BASE, lIsMasked);
     unsigned int lPin = BSP::Factory::GetBLEInterruptPin().GetPin();
     if (lPin & lIntStatus) {
-        GPIOIntClear(GPIOB_AHB_BASE, lPin);
+        MAP_GPIOIntClear(GPIOB_AHB_BASE, lPin);
 
         // Signal to AO that BLE generated an interrupt.
         static QP::QEvt const sBLEIntEvent(BLE_INTERRUPT_SIG);
@@ -934,11 +934,11 @@ void GPIOPortJ_IRQHandler(void);
 void GPIOPortJ_IRQHandler(void) {
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked = true;
-    unsigned long lIntStatus = GPIOIntStatus(GPIOJ_AHB_BASE, lIsMasked);
+    unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOJ_AHB_BASE, lIsMasked);
 
     unsigned int lPin = BSP::mManualFeedButton.GetPin();
     if (lPin & lIntStatus) {
-        GPIOIntClear(GPIOJ_AHB_BASE, lPin);
+        MAP_GPIOIntClear(GPIOJ_AHB_BASE, lPin);
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
             if (Button::IS_HIGH == BSP::mManualFeedButton.GetGPIOPinState()) {
@@ -955,7 +955,7 @@ void GPIOPortJ_IRQHandler(void) {
 
     lPin = BSP::mTimedFeedButton.GetPin();
     if (lPin & lIntStatus) {
-        GPIOIntClear(GPIOJ_AHB_BASE, lPin);
+        MAP_GPIOIntClear(GPIOJ_AHB_BASE, lPin);
         // Only interested in the pin coming high.
         QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {

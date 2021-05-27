@@ -178,6 +178,7 @@ CPP_SRCS := \
     Main.cpp \
     CalendarRec.cpp \
     CoreLinkPeripheralDev.cpp \
+    CustomPBuf.cpp \
     Date.cpp \
     DBRec.cpp \
     Display_AOs.cpp \
@@ -200,11 +201,13 @@ CPP_SRCS := \
     PFPP_AOs.cpp \
     IRTCC.cpp \
     RTCC_AOs.cpp \
+    RxDescriptor.cpp \
     SDC.cpp \
     SPI.cpp \
     SPISlaveCfg.cpp \
     TB6612.cpp \
     Time.cpp \
+    TxDescriptor.cpp \
     Weekday.cpp
 
 
