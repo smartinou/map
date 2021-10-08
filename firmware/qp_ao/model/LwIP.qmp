@@ -113,14 +113,16 @@ if (nullptr != lCallbackInit) {
      <exit brief="StopTimer();">mSlowTickTimer.disarm();</exit>
      <tran trig="LWIP_RX_READY">
       <action brief="EtherDrv.Rd();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
-LwIPDrv::StaticRd(lEvent-&gt;mIndex);</action>
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+lEtherDrv-&gt;Rd();</action>
       <tran_glyph conn="4,20,3,-1,34">
        <action box="0,-2,28,2"/>
       </tran_glyph>
      </tran>
      <tran trig="LWIP_TX_READY">
       <action brief="EtherDrv.Wr();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
-LwIPDrv::StaticWr(lEvent-&gt;mIndex);</action>
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+lEtherDrv-&gt;Wr();</action>
       <tran_glyph conn="4,24,3,-1,34">
        <action box="0,-2,24,2"/>
       </tran_glyph>
@@ -281,12 +283,20 @@ netif_set_link_down(lEvent-&gt;mNetIF);</action>
        <action box="0,-2,31,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="4,10,38,46">
+     <tran trig="LWIP_PHY_INT">
+      <action brief="PHYISR();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+lEtherDrv-&gt;PHYISR();</action>
+      <tran_glyph conn="4,56,3,-1,34">
+       <action box="0,-2,30,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="4,10,38,50">
       <entry box="1,2,23,2"/>
       <exit box="1,4,16,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="46,60"/>
+    <state_diagram size="46,64"/>
    </statechart>
   </class>
  </package>
@@ -336,12 +346,12 @@ netif_set_link_down(lEvent-&gt;mNetIF);</action>
 // Ctor body.</code>
    </operation>
   </class>
-  <class name="Interrupt" superclass="qpcpp::QEvt">
+  <class name="Interruptx" superclass="qpcpp::QEvt">
    <documentation>Event raised with corresponding interrupt in ethernet driver.</documentation>
    <attribute name="mIndex" type="unsigned int const" visibility="0x00" properties="0x00">
     <documentation>0-based index of the network interface that this event belongs to.</documentation>
    </attribute>
-   <operation name="Interrupt" type="" visibility="0x00" properties="0x02">
+   <operation name="Interruptx" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
     <parameter name="aIndex" type="unsigned int const"/>
@@ -390,7 +400,7 @@ ip_addr_copy(mIPV4, *aIPV4);</code>
    <documentation>Generic event for network status changes. Could be used for:
 *Network interface state changed.
 *Network link state changed.</documentation>
-   <attribute name="mNetIF" type="struct netif *" visibility="0x00" properties="0x00">
+   <attribute name="mNetIF" type="struct netif * const" visibility="0x00" properties="0x00">
     <documentation>Pointer to the struct netif that triggered the event.</documentation>
    </attribute>
    <attribute name="mIsUp" type="bool" visibility="0x00" properties="0x00">
@@ -404,6 +414,21 @@ ip_addr_copy(mIPV4, *aIPV4);</code>
     <code>    : QP::QEvt(aSig)
     , mNetIF(aNetIF)
     , mIsUp(aIsUp)</code>
+   </operation>
+  </class>
+  <class name="Interrupt" superclass="qpcpp::QEvt">
+   <documentation>PHY interrupt event.</documentation>
+   <attribute name="mNetIF" type="struct netif * const" visibility="0x00" properties="0x00">
+    <documentation>Pointer to the struct netif that triggered the event.</documentation>
+   </attribute>
+   <operation name="Interrupt" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aNetIF" type="struct netif * const"/>
+    <code>    : QP::QEvt(aSig)
+//    , mEthDrv(aEthDrv)
+    , mNetIF(aNetIF)
+</code>
    </operation>
   </class>
  </package>

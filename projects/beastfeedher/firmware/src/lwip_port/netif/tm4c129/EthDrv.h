@@ -41,17 +41,23 @@
 class EthDrv
     : public LwIPDrv {
 public:
-    EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize);
+    EthDrv(
+        unsigned int aIndex,
+        EthernetAddress const &aEthernetAddress,
+        unsigned int aBufQueueSize,
+        uint32_t aSysClk
+    );
     ~EthDrv() {}
 
+    void Rd(void) override;
+    void Wr(void) override {}
+    void PHYISR(void) override;
     void DisableAllInt(void) override;
     void EnableAllInt(void) override;
 
 private:
     // LwIP Interface.
     err_t EtherIFOut(struct pbuf * const aPBuf) override;
-    void Rd(void) override;
-    void Wr(void) override {}
 
     err_t EtherIFInit(struct netif * const aNetIF) override;
     void ISR(void) override;
@@ -64,6 +70,8 @@ private:
 
     RxDescriptorChain mRxRingBuf;
     TxRingBuf mTxRingBuf;
+    uint32_t const mSysClk;
+    uint8_t const mPHYAddr = EMAC_PHY_ADDR;
 };
 
 // ******************************************************************************

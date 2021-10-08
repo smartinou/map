@@ -30,6 +30,7 @@
 // LwIP.
 #include "lwip/opt.h"
 #include "lwip/def.h"
+#include "lwip/stats.h"
 
 // TI Library.
 #include <inc/hw_emac.h>
@@ -44,6 +45,8 @@
 #include "netif/etharp.h"
 #include "netif/tm4c129/EthDrv.h"
 #include "netif/tm4c129/CustomPBuf.h"
+
+//#include "uartstdio.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -83,51 +86,14 @@ void lwIPHostGetTime(u32_t *time_s, u32_t *time_ns);
 EthDrv::EthDrv(
     unsigned int aIndex,
     EthernetAddress const &aEthernetAddress,
-    unsigned int aBufQueueSize
+    unsigned int aBufQueueSize,
+    uint32_t aSysClk
 )   : LwIPDrv(aIndex, aEthernetAddress)
     , mRxRingBuf()
-    , mTxRingBuf() {
+    , mTxRingBuf()
+    , mSysClk(aSysClk) {
 
     // Ctor body.
-}
-
-
-void EthDrv::DisableAllInt(void) {
-    MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
-}
-
-
-void EthDrv::EnableAllInt(void) {
-    // Enable Ethernet TX and RX Packet Interrupts.
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
-
-#if LINK_STATS
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
-#endif
-}
-
-// *****************************************************************************
-//                              LOCAL FUNCTIONS
-// *****************************************************************************
-
-err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
-
-    // Chain pbufs elements to transmit into as many descriptors:
-    // Each pbuf element is attached to a descriptor of the tx chain.
-    if (aPBuf != nullptr) {
-        TxDescriptor * const lDescriptor = mTxRingBuf.PutPBufs(aPBuf);
-        if (lDescriptor != nullptr) {
-            // ethernet_output() must not release the pbuf after this call.
-            // It will be released once the packet is out.
-            pbuf_ref(aPBuf);
-            // Unblock the transmitter potentially in suspended state.
-            MAP_EMACTxDMAPollDemand(EMAC0_BASE);
-            return ERR_OK;
-        }
-    }
-
-    // Error while assigning pbuf to descriptor chain.
-    return ERR_BUF;
 }
 
 
@@ -161,6 +127,96 @@ void EthDrv::Wr(void) {
 }
 #endif
 
+void EthDrv::PHYISR(void) {
+    // This PHYISR handler is called in normal "task" context.
+    // EthDrv::ISR() makes call to read and clear interrupt status.
+
+    // Reading the interrupt status clears the bits.
+    uint16_t lEPHYMISR1 = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_MISR1);
+    if (lEPHYMISR1 & EPHY_MISR1_LINKSTAT) {
+        uint16_t lBMSR = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_BMSR);
+        if (lBMSR & EPHY_BMSR_LINKSTAT) {
+            PostLinkChangedEvent(true);
+        } else {
+            PostLinkChangedEvent(false);
+        }
+    }
+
+    if ((lEPHYMISR1 & EPHY_MISR1_SPEED)
+        || (lEPHYMISR1 & EPHY_MISR1_DUPLEXM)
+        || (lEPHYMISR1 & EPHY_MISR1_ANC)) {
+
+        uint32_t lCfg = 0;
+        uint32_t lMode = 0;
+        uint32_t lRxMaxFrameSize = 0;
+        MAP_EMACConfigGet(EMAC0_BASE, &lCfg, &lMode, &lRxMaxFrameSize);
+
+        uint16_t lStatus = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_STS);
+        if (lStatus & EPHY_STS_SPEED) {
+            lCfg &= ~EMAC_CONFIG_100MBPS;
+        } else {
+            lCfg |= EMAC_CONFIG_100MBPS;
+        }
+
+        if (lStatus & EPHY_STS_DUPLEX) {
+            lCfg |= EMAC_CONFIG_FULL_DUPLEX;
+        } else {
+            lCfg &= ~EMAC_CONFIG_FULL_DUPLEX;
+        }
+
+        MAP_EMACConfigSet(EMAC0_BASE, lCfg, lMode, lRxMaxFrameSize);
+    }
+
+    // Now that the interrupt source was likely cleared, clear the flag.
+    // Re-enable PHY interrupt.
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_PHY);
+}
+
+
+void EthDrv::DisableAllInt(void) {
+    MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
+}
+
+
+void EthDrv::EnableAllInt(void) {
+    // Enable Ethernet TX and RX Packet Interrupts.
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
+
+#if LINK_STATS
+    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
+#endif
+}
+
+// *****************************************************************************
+//                              LOCAL FUNCTIONS
+// *****************************************************************************
+
+err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
+
+    // Chain pbufs elements to transmit into as many descriptors:
+    // Each pbuf element is attached to a descriptor of the tx chain.
+    uint32_t lStatus = EMACStatusGet(EMAC0_BASE);
+    if (!lStatus) {
+        TxDescriptor * const lTxDMACurrentDescriptor =
+            static_cast<TxDescriptor * const>(EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
+        bool lResult = mTxRingBuf.PushPBuf(lTxDMACurrentDescriptor, aPBuf, true);
+        if (lResult) {
+            // Don't release the pbuf after this call.
+            // It will be released once the packet is out.
+            pbuf_ref(aPBuf);
+            // Unblock the transmitter potentially in suspended state.
+            EMACTxDMAPollDemand(EMAC0_BASE);
+            return ERR_OK;
+        }
+    } else {
+        while(1);
+    }
+
+    // Error while assigning pbuf to descriptor chain.
+    return ERR_BUF;
+}
+
+
 // Initialize Ethernet IF as per TivaWare Driver doc under:
 // 10.2.4.26 EMACPHYConfigSet
 err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
@@ -170,29 +226,38 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_EPHY0);
 
     MAP_SysCtlPeripheralReset(SYSCTL_PERIPH_EMAC0);
-#if 0
-    MAP_SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
+    // This reset is handled in EMACPHYConfigSet().
+    //MAP_SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
 
     // Ensure the MAC has completed its reset.
     while (!MAP_SysCtlPeripheralReady(SYSCTL_PERIPH_EMAC0)) {
     }
-#endif
+
     // This driver uses the internal PHY.
     // Configure for use with the internal PHY.
     // Set the PHY type and configuration options.
     MAP_EMACPHYConfigSet(
         EMAC0_BASE,
-        (EMAC_PHY_TYPE_INTERNAL |
-            EMAC_PHY_INT_MDIX_EN |
-            EMAC_PHY_AN_100B_T_FULL_DUPLEX)
+        EMAC_PHY_TYPE_INTERNAL | EMAC_PHY_INT_MDIX_EN | EMAC_PHY_AN_100B_T_FULL_DUPLEX
     );
 
     // Configure PHY interrupts.
-    // Listen to "Change of link status" interrupt.
-    static uint8_t constexpr sPHYAddr = EMAC_PHY_ADDR;
-    MAP_EMACPHYWrite(EMAC0_BASE, sPHYAddr, EPHY_SCR, EPHY_SCR_INTEN);
-    MAP_EMACPHYWrite(EMAC0_BASE, sPHYAddr, EPHY_MISR1, EPHY_MISR1_LINKSTATEN);
+    // Listen to interrupt:
+    //    -"Change of link status"
+    //    -"Change of Speed Status"
+    //    -"Change of Duplex Status"
+    MAP_EMACPHYWrite( EMAC0_BASE, EMAC_PHY_ADDR, EPHY_CFG1, EPHY_CFG1_DONE);
+    uint16_t lSCR = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_SCR);
+    lSCR |= EPHY_SCR_INTEN | EPHY_SCR_INTOE_EXT;
+    MAP_EMACPHYWrite(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_SCR, lSCR);
+    MAP_EMACPHYWrite(
+        EMAC0_BASE,
+        EMAC_PHY_ADDR,
+        EPHY_MISR1,
+        EPHY_MISR1_LINKSTATEN | EPHY_MISR1_SPEEDEN | EPHY_MISR1_DUPLEXMEN | EPHY_MISR1_ANCEN
+    );
     // Reset the MAC to latch the PHY configuration.
+    // BUG: DOESN'T WORK IF LEFT HERE AS PER USER MANUAL.
     //MAP_EMACReset(EMAC0_BASE);
 
     // Maximum transfer unit.
@@ -204,15 +269,16 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     aNetIF->flags |= (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP);
 
     // Disable all Ethernet interrupts.
-    uint32_t lAllInts =
+    uint32_t lAllInts = (
         // PHY interrupts.
-        (EMAC_INT_PHY
+        EMAC_INT_PHY
         // Normal interrupts.
         | EMAC_INT_TRANSMIT | EMAC_INT_TX_NO_BUFFER | EMAC_INT_RECEIVE | EMAC_INT_EARLY_RECEIVE
         // Abnormal interrupts.
         | EMAC_INT_TX_STOPPED | EMAC_INT_TX_JABBER | EMAC_INT_RX_OVERFLOW | EMAC_INT_TX_UNDERFLOW
         | EMAC_INT_RX_NO_BUFFER | EMAC_INT_RX_STOPPED | EMAC_INT_RX_WATCHDOG | EMAC_INT_EARLY_TRANSMIT
-        | EMAC_INT_BUS_ERROR);
+        | EMAC_INT_BUS_ERROR
+    );
     MAP_EMACIntDisable(EMAC0_BASE, lAllInts);
 
     // Acknowledge all interrupts.
@@ -227,7 +293,7 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     static uint32_t constexpr sDescSkipSize = 0;
     MAP_EMACInit(
         EMAC0_BASE,
-        SysCtlClockGet(),
+        mSysClk, // Can't use SysCtlClockGet() with TM4C129!!!
         EMAC_BCONFIG_MIXED_BURST | EMAC_BCONFIG_PRIORITY_FIXED,
         sRxBurstSize,
         sTxBurstSize,
@@ -268,9 +334,9 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     CustomPBuf::Init();
     static constexpr unsigned int sDescriptorQty = 8;
     static constexpr size_t sBufferSize = 540;
-    RxDescriptor *lRxList = mRxRingBuf.Create(EMAC0_BASE, sDescriptorQty, sBufferSize);
+    RxDescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, sDescriptorQty, sBufferSize);
     MAP_EMACRxDMADescriptorListSet(EMAC0_BASE, lRxList);
-    TxDescriptor *lTxList = mTxRingBuf.Create(sDescriptorQty);
+    TxDescriptor * const lTxList = mTxRingBuf.Create(sDescriptorQty);
     MAP_EMACTxDMADescriptorListSet(EMAC0_BASE, lTxList);
 
     // Enable the Ethernet MAC transmitter and receiver.
@@ -283,25 +349,26 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 void EthDrv::ISR(void) {
     // Get and clear the interrupt sources.
     uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, true);
+    MAP_EMACIntDisable(EMAC0_BASE, lStatus);
     MAP_EMACIntClear(EMAC0_BASE, lStatus);
 
     // Process normal interrupts.
     if (lStatus & EMAC_INT_RECEIVE) {
         // Send to the AO.
         PostRxEvent();
-        // Disable further RX.
-        MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_RECEIVE);
     }
 
     if (lStatus & EMAC_INT_TRANSMIT) {
         // Frame transmission is complete.
         // Try to advance the end pointer of the free descriptor list.
         TxDescriptor * const lTxDMACurrentDescriptor =
-            static_cast<TxDescriptor * const>(MAP_EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
-        TxDescriptor *lDescriptor = nullptr;
-        do {
-            lDescriptor = mTxRingBuf.GetPBufs();
-        } while (lDescriptor != lTxDMACurrentDescriptor);
+            static_cast<TxDescriptor * const>(EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
+        bool lResult = mTxRingBuf.PopPBuf(lTxDMACurrentDescriptor);
+        if (lResult) {
+            LINK_STATS_INC(link.xmit);
+        } else {
+            LINK_STATS_INC(link.err);
+        }
     }
 
     // Process abnormal interrupts.
@@ -314,18 +381,8 @@ void EthDrv::ISR(void) {
 
     // Process PHY interrupts.
     if (lStatus & EMAC_INT_PHY) {
-        // Reading the interrupt status clears the bits.
-        static constexpr uint8_t sPHYAddr = EMAC_PHY_ADDR;
-        uint16_t lEPHYMISR1 = MAP_EMACPHYRead(EMAC0_BASE, sPHYAddr, EPHY_MISR1);
-        if (lEPHYMISR1 & EPHY_MISR1_LINKSTAT) {
-            uint16_t lStatus = MAP_EMACPHYRead(EMAC0_BASE, sPHYAddr, EPHY_BMSR);
-            // Call the proper netif function.
-            if (lStatus & EPHY_BMSR_LINKSTAT) {
-                PostLinkChangedEvent(true);
-            } else {
-                PostLinkChangedEvent(false);
-            }
-        }
+        // Handler will restore PHY interrupts once they are handled.
+        PostPHYInterruptEvent();
     }
 }
 

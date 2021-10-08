@@ -26,7 +26,6 @@
 // QP Library.
 #include <qpcpp.h>
 
-extern "C" {
 // LwIP.
 #include "lwip/opt.h"
 #include "lwip/init.h"
@@ -36,12 +35,10 @@ extern "C" {
 #include "lwip/mem.h"
 #include "lwip/pbuf.h"
 #include "lwip/sys.h"
-#include "lwip/stats.h"
 #include "lwip/snmp.h"
 #include "lwip/dhcp.h"
 #include "lwip/autoip.h"
 #include "netif/etharp.h"
-} // extern "C"
 
 #include "Signals.h"
 
@@ -83,16 +80,6 @@ void LwIPDrv::StaticInit(
     for (std::vector<LwIPDrv *>::iterator lIt = sVector.begin(); lIt != sVector.end(); ++lIt) {
         (*lIt)->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
     }
-}
-
-
-void LwIPDrv::StaticRd(unsigned int aIndex) {
-    sVector[aIndex]->Rd();
-}
-
-
-void LwIPDrv::StaticWr(unsigned int aIndex) {
-    sVector[aIndex]->Wr();
 }
 
 
@@ -143,7 +130,6 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     // Check the current state of the network interface.
     // We end up here as a result to call to either:
     // netif_set_up(), netif_set_down(), netif_set_ipaddr().
-    // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     lThis->StatusCallback(aNetIF);
 }
@@ -152,10 +138,8 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
 void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
     // We end up here as a result of call to either:
     // netif_set_link_up(), netif_set_link_down().
-    // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    static QP::QEvt const sLinkEvent(LWIP_LINK_CHANGED_SIG);
-    lThis->GetAO().POST(&sLinkEvent, lThis);
+    lThis->LinkCallback(aNetIF);
 }
 
 
@@ -364,21 +348,21 @@ err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const
 
 
 void LwIPDrv::PostRxEvent(void) {
-    static LwIP::Event::Interrupt const sRxEvent(LWIP_RX_READY_SIG, GetIndex());
+    static LwIP::Event::Interrupt const sRxEvent(LWIP_RX_READY_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sRxEvent, this);
 }
 
 
 void LwIPDrv::PostTxEvent(void) {
-    static LwIP::Event::Interrupt const sTxEvent(LWIP_TX_READY_SIG, GetIndex());
+    static LwIP::Event::Interrupt const sTxEvent(LWIP_TX_READY_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sTxEvent, this);
 }
 
 
 void LwIPDrv::PostOverrunEvent(void) {
-    static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, GetIndex());
+    static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sOverrunEvent, this);
 }
@@ -403,6 +387,12 @@ void LwIPDrv::PostLinkChangedEvent(bool aIsUp) {
         static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), false);
         GetAO().POST(&sEvent, this);
     }
+}
+
+
+void LwIPDrv::PostPHYInterruptEvent(void) {
+    static LwIP::Event::Interrupt const sEvent(LWIP_PHY_INT_SIG, &GetNetIF());
+    GetAO().POST(&sEvent, this);
 }
 
 // *****************************************************************************

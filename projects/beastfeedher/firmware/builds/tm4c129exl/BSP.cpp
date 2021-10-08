@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -69,6 +69,10 @@
 
 #include "netif/tm4c129/EthDrv.h"
 
+#if defined(USE_UART0) || defined(Q_SPY)
+#include "uartstdio.h"
+#endif // USE_UART0 || Q_SPY
+
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
 // *****************************************************************************
@@ -104,8 +108,9 @@ enum KernelAwareISRs {
 Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 
 static constexpr uint32_t sClkRate = 120000000;
+static constexpr unsigned long sUartPortNbr = 0;
+static constexpr uint32_t sUartBaudRate = 115200U;
 
-#define UART_BAUD_RATE      115200U
 #ifdef Q_SPY
 
 #define UART_TXFIFO_DEPTH   16U
@@ -326,33 +331,26 @@ private:
         MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
         MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
 
-#ifdef Q_SPY
+#if defined(USE_UART0) || defined(Q_SPY)
         // Debug UART port.
-        GPIO lU0RxGPIO(GPIOC_AHB_BASE, GPIO_PIN_4);
-        GPIO lU0TxGPIO(GPIOC_AHB_BASE, GPIO_PIN_5);
-        MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+        GPIO lU0RxGPIO(GPIOA_AHB_BASE, GPIO_PIN_0);
+        GPIO lU0TxGPIO(GPIOA_AHB_BASE, GPIO_PIN_1);
+        MAP_GPIOPinConfigure(GPIO_PA0_U0RX);
+        MAP_GPIOPinConfigure(GPIO_PA1_U0TX);
         MAP_GPIOPinTypeUART(
             lU0RxGPIO.GetPort(),
             lU0RxGPIO.GetPin() | lU0TxGPIO.GetPin()
         );
-        //UARTStdioInit(0);
         // Enable UART0:
         // @115200, 8-N-1.
+        // Flush the buffers.
+        UARTStdioInit(sUartPortNbr, mClkRate, sUartBaudRate);
+#endif // USE_UART0 || Q_SPY
+
+#ifdef Q_SPY
+        // Enable interrupts.
         // Interrupt on rx FIFO half-full.
         // UART interrupts: rx and rx-to.
-        // Flush the buffers.
-        MAP_UARTConfigSetExpClk(
-            UART0_BASE,
-            mClkRate,//SysCtlClockGet(),
-            UART_BAUD_RATE,
-            (UART_CONFIG_PAR_NONE
-            | UART_CONFIG_STOP_ONE
-            | UART_CONFIG_WLEN_8)
-        );
-        MAP_UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);
-        MAP_UARTEnable(UART0_BASE);
-
-        // Enable interrupts.
         MAP_UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
         MAP_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
         MAP_IntEnable(INT_UART0);
@@ -422,7 +420,8 @@ private:
         mEthDrv = std::make_unique<EthDrv>(
             lMyNetIFIndex,
             lMAC,
-            lPBufQueueSize
+            lPBufQueueSize,
+            mClkRate
         );
     }
 
@@ -632,6 +631,7 @@ void QP::QF::onStartup(void) {
     // Set up the SysTick timer to fire at BSP_TICKS_PER_SEC rate
     // !!! SysCtlClockGet can not be used for tm4c129 !!!
     // Using constant here assumes SysCtlClockFreqSet() was successful.
+    // This is better handled in the lm3s6965 port.
     MAP_SysTickPeriodSet(sClkRate / BSP::TICKS_PER_SEC);
     MAP_IntPrioritySet(FAULT_SYSTICK, 0x80); //SYSTICK_PRIO
     MAP_SysTickIntEnable();

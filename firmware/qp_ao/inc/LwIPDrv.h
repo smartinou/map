@@ -53,9 +53,9 @@ public:
         uint32_t aSubnetMask,
         uint32_t aGWAddress
     );
-    static void StaticRd(unsigned int aIndex);
-    static void StaticWr(unsigned int aIndex);
     static void StaticISR(unsigned int aIndex);
+    virtual void Rd(void) = 0;
+    virtual void Wr(void) = 0;
 
     static uint8_t const *StaticGetMACAddress(unsigned int aIndex);
     static uint32_t StaticGetIPAddress(unsigned int aIndex);
@@ -74,6 +74,7 @@ public:
     uint32_t GetDefaultGW(void) const;
     void StartIPCfg(void);
 
+    virtual void PHYISR(void) {/*DoNothing();*/}
     virtual void DisableAllInt(void) = 0;
     virtual void EnableAllInt(void) = 0;
 
@@ -85,6 +86,7 @@ protected:
     void PostOverrunEvent(void);
     void PostNetIFChangedEvent(bool aIsUp);
     void PostLinkChangedEvent(bool aIsUp);
+    void PostPHYInterruptEvent(void);
 
     unsigned int GetIndex(void) const {return mMyIndex;}
     struct netif &GetNetIF(void) {return mNetIF;}
@@ -109,11 +111,10 @@ private:
 
     static void StaticStatusCallback(struct netif * const aNetIF);
     static void StaticLinkCallback(struct netif * const aNetIF);
-    void StatusCallback(struct netif * const aNetIF);
+    virtual void StatusCallback(struct netif * const aNetIF);
+    virtual void LinkCallback(struct netif * const aNetIF) { static_cast<void>(aNetIF);}
 
     virtual err_t EtherIFOut(struct pbuf * const aPBuf) = 0;
-    virtual void Rd(void) = 0;
-    virtual void Wr(void) = 0;
 
     virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
     virtual void ISR(void) = 0;
