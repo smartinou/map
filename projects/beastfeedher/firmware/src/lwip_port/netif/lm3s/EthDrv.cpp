@@ -26,11 +26,9 @@
 // QP Library.
 #include <qpcpp.h>
 
-extern "C" {
 // LwIP.
 #include "lwip/opt.h"
 #include "lwip/def.h"
-} // extern "C"
 
 // TI Library.
 #include <inc/hw_ethernet.h>
@@ -41,7 +39,6 @@ extern "C" {
 #include <driverlib/sysctl.h>
 
 #include "netif/etharp.h"
-
 #include "netif/lm3s/EthDrv.h"
 
 // *****************************************************************************
@@ -87,20 +84,97 @@ EthDrv::EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, uns
 }
 
 
+void EthDrv::Rd(void) {
+
+    // New packet received into the pbuf?
+    struct pbuf * const lPBuf = LowLevelRx();
+    if (lPBuf != nullptr) {
+        // pbuf handled?
+        if (ethernet_input(lPBuf, &GetNetIF()) != ERR_OK) {
+            // Free the pbuf.
+            pbuf_free(lPBuf);
+        }
+        // Try to output a packet if TX fifo is empty and pbuf is available.
+        Wr();
+    }
+
+    // Re-enable the RX interrupt.
+    EthernetIntEnable(ETH_BASE, ETH_INT_RX);
+}
+
+
+void EthDrv::Wr(void) {
+
+    // TX fifo empty? Should be since we likely got here by TxEmpty int.
+    if (IsTxEmpty()) {
+        struct pbuf * const lPBuf = GetPBufQ().Get();
+        // pbuf found in the queue?
+        if (lPBuf != nullptr) {
+            // Send and free the pbuf: lwIP knows nothing of it.
+            LowLevelTx(lPBuf);
+            pbuf_free(lPBuf);
+        }
+    }
+}
+
+
+void EthDrv::PHYISR(void) {
+    // This PHYISR handler is called in normal "task" context.
+    // EthDrv::ISR() makes call to read and clear interrupt status.
+
+    unsigned long lPHYInt = EthernetPHYRead(ETH_BASE, PHY_MR17);
+    if (lPHYInt & PHY_MR17_LSCHG_INT) {
+        // Link status changed: determine new state.
+        unsigned int lPHYStatus = EthernetPHYRead(ETH_BASE, PHY_MR1);
+        if (lPHYStatus & PHY_MR1_LINK) {
+            // Signal the link is up.
+            PostLinkChangedEvent(true);
+        //} else if (lPHYStatus & PHY_MR1_ANEGC) {
+            // Not sure which should come 1st: link of autoneg?
+        } else {
+            // Signal the link is down.
+            PostLinkChangedEvent(false);
+        }
+    }
+
+    if ((lPHYInt & PHY_MR17_LSCHG_INT)
+        || (lPHYInt & PHY_MR17_ANEGCOMP_INT)) {
+        // Check for duplex and rate states.
+        unsigned long lCfg = EthernetConfigGet(ETH_BASE);
+        unsigned long lPHYDiag = EthernetPHYRead(ETH_BASE, PHY_MR18);
+        if (lPHYDiag & PHY_MR18_DPLX) {
+            // Enable duplex mode in MAC.
+            lCfg |= ETH_CFG_TX_DPLXEN;
+        } else {
+            // Disable duplex mode in MAC.
+            lCfg &= ~ETH_CFG_TX_DPLXEN;
+        }
+
+        // Nothing to force MAC in 10/100 rate!
+        EthernetConfigSet(ETH_BASE, lCfg);
+    }
+
+    // Now that the interrupt source was likely cleared, clear the flag.
+    // Re-enable PHY interrupt.
+    EthernetIntEnable(ETH_BASE, ETH_INT_PHY);
+}
+
+
 void EthDrv::DisableAllInt(void) {
-    EthernetIntEnable(ETH_BASE, ETH_INT_RX | ETH_INT_TX | ETH_INT_PHY);
+    EthernetIntDisable(ETH_BASE, ETH_INT_RX | ETH_INT_TX);
+
+#if LINK_STATS
+    EthernetIntDisable(ETH_BASE, ETH_INT_RXOF);
+#endif
 }
 
 
 void EthDrv::EnableAllInt(void) {
-    // Enable PHY interrupts: auto-negotiation complete, link status change.
-    //EthernetPHYWrite(ETH_BASE, PHY_MR17, PHY_MR17_LSCHG_IE | PHY_MR17_ANEGCOMP_IE);
-
     // Enable Ethernet TX and RX Packet Interrupts.
-    HWREG(ETH_BASE + MAC_O_IM) |= (ETH_INT_RX | ETH_INT_TX | ETH_INT_PHY);
+    EthernetIntEnable(ETH_BASE, ETH_INT_RX | ETH_INT_TX);
 
 #if LINK_STATS
-    HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RXOF;
+    EthernetIntEnable(ETH_BASE, ETH_INT_RXOF);
 #endif
 }
 
@@ -116,7 +190,7 @@ void EthDrv::EnableAllInt(void) {
 // @param p the pbuf to send
 // @return ERR_OK if the packet could be sent
 //         an err_t value if the packet couldn't be sent
-err_t EthDrv::EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
+err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
 
     // Nothing in the TX queue?
     // TX empty?
@@ -141,45 +215,6 @@ err_t EthDrv::EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf)
 }
 
 
-void EthDrv::Rd(void) {
-
-    // New packet received into the pbuf?
-    struct pbuf * const lPBuf = LowLevelRx();
-    if (lPBuf != nullptr) {
-        // pbuf handled?
-        if (ethernet_input(lPBuf, &GetNetIF()) != ERR_OK) {
-            // Free the pbuf.
-            // [MG] SHOULD CALL EthDrv::FreePBuf()???
-            pbuf_free(lPBuf);
-        }
-        // [MG] UNE FOIS QUE PBUF_FREE(), IL FAUT REDONNER LE DESCRIPTEUR. OUIN...
-        // PIS LA, C'EST CHIEN, PARCE == nullptr.
-        // Try to output a packet if TX fifo is empty and pbuf is available.
-        Wr();
-    }
-
-    // Re-enable the RX interrupt.
-    //EnableRxInt();
-    //HWREG(ETH_BASE + MAC_O_IM) |= ETH_INT_RX;
-    EthernetIntEnable(ETH_BASE, ETH_INT_RX);
-}
-
-
-void EthDrv::Wr(void) {
-
-    // TX fifo empty? Should be since we likely got here by TxEmpty int.
-    if (IsTxEmpty()) {
-        struct pbuf * const lPBuf = GetPBufQ().Get();
-        // pbuf found in the queue?
-        if (lPBuf != nullptr) {
-            // Send and free the pbuf: lwIP knows nothing of it.
-            LowLevelTx(lPBuf);
-            pbuf_free(lPBuf);
-        }
-    }
-}
-
-
 err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 
     // Initialize the hardware...
@@ -189,20 +224,34 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     // Set the MAC address.
     EthernetMACAddrSet(ETH_BASE, &aNetIF->hwaddr[0]);
 
+    // Configure PHY interrupts.
+    // Listen to interrupts:
+    //    -"Change of link status"
+    //    -"Auto-negotiation complete"
+    EthernetPHYWrite(
+        ETH_BASE,
+        PHY_MR17,
+        PHY_MR17_LSCHG_IE | PHY_MR17_ANEGCOMP_IE
+    );
+
     // Maximum transfer unit.
     aNetIF->mtu = 1500;
 
     // Set device capabilities.
-    aNetIF->flags = (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_LINK_UP);
+    aNetIF->flags |= (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP);
 
     // Disable all Ethernet interrupts.
-    HWREG(ETH_BASE + MAC_O_IM) &=
-        ~(ETH_INT_PHY | ETH_INT_MDIO | ETH_INT_RXER
-            | ETH_INT_RXOF | ETH_INT_TX | ETH_INT_TXER | ETH_INT_RX
+    EthernetIntDisable(
+        ETH_BASE,
+        (ETH_INT_PHY | ETH_INT_MDIO | ETH_INT_RXER
+            | ETH_INT_RXOF | ETH_INT_TX | ETH_INT_TXER | ETH_INT_RX)
     );
 
     // Acknolwedge all interrupts.
-    HWREG(ETH_BASE + MAC_O_IACK) = HWREG(ETH_BASE + MAC_O_RIS);
+    static constexpr tBoolean sIsMasked = false;
+    unsigned long lIntStatus = EthernetIntStatus(ETH_BASE, sIsMasked);
+    EthernetIntClear(ETH_BASE, lIntStatus);
+    EthernetIntEnable(ETH_BASE, ETH_INT_PHY);
 
     // Initialize the Ethernet Controller.
     EthernetInitExpClk(ETH_BASE, SysCtlClockGet());
@@ -226,50 +275,36 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 
 void EthDrv::ISR(void) {
 
-    unsigned long lEthStatus = HWREG(ETH_BASE + MAC_O_RIS);
-
     // Clear the interrupt sources.
-    HWREG(ETH_BASE + MAC_O_IACK) = lEthStatus; 
-
     // Mask only the enabled sources.
-    lEthStatus &= HWREG(ETH_BASE + MAC_O_IM);
+    static constexpr tBoolean sIsMasked = true;
+    unsigned long lIntStatus = EthernetIntStatus(ETH_BASE, sIsMasked);
+    EthernetIntClear(ETH_BASE, lIntStatus);
 
-    if ((lEthStatus & ETH_INT_RX) != 0) {
+    if ((lIntStatus & ETH_INT_RX) != 0) {
         // Send to the AO.
         PostRxEvent();
         // Disable further RX.
-        HWREG(ETH_BASE + MAC_O_IM) &= ~ETH_INT_RX;
+        EthernetIntDisable(ETH_BASE, ETH_INT_RX);
     }
   
-    if ((lEthStatus & ETH_INT_TX) != 0) {
+    if ((lIntStatus & ETH_INT_TX) != 0) {
         // Send to the AO.
         PostTxEvent();
     }
+
 #if LINK_STATS
-    if ((lEthStatus & ETH_INT_RXOF) != 0) {
+    if ((lIntStatus & ETH_INT_RXOF) != 0) {
         // Send to the AO.
         PostOverrunEvent();
     }
 #endif
 
-#if 0
-    if ((lEthStatus & ETH_INT_PHY) != 0) {
-        unsigned long lPHYInt = EthernetPHYRead(ETH_BASE, PHY_MR17);
-        if (lPHYInt | PHY_MR17_LSCHG_INT) {
-            // Link status changed: determine new state.
-            unsigned int lPHYStatus = EthernetPHYRead(ETH_BASE, PHY_MR1);
-            if (lPHYStatus | PHY_MR1_LINK) {
-                // Signal the link is up. Callback will do the rest.
-                netif_set_link_up(&GetNetIF());
-            } else if (lPHYStatus | PHY_MR1_ANEGC) {
-                // Not sure which should come 1st: link of autoneg?
-            } else if ((lPHYStatus & PHY_MR1_LINK) == 0) {
-                // Signal the link is up. Callback will do the rest.
-                netif_set_link_down(&GetNetIF());
-            }
-        }
+    // Process PHY interrupts.
+    if ((lIntStatus & ETH_INT_PHY) != 0) {
+        // Handler will restore PHY interrupts once they are handled.
+        PostPHYInterruptEvent();
     }
-#endif
 }
 
 
@@ -435,12 +470,6 @@ struct pbuf *EthDrv::LowLevelRx(void) {
     }
 
     return lPBuf;
-}
-
-
-void EthDrv::FreePBuf(struct pbuf * const aPBuf) {
-    // Free the pbuf.
-    pbuf_free(aPBuf);
 }
 
 

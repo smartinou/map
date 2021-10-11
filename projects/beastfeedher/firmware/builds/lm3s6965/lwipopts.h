@@ -101,9 +101,9 @@
 // ---------- Memory options ----------
 //
 //****************************************************************************
-//#define MEM_LIBC_MALLOC                 0
+#define MEM_LIBC_MALLOC                 1
 #define MEM_ALIGNMENT                   4           // default is 1
-#define MEM_SIZE                        (8 * 1024)  // default is 1600
+//#define MEM_SIZE                        (8 * 1024)  // default is 1600
 //#define MEMP_OVERFLOW_CHECK             0
 //#define MEMP_SANITY_CHECK               0
 //#define MEM_USE_POOLS                   0
@@ -286,9 +286,10 @@
 //****************************************************************************
 #define LWIP_NETIF_HOSTNAME             1           // default is 0
 //#define LWIP_NETIF_API                  0
-#define LWIP_NETIF_STATUS_CALLBACK      1           // default is 0
-#define LWIP_NETIF_LINK_CALLBACK        1           // default is 0
+//#define LWIP_NETIF_STATUS_CALLBACK      1           // default is 0
+//#define LWIP_NETIF_LINK_CALLBACK        1           // default is 0
 //#define LWIP_NETIF_HWADDRHINT           0
+#define LWIP_NETIF_EXT_STATUS_CALLBACK  1
 
 //****************************************************************************
 //

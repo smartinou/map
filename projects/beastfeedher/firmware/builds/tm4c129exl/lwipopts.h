@@ -287,9 +287,10 @@
 //****************************************************************************
 #define LWIP_NETIF_HOSTNAME             1           // default is 0
 //#define LWIP_NETIF_API                  0
-#define LWIP_NETIF_STATUS_CALLBACK      1           // default is 0
-#define LWIP_NETIF_LINK_CALLBACK        1           // default is 0
+//#define LWIP_NETIF_STATUS_CALLBACK      1           // default is 0
+//#define LWIP_NETIF_LINK_CALLBACK        1           // default is 0
 //#define LWIP_NETIF_HWADDRHINT           0
+#define LWIP_NETIF_EXT_STATUS_CALLBACK  1
 
 //****************************************************************************
 //

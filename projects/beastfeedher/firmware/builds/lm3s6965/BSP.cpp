@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -64,6 +64,10 @@
 #include "IBSP.h"
 #include "BSP.h"
 
+#if defined(USE_UART0) || defined(Q_SPY)
+#include "uartstdio.h"
+#endif // USE_UART0 || Q_SPY
+
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
 // *****************************************************************************
@@ -98,8 +102,9 @@ enum KernelAwareISRs {
 // "kernel-aware" interrupts should not overlap the PendSV priority.
 Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 
+static constexpr unsigned long sUartPortNbr = 0;
+static constexpr uint32_t sUartBaudRate = 115200U;
 
-#define UART_BAUD_RATE      115200U
 #ifdef Q_SPY
 
 #define UART_TXFIFO_DEPTH   16U
@@ -327,29 +332,19 @@ private:
         //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG);
         //SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH);
 
-#ifdef Q_SPY
+#if defined(USE_UART0) || defined(Q_SPY)
         // Debug UART port.
         GPIO lU0RxGPIO(GPIO_PORTA_BASE, GPIO_PIN_0);
         GPIO lU0TxGPIO(GPIO_PORTA_BASE, GPIO_PIN_1);
-        SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
         GPIOPinTypeUART(lU0RxGPIO.GetPort(), lU0RxGPIO.GetPin() | lU0TxGPIO.GetPin());
-        //UARTStdioInit(0);
+
         // Enable UART0:
         // @115200, 8-N-1.
-        // Interrupt on rx FIFO half-full.
-        // UART interrupts: rx and rx-to.
         // Flush the buffers.
-        UARTConfigSetExpClk(
-            UART0_BASE,
-            SysCtlClockGet(),
-            UART_BAUD_RATE,
-            (UART_CONFIG_PAR_NONE
-            | UART_CONFIG_STOP_ONE
-            | UART_CONFIG_WLEN_8)
-        );
-        UARTFIFOLevelSet(UART0_BASE, UART_FIFO_TX1_8, UART_FIFO_RX4_8);
-        UARTEnable(UART0_BASE);
+        UARTStdioInit(sUartPortNbr, SysCtlClockGet(), sUartBaudRate);
+#endif // USE_UART0 || Q_SPY
 
+#ifdef Q_SPY
         // Enable interrupts.
         UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
         UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);

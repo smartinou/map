@@ -38,14 +38,15 @@ public:
     ~EthDrv() {}
 
     // LwIPDrv interface.
+    void Rd(void) override;
+    void Wr(void) override;
+    void PHYISR(void) override;
     void DisableAllInt(void) override;
     void EnableAllInt(void) override;
 
 private:
     // LwIPDrv interface.
-    err_t EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
-    void Rd(void);
-    void Wr(void);
+    err_t EtherIFOut(struct pbuf * const aPBuf) override;
 
     err_t EtherIFInit(struct netif * const aNetIF) override;
     void ISR(void) override;
@@ -53,7 +54,6 @@ private:
     // Local interface.
     void LowLevelTx(struct pbuf * const aPBuf);
     struct pbuf *LowLevelRx(void);
-    void FreePBuf(struct pbuf * const aPBuf);
 
     bool IsTxEmpty(void) const;
 

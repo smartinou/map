@@ -46,8 +46,6 @@
 #include "netif/tm4c129/EthDrv.h"
 #include "netif/tm4c129/CustomPBuf.h"
 
-//#include "uartstdio.h"
-
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
 // *****************************************************************************
@@ -242,7 +240,7 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     );
 
     // Configure PHY interrupts.
-    // Listen to interrupt:
+    // Listen to interrupts:
     //    -"Change of link status"
     //    -"Change of Speed Status"
     //    -"Change of Duplex Status"
@@ -348,7 +346,8 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 
 void EthDrv::ISR(void) {
     // Get and clear the interrupt sources.
-    uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, true);
+    static constexpr bool sIsMasked = true;
+    uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, sIsMasked);
     MAP_EMACIntDisable(EMAC0_BASE, lStatus);
     MAP_EMACIntClear(EMAC0_BASE, lStatus);
 

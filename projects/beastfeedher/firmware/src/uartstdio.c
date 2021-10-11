@@ -406,9 +406,9 @@ UARTStdioInit(unsigned long ulPortNum, uint32_t aSysClk, uint32_t aBaudRate)
     // Enable the UART peripheral for use.
     //
     MAP_SysCtlPeripheralEnable(g_ulUartPeriph[ulPortNum]);
-    while (!MAP_SysCtlPeripheralReady(g_ulUartPeriph[ulPortNum])) {
+    //while (!SysCtlPeripheralReady(g_ulUartPeriph[ulPortNum])) {
         // Wait.
-    }
+    //}
 
     //
     // Configure the UART for aBaudRate, n, 8, 1

@@ -126,6 +126,7 @@ void LwIPDrv::DNSFoundCallback(
 }
 
 
+#if LWIP_NETIF_STATUS_CALLBACK
 void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     // Check the current state of the network interface.
     // We end up here as a result to call to either:
@@ -133,37 +134,66 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     lThis->StatusCallback(aNetIF);
 }
+#endif // LWIP_NETIF_STATUS_CALLBACK
 
 
+#if LWIP_NETIF_LINK_CALLBACK
 void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
     // We end up here as a result of call to either:
     // netif_set_link_up(), netif_set_link_down().
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     lThis->LinkCallback(aNetIF);
 }
+#endif // LWIP_NETIF_LINK_CALLBACK
 
 
-void LwIPDrv::StatusCallback(struct netif * const aNetIF) {
-    // Finally, check if IP address changed.
-    if (!ip_addr_cmp(&mNetIF.ip_addr, &mIPAddress)
-        || !ip_addr_cmp(&mNetIF.netmask, &mSubnetMask)
-        || !ip_addr_cmp(&mNetIF.gw, &mGWAddress)) {
+#if LWIP_NETIF_EXT_STATUS_CALLBACK
+void LwIPDrv::StaticExtCallback(
+    struct netif * const aNetIF,
+    netif_nsc_reason_t aReason,
+    const netif_ext_callback_args_t *aArgs) {
+    // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
+    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    lThis->ExtCallback(aNetIF, aReason, aArgs);
+}
+
+
+void LwIPDrv::ExtCallback(
+    struct netif * const aNetIF,
+    netif_nsc_reason_t aReason,
+    const netif_ext_callback_args_t *aArgs
+) {
+    static_cast<void>(aArgs);
+
+#if LWIP_NETIF_STATUS_CALLBACK
+    if (aReason | LWIP_NSC_STATUS_CHANGED) {
+        StatusCallback(aNetIF);
+    } else
+#endif // LWIP_NETIF_STATUS_CALLBACK
+#if LWIP_NETIF_LINK_CALLBACK
+    if (aReason | LWIP_NSC_LINK_CHANGED) {
+        LinkCallback(aNetIF);
+    } else
+#endif // LWIP_NETIF_LINK_CALLBACK
+    if (aReason
+        & (LWIP_NSC_IPV4_ADDRESS_CHANGED
+            | LWIP_NSC_IPV4_NETMASK_CHANGED
+            | LWIP_NSC_IPV4_GATEWAY_CHANGED)) {
         // Some components of IP address changed.
-        // Use copy macros.
-        ip_addr_copy(mIPAddress, mNetIF.ip_addr);
-        ip_addr_copy(mSubnetMask, mNetIF.netmask);
-        ip_addr_copy(mGWAddress, mNetIF.gw);
-
         LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
             LwIP::Event::IPAddressChanged,
-            LWIP_NETIF_CHANGED_SIG,
-            mIPAddress.addr,
-            mSubnetMask.addr,
-            mGWAddress.addr
+            LWIP_IP_CHANGED_SIG,
+            mNetIF.ip_addr.addr,
+            mNetIF.netmask.addr,
+            mNetIF.gw.addr
         );
         QP::QF::PUBLISH(lEvent, this);
+    } else {
+        // Discard all other reasons (netif.h):
+        // LWIP_NSC_NONE, LWIP_NSC_NETIF_ADDED, LWIP_NSC_NETIF_REMOVED
     }
 }
+#endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 
 uint8_t const *LwIPDrv::GetMACAddress(void) const {
@@ -210,21 +240,15 @@ LwIPDrv::LwIPDrv(
     EthernetAddress const &aEthernetAddress
 )   : mMyIndex(aIndex)
     , mNetIF{0}
+    , mExtCallback{0}
     , mUseDHCP(false)
-    , mIPAddress{0}
-    , mSubnetMask{0}
-    , mGWAddress{0} {
-
+{
     // Associate this <struct netif *, LwIPDrv>.
     LwIPDrv::sVector[aIndex] = this;
 
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
     memcpy(&GetNetIF().hwaddr[0], aEthernetAddress.GetData(), NETIF_MAX_HWADDR_LEN);
-
-    IP4_ADDR(&mIPAddress, 0, 0, 0, 0);
-    IP4_ADDR(&mSubnetMask, 0, 0, 0, 0);
-    IP4_ADDR(&mGWAddress, 0, 0, 0, 0);
 }
 
 
@@ -308,13 +332,22 @@ void LwIPDrv::DrvInit(
     GetNetIF().output = &etharp_output;
     GetNetIF().linkoutput = &LwIPDrv::StaticEtherIFOut;
 
+#if LWIP_NETIF_STATUS_CALLBACK
     // Set status callback.
     // Called after: netif_set_ipaddr(), netif_set_up(), netif_set_down().
     netif_set_status_callback(&GetNetIF(), LwIPDrv::StaticStatusCallback);
+#endif // LWIP_NETIF_STATUS_CALLBACK
 
+#if LWIP_NETIF_LINK_CALLBACK
     // Set link callback.
     // Called after netif_set_link_up(), netif_set_link_down().
-    //netif_set_link_callback(&GetNetIF(), LwIPDrv::StaticLinkCallback);
+    netif_set_link_callback(&GetNetIF(), LwIPDrv::StaticLinkCallback);
+#endif // LWIP_NETIF_LINK_CALLBACK
+
+#if LWIP_NETIF_EXT_STATUS_CALLBACK
+    // Ext callback.
+    netif_add_ext_callback(&mExtCallback, LwIPDrv::StaticExtCallback);
+#endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 #if (LWIP_DNS != 0)
     // Add Google DNS.

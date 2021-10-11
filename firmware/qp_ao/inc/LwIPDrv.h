@@ -109,10 +109,28 @@ private:
     static err_t StaticEtherIFInit(struct netif * const aNetIF);
     static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
 
+#if LWIP_NETIF_STATUS_CALLBACK
     static void StaticStatusCallback(struct netif * const aNetIF);
+    virtual void StatusCallback(struct netif * const aNetIF) {static_cast<void>(aNetIF);}
+#endif // LWIP_NETIF_STATUS_CALLBACK
+
+#if LWIP_NETIF_LINK_CALLBACK
     static void StaticLinkCallback(struct netif * const aNetIF);
-    virtual void StatusCallback(struct netif * const aNetIF);
     virtual void LinkCallback(struct netif * const aNetIF) { static_cast<void>(aNetIF);}
+#endif // LWIP_NETIF_LINK_CALLBACK
+
+#if LWIP_NETIF_EXT_STATUS_CALLBACK
+    static void StaticExtCallback(
+        struct netif * const aNetIF,
+        netif_nsc_reason_t aReason,
+        const netif_ext_callback_args_t *aArgs
+    );
+    virtual void ExtCallback(
+        struct netif * const aNetIF,
+        netif_nsc_reason_t aReason,
+        const netif_ext_callback_args_t *aArgs
+    );
+#endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
     virtual err_t EtherIFOut(struct pbuf * const aPBuf) = 0;
 
@@ -126,12 +144,9 @@ private:
 
     unsigned int mMyIndex;
     struct netif mNetIF;
+    netif_ext_callback_t mExtCallback;
     bool mUseDHCP;
     QP::QActive *mAO = nullptr;
-
-    ip_addr_t mIPAddress;
-    ip_addr_t mSubnetMask;
-    ip_addr_t mGWAddress;
 };
 
 // ******************************************************************************
