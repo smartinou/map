@@ -193,21 +193,16 @@ err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
 
     // Chain pbufs elements to transmit into as many descriptors:
     // Each pbuf element is attached to a descriptor of the tx chain.
-    uint32_t lStatus = EMACStatusGet(EMAC0_BASE);
-    if (!lStatus) {
-        TxDescriptor * const lTxDMACurrentDescriptor =
-            static_cast<TxDescriptor * const>(EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
-        bool lResult = mTxRingBuf.PushPBuf(lTxDMACurrentDescriptor, aPBuf, true);
-        if (lResult) {
-            // Don't release the pbuf after this call.
-            // It will be released once the packet is out.
-            pbuf_ref(aPBuf);
-            // Unblock the transmitter potentially in suspended state.
-            EMACTxDMAPollDemand(EMAC0_BASE);
-            return ERR_OK;
-        }
-    } else {
-        while(1);
+    TxDescriptor * const lTxDMACurrentDescriptor =
+        static_cast<TxDescriptor * const>(EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
+    bool lResult = mTxRingBuf.PushPBuf(lTxDMACurrentDescriptor, aPBuf, true);
+    if (lResult) {
+        // Don't release the pbuf after this call.
+        // It will be released once the packet is out.
+        pbuf_ref(aPBuf);
+        // Unblock the transmitter potentially in suspended state.
+        EMACTxDMAPollDemand(EMAC0_BASE);
+        return ERR_OK;
     }
 
     // Error while assigning pbuf to descriptor chain.
@@ -368,6 +363,7 @@ void EthDrv::ISR(void) {
         } else {
             LINK_STATS_INC(link.err);
         }
+        EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT);
     }
 
     // Process abnormal interrupts.

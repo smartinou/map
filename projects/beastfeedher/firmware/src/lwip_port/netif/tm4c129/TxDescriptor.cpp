@@ -72,14 +72,16 @@ TxDescriptor *TxRingBuf::Create(size_t aSize) {
     for (size_t lIx = 0; lIx < aSize; lIx++) {
         TxDescriptor *lDescriptor = new TxDescriptor;
         if (lDescriptor != nullptr) {
-            if (mHead == nullptr) {
+            if (mTail == nullptr) {
                 // Add to empty.
-                mHead = lDescriptor;
-                lDescriptor->ChainTo(mHead);
+                mTail = lDescriptor;
+                //mHead = lDescriptor;
+                lDescriptor->ChainTo(mTail);
             } else {
                 // Insert at "end" of circular list.
-                lDescriptor->ChainTo(static_cast<TxDescriptor *>(mHead->DES3.pLink));
-                mHead->ChainTo(lDescriptor);
+                lDescriptor->ChainTo(static_cast<TxDescriptor *>(mTail->DES3.pLink));
+                mTail->ChainTo(lDescriptor);
+                mTail = lDescriptor;
             }
             // Don't give descriptor to HW yet: this will be done when pbufs are assigned.
         } else {
@@ -91,94 +93,107 @@ TxDescriptor *TxRingBuf::Create(size_t aSize) {
     }
 
     mSize = aSize;
-    mTail = mHead;
-    mBkp = mHead;
+    mHead = mTail;
     return mHead;
 }
 
 
-TxDescriptor *TxRingBuf::PutPBufs(struct pbuf *aPBuf, bool aIsFirstPBuf) {
-    if (aIsFirstPBuf) {
-        // Save the head in case we need to backtrack.
-        SaveHead();
-    }
-
-    TxDescriptor *lDescriptor = mHead;
-    while (aPBuf && !IsFull() && !lDescriptor->IsHWOwned()) {
-        // Operation succeeded. Update head pointer.
-        mHead = lDescriptor->GetNext();
-
-        // Check if this is a chained pbuf.
-        if (aPBuf->next != nullptr) {
-            TxDescriptor *lDummy = PutPBufs(aPBuf, false);
-            if (lDummy == nullptr) {
-                // Failed to store other pbufs of the chain.
-                break;
-            }
-        } else {
-            // This is the end of the chain of pbufs. Mark it.
-            lDescriptor->SetFrameEnd();
-        }
-        lDescriptor->SetPBuf(aPBuf);
-        lDescriptor->SetPayload(aPBuf->payload);
-        lDescriptor->SetLen(aPBuf->len);
-
-        if (aIsFirstPBuf) {
-            // This is the 1st descriptor of the chain. Mark it.
-            lDescriptor->SetFrameStart();
-        }
-
-        // Give to HW last: this way, if failing to allocate a descriptor in the chain,
-        // it will be easier to reclaim them for SW usage.
-        lDescriptor->GiveToHW();
-        return lDescriptor;
-    }
-
-    // Either no pbuf, ring full or descriptor owned by HW.
-    if (aIsFirstPBuf) {
-        RestoreHead();
-    }
-    return nullptr;
+bool TxRingBuf::PushPBuf(struct pbuf * const aPBuf) {
+    // Get the head descriptor and start assigning PBuf chain to it.
+    TxDescriptor * const lDescriptor = GetNext();
+    return PushPBuf(lDescriptor, aPBuf, true);
 }
 
 
-TxDescriptor *TxRingBuf::GetPBufs(void) {
+bool TxRingBuf::PopPBuf(TxDescriptor const * const aCurrentDescriptor) {
 
-    // Should be SW-owned now, but check anyway.
+    bool lResult = true;
     TxDescriptor *lDescriptor = mTail;
-    if ((lDescriptor != nullptr) && !lDescriptor->IsHWOwned()) {
-        // This descriptor was released from the HW.
-        // Increment Tail as far as the pbuf spans.
-        struct pbuf *lPBuf = lDescriptor->GetPBuf();
-        mTail = lDescriptor->GetNext();
-        while (lPBuf->next != nullptr) {
-            // Opt: check that the stored pbuf for this descriptor is null as expected.
-            lPBuf = lPBuf->next;
-            mTail = mTail->GetNext();
+    while ((lDescriptor != aCurrentDescriptor) && !lDescriptor->IsHWOwned()) {
+        if (lDescriptor->IsFrameStart()) {
+            // Free the attached pbuf.
+            lDescriptor->FreePBuf();
         }
 
-        // Once tail goes beyond the last descriptor, free the pbuf.
-        lDescriptor->FreePBuf();
-        return mTail;
+        // Crude check for any errors for this descriptor.
+        if (lDescriptor->IsErrSet()) {
+            lResult = false;
+        }
+        // Nothing to do for intermediate descriptors but reclaim it.
+        lDescriptor = lDescriptor->GetNext();
+        mTail = lDescriptor;
     }
 
-    // Reached current descriptor or hit a busy descriptor prematurely: bail out.
-    return nullptr;
-
-}
-
-
-void TxRingBuf::Free(void) {
-
-    TxDescriptor * const lDescriptor = mHead;
-    for (size_t lIx = 0; lIx < mSize; lIx++) {
-        
-    }
+    return lResult;
 }
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+TxDescriptor *TxRingBuf::GetNext(TxDescriptor * const aDescriptor) const {
+    if (!aDescriptor) {
+        return mHead;
+    } else if (!IsFull(aDescriptor)) {
+        return aDescriptor->GetNext();
+    }
+
+    return nullptr;
+}
+
+
+bool TxRingBuf::PushPBuf(TxDescriptor * const aDescriptor, struct pbuf * const aPBuf, bool aIsFirstPBuf) {
+
+    if (aPBuf && aDescriptor && !aDescriptor->IsHWOwned()) {
+        aDescriptor->Reset();
+        // Check if this is a chained pbuf.
+        if (aPBuf->next != nullptr) {
+            // Acquire next descriptor and let recursive call test it.
+            TxDescriptor * const lNextDescriptor = GetNext(aDescriptor);
+            bool lResult = PushPBuf(lNextDescriptor, aPBuf->next);
+            if (!lResult) {
+                // Something went wrong while setting the next element of the pbuf chain.
+                // Recurse back propagating the result up to 1st descriptor.
+                return false;
+            }
+        } else {
+            // This is the end of the chain of pbufs.
+            // Mark the descriptor and set the new head to next descriptor.
+            aDescriptor->SetFrameEnd();
+            SetHead(aDescriptor->GetNext());
+        }
+   
+        aDescriptor->SetPBuf(aPBuf);
+        aDescriptor->SetPayload(aPBuf->payload);
+        aDescriptor->SetLen(aPBuf->len);
+
+        if (aIsFirstPBuf) {
+            // This is the 1st descriptor of the chain. Mark it.
+            aDescriptor->SetFrameStart();
+        }
+
+        // Give to HW last: this way, if failing to allocate a descriptor in the chain,
+        // it will be easier to reclaim them for SW usage.
+        // Also to avoid race condition with multiple descriptors.
+        aDescriptor->GiveToHW();
+        return true;
+    }
+
+    return false;
+}
+
+
+void TxRingBuf::Free(void) {
+
+    // Start from the current head.
+    TxDescriptor * lDescriptor = mHead;
+    for (size_t lIx = 0; lIx < mSize; lIx++) {
+        TxDescriptor * lNextDescriptor = lDescriptor->GetNext();
+        lDescriptor->FreePBuf();
+        delete lDescriptor;
+        lDescriptor = lNextDescriptor;
+    }
+}
 
 // *****************************************************************************
 //                                END OF FILE

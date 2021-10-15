@@ -45,7 +45,7 @@ public:
 
     void GiveToHW(void) {ui32CtrlStatus |= DES0_RX_CTRL_OWN;}
     bool IsHWOwned(void) const {return ui32CtrlStatus & DES0_RX_CTRL_OWN;}
-    bool IsFrameValid(void) const { return !(ui32CtrlStatus & DES0_RX_STAT_ERR);}
+    bool IsFrameValid(void) const {return !(ui32CtrlStatus & DES0_RX_STAT_ERR);}
     bool IsLastFrame(void) const {return ui32CtrlStatus & DES0_RX_STAT_LAST_DESC;}
     int32_t GetFrameLen(void) const {
         int32_t lLen = (ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M);

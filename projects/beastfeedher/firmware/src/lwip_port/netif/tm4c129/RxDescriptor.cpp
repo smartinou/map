@@ -80,9 +80,11 @@ RxDescriptorChain::~RxDescriptorChain() {
 RxDescriptor *RxDescriptorChain::GetNext(void) {
 
     RxDescriptor * const lDescriptor = mHead;
-    if (!lDescriptor->IsHWOwned() && lDescriptor->IsFrameValid()) {
-        mHead = lDescriptor->GetNext();
-        return lDescriptor;
+    if (!lDescriptor->IsHWOwned()) {
+        if (lDescriptor->IsFrameValid()) {
+            mHead = lDescriptor->GetNext();
+            return lDescriptor;
+        }
     }
 
     return nullptr;

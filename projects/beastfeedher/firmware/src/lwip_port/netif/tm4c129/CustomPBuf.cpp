@@ -63,6 +63,8 @@ CustomPBuf *CustomPBuf::New(RxDescriptor * const aDescriptor) {
 
         // Assign free function.
         lPBuf->mPBuf.custom_free_function = CustomPBuf::Free;
+    } else {
+        lPBuf->mPBuf.custom_free_function = CustomPBuf::DoNothing;
     }
 
     return lPBuf;
@@ -106,6 +108,11 @@ void CustomPBuf::Free(struct pbuf *aPBuf) {
 
     // Give desriptors back to HW from end to start of chain.
     FreeDescriptor(lDescriptor);
+}
+
+
+void CustomPBuf::DoNothing(struct pbuf *aPBuf) {
+    static_cast<void>(aPBuf);
 }
 
 
