@@ -24,8 +24,9 @@
 
 #include <cstdint>
 #include <cstddef>
+
 // LwIP.
-//#include "lwip/pbuf.h"
+#include "lwip/pbuf.h"
 
 #include <driverlib/emac.h>
 
@@ -37,7 +38,7 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class RxDescriptor
+class RxDescriptor final
     : public tEMACDMADescriptor {
 public:
     RxDescriptor(uint8_t * const aBuffer, size_t aSize);
@@ -46,38 +47,39 @@ public:
     void GiveToHW(void) {ui32CtrlStatus |= DES0_RX_CTRL_OWN;}
     bool IsHWOwned(void) const {return ui32CtrlStatus & DES0_RX_CTRL_OWN;}
     bool IsFrameValid(void) const {return !(ui32CtrlStatus & DES0_RX_STAT_ERR);}
+    bool IsFirstFrame(void) const {return ui32CtrlStatus & DES0_RX_STAT_FIRST_DESC;}
     bool IsLastFrame(void) const {return ui32CtrlStatus & DES0_RX_STAT_LAST_DESC;}
-    int32_t GetFrameLen(void) const {
-        int32_t lLen = (ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M);
+    size_t GetFrameLen(void) const {
+        uint32_t lLen = (ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M);
         return (lLen >>= DES0_RX_STAT_FRAME_LENGTH_S);
     }
 
-    void *GetPayload(void) const {return pvBuffer1;}
-    size_t GetPayloadSize(void) const {return ((ui32Count & DES1_RX_CTRL_BUFF1_SIZE_M) >> DES1_RX_CTRL_BUFF1_SIZE_S);}
-
-    bool IsFirst(void) const {return ui32CtrlStatus & DES0_RX_STAT_FIRST_DESC;}
-    bool IsLast(void) const {return ui32CtrlStatus & DES0_RX_STAT_LAST_DESC;}
     RxDescriptor *GetNext(void) const {return static_cast<RxDescriptor *>(DES3.pLink);}
     void ChainTo(RxDescriptor * const aDescriptor) {DES3.pLink = aDescriptor;}
+
+    struct pbuf *GetAllocedPBuf(size_t aCumulatedLen);
+    void FreeDescriptors();
 
     // Operators.
     operator RxDescriptor*() {return this;}
     operator const RxDescriptor*() {return this;}
-#if 0
-    RxDescriptor& operator=(const RxDescriptor& d) {
-        ui32CtrlStatus = d.ui32CtrlStatus;
-        ui32Count = d.ui32Count;
-        pvBuffer1 = d.pvBuffer1;
-        DES3 = d.DES3;
-        ui32ExtRxStatus = d.ui32ExtRxStatus;
-        ui32Reserved = d.ui32Reserved;
-        ui32IEEE1588TimeLo = d.ui32IEEE1588TimeLo;
-        ui32IEEE1588TimeHi = d.ui32IEEE1588TimeHi;
-        return *this;
-    }
-#else
     RxDescriptor& operator=(const RxDescriptor& d) = delete;
-#endif
+
+private:
+    void *GetPayload(void) const {return pvBuffer1;}
+    size_t GetPayloadSize(void) const {return ((ui32Count & DES1_RX_CTRL_BUFF1_SIZE_M) >> DES1_RX_CTRL_BUFF1_SIZE_S);}
+
+    static void Free(struct pbuf *aPBuf);
+
+    // Custom PBuf structure, as described in zero-copy RX ethernet driver (LwIP).
+    // Need to reference self, since this struct can't be upcast to RxDescriptor,
+    // because of the tEMACDMADescriptor in front of it.
+    // THAT FUDGING CAN BE ARRANGED, DAMMIT!
+    // tEMACDMADescriptor mDescriptor;
+    struct MyCustomPBuf {
+        struct pbuf_custom mPBuf{};
+        RxDescriptor *mDescriptor;
+    } mCustomPBuf;
 };
 
 

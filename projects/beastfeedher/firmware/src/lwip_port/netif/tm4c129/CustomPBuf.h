@@ -35,22 +35,21 @@
 
 class CustomPBuf {
 public:
-    struct pbuf_custom *GetPBuf(void) {return &mPBuf;}
-    RxDescriptor *GetDescriptor(void) const {return mDescriptor;}
-    void SetDescriptor(RxDescriptor * const aDescriptor) {mDescriptor = aDescriptor;}
-    struct pbuf *Alloced(void);
-
     static void Init(void);
-    static CustomPBuf *New(RxDescriptor * const aDescriptor = nullptr);
-    static void Delete(CustomPBuf * const aPBuf);
+    static struct pbuf *New(RxDescriptor * const aDescriptor, size_t aCumulatedLen);
 
 private:
     CustomPBuf() {}
     CustomPBuf(const CustomPBuf &) = delete;
     ~CustomPBuf() {}
 
+    RxDescriptor *GetDescriptor(void) const {return mDescriptor;}
+    void SetDescriptor(RxDescriptor * const aDescriptor) {mDescriptor = aDescriptor;}
+    struct pbuf *Alloced(size_t aCumulatedLen);
+
     static void Free(struct pbuf *aPBuf);
-    static void DoNothing(struct pbuf *aPBuf);
+    //static void DoNothing(struct pbuf *aPBuf);
+    static void Delete(CustomPBuf * const aPBuf);
     static void FreeDescriptor(RxDescriptor * const aDescriptor);
 
     struct pbuf_custom mPBuf{};

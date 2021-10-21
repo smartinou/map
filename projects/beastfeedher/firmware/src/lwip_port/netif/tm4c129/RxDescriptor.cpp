@@ -54,9 +54,29 @@ RxDescriptor::RxDescriptor(uint8_t * const aBuffer, size_t aSize)
         , .ui32Reserved = 0
         , .ui32IEEE1588TimeLo = 0
         , .ui32IEEE1588TimeHi = 0
+        }
+    , mCustomPBuf {
+        .mPBuf {.custom_free_function = RxDescriptor::Free}
     } {
 
     // Ctor body.
+    // Assign free function.
+    mCustomPBuf.mPBuf.custom_free_function = RxDescriptor::Free;
+    mCustomPBuf.mDescriptor = this;
+}
+
+
+struct pbuf *RxDescriptor::GetAllocedPBuf(size_t aCumulatedLen) {
+    struct pbuf *lPBuf = pbuf_alloced_custom(
+        PBUF_RAW,
+        (GetFrameLen() - aCumulatedLen),
+        PBUF_REF,
+        &mCustomPBuf.mPBuf,
+        GetPayload(),
+        GetPayloadSize()
+    );
+
+    return lPBuf;
 }
 
 
@@ -141,6 +161,27 @@ void RxDescriptorChain::Add(uint8_t * const aBuffer, size_t aSize) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+void RxDescriptor::Free(struct pbuf *aPBuf) {
+
+    // Upcast to a MyCustomPBuf object.
+    MyCustomPBuf * const lCustomPBuf = reinterpret_cast<MyCustomPBuf *>(aPBuf);
+
+    // Nothing to do for the pbuf itself: unref by the stack.
+    // Give descriptors back to HW from end to start of chain.
+    lCustomPBuf->mDescriptor->FreeDescriptors();
+}
+
+
+void RxDescriptor::FreeDescriptors() {
+
+    if (!IsLastFrame()) {
+        GetNext()->FreeDescriptors();
+    }
+
+    // Give descriptor back to HW from end to start of chain.
+    GiveToHW();
+}
 
 // *****************************************************************************
 //                                END OF FILE

@@ -100,31 +100,13 @@ TxDescriptor *TxRingBuf::Create(size_t aSize) {
 
 bool TxRingBuf::PushPBuf(struct pbuf * const aPBuf) {
     // Get the head descriptor and start assigning PBuf chain to it.
-    TxDescriptor * const lDescriptor = GetNext();
-    return PushPBuf(lDescriptor, aPBuf, true);
+    bool constexpr sIsFirstPBuf = true;
+    return PushPBuf(mHead, aPBuf, sIsFirstPBuf);
 }
 
 
-bool TxRingBuf::PopPBuf(TxDescriptor const * const aCurrentDescriptor) {
-
-    bool lResult = true;
-    TxDescriptor *lDescriptor = mTail;
-    while ((lDescriptor != aCurrentDescriptor) && !lDescriptor->IsHWOwned()) {
-        if (lDescriptor->IsFrameStart()) {
-            // Free the attached pbuf.
-            lDescriptor->FreePBuf();
-        }
-
-        // Crude check for any errors for this descriptor.
-        if (lDescriptor->IsErrSet()) {
-            lResult = false;
-        }
-        // Nothing to do for intermediate descriptors but reclaim it.
-        lDescriptor = lDescriptor->GetNext();
-        mTail = lDescriptor;
-    }
-
-    return lResult;
+bool TxRingBuf::PopPBuf(void) {
+    return PopPBuf(mHead);
 }
 
 // *****************************************************************************
@@ -180,6 +162,29 @@ bool TxRingBuf::PushPBuf(TxDescriptor * const aDescriptor, struct pbuf * const a
     }
 
     return false;
+}
+
+
+bool TxRingBuf::PopPBuf(TxDescriptor const * const aCurrentDescriptor) {
+
+    bool lResult = true;
+    TxDescriptor *lDescriptor = mTail;
+    while ((lDescriptor != aCurrentDescriptor) && !lDescriptor->IsHWOwned()) {
+        if (lDescriptor->IsFrameStart()) {
+            // Free the attached pbuf.
+            lDescriptor->FreePBuf();
+        }
+
+        // Crude check for any errors for this descriptor.
+        if (lDescriptor->IsErrSet()) {
+            lResult = false;
+        }
+        // Nothing to do for intermediate descriptors but reclaim it.
+        lDescriptor = lDescriptor->GetNext();
+        mTail = lDescriptor;
+    }
+
+    return lResult;
 }
 
 

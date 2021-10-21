@@ -22,6 +22,9 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+// Standard libraries.
+#include <cstddef>
+
 // LwIP.
 #include "lwip/pbuf.h"
 
@@ -73,7 +76,7 @@ private:
 // PutPBufs attempts to attach (=put) a chain of pbufs in as many descriptors.
 // The pbufs are given to HW for transmission.
 // Overflow will cause NEWER pbufs (packets) to be lost.
-// Once the packets are out, GetPBufs() is called to remove and free the pbufs.
+// Once the packets are out, PopPBufs() is called to remove and free the pbufs.
 // It will move the Tail pointer forward for as many elements of pbuf chain.
 // The descriptors are created in a circular chained-list.
 class TxRingBuf {
@@ -83,15 +86,17 @@ public:
 
     TxDescriptor *Create(std::size_t aSize);
     bool PushPBuf(struct pbuf * const aPBuf);
-    bool PushPBuf(TxDescriptor * const aDescriptor, struct pbuf * const aPBuf, bool aIsFirstPBuf = false);
-    bool PopPBuf(TxDescriptor const * const aCurrentDescriptor);
+    bool PopPBuf(void);
 
 private:
     TxDescriptor *GetNext(TxDescriptor * const aDescriptor = nullptr) const;
     bool IsEmpty(void) const {return (mHead == mTail);}
     bool IsFull(TxDescriptor * const aDescriptor) const {return (aDescriptor->GetNext() == mTail);}
-    void Free(void);
     void SetHead(TxDescriptor * const aDescriptor) {mHead = aDescriptor;}
+
+    bool PushPBuf(TxDescriptor * const aDescriptor, struct pbuf * const aPBuf, bool aIsFirstPBuf = false);
+    bool PopPBuf(TxDescriptor const * const aCurrentDescriptor);
+    void Free(void);
 
     std::size_t mSize = 0;
     TxDescriptor *mHead = nullptr;

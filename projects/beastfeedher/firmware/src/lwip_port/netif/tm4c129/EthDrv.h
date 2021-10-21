@@ -58,15 +58,11 @@ public:
 private:
     // LwIP Interface.
     err_t EtherIFOut(struct pbuf * const aPBuf) override;
-
     err_t EtherIFInit(struct netif * const aNetIF) override;
     void ISR(void) override;
 
     // Local interface.
-    struct pbuf *LowLevelRx(RxDescriptor * const aDescriptor);
-    //void FreePBuf(struct pbuf * const aPBuf);
-
-    void EnableRxInt(void);
+    struct pbuf *LowLevelRx(RxDescriptor * const aDescriptor, size_t aCumulatedLen = 0);
 
     RxDescriptorChain mRxRingBuf;
     TxRingBuf mTxRingBuf;

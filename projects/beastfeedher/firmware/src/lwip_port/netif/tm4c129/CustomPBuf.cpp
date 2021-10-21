@@ -43,7 +43,7 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-static constexpr uint16_t sRxPoolSize = 8;
+static constexpr uint16_t sRxPoolSize = 8; // CHECK THIS SIZE IS MATCHING RX BUFS IN RING.
 LWIP_MEMPOOL_DECLARE(RX_POOL, sRxPoolSize, sizeof(CustomPBuf), "Zero-copy RX PBUF pool");
 
 // *****************************************************************************
@@ -55,38 +55,40 @@ void CustomPBuf::Init(void) {
 }
 
 
-CustomPBuf *CustomPBuf::New(RxDescriptor * const aDescriptor) {
-    // Get a PBuf from the pool.
-    CustomPBuf * const lPBuf  = static_cast<CustomPBuf * const>(LWIP_MEMPOOL_ALLOC(RX_POOL));
-    if (lPBuf != nullptr) {
-        lPBuf->SetDescriptor(aDescriptor);
+struct pbuf *CustomPBuf::New(RxDescriptor * const aDescriptor, size_t aCumulatedLen) {
+    // Get a CustomPBuf from the pool.
+    CustomPBuf * const lCustomPBuf = static_cast<CustomPBuf * const>(LWIP_MEMPOOL_ALLOC(RX_POOL));
+    struct pbuf *lPBuf = nullptr;
+    if (lCustomPBuf != nullptr) {
+        lCustomPBuf->SetDescriptor(aDescriptor);
+        lPBuf = lCustomPBuf->Alloced(aCumulatedLen);
 
         // Assign free function.
-        lPBuf->mPBuf.custom_free_function = CustomPBuf::Free;
+        lCustomPBuf->mPBuf.custom_free_function = CustomPBuf::Free;
     } else {
-        lPBuf->mPBuf.custom_free_function = CustomPBuf::DoNothing;
+        // Duh! it's null! why?
+        //lCustomPBuf->mPBuf.custom_free_function = CustomPBuf::DoNothing;
     }
 
-    return lPBuf;
+    return lPBuf; //lCustomPBuf;
 }
 
-
+// MOVE THIS BELOW.
 void CustomPBuf::Delete(CustomPBuf * const aPBuf) {
     // Return to pool of PBuf;
     LWIP_MEMPOOL_FREE(RX_POOL, aPBuf);
 }
 
-
-struct pbuf *CustomPBuf::Alloced(void) {
-    RxDescriptor * const lDescriptor = GetDescriptor();
-    if (lDescriptor != nullptr) {
+// MOVE THIS BELOW.
+struct pbuf *CustomPBuf::Alloced(size_t aCumulatedLen) {
+    if (mDescriptor != nullptr) {
         struct pbuf *lPBuf = pbuf_alloced_custom(
             PBUF_RAW,
-            lDescriptor->GetFrameLen(),
+            mDescriptor->GetFrameLen() - aCumulatedLen,
             PBUF_REF,
-            GetPBuf(),
-            lDescriptor->GetPayload(),
-            lDescriptor->GetPayloadSize());
+            &mPBuf,
+            mDescriptor->GetPayload(),
+            mDescriptor->GetPayloadSize());
         return lPBuf;
     }
 
@@ -110,17 +112,17 @@ void CustomPBuf::Free(struct pbuf *aPBuf) {
     FreeDescriptor(lDescriptor);
 }
 
-
+#if 0
 void CustomPBuf::DoNothing(struct pbuf *aPBuf) {
     static_cast<void>(aPBuf);
 }
-
+#endif
 
 void CustomPBuf::FreeDescriptor(RxDescriptor * const aDescriptor) {
 
     if (aDescriptor != nullptr) {
         if (!aDescriptor->IsLast()) {
-            FreeDescriptor(aDescriptor->GetNext());
+            FreeDescriptor(aDescriptor->GetNext()); //SHOULDN'T THIS BE A RXRING FUNCTION?
         }
 
         // Give descriptor back to HW from end to start of chain.

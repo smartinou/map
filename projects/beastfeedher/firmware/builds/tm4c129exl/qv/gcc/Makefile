@@ -178,7 +178,6 @@ CPP_SRCS := \
     Main.cpp \
     CalendarRec.cpp \
     CoreLinkPeripheralDev.cpp \
-    CustomPBuf.cpp \
     Date.cpp \
     DBRec.cpp \
     Display_AOs.cpp \

@@ -44,7 +44,6 @@
 
 #include "netif/etharp.h"
 #include "netif/tm4c129/EthDrv.h"
-#include "netif/tm4c129/CustomPBuf.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -97,7 +96,6 @@ EthDrv::EthDrv(
 
 void EthDrv::Rd(void) {
     // New packet received into the pbuf?
-    //struct pbuf * const lPBuf = LowLevelRx();
     // Get a free descriptor from the ring buffer.
     RxDescriptor *lDescriptor = mRxRingBuf.GetNext();
     while (lDescriptor != nullptr) {
@@ -110,6 +108,7 @@ void EthDrv::Rd(void) {
             }
         } else {
             // Could not create custom PBuf.
+            lDescriptor->FreeDescriptors();
         }
         // Get a free descriptor from the ring buffer.
         lDescriptor = mRxRingBuf.GetNext();
@@ -119,11 +118,6 @@ void EthDrv::Rd(void) {
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RECEIVE);
 }
 
-#if 0
-void EthDrv::Wr(void) {
-    // We should never get here from a Tx interrupt.
-}
-#endif
 
 void EthDrv::PHYISR(void) {
     // This PHYISR handler is called in normal "task" context.
@@ -181,7 +175,7 @@ void EthDrv::EnableAllInt(void) {
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
 
 #if LINK_STATS
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
+    //MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RX_OVERFLOW);
 #endif
 }
 
@@ -193,15 +187,13 @@ err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
 
     // Chain pbufs elements to transmit into as many descriptors:
     // Each pbuf element is attached to a descriptor of the tx chain.
-    TxDescriptor * const lTxDMACurrentDescriptor =
-        static_cast<TxDescriptor * const>(EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
-    bool lResult = mTxRingBuf.PushPBuf(lTxDMACurrentDescriptor, aPBuf, true);
+    bool lResult = mTxRingBuf.PushPBuf(aPBuf);
     if (lResult) {
         // Don't release the pbuf after this call.
         // It will be released once the packet is out.
         pbuf_ref(aPBuf);
         // Unblock the transmitter potentially in suspended state.
-        EMACTxDMAPollDemand(EMAC0_BASE);
+        MAP_EMACTxDMAPollDemand(EMAC0_BASE);
         return ERR_OK;
     }
 
@@ -324,7 +316,6 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     );
 
     // Initialize the Ethernet DMA descriptors.
-    CustomPBuf::Init();
     static constexpr unsigned int sDescriptorQty = 8;
     static constexpr size_t sBufferSize = 540;
     RxDescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, sDescriptorQty, sBufferSize);
@@ -343,161 +334,95 @@ void EthDrv::ISR(void) {
     // Get and clear the interrupt sources.
     static constexpr bool sIsMasked = true;
     uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, sIsMasked);
-    MAP_EMACIntDisable(EMAC0_BASE, lStatus);
-    MAP_EMACIntClear(EMAC0_BASE, lStatus);
 
     // Process normal interrupts.
-    if (lStatus & EMAC_INT_RECEIVE) {
-        // Send to the AO.
-        PostRxEvent();
-    }
-
-    if (lStatus & EMAC_INT_TRANSMIT) {
-        // Frame transmission is complete.
-        // Try to advance the end pointer of the free descriptor list.
-        TxDescriptor * const lTxDMACurrentDescriptor =
-            static_cast<TxDescriptor * const>(EMACTxDMACurrentDescriptorGet(EMAC0_BASE));
-        bool lResult = mTxRingBuf.PopPBuf(lTxDMACurrentDescriptor);
-        if (lResult) {
-            LINK_STATS_INC(link.xmit);
-        } else {
-            LINK_STATS_INC(link.err);
+    if (lStatus & EMAC_INT_NORMAL_INT) {
+        if (lStatus & EMAC_INT_RECEIVE) {
+            MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_RECEIVE);
+            MAP_EMACIntClear(EMAC0_BASE, EMAC_INT_RECEIVE);
+            // Send to the AO.
+            PostRxEvent();
         }
-        EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT);
+
+        if (lStatus & EMAC_INT_TRANSMIT) {
+            MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_TRANSMIT);
+            MAP_EMACIntClear(EMAC0_BASE, EMAC_INT_TRANSMIT);
+            // Frame transmission is complete.
+            // Try to advance the end pointer of the free descriptor list.
+            bool lResult = mTxRingBuf.PopPBuf();
+            if (lResult) {
+                LINK_STATS_INC(link.xmit);
+            } else {
+                LINK_STATS_INC(link.err);
+            }
+            MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT);
+        }
     }
 
     // Process abnormal interrupts.
+    if (lStatus & EMAC_INT_ABNORMAL_INT) {
 #if LINK_STATS
-    if (lStatus & EMAC_INT_RX_OVERFLOW) {
-        // Send to the AO.
-        PostOverrunEvent();
-    }
+        if (lStatus & EMAC_INT_RX_OVERFLOW) {
+            // Send to the AO.
+            PostOverrunEvent();
+        }
 #endif
+    }
 
     // Process PHY interrupts.
     if (lStatus & EMAC_INT_PHY) {
+        MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_PHY);
+        MAP_EMACIntClear(EMAC0_BASE, EMAC_INT_PHY);
         // Handler will restore PHY interrupts once they are handled.
         PostPHYInterruptEvent();
     }
 }
 
 
-void EthDrv::EnableRxInt(void) {
-    MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_RECEIVE);
-}
-
-
 // This function will read a single packet from the Stellaris ethernet
-// interface, if available, and return a pointer to a pbuf.  The timestamp
+// interface, if available, and return a pointer to a pbuf. The timestamp
 // of the packet will be placed into the pbuf structure.
-// * @return pointer to pbuf packet if available, nullptr otherswise.
-struct pbuf *EthDrv::LowLevelRx(RxDescriptor * const aDescriptor) {
+// * @return pointer to pbuf packet if available, nullptr otherwise.
+struct pbuf *EthDrv::LowLevelRx(RxDescriptor * const aDescriptor, size_t aCumulatedLen) {
 
-#if 0
-    // SW should always own the current descriptor since rx interrupt triggered this call.
-    // If not, then the pointer got out of sync?
-    if (!lDescriptor.IsHWOwned()) {
-        if (lDescriptor.IsFrameValid()) {
-            // Get the pbuf assigned as payload of the descriptor.
-            // It should never be null.
-            struct pbuf *lPBuf = mRxRingBuf.GetPBuf(&lDescriptor);
-            if (!lDescriptor.IsLastFrame()) {
-                // Get the next descriptor.
-                struct pbuf *lTailPBuf = LowLevelRx();
-                if (lTailPBuf != nullptr) {
-                    pbuf_chain(lPBuf, lTailPBuf);
-                } else {
-                    // Somehow the next pbuf returned an error.
-                    // Invalidate overall packet.
-                    lDescriptor.GiveToHW();
-                    return nullptr;
+    if (!aDescriptor->IsHWOwned() && aDescriptor->IsFrameValid()) {
+        // Get the pbuf assigned as payload of the descriptor.
+        // It should never be null.
+        struct pbuf * const lPBuf = aDescriptor->GetAllocedPBuf(aCumulatedLen);
+
+        // Recurse-call if this is not the last descriptor of the chain:
+        // Reference and pbuf-chain all payloads of the chain of descriptors.
+        if (lPBuf != nullptr) {
+            // Refer to the payload data of the descriptor.
+            // The cumulated length was passed to this function from previous descriptor.
+            if (!aDescriptor->IsLastFrame()) {
+                RxDescriptor * const lNextDescriptor = mRxRingBuf.GetNext();
+                size_t lCumulatedLen = aDescriptor->GetFrameLen();
+                struct pbuf * const lTailPBuf = LowLevelRx(lNextDescriptor, lCumulatedLen);
+                if ((lNextDescriptor != nullptr) && (lTailPBuf != nullptr)) {
+                    // Drop reference to tail buffer, so don't call pbuf_chain().
+                    pbuf_cat(lPBuf, lTailPBuf);
                 }
             } else {
                 // This is the last descriptor of the frame:
                 // Adjust the link statistics.
                 LINK_STATS_INC(link.recv);
-
-#if LWIP_PTPD
-                u32_t time_s = 0;
-                u32_t time_ns = 0;
-                // Get the current timestamp if PTPD is enabled.
-                lwIPHostGetTime(&time_s, &time_ns);
-
-                // Place the timestamp in the PBUF.
-                lPBuf->time_s = time_s;
-                lPBuf->time_ns = time_ns;
-#endif
             }
-
+            // PBuf is either last or was properly chained: return it up.
             return lPBuf;
         }
     }
 
-#if 0
-    // Adjust the link statistics.
-    LINK_STATS_INC(link.memerr);
-    LINK_STATS_INC(link.drop);
-#endif
-    return nullptr;
-
-#else
-
-    if (!aDescriptor->IsHWOwned() && aDescriptor->IsFrameValid()) {
-        // Get the pbuf assigned as payload of the descriptor.
-        // It should never be null.
-        // Create a custom pbuf.
-        CustomPBuf *lCustomPBuf = nullptr;
-        if (aDescriptor->IsFirst()) {
-            // The chain of descriptor is attached to the 1st PBuf only.
-            lCustomPBuf = CustomPBuf::New(aDescriptor);
-        } else {
-            lCustomPBuf = CustomPBuf::New();
-        }
-
-        // Recurse-call if this is not the last descriptor of the chain:
-        // Reference and pbuf-chain all payloads of the chain of descriptors.
-        if (lCustomPBuf != nullptr) {
-            if (!aDescriptor->IsLast()) {
-                RxDescriptor * const lNextDescriptor = mRxRingBuf.GetNext();
-                struct pbuf_custom * const lHeadPBuf = lCustomPBuf->GetPBuf();
-                struct pbuf * const lTailPBuf = LowLevelRx(lNextDescriptor);
-                if ((lNextDescriptor != nullptr) && (lTailPBuf != nullptr)) {
-                    pbuf_chain(&lHeadPBuf->pbuf, lTailPBuf);
-                }
-            } else {
-                // Refer to the payload data of the descriptor.
-                struct pbuf * const lPBuf = lCustomPBuf->Alloced();
-                if (lPBuf != nullptr) {
-                    return lPBuf;
-                }
-            }
-        }
+    // Somehow the current or returned pbuf is invalid.
+    if (aDescriptor->IsFirstFrame()) {
+        // Adjust the link statistics.
+        LINK_STATS_INC(link.memerr);
+        LINK_STATS_INC(link.drop);
     }
 
-    // Somehow the next pbuf returned an error.
     // Invalidate overall packet.
-    aDescriptor->GiveToHW();
     return nullptr;
-
-#endif
 }
-
-#if 0
-void EthDrv::FreePBuf(struct pbuf *const aPBuf) {
-    // Follow the chain of pbuf to give back RxDescriptors to HW.
-    struct pbuf *lQueuePtr = aPBuf;
-    do {
-        EthDrv::RxDescriptor * const lDescriptor = mRxRingBuf.GetDescriptor(lQueuePtr);
-        lDescriptor->GiveToHW();
-        // Link in the next pbuf in the chain.
-        lQueuePtr = lQueuePtr->next;
-    //} while (lQueuePtr != nullptr);
-    } while (lQueuePtr->len != lQueuePtr->tot_len);
-
-    // Finally, free the pbuf. The reference count should be 0 afterward.
-    pbuf_free(aPBuf);
-}
-#endif
 
 
 #if NETIF_DEBUG
