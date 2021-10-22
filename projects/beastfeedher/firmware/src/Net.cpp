@@ -48,7 +48,6 @@
 #include "RTCC_Events.h"
 
 // This project.
-//#include "BSP.h"
 #include "FWVersionGenerated.h"
 #include "LwIP_AOs.h"
 #include "LwIP_Events.h"
@@ -334,6 +333,7 @@ void InitCallback(
     FeedCfgRec * const aFeedCfgRec
 ) {
 
+    httpd_init();
 #if LWIP_HTTPD_SSI
     http_set_ssi_handler(
         SSIHandler,

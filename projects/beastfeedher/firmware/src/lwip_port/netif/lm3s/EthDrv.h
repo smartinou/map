@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -34,23 +34,50 @@
 class EthDrv
     : public LwIPDrv {
 public:
-    EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aBufQueueSize);
+    EthDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress, unsigned int aPBufQueueSize);
     ~EthDrv() {}
 
+    // LwIPDrv interface.
+    void Rd(void) override;
+    void Wr(void) override;
+    void PHYISR(void) override;
     void DisableAllInt(void) override;
     void EnableAllInt(void) override;
 
 private:
-    // LwIP Interface.
+    // LwIPDrv interface.
+    err_t EtherIFOut(struct pbuf * const aPBuf) override;
+
     err_t EtherIFInit(struct netif * const aNetIF) override;
     void ISR(void) override;
 
-    void LowLevelTx(struct pbuf * const aPBuf) override;
-    struct pbuf *LowLevelRx(void) override;
-    void FreePBuf(struct pbuf * const aPBuf) override;
+    // Local interface.
+    void LowLevelTx(struct pbuf * const aPBuf);
+    struct pbuf *LowLevelRx(void);
 
-    void EnableRxInt(void) override;
-    bool IsTxEmpty(void) const override;
+    bool IsTxEmpty(void) const;
+
+    // Internal PBuf Q-ring class.
+    class PBufQ {
+    public:
+        PBufQ(unsigned int aQSize);
+
+        bool IsEmpty(void) const;
+        bool Put(struct pbuf * const aPBufPtr);
+        struct pbuf *Get(void);
+
+    private:
+        struct pbuf **mPBufRing;
+        unsigned int mRingSize;
+        unsigned int mQWrIx;
+        unsigned int mQRdIx;
+        unsigned int mQOverflow;
+    };
+
+    PBufQ &GetPBufQ(void) const { return *mPBufQ; }
+
+    // Queue of pbufs for transmission.
+    PBufQ *mPBufQ = nullptr;
 };
 
 // ******************************************************************************

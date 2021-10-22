@@ -374,7 +374,7 @@ UARTPrimeTransmit(unsigned long ulBase)
 //
 //*****************************************************************************
 void
-UARTStdioInit(unsigned long ulPortNum)
+UARTStdioInit(unsigned long ulPortNum, uint32_t aSysClk, uint32_t aBaudRate)
 {
     //
     // Check the arguments.
@@ -406,11 +406,15 @@ UARTStdioInit(unsigned long ulPortNum)
     // Enable the UART peripheral for use.
     //
     MAP_SysCtlPeripheralEnable(g_ulUartPeriph[ulPortNum]);
+    //while (!SysCtlPeripheralReady(g_ulUartPeriph[ulPortNum])) {
+        // Wait.
+    //}
 
     //
-    // Configure the UART for 115200, n, 8, 1
+    // Configure the UART for aBaudRate, n, 8, 1
     //
-    MAP_UARTConfigSetExpClk(g_ulBase, MAP_SysCtlClockGet(), 115200,
+    // Use SysClk argument because can't use SysCtlClockGet() with TM4C129!!!
+    MAP_UARTConfigSetExpClk(g_ulBase, aSysClk, aBaudRate,
                             (UART_CONFIG_PAR_NONE | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_WLEN_8));
 

@@ -84,7 +84,7 @@ extern "C"
 // Prototypes for the APIs.
 //
 //*****************************************************************************
-extern void UARTStdioInit(unsigned long ulPort);
+extern void UARTStdioInit(unsigned long ulPort, uint32_t aSysClk, uint32_t aBaudRate);
 extern int  UARTgets(char *pcBuf, unsigned long ulLen);
 extern void UARTprintf(const char *pcString, ...);
 #ifdef UART_BUFFERED

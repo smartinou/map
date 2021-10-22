@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -26,7 +26,6 @@
 // QP Library.
 #include <qpcpp.h>
 
-extern "C" {
 // LwIP.
 #include "lwip/opt.h"
 #include "lwip/init.h"
@@ -36,12 +35,10 @@ extern "C" {
 #include "lwip/mem.h"
 #include "lwip/pbuf.h"
 #include "lwip/sys.h"
-#include "lwip/stats.h"
 #include "lwip/snmp.h"
 #include "lwip/dhcp.h"
 #include "lwip/autoip.h"
 #include "netif/etharp.h"
-} // extern "C"
 
 #include "Signals.h"
 
@@ -83,16 +80,6 @@ void LwIPDrv::StaticInit(
     for (std::vector<LwIPDrv *>::iterator lIt = sVector.begin(); lIt != sVector.end(); ++lIt) {
         (*lIt)->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
     }
-}
-
-
-void LwIPDrv::StaticRd(unsigned int aIndex) {
-    sVector[aIndex]->Rd();
-}
-
-
-void LwIPDrv::StaticWr(unsigned int aIndex) {
-    sVector[aIndex]->Wr();
 }
 
 
@@ -139,63 +126,74 @@ void LwIPDrv::DNSFoundCallback(
 }
 
 
+#if LWIP_NETIF_STATUS_CALLBACK
 void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     // Check the current state of the network interface.
     // We end up here as a result to call to either:
     // netif_set_up(), netif_set_down(), netif_set_ipaddr().
-    // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     lThis->StatusCallback(aNetIF);
 }
+#endif // LWIP_NETIF_STATUS_CALLBACK
 
 
+#if LWIP_NETIF_LINK_CALLBACK
 void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
     // We end up here as a result of call to either:
     // netif_set_link_up(), netif_set_link_down().
-    // Signal the AO to react to it.
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    static QP::QEvt const sLinkEvent(LWIP_LINK_CHANGED_SIG);
-    lThis->GetAO().POST(&sLinkEvent, lThis);
+    lThis->LinkCallback(aNetIF);
+}
+#endif // LWIP_NETIF_LINK_CALLBACK
+
+
+#if LWIP_NETIF_EXT_STATUS_CALLBACK
+void LwIPDrv::StaticExtCallback(
+    struct netif * const aNetIF,
+    netif_nsc_reason_t aReason,
+    const netif_ext_callback_args_t *aArgs) {
+    // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
+    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    lThis->ExtCallback(aNetIF, aReason, aArgs);
 }
 
 
-void LwIPDrv::StatusCallback(struct netif * const aNetIF) {
+void LwIPDrv::ExtCallback(
+    struct netif * const aNetIF,
+    netif_nsc_reason_t aReason,
+    const netif_ext_callback_args_t *aArgs
+) {
+    static_cast<void>(aArgs);
 
-    // This object already holds the variable for the previous state.
-    // Might as well perform tests here and parametrize events.
-    if (!mIsNetIFUp && (aNetIF->flags & NETIF_FLAG_UP)) {
-        // Network turned up.
-        mIsNetIFUp = true;
-        static const LwIP::Event::NetIFChanged sEvent(LWIP_NETIF_CHANGED_SIG, aNetIF, true);
-        GetAO().POST(&sEvent, this);
-
-    } else if (mIsNetIFUp && !(aNetIF->flags & NETIF_FLAG_UP)) {
-        // Network turned down.
-        mIsNetIFUp = false;
-        static const LwIP::Event::NetIFChanged sEvent(LWIP_NETIF_CHANGED_SIG, aNetIF, false);
-        GetAO().POST(&sEvent, this);
-    }
-
-    // Finally, check if IP address changed.
-    if (!ip_addr_cmp(&mNetIF.ip_addr, &mIPAddress)
-        || !ip_addr_cmp(&mNetIF.netmask, &mSubnetMask)
-        || !ip_addr_cmp(&mNetIF.gw, &mGWAddress)) {
+#if LWIP_NETIF_STATUS_CALLBACK
+    if (aReason | LWIP_NSC_STATUS_CHANGED) {
+        StatusCallback(aNetIF);
+    } else
+#endif // LWIP_NETIF_STATUS_CALLBACK
+#if LWIP_NETIF_LINK_CALLBACK
+    if (aReason | LWIP_NSC_LINK_CHANGED) {
+        LinkCallback(aNetIF);
+    } else
+#endif // LWIP_NETIF_LINK_CALLBACK
+    if (aReason
+        & (LWIP_NSC_IPV4_ADDRESS_CHANGED
+            | LWIP_NSC_IPV4_NETMASK_CHANGED
+            | LWIP_NSC_IPV4_GATEWAY_CHANGED)) {
         // Some components of IP address changed.
-        // Use copy macros.
-        ip_addr_copy(mIPAddress, mNetIF.ip_addr);
-        ip_addr_copy(mSubnetMask, mNetIF.netmask);
-        ip_addr_copy(mGWAddress, mNetIF.gw);
-
         LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
             LwIP::Event::IPAddressChanged,
-            LWIP_NETIF_CHANGED_SIG,
-            mIPAddress.addr,
-            mSubnetMask.addr,
-            mGWAddress.addr
+            LWIP_IP_CHANGED_SIG,
+            mNetIF.ip_addr.addr,
+            mNetIF.netmask.addr,
+            mNetIF.gw.addr
         );
         QP::QF::PUBLISH(lEvent, this);
+    } else {
+        // Discard all other reasons (netif.h):
+        // LWIP_NSC_NONE, LWIP_NSC_NETIF_ADDED, LWIP_NSC_NETIF_REMOVED
     }
 }
+#endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 
 uint8_t const *LwIPDrv::GetMACAddress(void) const {
@@ -217,33 +215,40 @@ uint32_t LwIPDrv::GetDefaultGW(void) const {
     return mNetIF.gw.addr;
 }
 
+
+void LwIPDrv::StartIPCfg(void) {
+    if (IsUsingDHCP()) {
+#if (LWIP_DHCP != 0)
+        // Start DHCP if configured in lwipopts.h.
+        dhcp_start(&GetNetIF());
+        // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
+        // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
+        // AutoIP after DHCP fails for 59 seconds.
+#elif (LWIP_AUTOIP != 0)
+        // Start AutoIP if configured in lwipopts.h.
+        autoip_start(&GetNetIF());
+#endif
+    }
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
 LwIPDrv::LwIPDrv(
     unsigned int aIndex,
-    EthernetAddress const &aEthernetAddress,
-    unsigned int aPBufQueueSize
+    EthernetAddress const &aEthernetAddress
 )   : mMyIndex(aIndex)
     , mNetIF{0}
-    , mIPAddress{0}
-    , mSubnetMask{0}
-    , mGWAddress{0}
-    , mIsNetIFUp(false) {
-
-    mPBufQ = new PBufQ(aPBufQueueSize);
-
+    , mExtCallback{0}
+    , mUseDHCP(false)
+{
     // Associate this <struct netif *, LwIPDrv>.
     LwIPDrv::sVector[aIndex] = this;
 
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
     memcpy(&GetNetIF().hwaddr[0], aEthernetAddress.GetData(), NETIF_MAX_HWADDR_LEN);
-
-    IP4_ADDR(&mIPAddress, 0, 0, 0, 0);
-    IP4_ADDR(&mSubnetMask, 0, 0, 0, 0);
-    IP4_ADDR(&mGWAddress, 0, 0, 0, 0);
 }
 
 
@@ -256,6 +261,7 @@ void LwIPDrv::DrvInit(
 ) {
     // Save the active object associated with this driver.
     SetAO(aAO);
+    UseDHCP(aUseDHCP);
 
     ip_addr_t lIPAddr;
     ip_addr_t lSubnetMask;
@@ -326,13 +332,22 @@ void LwIPDrv::DrvInit(
     GetNetIF().output = &etharp_output;
     GetNetIF().linkoutput = &LwIPDrv::StaticEtherIFOut;
 
+#if LWIP_NETIF_STATUS_CALLBACK
     // Set status callback.
     // Called after: netif_set_ipaddr(), netif_set_up(), netif_set_down().
     netif_set_status_callback(&GetNetIF(), LwIPDrv::StaticStatusCallback);
+#endif // LWIP_NETIF_STATUS_CALLBACK
 
+#if LWIP_NETIF_LINK_CALLBACK
     // Set link callback.
     // Called after netif_set_link_up(), netif_set_link_down().
     netif_set_link_callback(&GetNetIF(), LwIPDrv::StaticLinkCallback);
+#endif // LWIP_NETIF_LINK_CALLBACK
+
+#if LWIP_NETIF_EXT_STATUS_CALLBACK
+    // Ext callback.
+    netif_add_ext_callback(&mExtCallback, LwIPDrv::StaticExtCallback);
+#endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 #if (LWIP_DNS != 0)
     // Add Google DNS.
@@ -346,21 +361,8 @@ void LwIPDrv::DrvInit(
 
     // Bring the interface up.
     netif_set_default(&GetNetIF());
-    netif_set_up(&GetNetIF());
-
-#if (LWIP_DHCP != 0)
-    // Start DHCP if configured in lwipopts.h.
-    dhcp_start(&GetNetIF());
-    // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
-    // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
-    // AutoIP after DHCP fails for 59 seconds.
-#elif (LWIP_AUTOIP != 0)
-    // Start AutoIP if configured in lwipopts.h.
-    autoip_start(&GetNetIF());
-#endif
-
-    // Everything is initialized: enable all interrupts.
-    EnableAllInt();
+    // Enable one-self: this should be done by an external object.
+    PostNetIFChangedEvent(true);
 }
 
 
@@ -374,155 +376,56 @@ err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
 
 err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    return lThis->EtherIFOut(aNetIF, aPBuf);
+    return lThis->EtherIFOut(aPBuf);
 }
 
 
-// This function will either write the pbuf into the Stellaris TX FIFO,
-// or will put the packet in the TX queue of pbufs for subsequent
-// transmission when the transmitter becomes idle.
-//
-// @param netif the lwip network interface structure for this ethernetif
-// @param p the pbuf to send
-// @return ERR_OK if the packet could be sent
-//         an err_t value if the packet couldn't be sent
-err_t LwIPDrv::EtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
-
-    // Nothing in the TX queue?
-    // TX empty?
-    //if (GetPBufQ().IsEmpty() && ((HWREG(ETH_BASE + MAC_O_TR) & MAC_TR_NEWTX) == 0)) {
-    if (GetPBufQ().IsEmpty() && IsTxEmpty()) {
-        // Send the pbuf right away.
-        LowLevelTx(aPBuf);
-        // The pbuf will be freed by the lwIP code.
-    } else {
-        // Otherwise post the pbuf to the transmit queue.
-        // Could the TX queue take the pbuf?
-        if (GetPBufQ().Put(aPBuf)) {
-            // Reference the pbuf to spare it from freeing.
-            pbuf_ref(aPBuf);
-        } else {
-            // No room in the queue.
-            // The pbuf will be freed by the lwIP code.
-            return ERR_MEM;
-        }
-    }
-
-    return ERR_OK;
-}
-
-
-void LwIPDrv::Rd(void) {
-
-    // New packet received into the pbuf?
-    struct pbuf * const lPBuf = LowLevelRx();
-    if (lPBuf != nullptr) {
-        // pbuf handled?
-        if (ethernet_input(lPBuf, &GetNetIF()) != ERR_OK) {
-            // Free the pbuf.
-            pbuf_free(lPBuf);
-        }
-        // Try to output a packet if TX fifo is empty and pbuf is available.
-        Wr();
-    }
-
-    // Re-enable the RX interrupt.
-    EnableRxInt();
-}
-
-
-void LwIPDrv::Wr(void) {
-
-    // TX fifo empty? Should be since we likely got here by TxEmpty int.
-    //if ((HWREG(ETH_BASE + MAC_O_TR) & MAC_TR_NEWTX) == 0) {
-    if (IsTxEmpty()) {
-        struct pbuf * const lPBuf = GetPBufQ().Get();
-        // pbuf found in the queue?
-        if (lPBuf != nullptr) {
-            // Send and free the pbuf: lwIP knows nothing of it.
-            LowLevelTx(lPBuf);
-            pbuf_free(lPBuf);
-        }
-    }
-}
 void LwIPDrv::PostRxEvent(void) {
-    static LwIP::Event::Interrupt const sRxEvent(LWIP_RX_READY_SIG, GetIndex());
+    static LwIP::Event::Interrupt const sRxEvent(LWIP_RX_READY_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sRxEvent, this);
 }
 
 
 void LwIPDrv::PostTxEvent(void) {
-    static LwIP::Event::Interrupt const sTxEvent(LWIP_TX_READY_SIG, GetIndex());
+    static LwIP::Event::Interrupt const sTxEvent(LWIP_TX_READY_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sTxEvent, this);
 }
 
 
 void LwIPDrv::PostOverrunEvent(void) {
-    static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, GetIndex());
+    static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sOverrunEvent, this);
 }
 
 
-LwIPDrv::PBufQ::PBufQ(unsigned int aQSize)
-    : mPBufRing(nullptr)
-    , mRingSize(aQSize)
-    , mQWrIx(0)
-    , mQRdIx(0)
-    , mQOverflow(0) {
-
-    // Ctor body.
-    mPBufRing = new struct pbuf *[aQSize];
-}
-
-
-bool LwIPDrv::PBufQ::IsEmpty(void) const {
-    return (mQWrIx == mQRdIx);
-}
-
-
-bool LwIPDrv::PBufQ::Put(struct pbuf * const aPBufPtr) {
-    unsigned int lNextQWr = mQWrIx + 1;
-
-    if (lNextQWr == mRingSize) {
-        lNextQWr = 0;
-    }
-
-    if (lNextQWr != mQRdIx) {
-        // The queue isn't full so we add the new frame at the current
-        // write position and move the write pointer.
-        mPBufRing[mQWrIx] = aPBufPtr;
-        if ((++mQWrIx) == mRingSize) {
-            mQWrIx = 0;
-        }
-
-        // Successfully posted the pbuf.
-        return true;
+void LwIPDrv::PostNetIFChangedEvent(bool aIsUp) {
+    if (aIsUp) {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_NETIF_CHANGED_SIG, &GetNetIF(), true);
+        GetAO().POST(&sEvent, this);
     } else {
-        // The stack is full so we are throwing away this value.
-        // Keep track of the number of times this happens.
-        mQOverflow++;
-        // Could not post the pbuf.
-        return false;
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_NETIF_CHANGED_SIG, &GetNetIF(), false);
+        GetAO().POST(&sEvent, this);
     }
 }
 
 
-struct pbuf *LwIPDrv::PBufQ::Get(void) {
-    struct pbuf *lPBuf = nullptr;
-
-    if (!IsEmpty()) {
-        // The queue is not empty so return the next frame from it.
-        // Adjust the read pointer accordingly.
-        lPBuf = mPBufRing[mQRdIx];
-        if ((++mQRdIx) == mRingSize) {
-            mQRdIx = 0;
-        }
+void LwIPDrv::PostLinkChangedEvent(bool aIsUp) {
+    if (aIsUp) {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), true);
+        GetAO().POST(&sEvent, this);
+    } else {
+        static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), false);
+        GetAO().POST(&sEvent, this);
     }
+}
 
-    return lPBuf;
+
+void LwIPDrv::PostPHYInterruptEvent(void) {
+    static LwIP::Event::Interrupt const sEvent(LWIP_PHY_INT_SIG, &GetNetIF());
+    GetAO().POST(&sEvent, this);
 }
 
 // *****************************************************************************

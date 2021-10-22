@@ -96,7 +96,6 @@ LwIPDrv::StaticInit(
 );
 
 // Initialize the lwIP applications...
-httpd_init();
 if (nullptr != lCallbackInit) {
     lCallbackInit();
 }
@@ -114,14 +113,16 @@ if (nullptr != lCallbackInit) {
      <exit brief="StopTimer();">mSlowTickTimer.disarm();</exit>
      <tran trig="LWIP_RX_READY">
       <action brief="EtherDrv.Rd();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
-LwIPDrv::StaticRd(lEvent-&gt;mIndex);</action>
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+lEtherDrv-&gt;Rd();</action>
       <tran_glyph conn="4,20,3,-1,34">
        <action box="0,-2,28,2"/>
       </tran_glyph>
      </tran>
      <tran trig="LWIP_TX_READY">
       <action brief="EtherDrv.Wr();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
-LwIPDrv::StaticWr(lEvent-&gt;mIndex);</action>
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+lEtherDrv-&gt;Wr();</action>
       <tran_glyph conn="4,24,3,-1,34">
        <action box="0,-2,24,2"/>
       </tran_glyph>
@@ -198,12 +199,19 @@ InitSNTP(&amp;lEvent-&gt;mIPV4);
      </tran>
      <tran trig="LWIP_NETIF_CHANGED">
       <action brief="CheckStatus();">// Must inspect netif flags and IP address to determine the new state.
-LwIP::Event::NetIFChanged const * const lEvent = static_cast&lt;LwIP::Event::NetIFChanged const * const&gt;(e);
+LwIP::Event::NetStatusChanged const * const lEvent = static_cast&lt;LwIP::Event::NetStatusChanged const * const&gt;(e);
 LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+</action>
+      <choice>
+       <guard brief="NefIFUp==true">// Check if the netif is up.
+lEvent-&gt;mIsUp</guard>
+       <action brief="NetIFUp();">// Bring the network up 1st, THEN enable the interrupts.
+netif_set_up(lEvent-&gt;mNetIF);
+lEtherDrv-&gt;StartIPCfg();
 
-// Look if the network interface is up or down:
-if (lEvent-&gt;mIsNetIFUp) {
+if (netif_is_link_up(lEvent-&gt;mNetIF)) {
     lEtherDrv-&gt;EnableAllInt();
+}
 
 #if LWIP_DNS
     // Get the IP address of the NTP server:
@@ -226,20 +234,69 @@ if (lEvent-&gt;mIsNetIFUp) {
     }
 #endif // LWIP_DNS
 
-} else {
-    lEtherDrv-&gt;DisableAllInt();
-}
 </action>
+       <choice_glyph conn="38,40,4,-1,2,-30">
+        <action box="-30,0,28,2"/>
+       </choice_glyph>
+      </choice>
+      <choice>
+       <guard brief="else"/>
+       <action brief="NetIFDown();">// Disable the interrupts, THEN bring the network down.
+lEtherDrv-&gt;DisableAllInt();
+netif_set_down(lEvent-&gt;mNetIF);</action>
+       <choice_glyph conn="38,40,4,-1,4,-30">
+        <action box="-30,2,16,2"/>
+       </choice_glyph>
+      </choice>
       <tran_glyph conn="4,40,3,-1,34">
        <action box="0,-2,34,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="4,10,38,34">
+     <tran trig="LWIP_LINK_CHANGED">
+      <action brief="CheckStatus();">// Must inspect netif flags and IP address to determine the new state.
+LwIP::Event::NetStatusChanged const * const lEvent = static_cast&lt;LwIP::Event::NetStatusChanged const * const&gt;(e);
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+</action>
+      <choice>
+       <guard brief="LinkUp==true">// Check if the link is up.
+lEvent-&gt;mIsUp</guard>
+       <action brief="LinkUp();">// Bring the link up 1st, THEN enable the interrupts.
+netif_set_link_up(lEvent-&gt;mNetIF);
+if (netif_is_up(lEvent-&gt;mNetIF)) {
+    lEtherDrv-&gt;EnableAllInt();
+}
+</action>
+       <choice_glyph conn="38,48,4,-1,2,-30">
+        <action box="-30,0,24,2"/>
+       </choice_glyph>
+      </choice>
+      <choice>
+       <guard brief="else"/>
+       <action brief="LinkDown();">// Disable the interrupts, THEN bring the link down.
+lEtherDrv-&gt;DisableAllInt();
+netif_set_link_down(lEvent-&gt;mNetIF);</action>
+       <choice_glyph conn="38,48,4,-1,4,-30">
+        <action box="-30,2,18,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="4,48,3,-1,34">
+       <action box="0,-2,31,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="LWIP_PHY_INT">
+      <action brief="PHYISR();">LwIP::Event::Interrupt const * const lEvent = static_cast&lt;LwIP::Event::Interrupt const * const&gt;(e);
+LwIPDrv * const lEtherDrv = static_cast&lt;LwIPDrv * const&gt;(lEvent-&gt;mNetIF-&gt;state);
+lEtherDrv-&gt;PHYISR();</action>
+      <tran_glyph conn="4,56,3,-1,34">
+       <action box="0,-2,30,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="4,10,38,50">
       <entry box="1,2,23,2"/>
       <exit box="1,4,16,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="46,48"/>
+    <state_diagram size="46,64"/>
    </statechart>
   </class>
  </package>
@@ -289,12 +346,12 @@ if (lEvent-&gt;mIsNetIFUp) {
 // Ctor body.</code>
    </operation>
   </class>
-  <class name="Interrupt" superclass="qpcpp::QEvt">
+  <class name="Interruptx" superclass="qpcpp::QEvt">
    <documentation>Event raised with corresponding interrupt in ethernet driver.</documentation>
    <attribute name="mIndex" type="unsigned int const" visibility="0x00" properties="0x00">
     <documentation>0-based index of the network interface that this event belongs to.</documentation>
    </attribute>
-   <operation name="Interrupt" type="" visibility="0x00" properties="0x02">
+   <operation name="Interruptx" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
     <parameter name="aIndex" type="unsigned int const"/>
@@ -326,7 +383,7 @@ ip_addr_copy(mIPV4, *aIPV4);</code>
    </operation>
   </class>
   <class name="SystemTimeUpdate" superclass="qpcpp::QEvt">
-   <documentation>// SNTP returned a new system time.</documentation>
+   <documentation>SNTP returned a new system time.</documentation>
    <attribute name="mSystemTime" type="time_t" visibility="0x00" properties="0x00">
     <documentation>The new system time.</documentation>
    </attribute>
@@ -339,22 +396,38 @@ ip_addr_copy(mIPV4, *aIPV4);</code>
 </code>
    </operation>
   </class>
-  <class name="NetIFChanged" superclass="qpcpp::QEvt">
-   <documentation>// Network interface changed.</documentation>
-   <attribute name="mNetIF" type="struct netif *" visibility="0x00" properties="0x00">
+  <class name="NetStatusChanged" superclass="qpcpp::QEvt">
+   <documentation>Generic event for network status changes. Could be used for:
+*Network interface state changed.
+*Network link state changed.</documentation>
+   <attribute name="mNetIF" type="struct netif * const" visibility="0x00" properties="0x00">
     <documentation>Pointer to the struct netif that triggered the event.</documentation>
    </attribute>
-   <attribute name="mIsNetIFUp" type="bool" visibility="0x00" properties="0x00">
-    <documentation>// True if net IF is up.</documentation>
+   <attribute name="mIsUp" type="bool" visibility="0x00" properties="0x00">
+    <documentation>True if net link is up.</documentation>
    </attribute>
-   <operation name="NetIFChanged" type="" visibility="0x00" properties="0x02">
+   <operation name="NetStatusChanged" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
-    <parameter name="aNetIF" type="struct netif  * const"/>
-    <parameter name="aIsNetIFUp" type="bool"/>
+    <parameter name="aNetIF" type="struct netif * const"/>
+    <parameter name="aIsUp" type="bool"/>
     <code>    : QP::QEvt(aSig)
     , mNetIF(aNetIF)
-    , mIsNetIFUp(aIsNetIFUp)
+    , mIsUp(aIsUp)</code>
+   </operation>
+  </class>
+  <class name="Interrupt" superclass="qpcpp::QEvt">
+   <documentation>PHY interrupt event.</documentation>
+   <attribute name="mNetIF" type="struct netif * const" visibility="0x00" properties="0x00">
+    <documentation>Pointer to the struct netif that triggered the event.</documentation>
+   </attribute>
+   <operation name="Interrupt" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aNetIF" type="struct netif * const"/>
+    <code>    : QP::QEvt(aSig)
+//    , mEthDrv(aEthDrv)
+    , mNetIF(aNetIF)
 </code>
    </operation>
   </class>
@@ -390,7 +463,6 @@ $declare${LwIP::AOs::Mgr_AO}
 #include &quot;lwip/dns.h&quot;
 #include &quot;lwip/init.h&quot;
 #include &quot;lwip/stats.h&quot;
-#include &quot;lwip/apps/httpd.h&quot;
 #include &quot;lwip/priv/tcp_priv.h&quot;
 
 // lwIP application.
@@ -411,8 +483,9 @@ extern &quot;C&quot; {
 #include &quot;LwIP_Events.h&quot;
 #include &quot;Signals.h&quot;
 
-// Has to be set to the fastest interval to be serviced in the stack.
-#define LWIP_SLOW_TICK_MS AUTOIP_TMR_INTERVAL
+// Has to be common divider to the intervals to be serviced in the stack.
+// ARP is 100ms, fast TCP is 250ms: using 50ms.
+#define LWIP_SLOW_TICK_MS (50)
 
 
 $define${LwIP::AOs::Mgr_AO}</text>
@@ -433,7 +506,7 @@ $declare${LwIP::Events::IPAddressChanged}
 $declare${LwIP::Events::Interrupt}
 $declare${LwIP::Events::HostNameFound}
 $declare${LwIP::Events::SystemTimeUpdate}
-$declare${LwIP::Events::NetIFChanged}
+$declare${LwIP::Events::NetStatusChanged}
 </text>
   </file>
  </directory>

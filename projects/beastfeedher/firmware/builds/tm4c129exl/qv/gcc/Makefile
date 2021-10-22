@@ -70,6 +70,14 @@ ifeq ($(TIVAWARE_LIB),)
 TIVAWARE_LIB := $(FIRMWARE_PATH)/3rdparty/TivaWare_C_Series-2.2.0.295
 endif
 
+# Mbed TLS library.
+MBEDTLS_PATH := $(FIRMWARE_PATH)/3rdparty/mbedtls-2.25.0
+MBEDTLS_LIB := mbedtls
+MBEDCRYPTO_LIB := mbedcrypto
+MBEDX509_LIB := mbedx509
+MBEDTLS_USER_CONFIG_FILE := mbedtls_user_config.h
+
+# CMSIS library.
 CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_5-5.1.1
 
 # List of all source directories used by this project.
@@ -127,6 +135,7 @@ INCLUDES  = \
         -I$(QP_PORT_DIR) \
 		-I$(CMSIS_LIB)/CMSIS/Core/Include \
         -I$(LWIPDIR)/include \
+        -I$(MBEDTLS_PATH)/include \
         -I$(FAT_FS_INC_DIR)
 
 #        -I$(QPCPP)/3rd_party/CMSIS/Include \
@@ -191,11 +200,13 @@ CPP_SRCS := \
     PFPP_AOs.cpp \
     IRTCC.cpp \
     RTCC_AOs.cpp \
+    RxDescriptor.cpp \
     SDC.cpp \
     SPI.cpp \
     SPISlaveCfg.cpp \
     TB6612.cpp \
     Time.cpp \
+    TxDescriptor.cpp \
     Weekday.cpp
 
 
@@ -226,7 +237,7 @@ OUTPUT    := $(PROJECT)
 LD_SCRIPT := $(PROJECT).ld
 
 DRIVER_LIB_DIR := -L$(TIVAWARE_LIB)/driverlib/gcc
-DRIVER_LIB     := -ldriver
+DRIVER_LIB     := -ldriver -l$(MBEDTLS_LIB) -l$(MBEDCRYPTO_LIB) -l$(MBEDX509_LIB)
 
 GFX_LIB_DIR := -L$(TIVAWARE_LIB)/grlib/gcc
 GFX_LIB     := -lgr
@@ -265,7 +276,7 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
 endif
 
@@ -352,6 +363,8 @@ CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 endif
 
+LIB_DIRS += -L$(BIN_DIR)
+
 
 LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 	-mthumb \
@@ -416,7 +429,7 @@ MODEL_OUT_FILES := \
 # Targets.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-all: show version generate_fsdata $(TARGET_BIN)
+all: show version generate_fsdata mbedtls $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
 .PHONY: version
@@ -431,6 +444,14 @@ generate_fsdata: remove_white_space copy_binary_files
 	cd $(PROJECT_ROOT_DIR)/firmware/src/html && \
   $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
   mv fsdata.c ../fsdata_custom.c
+
+CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=$(MBEDTLS_USER_CONFIG_FILE) -I$(shell cygpath -w $(PWD))\..\..
+
+mbedtls:
+	$(MAKE) -C $(MBEDTLS_PATH) CC="$(CC)" AR="$(AR)" CFLAGS="$(CFLAGS)" lib
+	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDTLS_LIB).a ./$(BIN_DIR)
+	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDCRYPTO_LIB).a ./$(BIN_DIR)
+	cp -RP $(MBEDTLS_PATH)/library/lib$(MBEDX509_LIB).a ./$(BIN_DIR)
 
 # Remove leading white spaces and tabs from files.
 $(HTML_OUTPUT_FILES): $(WEB_INPUT_DIR)/$(notdir $@)
@@ -472,14 +493,20 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 
-.PHONY: clean
-clean:
+.PHONY: clean clean_mbedtls
+clean: clean_mbedtls
 	-$(RM) $(BIN_DIR)/*.o \
         $(BIN_DIR)/*.d \
         $(BIN_DIR)/*.bin \
         $(BIN_DIR)/*.elf \
         $(BIN_DIR)/*.map
 	-$(RM) -rf $(WEB_OUTPUT_DIR)
+
+clean_mbedtls:
+	$(MAKE) -C $(MBEDTLS_PATH) clean
+	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDTLS_LIB).a
+	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDCRYPTO_LIB).a
+	-$(RM) -rf ./$(BIN_DIR)/lib$(MBEDX509_LIB).a
 
 show:
 	@echo PROJECT = $(PROJECT)
