@@ -67,7 +67,7 @@ void TxDescriptor::FreePBuf(void) {
 }
 
 
-TxDescriptor *TxRingBuf::Create(size_t aSize) {
+tEMACDMADescriptor *TxRingBuf::Create(size_t aSize) {
     // Fill the map of descriptors.
     for (size_t lIx = 0; lIx < aSize; lIx++) {
         TxDescriptor *lDescriptor = new TxDescriptor;

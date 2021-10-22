@@ -72,10 +72,7 @@ private:
     static void Free(struct pbuf *aPBuf);
 
     // Custom PBuf structure, as described in zero-copy RX ethernet driver (LwIP).
-    // Need to reference self, since this struct can't be upcast to RxDescriptor,
-    // because of the tEMACDMADescriptor in front of it.
-    // THAT FUDGING CAN BE ARRANGED, DAMMIT!
-    // tEMACDMADescriptor mDescriptor;
+    // Needs to reference the owner descriptor, since this struct can't be upcast to RxDescriptor,
     struct MyCustomPBuf {
         struct pbuf_custom mPBuf{};
         RxDescriptor *mDescriptor;
@@ -89,7 +86,7 @@ public:
     ~RxDescriptorChain();
 
     RxDescriptor *GetNext(void);
-    RxDescriptor *Create(uint32_t aBaseAddr, size_t aChainSize, size_t aBufferSize);
+    tEMACDMADescriptor *Create(uint32_t aBaseAddr, size_t aChainSize, size_t aBufferSize);
 
 private:
     void Add(uint8_t * const aBuffer, size_t aSize);

@@ -57,12 +57,10 @@ RxDescriptor::RxDescriptor(uint8_t * const aBuffer, size_t aSize)
         }
     , mCustomPBuf {
         .mPBuf {.custom_free_function = RxDescriptor::Free}
+        , .mDescriptor {this}
     } {
 
     // Ctor body.
-    // Assign free function.
-    mCustomPBuf.mPBuf.custom_free_function = RxDescriptor::Free;
-    mCustomPBuf.mDescriptor = this;
 }
 
 
@@ -98,7 +96,7 @@ RxDescriptorChain::~RxDescriptorChain() {
 
 
 RxDescriptor *RxDescriptorChain::GetNext(void) {
-
+    // DOUBLE CHECK THAT THIS CAN'T LOOP FOREVER.
     RxDescriptor * const lDescriptor = mHead;
     if (!lDescriptor->IsHWOwned()) {
         if (lDescriptor->IsFrameValid()) {
@@ -111,7 +109,7 @@ RxDescriptor *RxDescriptorChain::GetNext(void) {
 }
 
 
-RxDescriptor *RxDescriptorChain::Create(uint32_t aBaseAddr, size_t aChainSize, size_t aBufferSize) {
+tEMACDMADescriptor *RxDescriptorChain::Create(uint32_t aBaseAddr, size_t aChainSize, size_t aBufferSize) {
 
     // Allocate the memory in one chunk. Split it into individual descriptors.
     mBuffer = new uint8_t [aChainSize * aBufferSize];
@@ -167,9 +165,11 @@ void RxDescriptor::Free(struct pbuf *aPBuf) {
     // Upcast to a MyCustomPBuf object.
     MyCustomPBuf * const lCustomPBuf = reinterpret_cast<MyCustomPBuf *>(aPBuf);
 
-    // Nothing to do for the pbuf itself: unref by the stack.
-    // Give descriptors back to HW from end to start of chain.
-    lCustomPBuf->mDescriptor->FreeDescriptors();
+    // Nothing to do for the pbuf itself: unref'd by the stack.
+    // Give descriptors back to HW.
+    // This function is called for each pbuf element of the chain,
+    // so no need to recurse from end to start of descriptor chain.
+    lCustomPBuf->mDescriptor->GiveToHW();
 }
 
 

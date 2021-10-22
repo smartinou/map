@@ -84,7 +84,7 @@ public:
     TxRingBuf() {}
     ~TxRingBuf() {Free();}
 
-    TxDescriptor *Create(std::size_t aSize);
+    tEMACDMADescriptor *Create(std::size_t aSize);
     bool PushPBuf(struct pbuf * const aPBuf);
     bool PopPBuf(void);
 

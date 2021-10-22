@@ -318,9 +318,9 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     // Initialize the Ethernet DMA descriptors.
     static constexpr unsigned int sDescriptorQty = 8;
     static constexpr size_t sBufferSize = 540;
-    RxDescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, sDescriptorQty, sBufferSize);
+    tEMACDMADescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, sDescriptorQty, sBufferSize);
     MAP_EMACRxDMADescriptorListSet(EMAC0_BASE, lRxList);
-    TxDescriptor * const lTxList = mTxRingBuf.Create(sDescriptorQty);
+    tEMACDMADescriptor * const lTxList = mTxRingBuf.Create(sDescriptorQty);
     MAP_EMACTxDMADescriptorListSet(EMAC0_BASE, lTxList);
 
     // Enable the Ethernet MAC transmitter and receiver.
