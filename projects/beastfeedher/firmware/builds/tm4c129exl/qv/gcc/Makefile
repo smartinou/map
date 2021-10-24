@@ -52,6 +52,9 @@ FIRMWARE_PATH := $(REPO_ROOT_DIR)/firmware
 PROJECT_ROOT_DIR := $(REPO_ROOT_DIR)/projects/beastfeedher
 PROJECT_FW_DIR   := $(PROJECT_ROOT_DIR)/firmware
 
+WEB_INPUT_DIR  := $(PROJECT_FW_DIR)/src/html/in
+WEB_OUTPUT_DIR := $(PROJECT_FW_DIR)/src/html/out
+
 # LwIP library.
 LWIPDIR := ../../../../../../../firmware/3rdparty/lwip-2.1.2/src
 include $(LWIPDIR)/Filelists.mk
@@ -82,34 +85,34 @@ CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_5-5.1.1
 
 # List of all source directories used by this project.
 VPATH = \
-        ../../ \
-        $(PROJECT_FW_DIR)/src \
-        $(PROJECT_FW_DIR)/src/models/codegen \
-        $(PROJECT_FW_DIR)/src/lwip_port/arch \
-        $(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
-        $(FIRMWARE_PATH)/corelink/src \
-        $(FIRMWARE_PATH)/drivers/src \
-        $(FIRMWARE_PATH)/qp_ao/codegen \
-        $(FIRMWARE_PATH)/qp_ao/src \
-        $(FIRMWARE_PATH)/utils/date \
-        $(FIRMWARE_PATH)/utils/db \
-        $(FIRMWARE_PATH)/utils/net \
-        $(FIRMWARE_PATH)/utils/src \
-        $(FIRMWARE_PATH)/utils/time \
-        $(QPCPP)/src/qf \
-        $(QPCPP)/src/qs \
-        $(QPCPP)/src/qv \
-        $(QP_PORT_DIR) \
-        $(LWIPDIR)/core \
-        $(LWIPDIR)/core/ipv4 \
-        $(LWIPDIR)/api \
-        $(LWIPDIR)/netif \
-        $(LWIPDIR)/apps/altcp_tls \
-        $(LWIPDIR)/apps/http \
-        $(LWIPDIR)/apps/mqtt \
-        $(LWIPDIR)/apps/snmp \
-        $(LWIPDIR)/apps/sntp \
-        $(FAT_FS_SRC_DIR)
+	../../ \
+	$(PROJECT_FW_DIR)/src \
+	$(PROJECT_FW_DIR)/src/models/codegen \
+	$(PROJECT_FW_DIR)/src/lwip_port/arch \
+	$(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
+	$(FIRMWARE_PATH)/corelink/src \
+	$(FIRMWARE_PATH)/drivers/src \
+	$(FIRMWARE_PATH)/qp_ao/codegen \
+	$(FIRMWARE_PATH)/qp_ao/src \
+	$(FIRMWARE_PATH)/utils/date \
+	$(FIRMWARE_PATH)/utils/db \
+	$(FIRMWARE_PATH)/utils/net \
+	$(FIRMWARE_PATH)/utils/src \
+	$(FIRMWARE_PATH)/utils/time \
+	$(QPCPP)/src/qf \
+	$(QPCPP)/src/qs \
+	$(QPCPP)/src/qv \
+	$(QP_PORT_DIR) \
+	$(LWIPDIR)/core \
+	$(LWIPDIR)/core/ipv4 \
+	$(LWIPDIR)/api \
+	$(LWIPDIR)/netif \
+	$(LWIPDIR)/apps/altcp_tls \
+	$(LWIPDIR)/apps/http \
+	$(LWIPDIR)/apps/mqtt \
+	$(LWIPDIR)/apps/snmp \
+	$(LWIPDIR)/apps/sntp \
+	$(FAT_FS_SRC_DIR)
 
 #        $(QPCPP)/3rd_party/gnu_cpp \
 #        $(QPCPP)/3rd_party/ek-tm4c123gxl \
@@ -117,26 +120,27 @@ VPATH = \
 
 # List of all include directories needed by this project.
 INCLUDES  = \
-        -I. \
-        -I../.. \
-        -I$(PROJECT_ROOT_DIR)/firmware/src \
-        -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
-        -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
-        -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
-        -I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c129exl \
-        -I$(FIRMWARE_PATH)/corelink/inc \
-        -I$(FIRMWARE_PATH)/drivers/inc \
-        -I$(FIRMWARE_PATH)/qp_ao/inc \
-        -I$(FIRMWARE_PATH)/qp_ao/codegen \
-        -I$(FIRMWARE_PATH)/utils \
-        -I$(TIVAWARE_LIB) \
-        -I$(QPCPP)/include \
-        -I$(QPCPP)/src \
-        -I$(QP_PORT_DIR) \
-		-I$(CMSIS_LIB)/CMSIS/Core/Include \
-        -I$(LWIPDIR)/include \
-        -I$(MBEDTLS_PATH)/include \
-        -I$(FAT_FS_INC_DIR)
+	-I. \
+	-I../.. \
+	-I$(PROJECT_ROOT_DIR)/firmware/src \
+	-I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
+	-I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
+	-I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
+	-I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c129exl \
+	-I$(WEB_OUTPUT_DIR) \
+	-I$(FIRMWARE_PATH)/corelink/inc \
+	-I$(FIRMWARE_PATH)/drivers/inc \
+	-I$(FIRMWARE_PATH)/qp_ao/inc \
+	-I$(FIRMWARE_PATH)/qp_ao/codegen \
+	-I$(FIRMWARE_PATH)/utils \
+	-I$(TIVAWARE_LIB) \
+	-I$(QPCPP)/include \
+	-I$(QPCPP)/src \
+	-I$(QP_PORT_DIR) \
+	-I$(CMSIS_LIB)/CMSIS/Core/Include \
+	-I$(LWIPDIR)/include \
+	-I$(MBEDTLS_PATH)/include \
+	-I$(FAT_FS_INC_DIR)
 
 #        -I$(QPCPP)/3rd_party/CMSIS/Include \
 #        -I$(QPCPP)/3rd_party/ek-tm4c123gxl \
@@ -390,8 +394,8 @@ $(shell $(MKDIR) $(BIN_DIR))
 endif
 
 # Web & HTML variables.
-WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
-WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
+#WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
+#WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
 MAKE_FSDATA_DIR := $(LWIPDIR)/apps/http/makefsdata
 
 WEB_HTML_FILES := \
@@ -440,10 +444,13 @@ remove_white_space: $(HTML_OUTPUT_FILES)
 
 copy_binary_files: $(BIN_OUTPUT_FILES)
 
+# Move static const data from rodata located in rom to data section.
 generate_fsdata: remove_white_space copy_binary_files
-	cd $(PROJECT_ROOT_DIR)/firmware/src/html && \
+	cd $(WEB_OUTPUT_DIR) && \
   $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
-  mv fsdata.c ../fsdata_custom.c
+  sed -i 's/^static\s*const\s*unsigned\s*char\s*[a-zA-Z_]*\[\]/& __attribute__ (( section (".data")))/' fsdata.c && \
+  mv fsdata.c $(abspath $(WEB_OUTPUT_DIR))/fsdata_custom.c
+
 
 CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=$(MBEDTLS_USER_CONFIG_FILE) -I$(shell cygpath -w $(PWD))\..\..
 
@@ -512,13 +519,13 @@ show:
 	@echo PROJECT = $(PROJECT)
 	@echo CONF = $(CONF)
 	@echo DEFINES = $(DEFINES)
-	@echo ASM_FPU = $(ASM_FPU)
-	@echo ASM_SRCS = $(ASM_SRCS)
-	@echo C_SRCS = $(C_SRCS)
-	@echo CPP_SRCS = $(CPP_SRCS)
-	@echo ASM_OBJS_EXT = $(ASM_OBJS_EXT)
-	@echo C_OBJS_EXT = $(C_OBJS_EXT)
-	@echo C_DEPS_EXT = $(C_DEPS_EXT)
-	@echo CPP_DEPS_EXT = $(CPP_DEPS_EXT)
+	@echo off ASM_FPU = $(ASM_FPU)
+	@echo off ASM_SRCS = $(ASM_SRCS)
+	@echo off C_SRCS = $(C_SRCS)
+	@echo off CPP_SRCS = $(CPP_SRCS)
+	@echo off ASM_OBJS_EXT = $(ASM_OBJS_EXT)
+	@echo off C_OBJS_EXT = $(C_OBJS_EXT)
+	@echo off C_DEPS_EXT = $(C_DEPS_EXT)
+	@echo off CPP_DEPS_EXT = $(CPP_DEPS_EXT)
 	@echo TARGET_ELF = $(TARGET_ELF)
 	@echo TARGET_BIN = $(TARGET_BIN)
