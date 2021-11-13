@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "CrossARM",
+            "includePath": [
+                "${workspaceFolder}/firmware/src/**",
+                "${workspaceFolder}/firmware/builds/tm4c129exl/",
+                "${workspaceFolder}/../../firmware/**"
+            ],
+            "defines": [
+                "_DEBUG"
+            ],
+            //"forcedInclude": ["${workspaceFolder}/src/IncludeMcuLibConfig.h"],
+            "compilerPath": "C:\\apps\\GNU Arm Embedded Toolchain\\10 2021.10\\bin\\arm-none-eabi-gcc.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}

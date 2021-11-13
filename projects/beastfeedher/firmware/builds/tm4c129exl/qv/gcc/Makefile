@@ -80,70 +80,71 @@ MBEDCRYPTO_LIB := mbedcrypto
 MBEDX509_LIB := mbedx509
 MBEDTLS_USER_CONFIG_FILE := mbedtls_user_config.h
 
+# SEGGER RTT library.
+SEGGER_RTT_PATH := $(FIRMWARE_PATH)/3rdparty/segger_rtt_v758
+
 # CMSIS library.
 CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_5-5.1.1
 
 # List of all source directories used by this project.
 VPATH = \
-	../../ \
-	$(PROJECT_FW_DIR)/src \
-	$(PROJECT_FW_DIR)/src/models/codegen \
-	$(PROJECT_FW_DIR)/src/lwip_port/arch \
-	$(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
-	$(FIRMWARE_PATH)/corelink/src \
-	$(FIRMWARE_PATH)/drivers/src \
-	$(FIRMWARE_PATH)/qp_ao/codegen \
-	$(FIRMWARE_PATH)/qp_ao/src \
-	$(FIRMWARE_PATH)/utils/date \
-	$(FIRMWARE_PATH)/utils/db \
-	$(FIRMWARE_PATH)/utils/net \
-	$(FIRMWARE_PATH)/utils/src \
-	$(FIRMWARE_PATH)/utils/time \
-	$(QPCPP)/src/qf \
-	$(QPCPP)/src/qs \
-	$(QPCPP)/src/qv \
-	$(QP_PORT_DIR) \
-	$(LWIPDIR)/core \
-	$(LWIPDIR)/core/ipv4 \
-	$(LWIPDIR)/api \
-	$(LWIPDIR)/netif \
-	$(LWIPDIR)/apps/altcp_tls \
-	$(LWIPDIR)/apps/http \
-	$(LWIPDIR)/apps/mqtt \
-	$(LWIPDIR)/apps/snmp \
-	$(LWIPDIR)/apps/sntp \
-	$(FAT_FS_SRC_DIR)
+    ../../ \
+    $(PROJECT_FW_DIR)/src \
+    $(PROJECT_FW_DIR)/src/models/codegen \
+    $(PROJECT_FW_DIR)/src/lwip_port/arch \
+    $(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
+    $(FIRMWARE_PATH)/corelink/src \
+    $(FIRMWARE_PATH)/drivers/src \
+    $(FIRMWARE_PATH)/qp_ao/codegen \
+    $(FIRMWARE_PATH)/qp_ao/src \
+    $(FIRMWARE_PATH)/utils/date \
+    $(FIRMWARE_PATH)/utils/db \
+    $(FIRMWARE_PATH)/utils/net \
+    $(FIRMWARE_PATH)/utils/src \
+    $(FIRMWARE_PATH)/utils/time \
+    $(QPCPP)/src/qf \
+    $(QPCPP)/src/qs \
+    $(QPCPP)/src/qv \
+    $(QP_PORT_DIR) \
+    $(LWIPDIR)/core \
+    $(LWIPDIR)/core/ipv4 \
+    $(LWIPDIR)/api \
+    $(LWIPDIR)/netif \
+    $(LWIPDIR)/apps/altcp_tls \
+    $(LWIPDIR)/apps/http \
+    $(LWIPDIR)/apps/mqtt \
+    $(LWIPDIR)/apps/snmp \
+    $(LWIPDIR)/apps/sntp \
+    $(FAT_FS_SRC_DIR) \
+    $(SEGGER_RTT_PATH)/RTT \
+    $(SEGGER_RTT_PATH)/SysCalls
 
-#        $(QPCPP)/3rd_party/gnu_cpp \
-#        $(QPCPP)/3rd_party/ek-tm4c123gxl \
-#        $(QPCPP)/3rd_party/ek-tm4c123gxl/gnu \
 
 # List of all include directories needed by this project.
 INCLUDES  = \
-	-I. \
-	-I../.. \
-	-I$(PROJECT_ROOT_DIR)/firmware/src \
-	-I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
-	-I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
-	-I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
-	-I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c129exl \
-	-I$(WEB_OUTPUT_DIR) \
-	-I$(FIRMWARE_PATH)/corelink/inc \
-	-I$(FIRMWARE_PATH)/drivers/inc \
-	-I$(FIRMWARE_PATH)/qp_ao/inc \
-	-I$(FIRMWARE_PATH)/qp_ao/codegen \
-	-I$(FIRMWARE_PATH)/utils \
-	-I$(TIVAWARE_LIB) \
-	-I$(QPCPP)/include \
-	-I$(QPCPP)/src \
-	-I$(QP_PORT_DIR) \
-	-I$(CMSIS_LIB)/CMSIS/Core/Include \
-	-I$(LWIPDIR)/include \
-	-I$(MBEDTLS_PATH)/include \
-	-I$(FAT_FS_INC_DIR)
-
-#        -I$(QPCPP)/3rd_party/CMSIS/Include \
-#        -I$(QPCPP)/3rd_party/ek-tm4c123gxl \
+    -I. \
+    -I../.. \
+    -I$(PROJECT_ROOT_DIR)/firmware/src \
+    -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
+    -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
+    -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
+    -I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c129exl \
+    -I$(WEB_OUTPUT_DIR) \
+    -I$(FIRMWARE_PATH)/corelink/inc \
+    -I$(FIRMWARE_PATH)/drivers/inc \
+    -I$(FIRMWARE_PATH)/qp_ao/inc \
+    -I$(FIRMWARE_PATH)/qp_ao/codegen \
+    -I$(FIRMWARE_PATH)/utils \
+    -I$(TIVAWARE_LIB) \
+    -I$(QPCPP)/include \
+    -I$(QPCPP)/src \
+    -I$(QP_PORT_DIR) \
+    -I$(CMSIS_LIB)/CMSIS/Core/Include \
+    -I$(LWIPDIR)/include \
+    -I$(MBEDTLS_PATH)/include \
+    -I$(FAT_FS_INC_DIR) \
+    -I$(SEGGER_RTT_PATH)/RTT \
+    -I$(SEGGER_RTT_PATH)/Config
 
 # Files
 # Assembler source files.
@@ -158,6 +159,10 @@ FAT_FS_INC_DIR := $(FAT_FS_SRC_DIR)
 FAT_FS_SRCS := \
         ff.c
 
+SEGGER_RTT_SRCS := \
+    SEGGER_RTT.c \
+    SEGGER_RTT_printf.c
+
 # C source files.
 C_SRCS := \
     startup_TM4C129ENCPDT.c \
@@ -171,7 +176,8 @@ C_SRCS := \
     $(HTTPFILES) \
     $(MQTTFILES) \
     $(MBEDTLS_FILES) \
-    $(FAT_FS_SRCS)
+    $(FAT_FS_SRCS) \
+	$(SEGGER_RTT_SRCS)
 
 
 # C++ source files.
@@ -263,6 +269,7 @@ DEFINES   += -DPART_TM4C129ENCPDT
 DEFINES   += -DUSE_TIVAWARE
 DEFINES   += -DTM4C129ENCPDT
 
+DEFINES   += -D__ARM_ARCH_7EM__
 
 # ARM CPU, ARCH, FPU, and Float-ABI types...
 # ARM_CPU:   [cortex-m0 | cortex-m0plus | cortex-m1 | cortex-m3 | cortex-m4]
@@ -281,7 +288,8 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
+GNU_ARM = C:/apps/GNU\ Arm\ Embedded\ Toolchain/10\ 2021.10
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -409,7 +417,7 @@ WEB_BIN_FILES := \
   BGround.png
 
 HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
-BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
+BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
 
 QM_PATH := c:/apps/qm/bin
 QM_BIN := $(QM_PATH)/qmc.exe
