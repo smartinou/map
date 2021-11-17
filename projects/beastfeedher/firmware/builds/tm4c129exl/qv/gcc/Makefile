@@ -351,12 +351,12 @@ ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++14 \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 else
 # Default Debug configuration.

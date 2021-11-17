@@ -69,9 +69,20 @@
 
 #include "netif/tm4c129/EthDrv.h"
 
-#if defined(USE_UART0) || defined(Q_SPY)
+#ifdef USE_UART0
 #include "uartstdio.h"
-#endif // USE_UART0 || Q_SPY
+#endif // USE_UART0
+
+#ifdef USE_RTT
+// SEGGER RTT.
+#include <SEGGER_RTT.h>
+#endif // USE_RTT
+
+#ifdef Q_SPY
+#if !defined(USE_UART0) && !defined(USE_RTT)
+#error Must define USE_UART0 or USE_RTT for using Q_SPY
+#endif
+#endif // Q_SPY
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -110,6 +121,16 @@ Q_ASSERT_COMPILE(MAX_KERNEL_AWARE_CMSIS_PRI <= (0xFF >>(8-__NVIC_PRIO_BITS)));
 static constexpr uint32_t sClkRate = 120000000;
 static constexpr unsigned long sUartPortNbr = 0;
 static constexpr uint32_t sUartBaudRate = 115200U;
+
+enum RTTTerminal {
+    _stdin = 0,
+    _stdout = 1,
+    _stderr = 2,
+    _qspy = 3,
+};
+static constexpr unsigned int sRTTBufferIndex = 0U;
+static constexpr size_t sRTTUpBufferSize = 1024;
+static constexpr unsigned int sRTTQSPYTerminal = RTTTerminal::_qspy;
 
 #ifdef Q_SPY
 
@@ -185,7 +206,7 @@ public:
         if (nullptr == Factory::mInstance.get()) {
             // Assigning the instance this way rather than with std::make_shared<>()
             // allows to make the Ctor private.
-            BSP::Factory::mInstance = std::shared_ptr<IBSPFactory> (new Factory);
+            BSP::Factory::mInstance = std::shared_ptr<IBSPFactory>(new Factory);
         }
 
         return Factory::mInstance;
@@ -331,7 +352,7 @@ private:
         MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ);
         MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
 
-#if defined(USE_UART0) || defined(Q_SPY)
+#ifdef USE_UART0
         // Debug UART port.
         GPIO lU0RxGPIO(GPIOA_AHB_BASE, GPIO_PIN_0);
         GPIO lU0TxGPIO(GPIOA_AHB_BASE, GPIO_PIN_1);
@@ -345,15 +366,53 @@ private:
         // @115200, 8-N-1.
         // Flush the buffers.
         UARTStdioInit(sUartPortNbr, mClkRate, sUartBaudRate);
-#endif // USE_UART0 || Q_SPY
+#endif // USE_UART0
+
+#ifdef USE_RTT
+    // Leave here until RTT has other use than QSPY.
+    SEGGER_RTT_Init();
+    SEGGER_RTT_printf(sRTTBufferIndex, "Hello, World!\n");
+    static constexpr auto sRTTUpBufferName = "RTTUpBuffer";
+    static uint8_t sRTTUpBuffer[sRTTUpBufferSize] = {0};
+    int lResult = SEGGER_RTT_ConfigUpBuffer(
+        sRTTBufferIndex,
+        sRTTUpBufferName,
+        &sRTTUpBuffer[0],
+        sizeof(sRTTUpBufferSize),
+        SEGGER_RTT_MODE_NO_BLOCK_SKIP
+    );
+
+    if (lResult < 0) {
+        // Error while configuring buffer.
+        return;
+    }
+
+    static constexpr auto sRTTDownBufferName = "RTTDownBuffer";
+    static constexpr size_t sRTTDownBufferSize = 64;
+    static uint8_t sRTTDownBuffer[sRTTDownBufferSize] = {0};
+    lResult = SEGGER_RTT_ConfigDownBuffer(
+        sRTTBufferIndex,
+        sRTTDownBufferName,
+        &sRTTDownBuffer[0],
+        sizeof(sRTTDownBufferSize),
+        SEGGER_RTT_MODE_NO_BLOCK_SKIP
+    );
+
+    if (lResult < 0) {
+        // Error while configuring buffer.
+        return;
+    }
+#endif // USE_RTT
 
 #ifdef Q_SPY
+#ifdef USE_UART0
         // Enable interrupts.
         // Interrupt on rx FIFO half-full.
         // UART interrupts: rx and rx-to.
         MAP_UARTIntDisable(UART0_BASE, 0xFFFFFFFF);
         MAP_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
         MAP_IntEnable(INT_UART0);
+#endif // USE_UART0
 
         // Initialize the QS software tracing.
         if (0U == QS_INIT(nullptr)) {
@@ -501,6 +560,10 @@ static void InitUserLED(void);
 static void SetUserLED(void);
 static void ClrUserLED(void);
 } // namespace BSP
+
+#ifdef Q_SPY
+static void TxData(void);
+#endif // Q_SPY
 
 // *****************************************************************************
 //                             GLOBAL VARIABLES
@@ -658,11 +721,11 @@ void QP::QF::onStartup(void) {
     BSP::mManualFeedButton.EnableInt();
     BSP::mTimedFeedButton.EnableInt();
 
-#ifdef Q_SPY
+#if defined(Q_SPY) && defined(USE_UART0)
     // UART0 interrupt used for QS-RX.
     NVIC_SetPriority(UART0_IRQn, UART0_PRIO);
     NVIC_EnableIRQ(UART0_IRQn);
-#endif // Q_SPY
+#endif // Q_SPY && USE_UART0
 }
 
 
@@ -678,24 +741,21 @@ void QP::QV::onIdle(void) {
     QF_INT_ENABLE();
 
     // Parse all the received bytes.
+#ifdef USE_RTT
+    // No interrupts: poll for received bytes and move to QS rx buffer.
+    if (SEGGER_RTT_HasData(sRTTBufferIndex) != 0) {
+        uint8_t lByte = 0;
+        // Could also check against available space in QS rx buffer.
+        while(SEGGER_RTT_Read(sRTTBufferIndex, &lByte, sizeof(lByte)))
+        {
+            QP::QS::rxPut(lByte);
+        }
+    }
+#endif // USE_RTT
     QS::rxParse();
 
     // TX done?
-    if (MAP_UARTSpaceAvail(UART0_BASE)) {
-        // Max bytes we can accept.
-        uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
-
-        QF_INT_DISABLE();
-        // Try to get next block to transmit.
-        uint8_t const *lBlockPtr = QS::getBlock(&lFIFOLen);
-        QF_INT_ENABLE();
-
-        // Any bytes in the block?
-        while (lFIFOLen-- != 0U) {
-            // Put into the FIFO.
-            MAP_UARTCharPut(UART0_BASE, *lBlockPtr++);
-        }
-    }
+    TxData();
 
 #elif defined NDEBUG
     // Put the CPU and peripherals to the low-power mode.
@@ -793,28 +853,52 @@ QP::QSTimeCtr QP::QS::onGetTime(void) {
 
 //............................................................................
 void QP::QS::onFlush(void) {
+#ifdef USE_UART0
 
     // Tx FIFO depth.
-    uint16_t lFIFOPtr = UART_TXFIFO_DEPTH;
+    uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
     uint8_t const *lBlockPtr = nullptr;
 
     QF_INT_DISABLE();
-    while ((lBlockPtr = QS::getBlock(&lFIFOPtr)) != nullptr) {
+    while ((lBlockPtr = QS::getBlock(&lFIFOLen)) != nullptr) {
         QF_INT_ENABLE();
         // Busy-wait until TX FIFO empty.
         while (!MAP_UARTSpaceAvail(UART0_BASE)) {
         }
 
         // Any bytes in the block?
-        while (lFIFOPtr-- != 0U) {
+        while (lFIFOLen-- != 0U) {
             // Put into the TX FIFO.
             MAP_UARTCharPut(UART0_BASE, *lBlockPtr++);
         }
 
         // Re-load the Tx FIFO depth.
-        lFIFOPtr = UART_TXFIFO_DEPTH;
+        lFIFOLen = UART_TXFIFO_DEPTH;
         QF_INT_DISABLE();
     }
+#else
+    // Tx FIFO depth.
+    uint16_t lFIFOLen = SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex);
+    uint8_t const *lBlockPtr = nullptr;
+
+    QF_INT_DISABLE();
+    while ((lBlockPtr = QS::getBlock(&lFIFOLen)) != nullptr) {
+        QF_INT_ENABLE();
+        // Busy-wait until TX FIFO empty.
+        while (SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex) != sRTTUpBufferSize) {
+        }
+
+        SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
+        unsigned int lLen = SEGGER_RTT_Write(sRTTBufferIndex, lBlockPtr, lFIFOLen);
+        SEGGER_RTT_SetTerminal(0);
+        // TODO: do something with len.
+        static_cast<void>(lLen);
+        // Re-load the Tx FIFO depth.
+        lFIFOLen = SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex);//UART_TXFIFO_DEPTH;
+        QF_INT_DISABLE();
+    }
+#endif
+
     QF_INT_ENABLE();
 }
 
@@ -835,6 +919,53 @@ void QP::QS::onCommand(uint8_t aCmdId, uint32_t aParam1, uint32_t aParam2, uint3
     static_cast<void>(aParam3);
 
     //TBD
+}
+
+
+static void TxData(void) {
+#ifdef USE_UART0
+    // TX done?
+    if (MAP_UARTSpaceAvail(UART0_BASE)) {
+        // Max bytes we can accept.
+        uint16_t lFIFOLen = UART_TXFIFO_DEPTH;
+
+        QF_INT_DISABLE();
+        // Get next block to transmit.
+        uint8_t const *lBlockPtr = QS::getBlock(&lFIFOLen);
+        QF_INT_ENABLE();
+
+        // Any bytes in the block?
+        while (lFIFOLen-- != 0U) {
+            // Put into the FIFO.
+            MAP_UARTCharPut(UART0_BASE, *lBlockPtr++);
+        }
+    }
+
+#elif defined(USE_RTT)
+    // TX done?
+    unsigned int lAvailWriteSpace = SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex);
+    if (lAvailWriteSpace > 0) {
+        // Max bytes we can accept.
+        uint16_t lBlockLen = lAvailWriteSpace;
+
+        QF_INT_DISABLE();
+        // Get pointer to next block to transmit.
+        uint8_t const *lBlockPtr = QP::QS::getBlock(&lBlockLen);
+        QF_INT_ENABLE();
+
+        while (lBlockLen != 0U) {
+            SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
+            unsigned int lWrittenLen = SEGGER_RTT_Write(sRTTBufferIndex, lBlockPtr, lBlockLen);
+            SEGGER_RTT_SetTerminal(0);
+            if (lBlockLen <= lWrittenLen) {
+                lBlockLen -= lWrittenLen;
+                lBlockPtr += lWrittenLen;
+            } else {
+                lBlockLen = 0;
+            }
+        }
+    }
+#endif
 }
 
 #endif // Q_SPY
@@ -976,7 +1107,7 @@ void GPIOPortD_IRQHandler(void) {
 }
 
 
-#ifdef Q_SPY
+#if defined(Q_SPY) && defined (USE_UART0)
 void UART0_IRQHandler(void);
 // ISR for receiving bytes from the QSPY Back-End
 // NOTE: This ISR is "QF-unaware" meaning that it does not interact with
