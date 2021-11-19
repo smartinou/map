@@ -200,7 +200,7 @@ CPP_SRCS := \
     IPAddress.cpp \
     Limit.cpp \
     Logging_AOs.cpp \
-    Logger.cpp \
+    Logger2.cpp \
     LogLevel.cpp \
 	LwIP_AOs.cpp \
 	LwIPDrv.cpp \
@@ -285,8 +285,6 @@ FLOAT_ABI := -mfloat-abi=hard
 # see http://gnutoolchains.com/arm-eabi/
 ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
-#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
-#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
 GNU_ARM = C:/apps/GNU\ Arm\ Embedded\ Toolchain/10\ 2021.10
@@ -336,7 +334,7 @@ CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++14 \
+	-std=c++17 -Wno-deprecated-register \
 	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 
@@ -355,7 +353,7 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++14 \
+	-std=c++17 -Wno-deprecated-register \
 	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 else
@@ -370,7 +368,7 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++14 \
+	-std=c++17 -Wno-deprecated-register \
 	-O $(INCLUDES) $(DEFINES)
 
 endif

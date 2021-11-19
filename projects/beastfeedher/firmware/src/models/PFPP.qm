@@ -146,7 +146,7 @@ subscribe(LWIP_IP_CHANGED_SIG);
 subscribe(LWIP_SYSTEM_TIME_UPDATE_SIG);
 
 // Set logging category.
-LOGGER.AddCategory(LOG_EVENT_SIG, mLogCategory, LogLevel::prio::INFO);
+Logger::AddCategory(mLogCategory, LOG_EVENT_SIG, LogLevel::prio::INFO);
 </action>
       <initial_glyph conn="4,6,5,0,8,6">
        <action box="0,-2,10,2"/>
@@ -561,7 +561,7 @@ $declare${project::AOs::Mgr_AO}
 #include &quot;Display_Events.h&quot;
 #include &quot;LwIP_Events.h&quot;
 #include &quot;RTCC_Events.h&quot;
-#include &quot;Logger.h&quot;
+#include &quot;Logger2.h&quot;
 
 #include &quot;PFPP_AOs.h&quot;
 #include &quot;PFPP_Events.h&quot;

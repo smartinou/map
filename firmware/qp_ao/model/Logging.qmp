@@ -284,10 +284,10 @@ $declare${Logging::AOs::FileSink_AO}
  </directory>
  <directory name="../inc">
   <file name="Logger.h" properties="external"/>
-  <file name="LogLevel.h" properties="external"/>
+  <file name="Logger2.h" properties="external"/>
  </directory>
  <directory name="../src">
   <file name="Logger.cpp" properties="external"/>
-  <file name="LogLevel.cpp" properties="external"/>
+  <file name="Logger2.cpp" properties="external"/>
  </directory>
 </package>
