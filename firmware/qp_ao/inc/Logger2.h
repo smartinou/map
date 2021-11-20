@@ -40,8 +40,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-//#include <cstddef>
-//#include <string>
 #include <qpcpp.h>
 
 #include "LogLevel.h"
@@ -146,16 +144,14 @@
 
 namespace Logger {
 
-LogLevel GetGlobalLevel(void);
-void SetGlobalLevel(LogLevel const aLevel);
 
 bool AddCategory(
     char const * const aCategoryStr,
     unsigned int const aEventSignal,
-    LogLevel::prio const aLevel = LogLevel::prio::ERROR
+    LogLevel::prio const aMaxLevel = LogLevel::prio::ERROR
 );
-LogLevel GetLogLevel(char const * const aCategoryStr);
-void SetLogLevel(LogLevel const aLevel);
+LogLevel GetMaxLevel(char const * const aCategoryStr);
+unsigned int GetEventSignal(char const * const aCategoryName);
 
 bool Log(
     LogLevel const aLevel,

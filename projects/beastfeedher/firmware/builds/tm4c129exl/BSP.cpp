@@ -876,7 +876,7 @@ void QP::QS::onFlush(void) {
         lFIFOLen = UART_TXFIFO_DEPTH;
         QF_INT_DISABLE();
     }
-#else
+#elif defined(USE_RTT)
     // Tx FIFO depth.
     uint16_t lFIFOLen = SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex);
     uint8_t const *lBlockPtr = nullptr;
@@ -894,7 +894,7 @@ void QP::QS::onFlush(void) {
         // TODO: do something with len.
         static_cast<void>(lLen);
         // Re-load the Tx FIFO depth.
-        lFIFOLen = SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex);//UART_TXFIFO_DEPTH;
+        lFIFOLen = SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex);
         QF_INT_DISABLE();
     }
 #endif

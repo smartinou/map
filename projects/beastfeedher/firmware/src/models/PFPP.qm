@@ -31,6 +31,9 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mLogCategory" type="char const *" visibility="0x02" properties="0x00">
      <documentation>The string representing the log categories from this AO.</documentation>
     </attribute>
+    <attribute name="mLogThreshold" type="LogLevel" visibility="0x02" properties="0x00">
+     <documentation>The threshold under which events are displayed.</documentation>
+    </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
      <parameter name="aMotorControl" type="IMotorControl &amp;"/>
@@ -44,6 +47,7 @@ This is where all the feeding actions are taken, based on calendar events and in
     , mDate()
     , mTime()
     , mLogCategory(&quot;PFPP&quot;)
+    , mLogThreshold(LogLevel::prio::INFO)
 
 // Ctor body left empty.</code>
     </operation>
@@ -130,6 +134,30 @@ Display::Event::DisplayText * const lTextEvent = Q_NEW(
 QP::QF::PUBLISH(lTextEvent, this);
 </code>
     </operation>
+    <operation name="PrintEvent?def USE_RTT" type="void" visibility="0x02" properties="0x08">
+     <documentation>Event sink: print to SEGGER RTT.</documentation>
+     <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
+     <code>char lDateStr[32] = {0};
+DateHelper::ToStr(aLogEvent.mDate, &amp;lDateStr[0]);
+char lTimeStr[32] = {0};
+TimeHelper::ToStr(aLogEvent.mTime, &amp;lTimeStr[0]);
+static constexpr unsigned int sBufferIndex = 0;
+int lLen = SEGGER_RTT_printf(
+    sBufferIndex,
+    &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
+    &amp;lDateStr[0],
+    &amp;lTimeStr[0],
+    LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
+    aLogEvent.mFileStr,
+    aLogEvent.mFunctionStr,
+    aLogEvent.mLine,
+    aLogEvent.mCategoryStr,
+    &amp;aLogEvent.mMsg[0]
+);
+
+// Do nothing with returned Len for now.
+static_cast&lt;void&gt;(lLen);</code>
+    </operation>
     <statechart properties="0x02">
      <initial target="../1">
       <action brief="Init();">StopFeeder();
@@ -146,7 +174,9 @@ subscribe(LWIP_IP_CHANGED_SIG);
 subscribe(LWIP_SYSTEM_TIME_UPDATE_SIG);
 
 // Set logging category.
-Logger::AddCategory(mLogCategory, LOG_EVENT_SIG, LogLevel::prio::INFO);
+// Add self to logging sink.
+Logger::AddCategory(mLogCategory, FEED_MGR_LOG_SIG, LogLevel::prio::INFO);
+Logger::AddSink(mLogCategory, this);
 </action>
       <initial_glyph conn="4,6,5,0,8,6">
        <action box="0,-2,10,2"/>
@@ -165,17 +195,17 @@ Display::Event::DisplayText * const lFrameEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lFrameEvent, this);
 </entry>
-      <initial target="../9">
+      <initial target="../10">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
        </initial_glyph>
       </initial>
-      <tran trig="FEED_MGR_TIMEOUT" target="../9">
+      <tran trig="FEED_MGR_TIMEOUT" target="../10">
        <tran_glyph conn="4,28,3,3,28">
         <action box="0,-2,22,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../11">
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../12">
        <tran_glyph conn="4,88,3,3,28">
         <action box="0,-2,28,4"/>
        </tran_glyph>
@@ -183,13 +213,13 @@ QP::QF::PUBLISH(lFrameEvent, this);
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
        <action brief="GetState();">PFPP::Event::Mgr::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::Mgr::ManualFeedCmd const * const&gt;(e);
 </action>
-       <choice target="../../10">
+       <choice target="../../11">
         <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
         <choice_glyph conn="18,46,5,3,14">
          <action box="0,-2,24,2"/>
         </choice_glyph>
        </choice>
-       <choice target="../../9">
+       <choice target="../../10">
         <guard brief="else"/>
         <choice_glyph conn="18,46,4,3,-16,14">
          <action box="0,-16,10,2"/>
@@ -200,7 +230,7 @@ QP::QF::PUBLISH(lFrameEvent, this);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_TIMED_FEED_CMD">
-       <choice target="../../11">
+       <choice target="../../12">
         <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
         <choice_glyph conn="18,94,5,3,14">
          <action box="1,0,13,2"/>
@@ -310,6 +340,20 @@ QP::QF::PUBLISH(lEvtPtr, this);
         <action box="0,-2,24,2"/>
        </tran_glyph>
       </tran>
+      <tran trig="FEED_MGR_LOG?def USE_RTT">
+       <action brief="ParseEvent();">Logging::Event::LogEntry const * const lEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);
+</action>
+       <choice>
+        <guard brief="Level &lt;= Threshold">lEvent-&gt;mLogLevel &lt;= mLogThreshold</guard>
+        <action brief="PrintEvent();">PrintEvent(*lEvent);</action>
+        <choice_glyph conn="32,122,5,-1,22">
+         <action box="1,-2,25,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="4,122,3,-1,28">
+        <action box="0,-2,26,2"/>
+       </tran_glyph>
+      </tran>
       <state name="Waiting">
        <documentation>// Waiting here for anything to happen.</documentation>
        <entry brief="recall();">recall(&amp;mDeferredEventQueue);</entry>
@@ -399,11 +443,11 @@ LOG_INFO(mLogCategory, mDate, mTime, &quot;Timed feed.&quot;);</exit>
         <exit box="1,4,39,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="4,12,76,108">
+      <state_glyph node="4,12,76,116">
        <entry box="1,2,17,2"/>
       </state_glyph>
      </state>
-     <state_diagram size="84,124"/>
+     <state_diagram size="84,132"/>
     </statechart>
    </class>
    <class name="BLE_AO" superclass="qpcpp::QActive">
@@ -557,6 +601,11 @@ $declare${project::AOs::Mgr_AO}
 #include &quot;Signals.h&quot;
 
 #include &quot;net/IPAddress.h&quot;
+
+#ifdef USE_RTT
+// SEGGER RTT.
+#include &lt;SEGGER_RTT.h&gt;
+#endif // USE_RTT
 
 #include &quot;Display_Events.h&quot;
 #include &quot;LwIP_Events.h&quot;

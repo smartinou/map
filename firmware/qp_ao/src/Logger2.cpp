@@ -67,9 +67,7 @@ namespace Logger {
 
 static std::map<std::string, std::pair<unsigned int, LogLevel>> sCategories;
 
-static LogLevel sGlobalLevel = LogLevel::prio::ERROR;
-
-static LogLevel::prio constexpr sInvalidCategory = LogLevel::prio::DISABLED;
+static LogLevel::prio constexpr sPrioDisabled = LogLevel::prio::DISABLED;
 
 } // namespace Logger
 
@@ -79,29 +77,20 @@ static LogLevel::prio constexpr sInvalidCategory = LogLevel::prio::DISABLED;
 
 namespace Logger {
 
-LogLevel GetGlobalLevel(void) {
-    return sGlobalLevel;
-}
-
-
-void SetGlobalLevel(LogLevel const aLevel) {
-    sGlobalLevel = aLevel;
-}
-
 
 bool AddCategory(
     char const * const aCategoryName,
     unsigned int const aEventSignal,
-    LogLevel::prio const aLevel
+    LogLevel::prio const aMaxLevel
 ) {
-    auto lPair = std::make_pair(aEventSignal, aLevel);
+    auto lPair = std::make_pair(aEventSignal, aMaxLevel);
     auto lResult = sCategories.insert_or_assign(aCategoryName, lPair);
 
     return lResult.second;
 }
 
 
-LogLevel GetLogLevel(char const * const aCategoryName) {
+LogLevel GetMaxLevel(char const * const aCategoryName) {
 
     auto lSearch = sCategories.find(aCategoryName);
     if (lSearch != sCategories.end()) {
@@ -109,7 +98,7 @@ LogLevel GetLogLevel(char const * const aCategoryName) {
         return lPair.second;
     }
 
-    return sInvalidCategory;
+    return sPrioDisabled;
 }
 
 
@@ -138,13 +127,12 @@ bool Log(
 ) {
 
     // Check for log level threshold (global and per category).
-    LogLevel lCategoryLevel = GetLogLevel(aCategoryName);
-    if (lCategoryLevel != sInvalidCategory) {
-        if (aLevel < lCategoryLevel) {
+    LogLevel lCategoryLevel = GetMaxLevel(aCategoryName);
+    if (lCategoryLevel != sPrioDisabled) {
+        // Category is active: check if requested level w/r to max threshold.
+        if (aLevel > lCategoryLevel) {
             return false;
         }
-    } else if (aLevel < Logger::sGlobalLevel) {
-        return false;
     }
 
     // Create the Log event and publish it to QP framework!
@@ -173,7 +161,7 @@ bool Log(
 }
 
 
-void AddSink(QP::QActive * const aAO, char const * const aCategoryName) {
+void AddSink(char const * const aCategoryName, QP::QActive * const aAO) {
     // Make the AO listener subscribe to the category.
     unsigned int lEventSig = GetEventSignal(aCategoryName);
     aAO->subscribe(lEventSig);
