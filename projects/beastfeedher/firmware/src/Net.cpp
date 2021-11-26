@@ -772,7 +772,10 @@ static char const *DispIndex(
         // Could use QF_Publish() to decouple from active object.
         // Here, there's only this well-known recipient.
         //BFHMgr_AO::AOInstance().POST(lEvtPtr, 0);
-        QP::QF::PUBLISH(lEvtPtr, nullptr);
+#ifdef Q_SPY
+        static QP::QSpyId const sNetDispIndex = {0U};
+#endif // Q_SPY
+        QP::QF::PUBLISH(lEvtPtr, &sNetDispIndex);
 
         // Return where we're coming from.
         return "/index.shtml";

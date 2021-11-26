@@ -187,7 +187,10 @@ void LwIPDrv::ExtCallback(
             mNetIF.netmask.addr,
             mNetIF.gw.addr
         );
-        QP::QF::PUBLISH(lEvent, this);
+#ifdef Q_SPY
+        static QP::QSpyId const sLwIPDrvExtCallback = {0U};
+#endif // Q_SPY
+        QP::QF::PUBLISH(lEvent, &sLwIPDrvExtCallback);
     } else {
         // Discard all other reasons (netif.h):
         // LWIP_NSC_NONE, LWIP_NSC_NETIF_ADDED, LWIP_NSC_NETIF_REMOVED

@@ -62,7 +62,7 @@ include $(LWIPDIR)/Filelists.mk
 
 # Location of the QP/C++ framework (if not provided in an environemnt var.)
 ifeq ($(QPCPP),)
-QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp_6_5_1
+QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp_6_9_4rc3
 endif
 
 # QP port used in this project
@@ -334,7 +334,7 @@ CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 -Wno-deprecated-register \
+	-std=c++17 \
 	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 
@@ -353,7 +353,7 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 -Wno-deprecated-register \
+	-std=c++17 -Wno-register \
 	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 else
@@ -368,7 +368,7 @@ CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 -Wno-deprecated-register \
+	-std=c++17 \
 	-O $(INCLUDES) $(DEFINES)
 
 endif
@@ -523,15 +523,16 @@ clean_mbedtls:
 
 show:
 	@echo PROJECT = $(PROJECT)
-	@echo CONF = $(CONF)
-	@echo DEFINES = $(DEFINES)
-	@echo off ASM_FPU = $(ASM_FPU)
-	@echo off ASM_SRCS = $(ASM_SRCS)
-	@echo off C_SRCS = $(C_SRCS)
-	@echo off CPP_SRCS = $(CPP_SRCS)
-	@echo off ASM_OBJS_EXT = $(ASM_OBJS_EXT)
-	@echo off C_OBJS_EXT = $(C_OBJS_EXT)
-	@echo off C_DEPS_EXT = $(C_DEPS_EXT)
-	@echo off CPP_DEPS_EXT = $(CPP_DEPS_EXT)
-	@echo TARGET_ELF = $(TARGET_ELF)
-	@echo TARGET_BIN = $(TARGET_BIN)
+
+#	@echo CONF = $(CONF)
+#	@echo DEFINES = $(DEFINES)
+#	@echo ASM_FPU = $(ASM_FPU)
+#	@echo ASM_SRCS = $(ASM_SRCS)
+#	@echo C_SRCS = $(C_SRCS)
+#	@echo CPP_SRCS = $(CPP_SRCS)
+#	@echo ASM_OBJS_EXT = $(ASM_OBJS_EXT)
+#	@echo C_OBJS_EXT = $(C_OBJS_EXT)
+#	@echo C_DEPS_EXT = $(C_DEPS_EXT)
+#	@echo CPP_DEPS_EXT = $(CPP_DEPS_EXT)
+#	@echo TARGET_ELF = $(TARGET_ELF)
+#	@echo TARGET_BIN = $(TARGET_BIN)

@@ -203,7 +203,7 @@ public:
 
 
     static std::shared_ptr<IBSPFactory> Instance(void) {
-        if (nullptr == Factory::mInstance.get()) {
+        if (nullptr == Factory::mInstance) {
             // Assigning the instance this way rather than with std::make_shared<>()
             // allows to make the Ctor private.
             BSP::Factory::mInstance = std::shared_ptr<IBSPFactory>(new Factory);
@@ -215,7 +215,7 @@ public:
 
     // IBSPFactory Interface.
     std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) override {
-        if (mRTCCAO.get() == nullptr) {
+        if (mRTCCAO == nullptr) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
             mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC, *mRTCC);
@@ -228,16 +228,16 @@ public:
     // For direct posting to AO for instance:
     //     QP::QActive * lPtr = GetOpaqueRTCCAO();
     //     lPtr->Post(myEvent);
-    QP::QActive *GetOpaqueRTCCAO(void) const override { return mRTCCAO.get(); }
+    std::shared_ptr<QP::QActive> GetOpaqueRTCCAO(void) const override { return mRTCCAO; }
 
 
-    QP::QActive *GetOpaqueBLEAO(void) const override { return nullptr; }
+    std::shared_ptr<QP::QActive> GetOpaqueBLEAO(void) const override { return nullptr; }
     //QP::QActive *GetOpaqueBLEAO(void) override { return mBLEAO.get(); }
 
 
     unsigned int CreateDisks(void) override {
         // This BSP has one SDC device.
-        if (mSDC.get() == nullptr) {
+        if (mSDC == nullptr) {
             GPIO lCSnPin(GPIOD_AHB_BASE, GPIO_PIN_0);
             mSDC = std::make_shared<SDC>(0, *mSPIDev, lCSnPin);
         }
@@ -247,7 +247,7 @@ public:
 
 
     std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) override {
-        if (mFileLogSink.get() == nullptr) {
+        if (mFileLogSink == nullptr) {
             mFileLogSink = std::make_shared<Logging::AO::FileSink_AO>();
         }
         return mFileLogSink;
@@ -255,7 +255,7 @@ public:
 
 
     std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) override {
-        if (mPFPPAO.get() == nullptr) {
+        if (mPFPPAO == nullptr) {
             mMotorControl = CreateMotorControl();
             mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(*mMotorControl, &aFeedCfgRec);
         }
@@ -263,7 +263,7 @@ public:
     }
 
 
-    QP::QActive *GetOpaquePFPPAO(void) const override { return mPFPPAO.get(); }
+    std::shared_ptr<QP::QActive> GetOpaquePFPPAO(void) const { return mPFPPAO; }
 
 
     std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) override {
@@ -271,12 +271,12 @@ public:
     }
 
 
-    QP::QActive *GetOpaqueDisplayMgrAO(void) const override { return nullptr; }
+    std::shared_ptr<QP::QActive> GetOpaqueDisplayMgrAO(void) const override { return nullptr; }
 
 
     std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
         // Only one instance of this object can exist.
-        if (mLwIPMgrAO.get() == nullptr) {
+        if (mLwIPMgrAO == nullptr) {
             // Create all Ethernet drivers required before the AO.
             // LwIP::AO::Mgr doesn't use any local references to LwIPDrv.
             // They are referenced via LwIPDrv static functions.
@@ -423,6 +423,9 @@ private:
         //QS_OBJ_DICTIONARY(&sGPIOPortC_IRQHandler);
         //QS_OBJ_DICTIONARY(&sGPIOPortD_IRQHandler);
         //QS_OBJ_DICTIONARY(&sGPIOPortF_IRQHandler);
+
+        QS_OBJ_DICTIONARY(mPFPPAO.get());
+        QS_OBJ_DICTIONARY(mLwIPMgrAO.get());
 #endif // Q_SPY
     }
 
@@ -780,6 +783,9 @@ extern "C" void Q_onAssert(char const *module, int loc) {
     (void)loc;
     QS_ASSERTION(module, loc, static_cast<uint32_t>(10000U));
     NVIC_SystemReset();
+
+    // noreturn: loop forever.
+    while(1);
 }
 
 
@@ -885,12 +891,12 @@ void QP::QS::onFlush(void) {
     while ((lBlockPtr = QS::getBlock(&lFIFOLen)) != nullptr) {
         QF_INT_ENABLE();
         // Busy-wait until TX FIFO empty.
-        while (SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex) != sRTTUpBufferSize) {
+        while (SEGGER_RTT_GetAvailWriteSpace(sRTTBufferIndex) != (sRTTUpBufferSize - 1)) {
         }
 
-        SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
+        //SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
         unsigned int lLen = SEGGER_RTT_Write(sRTTBufferIndex, lBlockPtr, lFIFOLen);
-        SEGGER_RTT_SetTerminal(0);
+        //SEGGER_RTT_SetTerminal(0);
         // TODO: do something with len.
         static_cast<void>(lLen);
         // Re-load the Tx FIFO depth.
@@ -954,9 +960,9 @@ static void TxData(void) {
         QF_INT_ENABLE();
 
         while (lBlockLen != 0U) {
-            SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
+            //SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
             unsigned int lWrittenLen = SEGGER_RTT_Write(sRTTBufferIndex, lBlockPtr, lBlockLen);
-            SEGGER_RTT_SetTerminal(0);
+            //SEGGER_RTT_SetTerminal(0);
             if (lBlockLen <= lWrittenLen) {
                 lBlockLen -= lWrittenLen;
                 lBlockPtr += lWrittenLen;
@@ -989,8 +995,10 @@ void sntp_set_system_time(time_t aTime) {
         LWIP_SYSTEM_TIME_UPDATE_SIG,
         aTime
     );
-
-    QP::QF::PUBLISH(lEvent, nullptr);
+#ifdef Q_SPY
+    static QP::QSpyId const sSNTPSetSystemTime = {0U};
+#endif // Q_SPY
+    QP::QF::PUBLISH(lEvent, &sSNTPSetSystemTime);
 }
 
 
@@ -1070,7 +1078,7 @@ void GPIOPortJ_IRQHandler(void) {
     unsigned int lPin = BSP::mManualFeedButton.GetPin();
     if (lPin & lIntStatus) {
         MAP_GPIOIntClear(GPIOJ_AHB_BASE, lPin);
-        QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
+        std::shared_ptr<QP::QActive> lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
             if (Button::IS_HIGH == BSP::mManualFeedButton.GetGPIOPinState()) {
                 static PFPP::Event::Mgr::ManualFeedCmd const sOnEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
@@ -1088,7 +1096,7 @@ void GPIOPortJ_IRQHandler(void) {
     if (lPin & lIntStatus) {
         MAP_GPIOIntClear(GPIOJ_AHB_BASE, lPin);
         // Only interested in the pin coming high.
-        QP::QActive * const lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
+        std::shared_ptr<QP::QActive> lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
         if (nullptr != lPFPPAO) {
             if (Button::IS_HIGH == BSP::mTimedFeedButton.GetGPIOPinState()) {
                 static PFPP::Event::Mgr::TimedFeedCmd const sEvent(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
