@@ -13,7 +13,7 @@
         {
             "label": "build tm4c129exl DEBUG",
             "type": "shell",
-            "command": "make CONF=dbg all",
+            "command": "make all",
             "options": {
                 "cwd": "${workspaceFolder}/firmware/builds/tm4c129exl/qv/gcc"
             },
@@ -27,9 +27,9 @@
             },
         },
         {
-            "label": "build tm4c129exl QSPY",
+            "label": "build tm4c129exl RELEASE",
             "type": "shell",
-            "command": "make CONF=spy all",
+            "command": "make CONF=rel all",
             "options": {
                 "cwd": "${workspaceFolder}/firmware/builds/tm4c129exl/qv/gcc"
             },
@@ -42,7 +42,7 @@
         {
             "label": "clean tm4c129exl ALL CONFIGS",
             "type": "shell",
-            "command": "make CONF=dbg clean;make CONF=spy clean",
+            "command": "make clean;make CONF=rel clean",
             "options": {
                 "cwd": "${workspaceFolder}/firmware/builds/tm4c129exl/qv/gcc"
             },
@@ -55,7 +55,7 @@
         {
             "label": "build ek-lm3s6965 DEBUG",
             "type": "shell",
-            "command": "make CONF=dbg all",
+            "command": "make all",
             "options": {
                 "cwd": "${workspaceFolder}/firmware/builds/lm3s6965/qv/gcc"
             },
@@ -81,7 +81,7 @@
         {
             "label": "clean lm3s6965 ALL CONFIGS",
             "type": "shell",
-            "command": "make CONF=dbg clean;make CONF=spy clean",
+            "command": "make clean;make CONF=spy clean",
             "options": {
                 "cwd": "${workspaceFolder}/firmware/builds/lm3s6965/qv/gcc"
             },
