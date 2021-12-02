@@ -6,23 +6,7 @@
     "configurations": [
         {
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/firmware/builds/lm3s6965/qv/gcc/dbg/pfpp.elf",
-            "name": "ek-lm3s6965 DEBUG",
-            "request": "launch",
-            "type": "cortex-debug",
-            "showDevDebugOutput": false,
-            "servertype": "jlink",
-            "serverpath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
-            "armToolchainPath": "C:/apps/GNU Arm Embedded Toolchain/10 2021.10/bin",
-            "device": "LM3S6965", // https://www.segger.com/supported-devices/search
-            "interface": "swd",
-            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
-            "runToMain": true,
-            "svdFile": "${workspaceRoot}/firmware/builds/lm3s6965/lm3s6965.svd",
-        },
-        {
-            "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/firmware/builds/tm4c129exl/qv/gcc/dbg/pfpp.elf",
+            "executable": "${workspaceFolder}/qv/gcc/dbg/pfpp.elf",
             "name": "tm4c129exl DEBUG",
             "request": "launch",
             "type": "cortex-debug",
@@ -33,7 +17,7 @@
             "interface": "swd",
             "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
             "runToMain": true,
-            "svdFile": "${workspaceRoot}/firmware/builds/tm4c129exl/TM4C129ENCPDT.svd",
+            "svdFile": "${workspaceRoot}/TM4C129ENCPDT.svd",
             "rttConfig": {
                 "enabled": false,
                 "address": "auto",

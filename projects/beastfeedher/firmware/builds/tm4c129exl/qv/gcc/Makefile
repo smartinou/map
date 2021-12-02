@@ -25,14 +25,12 @@ help:
 	@echo Targets:
 	@echo 'make          - Debug (default) configuration.'
 	@echo 'make CONF=rel - Release configuration.'
-	@echo 'make CONF=spy - Spy configuration.'
 	@echo
 	@echo Cleaning configurations: Debug $(default), Release, and Spy
 	@echo 
 	@echo Targets:
 	@echo 'make clean         - Debug (default) configuration.'
 	@echo 'make CONF=rel clean - Release configuration.'
-	@echo 'make CONF=spy clean - Spy configuration.'
 	@echo
 	@echo 'make *_clean - Cleans target and intermediate files.'
 
@@ -157,7 +155,7 @@ FAT_FS_SRC_DIR := $(FAT_FS_DIR)/source
 FAT_FS_INC_DIR := $(FAT_FS_SRC_DIR)
 
 FAT_FS_SRCS := \
-        ff.c
+    ff.c
 
 SEGGER_RTT_SRCS := \
     SEGGER_RTT.c \
@@ -221,26 +219,26 @@ CPP_SRCS := \
 
 
 QP_SRCS := \
-        qep_hsm.cpp \
-        qep_msm.cpp \
-        qf_act.cpp \
-        qf_actq.cpp \
-        qf_defer.cpp \
-        qf_dyn.cpp \
-        qf_mem.cpp \
-        qf_ps.cpp \
-        qf_qact.cpp \
-        qf_qeq.cpp \
-        qf_qmact.cpp \
-        qf_time.cpp \
-        qv.cpp \
-        qv_port.cpp
+    qep_hsm.cpp \
+    qep_msm.cpp \
+    qf_act.cpp \
+    qf_actq.cpp \
+    qf_defer.cpp \
+    qf_dyn.cpp \
+    qf_mem.cpp \
+    qf_ps.cpp \
+    qf_qact.cpp \
+    qf_qeq.cpp \
+    qf_qmact.cpp \
+    qf_time.cpp \
+    qv.cpp \
+    qv_port.cpp
 
 QP_ASMS :=
 QS_SRCS := \
-        qs.cpp \
-        qs_rx.cpp \
-        qs_fp.cpp
+    qs.cpp \
+    qs_rx.cpp \
+    qs_fp.cpp
 
 
 OUTPUT    := $(PROJECT)
@@ -316,8 +314,8 @@ ASM_SRCS += $(QP_ASMS)
 
 # Add the pre-defined symbol __FPU_PRESENT if needed...
 ifneq (,$(ARM_FPU))
-#DEFINES += -D__FPU_PRESENT
-#ASM_FPU += -defsym=__FPU_PRESENT=1
+DEFINES += -D__FPU_PRESENT
+ASM_FPU += -defsym=__FPU_PRESENT=1
 endif
 
 
@@ -334,14 +332,12 @@ CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 
 CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 \
+	-std=c++17 -Wno-register \
 	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
-
-else ifeq (spy, $(CONF))
-# Spy configuration.
-
-BIN_DIR := spy
+else
+# Default Debug configuration.
+BIN_DIR := dbg
 
 CPP_SRCS += $(QS_SRCS)
 
@@ -349,27 +345,12 @@ ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
+	-O $(INCLUDES) $(DEFINES) -DQ_SPY
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
 	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
 	-std=c++17 -Wno-register \
 	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
-
-else
-# Default Debug configuration.
-BIN_DIR := dbg
-
-ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
-
-CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES)
-
-CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 \
-	-O $(INCLUDES) $(DEFINES)
 
 endif
 
@@ -442,6 +423,8 @@ MODEL_OUT_FILES := \
 all: show version generate_fsdata mbedtls $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
+.SILENT:
+
 .PHONY: version
 version:
 	./make_version.sh
@@ -480,22 +463,28 @@ $(TARGET_BIN): $(TARGET_ELF)
 	$(SIZE) $<
 
 $(TARGET_ELF) : $(ASM_OBJS_EXT) $(C_OBJS_EXT) $(CPP_OBJS_EXT)
+	echo "  LD    $@"
 	$(CPP) $(CPPFLAGS) -c $(QPCPP)/include/qstamp.cpp -o $(BIN_DIR)/qstamp.o
 	$(LINK) $(LINKFLAGS) -o $@ $^ $(BIN_DIR)/qstamp.o $(LIBS)
 
 $(BIN_DIR)/%.d : %.c
+	echo "  DEP   $<"
 	$(CC) -MM -MT $(@:.d=.o) $(CFLAGS) $< > $@
 
 $(BIN_DIR)/%.d : %.cpp
+	echo "  DEP   $<"
 	$(CPP) -MM -MT $(@:.d=.o) $(CPPFLAGS) $< > $@
 
 $(BIN_DIR)/%.o : %.s
+	echo "  AS    $<"
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BIN_DIR)/%.o : %.c
+	echo "  CC    $<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BIN_DIR)/%.o : %.cpp
+	echo "  CCP   $<"
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 # Include dependency files only if our goal depends on their existence

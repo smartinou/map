@@ -1,0 +1,71 @@
+{
+    "env": {
+        // array of user-defined variables that will be available for substitution in the configurations
+        // via the standard environment variable syntax: ${<var>} or ${env:<var>}.
+        "myDefaultIncludePath": [],
+        "myCompilerPath": ""
+      },
+      "configurations": [
+        {
+            "name": "CrossARM",
+            "includePath": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/../../src/*",
+                "${workspaceFolder}/../../src/lwip_port",
+                "${workspaceFolder}/../../src/models/codegen",
+                "${workspaceFolder}/../../../../../firmware/corelink/inc",
+                "${workspaceFolder}/../../../../../firmware/drivers/**",
+                "${workspaceFolder}/../../../../../firmware/qp_ao/**",
+                "${workspaceFolder}/../../../../../firmware/utils",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/CMSIS_5-5.1.1",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/CMSIS_5-5.1.1/CMSIS/Core/Include",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/ff13a/source",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/lwip-2.1.2/src/include",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/qp/qpcpp_6_9_4rc3/include",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/qp/qpcpp_6_9_4rc3/ports/arm-cm/qv/gnu",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/segger_rtt_v758/RTT",
+                "${workspaceFolder}/../../../../../firmware/3rdparty/TivaWare_C_Series-2.2.0.295"
+            ],
+            "defines": [
+                "_DEBUG",
+                "PART_TM4C129ENCPDT",
+                "TM4C129ENCPDT",
+                "Q_SPY",
+                "USE_RTT",
+                "Q_NASSERT",
+                "Q_EVT_CTOR"
+            ],
+
+            //"forcedInclude": ["${workspaceFolder}/src/IncludeMcuLibConfig.h"],
+            "compilerPath": "\"C:\\apps\\GNU Arm Embedded Toolchain\\10 2021.10\\bin\\arm-none-eabi-gcc.exe\"",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm",
+            "compilerArgs": [
+                "-mthumb",
+                "-Wall",
+                "-ffunction-sections",
+                "-fdata-sections"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/../../src/*",
+                    "${workspaceFolder}/../../builds/tm4c129exl/*",
+                    "${workspaceFolder}/../../../../../firmware/corelink",
+                    "${workspaceFolder}/../../../../../firmware/drivers",
+                    "${workspaceFolder}/../../../../../firmware/qp_ao",
+                    "${workspaceFolder}/../../../../../firmware/utils",
+                    "${workspaceFolder}/../../../../../firmware/3rdparty/CMSIS_5-5.1.1",
+                    "${workspaceFolder}/../../../../../firmware/3rdparty/ff13a",
+                    "${workspaceFolder}/../../../../../firmware/3rdparty/lwip-2.1.2",
+                    "${workspaceFolder}/../../../../../firmware/3rdparty/qp/qpcpp_6_9_4rc3",
+                    "${workspaceFolder}/../../../../../firmware/3rdparty/segger_rtt_v758",
+                    "${workspaceFolder}/../../../../../firmware/3rdparty/TivaWare_C_Series-2.2.0.295"
+                        ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+              }
+        }
+    ],
+    "version": 4
+}
