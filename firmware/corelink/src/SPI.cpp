@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include <stdio.h>
+#include <cstdint>
 
 // TI Library.
 #include <inc/hw_memmap.h>
@@ -55,7 +55,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg &aSPIMasterPinCfgRef)
+CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg const &aSPIMasterPinCfgRef)
     : PeripheralDev(aBaseAddr, aClkRate)
     , mLastSPICfgPtr(nullptr) {
 

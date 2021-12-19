@@ -185,7 +185,6 @@ CPP_SRCS := \
     Button.cpp \
     Main.cpp \
     CalendarRec.cpp \
-    CoreLinkPeripheralDev.cpp \
     Date.cpp \
     DBRec.cpp \
     Display_AOs.cpp \
@@ -275,8 +274,9 @@ DEFINES   += -D__ARM_ARCH_7EM__
 # ARM_FPU:   [ | vfp]
 # FLOAT_ABI: [ | soft | softfp | hard]
 ARM_CPU   := -mcpu=cortex-m4
-ARM_ARCH  := 7   # NOTE: must match the ARM_CPU!
-ARM_FPU   := -mfpu=vfp
+#ARM_ARCH  := -march=armv7-m   # NOTE: must match the ARM_CPU!
+ARM_ARCH :=
+ARM_FPU   := -mfpu=auto
 FLOAT_ABI := -mfloat-abi=hard
 
 # GNU-ARM toolset (NOTE: You need to adjust to your machine)
@@ -314,7 +314,7 @@ ASM_SRCS += $(QP_ASMS)
 
 # Add the pre-defined symbol __FPU_PRESENT if needed...
 ifneq (,$(ARM_FPU))
-DEFINES += -D__FPU_PRESENT
+DEFINES += -D__FPU_PRESENT=1
 ASM_FPU += -defsym=__FPU_PRESENT=1
 endif
 
@@ -324,16 +324,18 @@ ifeq (rel, $(CONF))
 
 BIN_DIR := rel
 
-ASFLAGS = $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
+ASFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
-CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections \
-	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+CFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections \
+    -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
-CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 -Wno-register \
-	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+CPPFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+    -std=c++17 -Wno-register \
+    -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 else
 # Default Debug configuration.
@@ -341,16 +343,18 @@ BIN_DIR := dbg
 
 CPP_SRCS += $(QS_SRCS)
 
-ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
+ASFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
-CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+CFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections \
+    -O $(INCLUDES) $(DEFINES) -DQ_SPY
 
-CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++17 -Wno-register \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
+CPPFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+    -std=c++17 -Wno-register \
+    -O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 endif
 
@@ -360,6 +364,7 @@ LIB_DIRS += -L$(BIN_DIR)
 LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 	-mthumb \
 	-specs=nosys.specs -specs=nano.specs \
+	-u _printf_float \
 	-Wl,-Map,$(BIN_DIR)/$(OUTPUT).map,--cref,--gc-sections $(LIB_DIRS)
 
 
@@ -438,7 +443,7 @@ generate_fsdata: remove_white_space copy_binary_files
 	cd $(WEB_OUTPUT_DIR) && \
   $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
   sed -i 's/^static\s*const\s*unsigned\s*char\s*[a-zA-Z_]*\[\]/& __attribute__ (( section (".data")))/' fsdata.c && \
-  mv fsdata.c $(abspath $(WEB_OUTPUT_DIR))/fsdata_custom.c
+  mv fsdata.c $(abspath $(PROJECT_FW_DIR))/src/fsdata_custom.c
 
 
 CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=$(MBEDTLS_USER_CONFIG_FILE) -I$(shell cygpath -w $(PWD))\..\..

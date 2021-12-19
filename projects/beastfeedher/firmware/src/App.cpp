@@ -77,7 +77,7 @@ std::shared_ptr<RTCC::AO::RTCC_AO> App::mRTCC_AO;
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-App::App(){
+App::App() {
     // Ctor body left intentionally empty.
 }
 
@@ -97,7 +97,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     // Create all AOs.
     // RTCC AO.
     App::mRTCC_AO = aFactory->CreateRTCCAO();
-    if (mRTCC_AO.get() != nullptr) {
+    if (mRTCC_AO != nullptr) {
         RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
         App::mRTCC_AO->start(
             1U,
@@ -113,6 +113,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     }
 
 
+#if 0
     // Create SDC instance to use in FS stubs.
     unsigned int lDiskQty = aFactory->CreateDisks();
     if (0 != lDiskQty) {
@@ -121,9 +122,9 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
         if (FR_OK == lResult) {
             // Found some disks and FS mounted: add log sink.
             auto mFileLogSink_AO = aFactory->CreateLogFileSinkAO();
-            if (mFileLogSink_AO.get() != nullptr) {
+            if (mFileLogSink_AO != nullptr) {
                 reinterpret_cast<Logging::AO::FileSink_AO * const>(
-                    mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
+                    mFileLogSink_AO)->SetSyncLogLevel(LogLevel::prio::INFO);
                 mFileLogSink_AO->start(
                     2U,
                     mFileLogSinkEventQueue,
@@ -134,10 +135,10 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
             }
         }
     }
-
+#endif
 
     auto lPFPPMgr_AO = aFactory->CreatePFPPAO(*App::sFeedCfgRec);
-    if (lPFPPMgr_AO.get() != nullptr) {
+    if (lPFPPMgr_AO != nullptr) {
         lPFPPMgr_AO->start(
             3U,
             mPFPPMgrEventQueue,
@@ -155,7 +156,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     // -if we use support web pages.
     // -For larger IoT support.
     auto lLwIPMgr_AO = aFactory->CreateLwIPMgrAO();
-    if (lLwIPMgr_AO.get() != nullptr) {
+    if (lLwIPMgr_AO != nullptr) {
         LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
         lLwIPMgr_AO->start(
             4U,
@@ -168,8 +169,9 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     }
 
 
+#if 0
     std::shared_ptr<QP::QActive> lDisplayMgr_AO = aFactory->CreateDisplayMgrAO();
-    if (lDisplayMgr_AO.get() != nullptr) {
+    if (lDisplayMgr_AO != nullptr) {
         lDisplayMgr_AO->start(
             5U,
             mDisplayMgrEventQueue,
@@ -181,7 +183,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
 
     std::shared_ptr<QP::QActive> lBLEMgr_AO = aFactory->CreateBLEAO();
-    if (lBLEMgr_AO.get() != nullptr) {
+    if (lBLEMgr_AO != nullptr) {
         PFPP::Event::BLE::Init lBLEInitEvent(
             DUMMY_SIG,
             App::mRTCC_AO,
@@ -198,7 +200,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
             &lBLEInitEvent
         );
     }
-
+#endif
 
     // Send signal dictionaries for globally published events...
     //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));

@@ -21,10 +21,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-
-#include "inc/GPIO.h"
-
-#include "ISPISlaveCfg.h"
+#include "CoreLinkPeripheralDev.h"
 
 
 namespace CoreLink {
@@ -37,33 +34,34 @@ namespace CoreLink {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPISlaveCfg final
-    : public ISPISlaveCfg {
+class ISPISlaveCfg {
 public:
-    SPISlaveCfg(GPIO const &aGPIO);
-    ~SPISlaveCfg() = default;
+    virtual ~ISPISlaveCfg() = default;
 
-    // ISPISlaveCfg interface.
-    void SetProtocol(protocol_t aProtocol) override {mProtocol = aProtocol;}
-    void SetBitRate(unsigned int aBitRate) override {mBitRate = aBitRate;}
-    void SetDataWidth(unsigned int aDataWidth) override {mDataWidth = aDataWidth;}
+    enum class PROTOCOL {
+        MOTO_0 = 0,
+        MOTO_1,
+        MOTO_2,
+        MOTO_3,
+        TI,
+        NMW
+    };
 
-    protocol_t GetProtocol(void) const override {return mProtocol;}
-    unsigned int GetBitRate(void) const override {return mBitRate;}
-    unsigned int GetDataWidth(void) const override {return mDataWidth;}
+#ifdef _WIN32
+    typedef enum class PROTOCOL protocol_t;
+#else
+    typedef enum PROTOCOL protocol_t;
+#endif
+    virtual void SetProtocol(protocol_t aProtocol) = 0;
+    virtual void SetBitRate(unsigned int aBitRate) = 0;
+    virtual void SetDataWidth(unsigned int aDataWidth) = 0;
 
-    void AssertCSn(void) override;
-    void DeassertCSn(void) override;
+    virtual protocol_t GetProtocol(void) const = 0;
+    virtual unsigned int GetBitRate(void) const = 0;
+    virtual unsigned int GetDataWidth(void) const = 0;
 
-private:
-    SPISlaveCfg() = delete;
-
-    void SetCSnGPIO(void);
-
-    protocol_t mProtocol;
-    unsigned long mBitRate;
-    unsigned long mDataWidth;
-    GPIO const mCSnGPIO;
+    virtual void AssertCSn(void) = 0;
+    virtual void DeassertCSn(void) = 0;
 };
 
 

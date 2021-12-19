@@ -22,6 +22,7 @@
 // ******************************************************************************
 
 #include "net/EthernetAddress.h"
+#include "net/IPAddress.h"
 
 #include "lwip/err.h"
 #include "lwip/netif.h"
@@ -57,10 +58,10 @@ public:
     virtual void Rd(void) = 0;
     virtual void Wr(void) = 0;
 
-    static uint8_t const *StaticGetMACAddress(unsigned int aIndex);
-    static uint32_t StaticGetIPAddress(unsigned int aIndex);
-    static uint32_t StaticGetSubnetMask(unsigned int aIndex);
-    static uint32_t StaticGetDefaultGW(unsigned int aIndex);
+    static EthernetAddress const &StaticGetMACAddress(unsigned int aIndex);
+    static IPAddress StaticGetIPAddress(unsigned int aIndex);
+    static IPAddress StaticGetSubnetMask(unsigned int aIndex);
+    static IPAddress StaticGetDefaultGW(unsigned int aIndex);
 
     static void DNSFoundCallback(
         const char *aName,
@@ -68,10 +69,12 @@ public:
         void *aArgs
     );
 
-    uint8_t const *GetMACAddress(void) const;
-    uint32_t GetIPAddress(void) const;
-    uint32_t GetSubnetMask(void) const;
-    uint32_t GetDefaultGW(void) const;
+    //uint8_t const *GetMACAddress(void) const;
+    //void GetMACAddress(uint8_t * const aMACAddr) const;
+    EthernetAddress const &GetMACAddress(void) const;
+    IPAddress GetIPAddress(void) const;
+    IPAddress GetSubnetMask(void) const;
+    IPAddress GetDefaultGW(void) const;
     void StartIPCfg(void);
 
     virtual void PHYISR(void) {/*DoNothing();*/}
@@ -143,6 +146,7 @@ private:
     static std::vector<LwIPDrv *> sVector;
 
     unsigned int mMyIndex;
+    EthernetAddress mEthernetAddress;
     struct netif mNetIF;
     netif_ext_callback_t mExtCallback;
     bool mUseDHCP;

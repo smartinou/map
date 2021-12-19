@@ -88,22 +88,22 @@ void LwIPDrv::StaticISR(unsigned int aIndex) {
 }
 
 
-uint8_t const *LwIPDrv::StaticGetMACAddress(unsigned int aIndex) {
+EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int aIndex) {
     return sVector[aIndex]->GetMACAddress();
 }
 
 
-uint32_t LwIPDrv::StaticGetIPAddress(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetIPAddress(unsigned int aIndex) {
     return sVector[aIndex]->GetIPAddress();
 }
 
 
-uint32_t LwIPDrv::StaticGetSubnetMask(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int aIndex) {
     return sVector[aIndex]->GetSubnetMask();
 }
 
 
-uint32_t LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
     return sVector[aIndex]->GetDefaultGW();
 }
 
@@ -199,23 +199,23 @@ void LwIPDrv::ExtCallback(
 #endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 
-uint8_t const *LwIPDrv::GetMACAddress(void) const {
-    return &mNetIF.hwaddr[0];
+EthernetAddress const &LwIPDrv::GetMACAddress(void) const {
+    return mEthernetAddress;
 }
 
 
-uint32_t LwIPDrv::GetIPAddress(void) const {
-    return mNetIF.ip_addr.addr;
+IPAddress LwIPDrv::GetIPAddress(void) const {
+    return IPAddress(mNetIF.ip_addr.addr);
 }
 
 
-uint32_t LwIPDrv::GetSubnetMask(void) const {
-    return mNetIF.netmask.addr;
+IPAddress LwIPDrv::GetSubnetMask(void) const {
+    return IPAddress(mNetIF.netmask.addr);
 }
 
 
-uint32_t LwIPDrv::GetDefaultGW(void) const {
-    return mNetIF.gw.addr;
+IPAddress LwIPDrv::GetDefaultGW(void) const {
+    return IPAddress(mNetIF.gw.addr);
 }
 
 
@@ -241,7 +241,9 @@ void LwIPDrv::StartIPCfg(void) {
 LwIPDrv::LwIPDrv(
     unsigned int aIndex,
     EthernetAddress const &aEthernetAddress
-)   : mMyIndex(aIndex)
+)
+    : mMyIndex(aIndex)
+    , mEthernetAddress(aEthernetAddress)
     , mNetIF{0}
     , mExtCallback{0}
     , mUseDHCP(false)
@@ -251,7 +253,7 @@ LwIPDrv::LwIPDrv(
 
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
-    memcpy(&GetNetIF().hwaddr[0], aEthernetAddress.GetData(), NETIF_MAX_HWADDR_LEN);
+    aEthernetAddress.GetData(&GetNetIF().hwaddr[0]);
 }
 
 

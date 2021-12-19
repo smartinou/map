@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -176,7 +176,7 @@ static int SSICalendarHandler(
     unsigned int aHour
 );
 
-static int FullIPAddressHandler(char * const aInsertStr, uint32_t aAddress);
+static int FullIPAddressHandler(char * const aInsertStr, IPAddress const &aAddress);
 
 static int SSINetworkHandler(
     int                aTagIx,
@@ -379,6 +379,8 @@ static uint16_t SSIHandler(
     int   aInsertStrLen
 ) {
 
+    static constexpr size_t sDefaultNetIF = 0;
+
     switch (aTagIx) {
     case SSI_TAG_IX_ZERO:
         return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%d", 0);
@@ -387,35 +389,39 @@ static uint16_t SSIHandler(
         return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", "");
 
     // Info.
-    case SSI_TAG_IX_INFO_FW_VERSION:
+    case SSI_TAG_IX_INFO_FW_VERSION: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::VerStr
         );
-    case SSI_TAG_IX_INFO_BUILD_DATE:
+    } break;
+    case SSI_TAG_IX_INFO_BUILD_DATE: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::BuildDate
         );
-    case SSI_TAG_IX_INFO_BUILD_TIME:
+    } break;
+    case SSI_TAG_IX_INFO_BUILD_TIME: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::BuildTime
         );
-    case SSI_TAG_IX_INFO_GIT_HASH:
+    } break;
+    case SSI_TAG_IX_INFO_GIT_HASH: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::GitHash
         );
-    case SSI_TAG_IX_INFO_DB_STATUS:
+    } break;
+    case SSI_TAG_IX_INFO_DB_STATUS: {
         if (DBRec::GetDBRecCount() && DBRec::IsDBSane()) {
             return snprintf(
                 aInsertStr,
@@ -429,20 +435,23 @@ static uint16_t SSIHandler(
                 "Failed"
             );
         }
-    case SSI_TAG_IX_INFO_RTCC_TEMP:
+    } break;
+    case SSI_TAG_IX_INFO_RTCC_TEMP: {
+        float lTemperature = sRTCC_AO->GetTemperature();
         return snprintf(
             aInsertStr,
-                LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                "%2.2f",
-                sRTCC_AO->GetTemperature()
-            );
+            LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+            "%2.2f",
+            lTemperature
+        );
+    } break;
 
     // Global.
     case SSI_TAG_IX_CFG_GLOBAL_DATE: {
         static char const * const lDateInputStr =
             "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
-        char        lDateBuf[16] = {0};
-        Date const &lDate    = sRTCC_AO->GetDate();
+        char lDateBuf[16]{0};
+        Date const &lDate = sRTCC_AO->GetDate();
         char const *lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
         return snprintf(
             aInsertStr,
@@ -451,15 +460,14 @@ static uint16_t SSIHandler(
             lDateInputStr,
             lDateStr
         );
-    }
+    } break;
 
     case SSI_TAG_IX_CFG_GLOBAL_TIME: {
         static char const * const lTimeInputStr =
             "<input type=\"time\" name=\"time\" value=\"";
-            char        lTimeBuf[16] = {0};
-            Time const &lTime    = sRTCC_AO->GetTime();
-            char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]
-        );
+        char lTimeBuf[16]{0};
+        Time const &lTime = sRTCC_AO->GetTime();
+        char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -467,7 +475,7 @@ static uint16_t SSIHandler(
             lTimeInputStr,
             lTimeStr
         );
-    }
+    } break;
 
     // Configuration.
     case SSI_TAG_IX_CFG_PAD_ENABLE: {
@@ -478,7 +486,7 @@ static uint16_t SSIHandler(
             "feeding_pad\" value=\"y\"",
             Net::sFeedCfgRec->IsTimedFeedEnable()
         );
-    }
+    } break;
     case SSI_TAG_IX_CFG_PAD_DISABLE: {
         return SSIRadioButtonHandler(
             aTagIx,
@@ -487,7 +495,7 @@ static uint16_t SSIHandler(
             "feeding_pad\" value=\"n\"",
             !Net::sFeedCfgRec->IsTimedFeedEnable()
         );
-    }
+    } break;
     case SSI_TAG_IX_CFG_FEED_TIME: {
         static char const * const sFeedingTimeStr =
             "<input type=\"number\" name=\"feeding_time_sec\" "
@@ -499,7 +507,7 @@ static uint16_t SSIHandler(
             sFeedingTimeStr,
             Net::sFeedCfgRec->GetTimedFeedPeriod()
         );
-    }
+    } break;
 
     // Calendar.
     case SSI_TAG_IX_CFG_CALENDAR_06_00:
@@ -538,9 +546,8 @@ static uint16_t SSIHandler(
 
     // Network configuration.
     case SSI_TAG_IX_NET_MAC_ADDR: {
-        uint8_t const * const lMAC = LwIPDrv::StaticGetMACAddress(0);
-        EthernetAddress lMACAddress(lMAC[0], lMAC[1], lMAC[2], lMAC[3], lMAC[4], lMAC[5]);
-        char lMACAddressStr[32] = {0};
+        EthernetAddress const &lMACAddress = LwIPDrv::StaticGetMACAddress(sDefaultNetIF);
+        char lMACAddressStr[32]{0};
         lMACAddress.GetString(&lMACAddressStr[0]);
         return snprintf(
             aInsertStr,
@@ -548,13 +555,16 @@ static uint16_t SSIHandler(
             "%s",
             &lMACAddressStr[0]
         );
-    }
+    } break;
 
-    case SSI_TAG_IX_NET_IPV4_ADD: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetIPAddress(0));
-    case SSI_TAG_IX_NET_SUBNET_MASK: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetSubnetMask(0));
-    case SSI_TAG_IX_NET_GW_ADD: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetDefaultGW(0));
+    case SSI_TAG_IX_NET_IPV4_ADD:
+        return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetIPAddress(sDefaultNetIF));
+    case SSI_TAG_IX_NET_SUBNET_MASK:
+        return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetSubnetMask(sDefaultNetIF));
+    case SSI_TAG_IX_NET_GW_ADD:
+        return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetDefaultGW(sDefaultNetIF));
 
-    case SSI_TAG_IX_NET_USE_DHCP:
+    case SSI_TAG_IX_NET_USE_DHCP: {
         return SSIRadioButtonHandler(
             aTagIx,
             aInsertStr,
@@ -562,8 +572,9 @@ static uint16_t SSIHandler(
             "use_dhcp\" value=\"y\"",
             sNetIFRec->UseDHCP()
         );
+    } break;
 
-    case SSI_TAG_IX_NET_USE_MANUAL:
+    case SSI_TAG_IX_NET_USE_MANUAL: {
         return SSIRadioButtonHandler(
             aTagIx,
             aInsertStr,
@@ -571,6 +582,7 @@ static uint16_t SSIHandler(
             "use_dhcp\" value=\"n\"",
             !sNetIFRec->UseDHCP()
         );
+    } break;
 
     case SSI_TAG_IX_NET_STATIC_IPV4_ADD_0:
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_0");
@@ -614,7 +626,7 @@ static uint16_t SSIHandler(
         // Sub-handler for network stats.
         STAT_COUNTER lVal = SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
         return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", lVal);
-    }
+    } break;
 
     }
 
@@ -684,10 +696,9 @@ static int SSICalendarHandler(
 }
 
 
-static int FullIPAddressHandler(char * const aInsertStr, uint32_t aAddress) {
-    IPAddress lAddress(aAddress);
-    char lAddressStr[32] = {0};
-    lAddress.GetString(&lAddressStr[0]);
+static int FullIPAddressHandler(char * const aInsertStr, IPAddress const &aAddress) {
+    char lAddressStr[32]{0};
+    aAddress.GetString(&lAddressStr[0]);
     return snprintf(
         aInsertStr,
         LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -832,7 +843,6 @@ static char const *DispCfg(
                     Date()
                 );
                 sRTCC_AO->POST(lEvtPtr, 0);
-
             }
         }
         // Return where we're coming from.

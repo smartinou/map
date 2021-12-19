@@ -13,16 +13,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-
-#include "inc/GPIO.h"
 
 #include "ISPI.h"
 #include "ISPISlaveCfg.h"
@@ -38,12 +35,17 @@ namespace CoreLink {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
+//! \class SPIDev
+//! \brief SPI device
 class SPIDev
-    : public ISPIDev, public PeripheralDev {
+    : public ISPIDev
+    , public PeripheralDev {
+
 public:
-    SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg &aSPIMasterPinCfgRef);
+    SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg const &aSPIMasterPinCfgRef);
     ~SPIDev();
 
+    // ISPIDev interface.
     void RdData(
         uint8_t aAddr,
         uint8_t * const aData,

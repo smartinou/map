@@ -33,7 +33,8 @@
                 "Q_SPY",
                 "USE_RTT",
                 "Q_NASSERT",
-                "Q_EVT_CTOR"
+                "Q_EVT_CTOR",
+                "QF_ACTIVE_STOP"
             ],
 
             //"forcedInclude": ["${workspaceFolder}/src/IncludeMcuLibConfig.h"],

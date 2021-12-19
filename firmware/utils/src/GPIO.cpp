@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include <stdio.h>
+#include <cstdint>
 
 // TI Library.
 #include <inc/hw_types.h>
@@ -52,31 +52,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-GPIO::GPIO(unsigned long const aPort, unsigned int const aPin)
-    : mPort(aPort)
-    , mPin(aPin) {
-
-  // Ctor body left intentionally empty.
-}
-
-
-GPIO::~GPIO() {
-
-    // Dtor body left intentionally empty.
-}
-
-
-unsigned long GPIO::GetPort(void) const {
-    return mPort;
-}
-
-
-unsigned int GPIO::GetPin(void) const {
-    return mPin;
-}
-
-
-void GPIO::EnableSysCtlPeripheral(uint32_t aPort) {
+void GPIO::EnableSysCtlPeripheral(unsigned long aPort) {
     switch (aPort) {
     case GPIO_PORTA_AHB_BASE:
     case GPIO_PORTA_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); break;
