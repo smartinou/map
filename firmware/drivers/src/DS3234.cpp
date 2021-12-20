@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -30,7 +30,7 @@
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
 
-#include "SPI.h"
+#include "SPIDev.h"
 
 #include "DS3234.h"
 

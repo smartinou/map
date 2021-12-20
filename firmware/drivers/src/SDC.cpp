@@ -12,7 +12,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2020, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2021, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "SPI.h"
+#include "SPIDev.h"
 
 // This module.
 #include "SDC.h"

@@ -51,7 +51,7 @@
 
 #include "FatFSDisk.h"
 #include "SDC.h"
-#include "SPI.h"
+#include "SPIDev.h"
 #include "DS3234.h"
 #include "TB6612.h"
 

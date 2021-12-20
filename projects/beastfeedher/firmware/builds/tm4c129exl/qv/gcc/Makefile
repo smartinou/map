@@ -209,7 +209,7 @@ CPP_SRCS := \
     RTCC_AOs.cpp \
     RxDescriptor.cpp \
     SDC.cpp \
-    SPI.cpp \
+    SPIDev.cpp \
     SPISlaveCfg.cpp \
     TB6612.cpp \
     Time.cpp \

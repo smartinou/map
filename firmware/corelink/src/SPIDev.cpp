@@ -33,7 +33,7 @@
 #include <driverlib/ssi.h>
 #include <driverlib/sysctl.h>
 
-#include "SPI.h"
+#include "SPIDev.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
