@@ -50,9 +50,9 @@ public:
     static void StaticInit(
         QP::QActive * const aAO,
         bool aUseDHCP,
-        uint32_t aIPAddress,
-        uint32_t aSubnetMask,
-        uint32_t aGWAddress
+        IPAddress aIPAddress,
+        IPAddress aSubnetMask,
+        IPAddress aGWAddress
     );
     static void StaticISR(unsigned int aIndex);
     virtual void Rd(void) = 0;
@@ -102,9 +102,9 @@ private:
     void DrvInit(
         QP::QActive * const aAO,
         bool aUseDHCP,
-        uint32_t aIPAddress,
-        uint32_t aSubnetMask,
-        uint32_t aGWAddress
+        IPAddress aIPAddress,
+        IPAddress aSubnetMask,
+        IPAddress aGWAddress
     );
 
     // Static functions to hook to 'C' code.

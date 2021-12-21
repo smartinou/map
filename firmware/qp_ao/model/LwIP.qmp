@@ -80,16 +80,16 @@ sntp_init();
     <initial target="../1">
      <action brief="Init">// Suppress the compiler warning about unused parameter.
 bool     lUseDHCP    = false;
-uint32_t lIPAddr     = 0x00000000;
-uint32_t lSubnetMask = 0x00000000;
-uint32_t lGWAddr     = 0x00000000;
+IPAddress lIPAddr;//     = 0x00000000;
+IPAddress lSubnetMask;// = 0x00000000;
+IPAddress lGWAddr;//     = 0x00000000;
 void (*lCallbackInit)(void) = nullptr;
 if (nullptr != e) {
     LwIP::Event::Init const * const lInitEvt = static_cast&lt;LwIP::Event::Init const * const&gt;(e);
     lUseDHCP    = lInitEvt-&gt;mNetIFRec-&gt;UseDHCP();
-    lIPAddr     = lInitEvt-&gt;mNetIFRec-&gt;GetIPAddr();
-    lSubnetMask = lInitEvt-&gt;mNetIFRec-&gt;GetSubnetMask();
-    lGWAddr     = lInitEvt-&gt;mNetIFRec-&gt;GetGWAddr();
+    lIPAddr     = IPAddress(lInitEvt-&gt;mNetIFRec-&gt;GetIPAddr());
+    lSubnetMask = IPAddress(lInitEvt-&gt;mNetIFRec-&gt;GetSubnetMask());
+    lGWAddr     = IPAddress(lInitEvt-&gt;mNetIFRec-&gt;GetGWAddr());
 
     lCallbackInit = lInitEvt-&gt;mCallbackInit;
 }
@@ -333,21 +333,21 @@ lEtherDrv-&gt;PHYISR();</action>
   </class>
   <class name="IPAddressChanged" superclass="qpcpp::QEvt">
    <documentation>IP Address changed.</documentation>
-   <attribute name="mIPAddress" type="uint32_t" visibility="0x00" properties="0x00">
+   <attribute name="mIPAddress" type="IPAddress const &amp;" visibility="0x00" properties="0x00">
     <documentation>IP Address.</documentation>
    </attribute>
-   <attribute name="mSubnetMask" type="uint32_t" visibility="0x00" properties="0x00">
+   <attribute name="mSubnetMask" type="IPAddress const &amp;" visibility="0x00" properties="0x00">
     <documentation>Subnet mask.</documentation>
    </attribute>
-   <attribute name="mDefaultGW" type="uint32_t" visibility="0x00" properties="0x00">
+   <attribute name="mDefaultGW" type="IPAddress const &amp;" visibility="0x00" properties="0x00">
     <documentation>Default gateway.</documentation>
    </attribute>
    <operation name="IPAddressChanged" type="" visibility="0x00" properties="0x02">
     <documentation>Event to signal that any field of the IP address changed from previous address.</documentation>
     <parameter name="aSig" type="QP::QSignal"/>
-    <parameter name="aIPAddress" type="uint32_t"/>
-    <parameter name="aSubnetMask" type="uint32_t"/>
-    <parameter name="aDefaultGW" type="uint32_t"/>
+    <parameter name="aIPAddress" type="IPAddress"/>
+    <parameter name="aSubnetMask" type="IPAddress"/>
+    <parameter name="aDefaultGW" type="IPAddress"/>
     <code>    : QP::QEvt(aSig)
     , mIPAddress(aIPAddress)
     , mSubnetMask(aSubnetMask)
@@ -506,6 +506,8 @@ $define${LwIP::AOs::Mgr_AO}</text>
 #include &lt;string&gt;
 
 #include &quot;lwip/apps/sntp.h&quot;
+
+#include &quot;net/IPAddress.h&quot;
 
 // Forward declaration
 class NetIFRec;

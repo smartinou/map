@@ -70,9 +70,9 @@ std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
 void LwIPDrv::StaticInit(
     QP::QActive * const aAO,
     bool aUseDHCP,
-    uint32_t aIPAddress,
-    uint32_t aSubnetMask,
-    uint32_t aGWAddress
+    IPAddress aIPAddress,
+    IPAddress aSubnetMask,
+    IPAddress aGWAddress
 ) {
     // Go through all registered network drivers and call their Init() function.
     // For now, this forces to have the same IP address scheme, but for now it's fine.
@@ -178,14 +178,15 @@ void LwIPDrv::ExtCallback(
     if (aReason
         & (LWIP_NSC_IPV4_ADDRESS_CHANGED
             | LWIP_NSC_IPV4_NETMASK_CHANGED
-            | LWIP_NSC_IPV4_GATEWAY_CHANGED)) {
+            | LWIP_NSC_IPV4_GATEWAY_CHANGED)
+    ) {
         // Some components of IP address changed.
         LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
             LwIP::Event::IPAddressChanged,
             LWIP_IP_CHANGED_SIG,
-            mNetIF.ip_addr.addr,
-            mNetIF.netmask.addr,
-            mNetIF.gw.addr
+            IPAddress(mNetIF.ip_addr.addr),
+            IPAddress(mNetIF.netmask.addr),
+            IPAddress(mNetIF.gw.addr)
         );
 #ifdef Q_SPY
         static QP::QSpyId const sLwIPDrvExtCallback = {0U};
@@ -260,9 +261,9 @@ LwIPDrv::LwIPDrv(
 void LwIPDrv::DrvInit(
     QP::QActive * const aAO,
     bool aUseDHCP,
-    uint32_t aIPAddr,
-    uint32_t aSubnetMask,
-    uint32_t aGWAddr
+    IPAddress aIPAddr,
+    IPAddress aSubnetMask,
+    IPAddress aGWAddr
 ) {
     // Save the active object associated with this driver.
     SetAO(aAO);
@@ -276,11 +277,11 @@ void LwIPDrv::DrvInit(
         IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
         IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
         IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
-    } else if (IPADDR_ANY != (aIPAddr & aSubnetMask)) {
+    } else if (IPADDR_ANY != (aIPAddr.GetValue() & aSubnetMask.GetValue())) {
         // IP Address from persistence.
-        lIPAddr.addr = htonl(aIPAddr);
-        lSubnetMask.addr = htonl(aSubnetMask);
-        lGWAddr.addr = htonl(aGWAddr);
+        lIPAddr.addr = aIPAddr.GetValue();
+        lSubnetMask.addr = aSubnetMask.GetValue();
+        lGWAddr.addr = aGWAddr.GetValue();
     } else {
 #if (LWIP_DHCP == 0) && (LWIP_AUTOIP == 0)
         // No mechanism of obtaining IP address specified, use static IP.

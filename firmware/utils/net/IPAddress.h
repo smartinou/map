@@ -52,6 +52,7 @@ public:
     bool operator != (const IPAddress &aB) const {return (mValue != aB.mValue);}
 
 	uint8_t GetByte(size_t aIndex) const noexcept;
+    uint32_t GetValue(void) const noexcept {return mValue;}
 
     void GetEthernetAddress(EthernetAddress * const aOut) const;
     void GetString(char *aOut) const;
