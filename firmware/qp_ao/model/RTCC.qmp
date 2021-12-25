@@ -125,9 +125,12 @@ if ((nullptr != lInitEvent) &amp;&amp; (nullptr != lInitEvent-&gt;mCalendarRec))
    </operation>
    <operation name="WrToNVMem" type="void" visibility="0x02" properties="0x00">
     <documentation>Write buffer to NV memory.</documentation>
-    <code>unsigned int lDBSize = DBRec::GetDBSize();
-DBRec::SerializeDB(mNVMemBuf);
-mNVMem.WrToNVMem(mNVMemBuf, 0, lDBSize);
+    <code>if (DBRec::IsDBDirty()) {
+    unsigned int lDBSize = DBRec::GetDBSize();
+    DBRec::StaticUpdateCRC();
+    DBRec::SerializeDB(mNVMemBuf);
+    mNVMem.WrToNVMem(mNVMemBuf, 0, lDBSize);
+}
 </code>
    </operation>
    <operation name="SetNextCalendarEvent" type="void" visibility="0x02" properties="0x00">
@@ -376,7 +379,8 @@ $declare${RTCC::AOs::RTCC_AO}
 </text>
   </file>
   <file name="RTCC_AOs.cpp">
-   <text>#include &lt;db/CalendarRec.h&gt;
+   <text>#include &lt;cstring&gt;
+#include &lt;db/CalendarRec.h&gt;
 #include &quot;IRTCC.h&quot;
 #include &quot;INVMem.h&quot;
 #include &quot;ITemperature.h&quot;

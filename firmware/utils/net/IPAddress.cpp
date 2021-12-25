@@ -53,7 +53,12 @@ const IPAddress IPAddress::BROADCAST(0xFF, 0xFF, 0xFF, 0xFF);
 
 uint8_t IPAddress::GetByte(size_t aIndex) const {
 
-	return (reinterpret_cast< const uint8_t * const>(&mValue)[aIndex]);
+	return (reinterpret_cast<const uint8_t * const>(&mValue)[aIndex]);
+}
+
+
+void IPAddress::SetByte(size_t aIndex, uint8_t aByte) noexcept {
+    reinterpret_cast<uint8_t * const>(&mValue)[aIndex] = aByte;
 }
 
 

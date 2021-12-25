@@ -3,17 +3,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding calendar.
+// Module: Network interface DB.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief Feeding calendar class.
+//! \brief Network interface DB class.
 //! \ingroup module_group
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -37,7 +37,7 @@ public:
     NetIFRec();
     ~NetIFRec();
 
-    // DBRec.
+    // DBRec interface.
     bool IsSane(void) const override;
     void ResetDflt(void) override;
 
@@ -53,10 +53,11 @@ public:
     void SetGWAddr(uint32_t aGWAddr);
 
 private:
-    // DBRec.
+    // DBRec interface.
     unsigned int GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;
     void Deserialize(uint8_t const * const aDataPtr) override;
+    void UpdateCRC(void) override;
 
     struct RecData {
         BaseRec mBase;

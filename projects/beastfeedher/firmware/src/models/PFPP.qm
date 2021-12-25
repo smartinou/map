@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="4.5.1" links="0">
+<model version="5.1.3" links="0">
  <framework name="qpcpp"/>
  <package name="project" stereotype="0x04" namespace="PFPP::">
   <package name="AOs" stereotype="0x02" namespace="AO::">
@@ -72,7 +72,8 @@ mMotorControl.TurnOnCW();</code>
      <code>// Stop feeder.
 mMotorControl.TurnOff();</code>
     </operation>
-    <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+    <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns the manual waiting period as per FeedCfgRec if any, or default value.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;GetManualFeedWaitPeriod() * BSP::TICKS_PER_SEC;
@@ -81,7 +82,8 @@ mMotorControl.TurnOff();</code>
 static QP::QTimeEvtCtr constexpr sManualWaitPeriod = 2 * BSP::TICKS_PER_SEC;
 return sManualWaitPeriod;</code>
     </operation>
-    <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+    <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns the manual feed period as per FeedCfgRec if any, or default value.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;GetManualFeedMaxFeedPeriod() * BSP::TICKS_PER_SEC;
@@ -90,7 +92,8 @@ return sManualWaitPeriod;</code>
 static QP::QTimeEvtCtr constexpr sManualMaxFeedPeriod = 10 * BSP::TICKS_PER_SEC;
 return sManualMaxFeedPeriod;</code>
     </operation>
-    <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+    <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns the timed feed period as per FeedCfgRec if any, or default value.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;GetTimedFeedPeriod() * BSP::TICKS_PER_SEC;
@@ -99,7 +102,8 @@ return sManualMaxFeedPeriod;</code>
 static QP::QTimeEvtCtr constexpr sTimedFeedPeriod = 4 * BSP::TICKS_PER_SEC;
 return sTimedFeedPeriod;</code>
     </operation>
-    <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+    <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns if manual feed is allowed or not.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;IsManualFeedEnable();
@@ -107,7 +111,8 @@ return sTimedFeedPeriod;</code>
 
 return true;</code>
     </operation>
-    <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+    <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns if timed feed is allowed or not.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;IsTimedFeedEnable();
@@ -134,7 +139,8 @@ Display::Event::DisplayText * const lTextEvent = Q_NEW(
 QP::QF::PUBLISH(lTextEvent, this);
 </code>
     </operation>
-    <operation name="PrintEvent?def USE_RTT" type="void" visibility="0x02" properties="0x08">
+    <operation name="PrintEvent?def USE_RTT" type="void" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Event sink: print to SEGGER RTT.</documentation>
      <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
      <code>char lDateStr[32] = {0};
@@ -274,11 +280,9 @@ QP::QF::PUBLISH(lTimeChangedEvent, this);</action>
       </tran>
       <tran trig="LWIP_IP_CHANGED">
        <action brief="^DISPLAY_TEXT(IPAddress), ^LOG_ENTRY;">LwIP::Event::IPAddressChanged const * const lEvent = static_cast&lt;LwIP::Event::IPAddressChanged const * const&gt;( e );
-IPAddress lIPAddress(lEvent-&gt;mIPAddress);
-char lIPAddressStr[32] = {0};
+char lIPAddressStr[32]{0};
 // Erase previous IP address, in case this one is longer.
 memset(&amp;lIPAddressStr[0], ' ', 15);
-lIPAddress.GetString(&amp;lIPAddressStr[0]);
 Display::Event::DisplayText * const lEraseLineEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
@@ -289,6 +293,7 @@ Display::Event::DisplayText * const lEraseLineEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lEraseLineEvent, this);
 
+lEvent-&gt;mIPAddress.GetString(&amp;lIPAddressStr[0]);
 Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,

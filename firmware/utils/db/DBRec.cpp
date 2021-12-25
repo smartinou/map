@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -42,7 +42,7 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::vector <DBRec *> DBRec::mRecList;
+std::vector<DBRec *> DBRec::mRecList;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -50,9 +50,9 @@ std::vector <DBRec *> DBRec::mRecList;
 
 // DB static methods.
 bool DBRec::IsDBSane(void) {
-    for (std::vector<DBRec *>::iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
-        // Return after 1st "insane" record.
-        if (!(*lDBIt)->IsSane()) {
+    for (const auto lRec : mRecList) {
+        // Return after 1st corrupted record.
+        if (!lRec->IsSane()) {
             return false;
         }
     }
@@ -62,9 +62,9 @@ bool DBRec::IsDBSane(void) {
 
 
 bool DBRec::IsDBDirty(void) {
-    for (std::vector<DBRec *>::const_iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
+    for (const auto lRec : mRecList) {
         // Return after 1st dirty record.
-        if ((*lDBIt)->IsDirty()) {
+        if (lRec->IsDirty()) {
             return true;
         }
     }
@@ -74,8 +74,8 @@ bool DBRec::IsDBDirty(void) {
 
 
 void DBRec::ResetDBDflt(void) {
-    for (std::vector<DBRec *>::iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
-        (*lDBIt)->ResetDflt();
+    for (const auto lRec : mRecList) {
+        lRec->ResetDflt();
     }
 }
 
@@ -83,8 +83,8 @@ void DBRec::ResetDBDflt(void) {
 size_t DBRec::GetDBSize(void) {
 
     size_t lDBSize = 0;
-    for (std::vector<DBRec *>::const_iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
-        lDBSize += (*lDBIt)->GetRecSize();
+    for (const auto lRec : mRecList) {
+        lDBSize += lRec->GetRecSize();
     }
 
     return lDBSize;
@@ -92,19 +92,26 @@ size_t DBRec::GetDBSize(void) {
 
 
 void DBRec::SerializeDB(uint8_t * aData) {
-    for (std::vector<DBRec *>::const_iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
-        (*lDBIt)->Serialize(aData);
-        unsigned int lSize = (*lDBIt)->GetRecSize();
+    for (const auto lRec : mRecList) {
+        lRec->Serialize(aData);
+        unsigned int lSize = lRec->GetRecSize();
         aData += lSize;
     }
 }
 
 
 void DBRec::DeserializeDB(uint8_t const * aData) {
-    for (std::vector<DBRec *>::iterator lDBIt = mRecList.begin(); lDBIt != mRecList.end(); ++lDBIt) {
-        (*lDBIt)->Deserialize(aData);
-        unsigned int lSize = (*lDBIt)->GetRecSize();
+    for (const auto lRec : mRecList) {
+        lRec->Deserialize(aData);
+        unsigned int lSize = lRec->GetRecSize();
         aData += lSize;
+    }
+}
+
+
+void DBRec::StaticUpdateCRC(void) {
+    for (auto lRec : mRecList) {
+        lRec->UpdateCRC();
     }
 }
 
@@ -145,7 +152,7 @@ bool DBRec::IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic
     if ((aMagic[0] == aBaseRec->mMagic[0])
         && (aMagic[1] == aBaseRec->mMagic[1])
         && (aMagic[2] == aBaseRec->mMagic[2])
-        ) {
+    ) {
         return true;
     }
     return false;

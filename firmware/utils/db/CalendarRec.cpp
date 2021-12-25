@@ -2,17 +2,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding calendar.
+// Module: Feeding calendar DB.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief Feeding calendar class.
+//! \brief Feeding calendar DB class.
 //! \ingroup utils_db
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -88,8 +88,6 @@ void CalendarRec::ResetDflt(void) {
     SetTimeEntry(Time(8, 0, 0, true));
     SetTimeEntry(Time(17, 0, 0, true));
 
-    mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
-
     SetIsDirty();
 }
 
@@ -101,14 +99,23 @@ size_t CalendarRec::GetRecSize(void) const {
 
 void CalendarRec::Serialize(uint8_t * const aDataPtr) const {
 
-    memcpy(aDataPtr, mRec.mCalendarArray.data(), mRec.mCalendarArray.size());
+    memcpy(aDataPtr, &mRec, GetRecSize());
 }
 
 
 void CalendarRec::Deserialize(uint8_t const * const aDataPtr) {
 
-    memcpy(mRec.mCalendarArray.data(), aDataPtr, mRec.mCalendarArray.size());
+    memcpy(&mRec, aDataPtr, GetRecSize());
 }
+
+
+void CalendarRec::UpdateCRC() {
+    mRec.mBase.mCRC = ComputeCRC(
+        reinterpret_cast<uint8_t const * const>(&mRec),
+        sizeof(struct RecData)
+    );
+}
+
 
 //
 // Start of child methods.

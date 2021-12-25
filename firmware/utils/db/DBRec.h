@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -36,9 +36,8 @@
 // Forward declarations
 
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Base database class.
+//! Register each object of DBRec into vector on ctor.
 class DBRec {
 public:
     bool IsDirty(void) const { return mIsDirty; }
@@ -51,9 +50,10 @@ public:
     static bool IsDBDirty(void);
     static void ResetDBDflt(void);
     static size_t GetDBSize(void);
-    static size_t GetDBRecCount(void) { return mRecList.size(); }
+    static size_t GetDBRecCount(void) {return mRecList.size();}
     static void SerializeDB(uint8_t * aData);
     static void DeserializeDB(uint8_t const * aData);
+    static void StaticUpdateCRC(void);
 
 protected:
     struct BaseRec {
@@ -73,10 +73,11 @@ private:
     virtual size_t GetRecSize(void) const = 0;
     virtual void Serialize(uint8_t * const aData) const = 0;
     virtual void Deserialize(uint8_t const * const aData) = 0;
+    virtual void UpdateCRC(void) = 0;
 
     void AddRec(void);
 
-    static std::vector <DBRec *> mRecList;
+    static std::vector<DBRec *> mRecList;
     bool mIsDirty;
 
 };
