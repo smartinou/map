@@ -221,17 +221,22 @@ IPAddress LwIPDrv::GetDefaultGW(void) const {
 
 
 void LwIPDrv::StartIPCfg(void) {
-    if (IsUsingDHCP()) {
+    if ((mNetIF.ip_addr.addr & mNetIF.netmask.addr) == 0) {
+        // No IP address configured: set it automatically.
+        if (IsUsingDHCP()) {
 #if (LWIP_DHCP != 0)
-        // Start DHCP if configured in lwipopts.h.
-        dhcp_start(&GetNetIF());
-        // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
-        // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
-        // AutoIP after DHCP fails for 59 seconds.
-#elif (LWIP_AUTOIP != 0)
-        // Start AutoIP if configured in lwipopts.h.
-        autoip_start(&GetNetIF());
+            // Start DHCP if configured in lwipopts.h.
+            dhcp_start(&GetNetIF());
+            // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
+            // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
+            // AutoIP after DHCP fails for 59 seconds.
 #endif
+#if (LWIP_AUTOIP != 0)
+        } else {
+            // Start AutoIP if configured in lwipopts.h.
+            autoip_start(&GetNetIF());
+#endif
+        }
     }
 }
 
