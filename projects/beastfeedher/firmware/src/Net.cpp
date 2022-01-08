@@ -868,40 +868,44 @@ static char const *DispCfg(
         aValsVec
     );
     if (0 == strcmp(lSubmitVal, "Apply")) {
-        for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-            if (0 == strcmp(aParamsVec[lIx], "date")) {
-                unsigned int lYear  = 0;
-                unsigned int lMonth = 0;
-                unsigned int lDayDate  = 0;
-                sscanf(aValsVec[lIx], "%u-%u-%u", &lYear, &lMonth, &lDayDate);
-                Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
+        // There's only time & date widgets here.
+        char const *lDateVal = FindTagVal(
+            "date",
+            aParamsQty,
+            aParamsVec,
+            aValsVec
+        );
 
-                // Send event to write new date.
-	            RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
-                    RTCC::Event::TimeAndDate,
-                    RTCC_SET_DATE_SIG,
-                    Time(),
-                    lDate
-                );
-                sRTCC_AO->POST(lEvtPtr, 0);
+        char const *lTimeVal = FindTagVal(
+            "time",
+            aParamsQty,
+            aParamsVec,
+            aValsVec
+        );
 
-            } else if (0 == strcmp(aParamsVec[lIx], "time")) {
-                unsigned int lHours   = 0;
-                unsigned int lMinutes = 0;
-                sscanf(aValsVec[lIx], "%u%%3A%u", &lHours, &lMinutes);
-                Time lTime(lHours, lMinutes, 0);
+        if ((lDateVal != nullptr) && (lTimeVal != nullptr)) {
+            unsigned int lYear  = 0;
+            unsigned int lMonth = 0;
+            unsigned int lDayDate  = 0;
+            sscanf(lDateVal, "%u-%u-%u", &lYear, &lMonth, &lDayDate);
+            Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
 
-                // Send event to write new time.
-                // Send event to write new date.
-            	RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
-	                RTCC::Event::TimeAndDate,
-                    RTCC_SET_TIME_SIG,
-                    lTime,
-                    Date()
-                );
-                sRTCC_AO->POST(lEvtPtr, 0);
-            }
+            unsigned int lHours   = 0;
+            unsigned int lMinutes = 0;
+            sscanf(lTimeVal, "%u%%3A%u", &lHours, &lMinutes);
+            Time lTime(lHours, lMinutes, 0);
+
+            // Send event to write new time.
+            // Send event to write new date.
+            RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
+                RTCC::Event::TimeAndDate,
+                RTCC_SET_TIME_AND_DATE_SIG,
+                lTime,
+                lDate
+            );
+            sRTCC_AO->POST(lEvtPtr, 0);
         }
+
         // Return where we're coming from.
         return "/config.shtml";
     }

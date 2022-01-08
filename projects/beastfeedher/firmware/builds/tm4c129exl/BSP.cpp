@@ -146,11 +146,63 @@ static constexpr unsigned int sRTTQSPYTerminal = RTTTerminal::_qspy;
 namespace BSP {
 
 
+class SSI2PinCfg
+    : public CoreLink::SSIPinCfg {
+
+public:
+    constexpr SSI2PinCfg() noexcept
+        : CoreLink::SSIPinCfg(2) {}
+
+    void SetPins(void) const override {
+        GPIO::EnableSysCtlPeripheral(sSSIPins.mPort);
+        MAP_GPIOPinConfigure(GPIO_PD3_SSI2CLK);
+        MAP_GPIOPinConfigure(GPIO_PD1_SSI2XDAT0);
+        MAP_GPIOPinConfigure(GPIO_PD0_SSI2XDAT1);
+        MAP_GPIOPinTypeSSI(
+            sSSIPins.mPort,
+            sSSIPins.mClkPin | sSSIPins.mRxPin | sSSIPins.mTxPin
+        );
+
+        // Set a weak pull-up on MISO pin for SD Card's proper operation.
+        MAP_GPIOPadConfigSet(
+            sSSIPins.mPort,
+            sSSIPins.mRxPin,
+            GPIO_STRENGTH_2MA,
+            GPIO_PIN_TYPE_STD_WPU
+        );
+
+        MAP_GPIOPadConfigSet(
+            sSSIPins.mPort,
+            sSSIPins.mClkPin | sSSIPins.mTxPin,
+            GPIO_STRENGTH_2MA,
+            GPIO_PIN_TYPE_STD
+        );
+    }
+
+private:
+    // PD3: SSI0CLK
+    // PD0: SSI0RX
+    // PD1: SSI0TX
+    static struct SSI2GPIO {
+        unsigned long mPort;
+        unsigned int  mClkPin;
+        unsigned int  mRxPin;
+        unsigned int  mTxPin;
+    } constexpr sSSIPins = {
+        GPIOD_AHB_BASE,
+        GPIO_PIN_3, // Clk.
+        GPIO_PIN_0, // Rx.
+        GPIO_PIN_1  // Tx.
+    };
+};
+
+
 class SSI3PinCfg
     : public CoreLink::SSIPinCfg {
 
 public:
-    constexpr SSI3PinCfg() noexcept : CoreLink::SSIPinCfg(3) {}
+    constexpr SSI3PinCfg() noexcept
+        : CoreLink::SSIPinCfg(3) {}
 
     void SetPins(void) const override {
         GPIO::EnableSysCtlPeripheral(sSSIPins.mPort);
@@ -239,10 +291,22 @@ public:
 
 
     unsigned int CreateDisks(void) override {
-        // This BSP has one SDC device.
-        if (mSDC == nullptr) {
-            constexpr GPIO lCSnPin(GPIOD_AHB_BASE, GPIO_PIN_0);
-            mSDC = std::make_shared<SDC>(0, *mSPIDev, lCSnPin);
+        // This BSP has one or two SDC devices.
+        if (mSDCDefault == nullptr) {
+            // Drive index 0 is the default drive.
+            static constexpr auto sDriveIndex = 0;
+            static constexpr GPIO sCSnPin(GPIOD_AHB_BASE, GPIO_PIN_4);
+            static constexpr GPIO sDetectPin(GPIOF_AHB_BASE, GPIO_PIN_7);
+            mSDCDefault = std::make_shared<SDC>(sDriveIndex, *mSPI3Dev, sCSnPin, sDetectPin);
+        }
+
+        if (mSDCBoosterPack == nullptr) {
+            // Sharp 128x128 memory LCD & microSD card BoosterPack.
+            // Card detect line requires 0Ohm resistor.
+            static constexpr auto sDriveIndex = 1;
+            static constexpr GPIO sCSnPin(GPIOC_AHB_BASE, GPIO_PIN_7);
+            static constexpr GPIO sDetectPin(GPIOP_BASE, GPIO_PIN_2);
+            mSDCBoosterPack = std::make_shared<SDC>(sDriveIndex, *mSPI2Dev, sCSnPin, sDetectPin);
         }
 
         return FatFSDisk::GetDiskQty();
@@ -251,7 +315,7 @@ public:
 
     std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) override {
         if (mFileLogSink == nullptr) {
-            mFileLogSink = std::make_shared<Logging::AO::FileSink_AO>();
+            mFileLogSink = std::make_shared<Logging::AO::FileSink_AO>(10 * 60 * BSP::TICKS_PER_SEC);
         }
         return mFileLogSink;
     }
@@ -307,20 +371,23 @@ private:
     Factory& operator=(const Factory&) = delete;
     explicit Factory(uint32_t aClkRate = sClkRate)
         : mClkRate(aClkRate)
-        , mSPIDev(nullptr)
+        , mSPI2Dev(nullptr)
+        , mSPI3Dev(nullptr)
         , mRTCC(nullptr)
         , mRTCCAO(nullptr)
         , mFileLogSink(nullptr)
         , mMotorControl(nullptr)
         , mPFPPAO(nullptr)
         , mDisplayMgrAO(nullptr)
-        , mSDC(nullptr) {
-
+        , mSDCDefault(nullptr)
+        , mSDCBoosterPack(nullptr)
+{
         // Ctor.
         Init();
 
         // SPIDev is required with several devices.
-        mSPIDev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(3));
+        mSPI2Dev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(2));
+        mSPI3Dev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(3));
 
         // TODO: CONSIDER CREATING RTCC HERE TOO.
     }
@@ -361,8 +428,8 @@ private:
 
 #ifdef USE_UART0
         // Debug UART port.
-        constexpr GPIO lU0RxGPIO(GPIOA_AHB_BASE, GPIO_PIN_0);
-        constexpr GPIO lU0TxGPIO(GPIOA_AHB_BASE, GPIO_PIN_1);
+        static constexpr GPIO lU0RxGPIO(GPIOA_AHB_BASE, GPIO_PIN_0);
+        static constexpr GPIO lU0TxGPIO(GPIOA_AHB_BASE, GPIO_PIN_1);
         MAP_GPIOPinConfigure(GPIO_PA0_U0RX);
         MAP_GPIOPinConfigure(GPIO_PA1_U0TX);
         MAP_GPIOPinTypeUART(
@@ -409,7 +476,9 @@ private:
         return;
     }
 
-    SEGGER_RTT_printf(sRTTBufferIndex, "Hello, World!\n");
+    //ITM_SendChar("Hello, World!\n");
+    // TODO: HAS TO BE ENABLED FIRST.
+    //ITM_SendChar('M');
 #endif // USE_RTT
 
 #ifdef Q_SPY
@@ -440,16 +509,22 @@ private:
 
     CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
         switch (aSSIID) {
+        case 2: {
+            // Create pin configuration.
+            // Initialize SPI Master.
+            SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
+            static constexpr SSI2PinCfg lSSIPinCfg;
+            return new CoreLink::SPIDev(SSI2_BASE, mClkRate, lSSIPinCfg);
+        } break;
         case 3: {
             // Create pin configuration.
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI3);
-            constexpr SSI3PinCfg lSSIPinCfg;
+            static constexpr SSI3PinCfg lSSIPinCfg;
             return new CoreLink::SPIDev(SSI3_BASE, mClkRate, lSSIPinCfg);
-        }
+        } break;
         case 0:
         case 1:
-        case 2:
         default:
             return nullptr;
         }
@@ -459,26 +534,26 @@ private:
     std::unique_ptr<DS3234> CreateRTCC(void) {
         // Creates a DS3234 RTCC.
         // Reset input pin.
-        constexpr GPIO lResetPin(GPIOK_BASE, GPIO_PIN_7);
+        static constexpr GPIO sResetPin(GPIOK_BASE, GPIO_PIN_7);
         // Calls the Ctor that uses default SPI slave configuration,
         // with specified CSn pin.
-        static constexpr unsigned long lInterruptNumber = INT_GPIOP3;
-        constexpr GPIO lCSnPin(GPIOQ_BASE, GPIO_PIN_1);
+        static constexpr unsigned long sInterruptNumber = INT_GPIOP3;
+        static GPIO sCSnPin(GPIOQ_BASE, GPIO_PIN_1);
         auto lRTCC = std::make_unique<DS3234>(
             2000,
-            lInterruptNumber,
+            sInterruptNumber,
             mRTCCInterruptPin,
-            *mSPIDev,
-            lCSnPin
+            *mSPI3Dev,
+            sCSnPin
         );
 
         return lRTCC;
     }
 
     std::unique_ptr<TB6612> CreateMotorControl(void) {
-        constexpr GPIO lIn1(GPIOB_AHB_BASE, GPIO_PIN_6);
-        constexpr GPIO lIn2(GPIOB_AHB_BASE, GPIO_PIN_5);
-        constexpr GPIO lPWM(GPIOB_AHB_BASE, GPIO_PIN_0);
+        static constexpr GPIO lIn1(GPIOB_AHB_BASE, GPIO_PIN_6);
+        static constexpr GPIO lIn2(GPIOB_AHB_BASE, GPIO_PIN_5);
+        static constexpr GPIO lPWM(GPIOB_AHB_BASE, GPIO_PIN_0);
 
         return std::make_unique<TB6612>(lIn1, lIn2, lPWM);
     }
@@ -489,12 +564,12 @@ private:
     // It will be referenced via LwIPDrv static functions.
     void CreateEthDrv(void) {
         EthernetAddress lMAC = GetMACAddress();
-        static constexpr unsigned int lMyNetIFIndex = 0;
-        static constexpr unsigned int lPBufQueueSize = 8;
+        static constexpr unsigned int sMyNetIFIndex = 0;
+        static constexpr unsigned int sPBufQueueSize = 8;
         mEthDrv = std::make_unique<EthDrv>(
-            lMyNetIFIndex,
+            sMyNetIFIndex,
             lMAC,
-            lPBufQueueSize,
+            sPBufQueueSize,
             mClkRate
         );
     }
@@ -503,11 +578,11 @@ private:
 #if 0
     std::unique_ptr<BLE::BLE> CreateBLE(void) {
         unsigned long lInterruptNumber = INT_GPIOB;
-        constexpr GPIO lCSnPin(GPIOB_AHB_BASE, GPIO_PIN_4);
+        static constexpr GPIO lCSnPin(GPIOB_AHB_BASE, GPIO_PIN_4);
         auto lBLE = std::make_unique<BLE::BLE>(
             lInterruptNumber,
             mBLEInterruptPin,
-            *mSPIDev,
+            *mSPI3Dev,
             lCSnPin
         );
 
@@ -538,19 +613,21 @@ private:
             return lMAC;
         }
 
-        constexpr EthernetAddress lDefaultMAC(0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff);
-        return lDefaultMAC;
+        static constexpr EthernetAddress sDefaultMAC(0x00, 0x50, 0x1d, 0xc2, 0x70, 0xff);
+        return sDefaultMAC;
     }
 
     uint32_t mClkRate;
-    std::unique_ptr<CoreLink::SPIDev> mSPIDev;
+    std::unique_ptr<CoreLink::SPIDev> mSPI2Dev;
+    std::unique_ptr<CoreLink::SPIDev> mSPI3Dev;
     std::unique_ptr<DS3234> mRTCC;
     std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
     std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSink;
     std::unique_ptr<TB6612> mMotorControl;
     std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
     std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
-    std::shared_ptr<SDC> mSDC;
+    std::shared_ptr<SDC> mSDCDefault;
+    std::shared_ptr<SDC> mSDCBoosterPack;
     std::unique_ptr<EthDrv> mEthDrv;
     std::shared_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO;
     //std::unique_ptr<BLE::BLE> mBLE;
@@ -638,7 +715,7 @@ namespace BSP {
 static void InitEtherLED(void) {
 
     // GPIO for Ethernet LEDs.
-    constexpr GPIO lLinkLEDPin(GPIOF_AHB_BASE, GPIO_PIN_4);
+    static constexpr GPIO lLinkLEDPin(GPIOF_AHB_BASE, GPIO_PIN_4);
     MAP_GPIOPinTypeGPIOOutput(lLinkLEDPin.GetPort(), lLinkLEDPin.GetPin());
     MAP_GPIOPadConfigSet(
         lLinkLEDPin.GetPort(),
@@ -649,7 +726,7 @@ static void InitEtherLED(void) {
     MAP_GPIOPinConfigure(GPIO_PF4_EN0LED1);
     MAP_GPIOPinTypeEthernetLED(lLinkLEDPin.GetPort(), lLinkLEDPin.GetPin());
 
-    constexpr GPIO lActivityLEDPin(GPIOF_AHB_BASE, GPIO_PIN_0);
+    static constexpr GPIO lActivityLEDPin(GPIOF_AHB_BASE, GPIO_PIN_0);
     MAP_GPIOPinTypeGPIOOutput(lActivityLEDPin.GetPort(), lActivityLEDPin.GetPin());
     MAP_GPIOPadConfigSet(
         lActivityLEDPin.GetPort(),

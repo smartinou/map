@@ -181,7 +181,7 @@ subscribe(LWIP_SYSTEM_TIME_UPDATE_SIG);
 
 // Set logging category.
 // Add self to logging sink.
-Logger::AddCategory(mLogCategory, FEED_MGR_LOG_SIG, LogLevel::prio::INFO);
+Logger::AddCategory(mLogCategory, LOG_EVENT_SIG, LogLevel::prio::INFO);
 Logger::AddSink(mLogCategory, this);
 </action>
       <initial_glyph conn="4,6,5,0,8,6">

@@ -129,7 +129,6 @@ private:
         const netif_ext_callback_args_t *aArgs
     );
     virtual void ExtCallback(
-        struct netif * const aNetIF,
         netif_nsc_reason_t aReason,
         const netif_ext_callback_args_t *aArgs
     );

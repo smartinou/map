@@ -154,12 +154,11 @@ void LwIPDrv::StaticExtCallback(
     const netif_ext_callback_args_t *aArgs) {
     // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    lThis->ExtCallback(aNetIF, aReason, aArgs);
+    lThis->ExtCallback(aReason, aArgs);
 }
 
 
 void LwIPDrv::ExtCallback(
-    struct netif * const aNetIF,
     netif_nsc_reason_t aReason,
     const netif_ext_callback_args_t *aArgs
 ) {

@@ -150,7 +150,7 @@ ASM_SRCS :=
 
 
 
-FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff13a
+FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff14b
 FAT_FS_SRC_DIR := $(FAT_FS_DIR)/source
 FAT_FS_INC_DIR := $(FAT_FS_SRC_DIR)
 

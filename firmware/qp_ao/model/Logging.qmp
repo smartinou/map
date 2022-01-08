@@ -25,6 +25,9 @@ The file is sync'ed right away.</documentation>
    <attribute name="mLineOverflow" type="unsigned int" visibility="0x02" properties="0x00">
     <documentation>Number of lines that overflowed from allowed max char per line.</documentation>
    </attribute>
+   <attribute name="mCategories" type="std::unordered_set&lt;std::string&gt;" visibility="0x02" properties="0x00">
+    <documentation>A list (as unordered set) of log categories.</documentation>
+   </attribute>
    <operation name="FileSink_AO" type="" visibility="0x00" properties="0x00">
     <documentation>Ctor.</documentation>
     <parameter name="aSyncTimerTicks = 0" type="QP::QTimeEvtCtr"/>
@@ -76,15 +79,29 @@ int lLen = f_printf(
 (void)lLen;</code>
    </operation>
    <statechart properties="0x02">
+    <documentation>A logging sink AO.
+Listen to logging signal of monitored log categories, and log events to file.</documentation>
     <initial target="../1">
-     <action brief="OpenFile();">// At this stage, the FS must be initialized.
+     <action brief="OpenFile();">Logging::Event::Init const * const lInitEvent = static_cast&lt;Logging::Event::Init const * const&gt;(e);
+
+// At this stage, the FS must be initialized.
 FRESULT lResult = f_open(&amp;mFile, &quot;Log.txt&quot;, FA_OPEN_APPEND | FA_WRITE | FA_READ);
+if (FR_OK == lResult) {
+    // Seek to end of the file to append data.
+    lResult = f_lseek(&amp;mFile, f_size(&amp;mFile));
+    if (FR_OK == lResult) {
+        mCategories = lInitEvent-&gt;mCategories;
+        subscribe(LOG_EVENT_SIG);
+    } else {
+        f_close(&amp;mFile);
+    }
+}
+
 if (FR_OK != lResult) {
     // Error. There's no use running this at all.
     QP::QEvt * const lEvent = Q_NEW(QP::QEvt, TERMINATE_SIG);
     POST(lEvent, this);
 }
-subscribe(LOG_EVENT_SIG);
 </action>
      <initial_glyph conn="4,4,5,0,6,6">
       <action box="0,-2,12,2"/>
@@ -104,9 +121,11 @@ f_close(&amp;mFile);</exit>
       </tran_glyph>
      </tran>
      <tran trig="LOG_EVENT">
-      <action brief="ParseEvent();">Logging::Event::LogEntry const * const lLogEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);</action>
+      <action brief="ParseEvent();">Logging::Event::LogEntry const * const lLogEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);
+
+auto lCategory = mCategories.find(lLogEvent-&gt;mCategoryStr);</action>
       <choice>
-       <guard brief="Level &gt;= SyncThreshold">lLogEvent-&gt;mLogLevel &gt;= mSyncLogLevel</guard>
+       <guard brief="Level &gt;= SyncThreshold">(lLogEvent-&gt;mLogLevel &gt;= mSyncLogLevel) &amp;&amp; (lCategory != mCategories.end())</guard>
        <action brief="WriteEvent(); SyncFile();">WrEvent(*lLogEvent);
 f_sync(&amp;mFile);</action>
        <choice_glyph conn="26,30,5,-1,38">
@@ -226,10 +245,32 @@ Usually mapped to macro __FUNCTION__</documentation>
     <code>// Dtor body.</code>
    </operation>
   </class>
+  <class name="Init" superclass="qpcpp::QEvt">
+   <documentation>Dummy event for the pseudo init transition.</documentation>
+   <attribute name="mCategories" type="std::unordered_set&lt;std::string&gt; const" visibility="0x00" properties="0x00">
+    <documentation>The unordered set of categories being monitored by a Logger sink AO.</documentation>
+   </attribute>
+   <operation name="Init" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aCategories" type="std::unordered_set&lt;std::string&gt; const &amp;"/>
+    <code>    : QP::QEvt(aSig)
+    , mCategories(aCategories)
+
+// Ctor body.</code>
+   </operation>
+   <operation name="~Init" type="" visibility="0x00" properties="0x00">
+    <specifiers>= default</specifiers>
+    <documentation>Dtor.</documentation>
+   </operation>
+  </class>
  </package>
  <directory name="../codegen">
   <file name="Logging_Events.h">
    <text>#pragma once
+
+#include &lt;string&gt;
+#include &lt;unordered_set&gt;
 
 #include &quot;qpcpp.h&quot;
 
@@ -240,13 +281,11 @@ Usually mapped to macro __FUNCTION__</documentation>
 
 
 $declare${Logging::Events::LogEntry}
+$declare${Logging::Events::Init}
 </text>
   </file>
   <file name="Logging_AOs.cpp">
    <text>#include &quot;qpcpp.h&quot;
-
-#include &quot;Logger.h&quot;
-#include &quot;ff.h&quot;
 
 #include &quot;BSP.h&quot;
 #include &quot;Signals.h&quot;
@@ -263,19 +302,11 @@ $define${Logging::AOs::FileSink_AO}
    <text>#pragma once
 
 #include &quot;ff.h&quot;
-#include &quot;Logger.h&quot;
+#include &quot;LogLevel.h&quot;
+#include &quot;Logging_Events.h&quot;
 
 #include &lt;date/Date.h&gt;
 #include &lt;time/Time.h&gt;
-
-// Forward declarations.
-namespace Logging {
-    namespace Events {
-        class LogEntry;
-    } // namespace Events
-} // namespace Logging
-
-class LogLevel;
 
 // Expansion of QM classes.
 $declare${Logging::AOs::FileSink_AO}

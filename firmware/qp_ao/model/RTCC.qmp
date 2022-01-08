@@ -176,7 +176,6 @@ if (lIsNextEntry) {
 
 // Subscribe to signals if any.
 subscribe(RTCC_INTERRUPT_SIG);
-subscribe(RTCC_SET_TIME_SIG);
 subscribe(RTCC_SET_DATE_SIG);
 subscribe(RTCC_SET_TIME_SIG);
 subscribe(RTCC_SET_TIME_AND_DATE_SIG);
@@ -208,6 +207,8 @@ stop();</action>
       <action brief="SetTime(aTime);">//LOG_INFO(&amp;sLogCategory[0], &quot;New time set.&quot;);
 RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrTime(lSetTimeEvent-&gt;mTime);
+mRTCC.GetTimeAndDate(mTime, mDate);
+
 SetNextCalendarEvent();
 </action>
       <tran_glyph conn="4,20,3,-1,40">
@@ -218,6 +219,8 @@ SetNextCalendarEvent();
       <action brief="SetDate(aDate);">//LOG_INFO(&amp;sLogCategory[0], &quot;New date set.&quot;);
 RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrDate(lSetEventDate-&gt;mDate);
+mRTCC.GetTimeAndDate(mTime, mDate);
+
 SetNextCalendarEvent();
 </action>
       <tran_glyph conn="4,24,3,-1,40">
@@ -236,7 +239,8 @@ RTCC::Event::TimeAndDate * const lTickAlarmEvent =
         RTCC::Event::TimeAndDate,
         RTCC_TIME_TICK_ALARM_SIG,
         mTime,
-        mDate);
+        mDate
+    );
 QP::QF::PUBLISH(lTickAlarmEvent, this);
 
 bool lIsCalendarAlarm = mRTCC.IsAlarmOn();
@@ -246,16 +250,14 @@ mRTCC.AckInterrupt();
        <guard brief="Source == CalendarAlarm">lIsCalendarAlarm == true</guard>
        <action brief="PublishCalendarEvent();">// Got a calendar event alarm: create event.
 // Set next calendar alarm event.
-#if defined(RTCC_DBG) &amp;&amp; !defined(Q_SPY)
-UARTprintf(&quot;A&quot;);
-#endif // RTCC_DBG
 //LOG_INFO(&amp;sLogCategory[0], &quot;Calendar event.&quot;);
 RTCC::Event::TimeAndDate * const lCalendarEvent =
     Q_NEW(
         RTCC::Event::TimeAndDate,
         RTCC_CALENDAR_EVENT_ALARM_SIG,
         mTime,
-        mDate);
+        mDate
+    );
 QP::QF::PUBLISH(lCalendarEvent, this);
 
 SetNextCalendarEvent();
