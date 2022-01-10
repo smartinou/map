@@ -333,21 +333,21 @@ lEtherDrv-&gt;PHYISR();</action>
   </class>
   <class name="IPAddressChanged" superclass="qpcpp::QEvt">
    <documentation>IP Address changed.</documentation>
-   <attribute name="mIPAddress" type="IPAddress const &amp;" visibility="0x00" properties="0x00">
+   <attribute name="mIPAddress" type="IPAddress" visibility="0x00" properties="0x00">
     <documentation>IP Address.</documentation>
    </attribute>
-   <attribute name="mSubnetMask" type="IPAddress const &amp;" visibility="0x00" properties="0x00">
+   <attribute name="mSubnetMask" type="IPAddress" visibility="0x00" properties="0x00">
     <documentation>Subnet mask.</documentation>
    </attribute>
-   <attribute name="mDefaultGW" type="IPAddress const &amp;" visibility="0x00" properties="0x00">
+   <attribute name="mDefaultGW" type="IPAddress" visibility="0x00" properties="0x00">
     <documentation>Default gateway.</documentation>
    </attribute>
    <operation name="IPAddressChanged" type="" visibility="0x00" properties="0x02">
     <documentation>Event to signal that any field of the IP address changed from previous address.</documentation>
     <parameter name="aSig" type="QP::QSignal"/>
-    <parameter name="aIPAddress" type="IPAddress"/>
-    <parameter name="aSubnetMask" type="IPAddress"/>
-    <parameter name="aDefaultGW" type="IPAddress"/>
+    <parameter name="aIPAddress" type="IPAddress const &amp;"/>
+    <parameter name="aSubnetMask" type="IPAddress const &amp;"/>
+    <parameter name="aDefaultGW" type="IPAddress const &amp;"/>
     <code>    : QP::QEvt(aSig)
     , mIPAddress(aIPAddress)
     , mSubnetMask(aSubnetMask)

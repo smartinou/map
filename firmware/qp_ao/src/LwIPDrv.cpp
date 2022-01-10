@@ -180,12 +180,13 @@ void LwIPDrv::ExtCallback(
             | LWIP_NSC_IPV4_GATEWAY_CHANGED)
     ) {
         // Some components of IP address changed.
+        // Could cast aArgs to ipv4_changed* for old addresses.
         LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
             LwIP::Event::IPAddressChanged,
             LWIP_IP_CHANGED_SIG,
-            IPAddress(mNetIF.ip_addr.addr),
-            IPAddress(mNetIF.netmask.addr),
-            IPAddress(mNetIF.gw.addr)
+            IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF))),
+            IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF))),
+            IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)))
         );
 #ifdef Q_SPY
         static QP::QSpyId const sLwIPDrvExtCallback = {0U};
@@ -205,17 +206,17 @@ EthernetAddress const &LwIPDrv::GetMACAddress(void) const {
 
 
 IPAddress LwIPDrv::GetIPAddress(void) const {
-    return IPAddress(mNetIF.ip_addr.addr);
+    return IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF)));
 }
 
 
 IPAddress LwIPDrv::GetSubnetMask(void) const {
-    return IPAddress(mNetIF.netmask.addr);
+    return IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF)));
 }
 
 
 IPAddress LwIPDrv::GetDefaultGW(void) const {
-    return IPAddress(mNetIF.gw.addr);
+    return IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)));
 }
 
 
@@ -278,14 +279,14 @@ void LwIPDrv::DrvInit(
     ip_addr_t lGWAddr;
 
     if (aUseDHCP) {
-        IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
-        IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
-        IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
+        ip4_addr_set_zero(&lIPAddr);
+        ip4_addr_set_zero(&lSubnetMask);
+        ip4_addr_set_zero(&lGWAddr);
     } else if (IPADDR_ANY != (aIPAddr.GetValue() & aSubnetMask.GetValue())) {
         // IP Address from persistence.
-        lIPAddr.addr = aIPAddr.GetValue();
-        lSubnetMask.addr = aSubnetMask.GetValue();
-        lGWAddr.addr = aGWAddr.GetValue();
+        ip4_addr_set_u32(&lIPAddr, aIPAddr.GetValue());
+        ip4_addr_set_u32(&lSubnetMask, aSubnetMask.GetValue());
+        ip4_addr_set_u32(&lGWAddr, aGWAddr.GetValue());
     } else {
 #if (LWIP_DHCP == 0) && (LWIP_AUTOIP == 0)
         // No mechanism of obtaining IP address specified, use static IP.
@@ -306,9 +307,9 @@ void LwIPDrv::DrvInit(
         );
 #else
         // Either DHCP or AUTOIP are configured, start with zero IP addresses.
-        IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
-        IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
-        IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
+        ip4_addr_set_zero(&lIPAddr);
+        ip4_addr_set_zero(&lSubnetMask);
+        ip4_addr_set_zero(&lGWAddr);
 #endif
     }
 

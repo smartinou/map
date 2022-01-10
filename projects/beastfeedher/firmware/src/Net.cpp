@@ -567,11 +567,20 @@ static uint16_t SSIHandler(
     } break;
 
     case SSI_TAG_IX_NET_IPV4_ADD:
-        return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetIPAddress(sDefaultNetIF));
+        return FullIPAddressHandler(
+            aInsertStr,
+            LwIPDrv::StaticGetIPAddress(sDefaultNetIF)
+        );
     case SSI_TAG_IX_NET_SUBNET_MASK:
-        return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetSubnetMask(sDefaultNetIF));
+        return FullIPAddressHandler(
+            aInsertStr,
+            LwIPDrv::StaticGetSubnetMask(sDefaultNetIF)
+        );
     case SSI_TAG_IX_NET_GW_ADD:
-        return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetDefaultGW(sDefaultNetIF));
+        return FullIPAddressHandler(
+            aInsertStr,
+            LwIPDrv::StaticGetDefaultGW(sDefaultNetIF)
+        );
 
     case SSI_TAG_IX_NET_USE_DHCP: {
         return SSIRadioButtonHandler(
@@ -910,7 +919,6 @@ static char const *DispCfg(
         return "/config.shtml";
     }
 
-    bool lIsCalendarRecChanged = false;
     // Try to find the Config and Calendar apply button.
     lSubmitVal = FindTagVal(
         "set_cfg",
@@ -938,15 +946,15 @@ static char const *DispCfg(
                 sscanf(aValsVec[lIx], "%u", &lHour);
                 Time lTime(lHour, 0, 0);
                 Net::sCalendarRec->SetTimeEntry(lTime);
-                lIsCalendarRecChanged = true;
             }
         }
 
         // Send event to trigger updated DB writing.
+        static constexpr bool sIsDataImpure = true;
         RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
             RTCC::Event::SaveToRAM,
             RTCC_SAVE_TO_NV_MEMORY_SIG,
-            lIsCalendarRecChanged
+            sIsDataImpure
         );
         sRTCC_AO->POST(lSaveEvtPtr, 0);
     }
