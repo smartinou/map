@@ -99,9 +99,8 @@ int main(void) {
     // Contains all AOs.
     App * const lAppPtr = new App();
     bool lInitGood = lAppPtr->Init(lFactory);
-
-    // Run the QF application.
     if (lInitGood) {
+        // Run the QF application.
         return QP::QF::run();
     }
 

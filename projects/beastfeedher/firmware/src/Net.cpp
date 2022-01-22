@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -176,13 +176,14 @@ static int SSICalendarHandler(
     unsigned int aHour
 );
 
-static int FullIPAddressHandler(char * const aInsertStr, uint32_t aAddress);
+static int FullIPAddressHandler(char * const aInsertStr, IPAddress const &aAddress);
 
 static int SSINetworkHandler(
     int                aTagIx,
     char       * const aInsertStr,
     int                aInsertStrLen,
-    char const * const aTagNameStr
+    char const * const aTagNameStr,
+    uint8_t aValue
 );
 
 static int SSIStatsHandler(
@@ -208,6 +209,13 @@ static char const *DispIndex(
 );
 
 static char const *DispCfg(
+    int   aIx,
+    int   aParamsQty,
+    char *aParamsVec[],
+    char *aValsVec[]
+);
+
+static char const *DispNet(
     int   aIx,
     int   aParamsQty,
     char *aParamsVec[],
@@ -308,7 +316,8 @@ char const * sSSITags[] = {
 #if LWIP_HTTPD_CGI
 tCGI const sCGIEntries[] = {
     {"/index.cgi",  DispIndex},
-    {"/config.cgi", DispCfg}
+    {"/config.cgi", DispCfg},
+    {"/network.cgi", DispNet}
 };
 
 static CalendarRec *sCalendarRec = nullptr;
@@ -379,43 +388,49 @@ static uint16_t SSIHandler(
     int   aInsertStrLen
 ) {
 
+    static constexpr size_t sDefaultNetIF = 0;
+
     switch (aTagIx) {
     case SSI_TAG_IX_ZERO:
-        return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%d", 0);
+        return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%u", 0);
     default:
     case SSI_TAG_IX_EMPTY:
         return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_INSERT_LEN, "%s", "");
 
     // Info.
-    case SSI_TAG_IX_INFO_FW_VERSION:
+    case SSI_TAG_IX_INFO_FW_VERSION: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::VerStr
         );
-    case SSI_TAG_IX_INFO_BUILD_DATE:
+    } break;
+    case SSI_TAG_IX_INFO_BUILD_DATE: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::BuildDate
         );
-    case SSI_TAG_IX_INFO_BUILD_TIME:
+    } break;
+    case SSI_TAG_IX_INFO_BUILD_TIME: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::BuildTime
         );
-    case SSI_TAG_IX_INFO_GIT_HASH:
+    } break;
+    case SSI_TAG_IX_INFO_GIT_HASH: {
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s",
             FWVersionGenerated::GitHash
         );
-    case SSI_TAG_IX_INFO_DB_STATUS:
+    } break;
+    case SSI_TAG_IX_INFO_DB_STATUS: {
         if (DBRec::GetDBRecCount() && DBRec::IsDBSane()) {
             return snprintf(
                 aInsertStr,
@@ -429,20 +444,23 @@ static uint16_t SSIHandler(
                 "Failed"
             );
         }
-    case SSI_TAG_IX_INFO_RTCC_TEMP:
+    } break;
+    case SSI_TAG_IX_INFO_RTCC_TEMP: {
+        float lTemperature = sRTCC_AO->GetTemperature();
         return snprintf(
             aInsertStr,
-                LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-                "%2.2f",
-                sRTCC_AO->GetTemperature()
-            );
+            LWIP_HTTPD_MAX_TAG_INSERT_LEN,
+            "%2.2f",
+            lTemperature
+        );
+    } break;
 
     // Global.
     case SSI_TAG_IX_CFG_GLOBAL_DATE: {
-        static char const * const lDateInputStr =
+        static constexpr auto lDateInputStr =
             "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
-        char        lDateBuf[16] = {0};
-        Date const &lDate    = sRTCC_AO->GetDate();
+        char lDateBuf[16]{0};
+        Date const &lDate = sRTCC_AO->GetDate();
         char const *lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
         return snprintf(
             aInsertStr,
@@ -451,15 +469,14 @@ static uint16_t SSIHandler(
             lDateInputStr,
             lDateStr
         );
-    }
+    } break;
 
     case SSI_TAG_IX_CFG_GLOBAL_TIME: {
         static char const * const lTimeInputStr =
             "<input type=\"time\" name=\"time\" value=\"";
-            char        lTimeBuf[16] = {0};
-            Time const &lTime    = sRTCC_AO->GetTime();
-            char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]
-        );
+        char lTimeBuf[16]{0};
+        Time const &lTime = sRTCC_AO->GetTime();
+        char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -467,7 +484,7 @@ static uint16_t SSIHandler(
             lTimeInputStr,
             lTimeStr
         );
-    }
+    } break;
 
     // Configuration.
     case SSI_TAG_IX_CFG_PAD_ENABLE: {
@@ -478,7 +495,7 @@ static uint16_t SSIHandler(
             "feeding_pad\" value=\"y\"",
             Net::sFeedCfgRec->IsTimedFeedEnable()
         );
-    }
+    } break;
     case SSI_TAG_IX_CFG_PAD_DISABLE: {
         return SSIRadioButtonHandler(
             aTagIx,
@@ -487,19 +504,19 @@ static uint16_t SSIHandler(
             "feeding_pad\" value=\"n\"",
             !Net::sFeedCfgRec->IsTimedFeedEnable()
         );
-    }
+    } break;
     case SSI_TAG_IX_CFG_FEED_TIME: {
-        static char const * const sFeedingTimeStr =
+        static constexpr auto sFeedingTimeStr =
             "<input type=\"number\" name=\"feeding_time_sec\" "
             "min=\"1\" max=\"10\" value=\"";
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-            "%s%d\">",
+            "%s%u\">",
             sFeedingTimeStr,
             Net::sFeedCfgRec->GetTimedFeedPeriod()
         );
-    }
+    } break;
 
     // Calendar.
     case SSI_TAG_IX_CFG_CALENDAR_06_00:
@@ -538,9 +555,8 @@ static uint16_t SSIHandler(
 
     // Network configuration.
     case SSI_TAG_IX_NET_MAC_ADDR: {
-        uint8_t const * const lMAC = LwIPDrv::StaticGetMACAddress(0);
-        EthernetAddress lMACAddress(lMAC[0], lMAC[1], lMAC[2], lMAC[3], lMAC[4], lMAC[5]);
-        char lMACAddressStr[32] = {0};
+        EthernetAddress const &lMACAddress = LwIPDrv::StaticGetMACAddress(sDefaultNetIF);
+        char lMACAddressStr[32]{0};
         lMACAddress.GetString(&lMACAddressStr[0]);
         return snprintf(
             aInsertStr,
@@ -548,13 +564,25 @@ static uint16_t SSIHandler(
             "%s",
             &lMACAddressStr[0]
         );
-    }
+    } break;
 
-    case SSI_TAG_IX_NET_IPV4_ADD: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetIPAddress(0));
-    case SSI_TAG_IX_NET_SUBNET_MASK: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetSubnetMask(0));
-    case SSI_TAG_IX_NET_GW_ADD: return FullIPAddressHandler(aInsertStr, LwIPDrv::StaticGetDefaultGW(0));
+    case SSI_TAG_IX_NET_IPV4_ADD:
+        return FullIPAddressHandler(
+            aInsertStr,
+            LwIPDrv::StaticGetIPAddress(sDefaultNetIF)
+        );
+    case SSI_TAG_IX_NET_SUBNET_MASK:
+        return FullIPAddressHandler(
+            aInsertStr,
+            LwIPDrv::StaticGetSubnetMask(sDefaultNetIF)
+        );
+    case SSI_TAG_IX_NET_GW_ADD:
+        return FullIPAddressHandler(
+            aInsertStr,
+            LwIPDrv::StaticGetDefaultGW(sDefaultNetIF)
+        );
 
-    case SSI_TAG_IX_NET_USE_DHCP:
+    case SSI_TAG_IX_NET_USE_DHCP: {
         return SSIRadioButtonHandler(
             aTagIx,
             aInsertStr,
@@ -562,8 +590,9 @@ static uint16_t SSIHandler(
             "use_dhcp\" value=\"y\"",
             sNetIFRec->UseDHCP()
         );
+    } break;
 
-    case SSI_TAG_IX_NET_USE_MANUAL:
+    case SSI_TAG_IX_NET_USE_MANUAL: {
         return SSIRadioButtonHandler(
             aTagIx,
             aInsertStr,
@@ -571,34 +600,82 @@ static uint16_t SSIHandler(
             "use_dhcp\" value=\"n\"",
             !sNetIFRec->UseDHCP()
         );
+    } break;
 
-    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_0:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_0");
-    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_1:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_1");
-    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_2:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_2");
-    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_3:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_3");
+    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_0: {
+        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress lTempIPAddress(lIPAddress);
+        uint8_t lByte = lTempIPAddress.GetByte(0);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_0", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_1: {
+        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress lTempIPAddress(lIPAddress);
+        uint8_t lByte = lTempIPAddress.GetByte(1);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_1", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_2: {
+        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress lTempIPAddress(lIPAddress);
+        uint8_t lByte = lTempIPAddress.GetByte(2);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_2", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_IPV4_ADD_3: {
+        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress lTempIPAddress(lIPAddress);
+        uint8_t lByte = lTempIPAddress.GetByte(3);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_3", lByte);
+    } break;
 
-    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_0:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_0");
-    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_1:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_1");
-    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_2:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_2");
-    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_3:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_3");
+    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_0: {
+        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress lTempSubnetMask(lSubnetMask);
+        uint8_t lByte = lTempSubnetMask.GetByte(0);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_0", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_1: {
+        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress lTempSubnetMask(lSubnetMask);
+        uint8_t lByte = lTempSubnetMask.GetByte(1);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_1", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_2: {
+        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress lTempSubnetMask(lSubnetMask);
+        uint8_t lByte = lTempSubnetMask.GetByte(2);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_2", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_3: {
+        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress lTempSubnetMask(lSubnetMask);
+        uint8_t lByte = lTempSubnetMask.GetByte(3);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_3", lByte);
+    } break;
 
-    case SSI_TAG_IX_NET_STATIC_GW_ADD_0:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_0");
-    case SSI_TAG_IX_NET_STATIC_GW_ADD_1:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_1");
-    case SSI_TAG_IX_NET_STATIC_GW_ADD_2:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_2");
-    case SSI_TAG_IX_NET_STATIC_GW_ADD_3:
-        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_3");
-
+    case SSI_TAG_IX_NET_STATIC_GW_ADD_0: {
+        uint32_t lGateway = sNetIFRec->GetGWAddr();
+        IPAddress lTempGateway(lGateway);
+        uint8_t lByte = lTempGateway.GetByte(0);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_0", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_GW_ADD_1: {
+        uint32_t lGateway = sNetIFRec->GetGWAddr();
+        IPAddress lTempGateway(lGateway);
+        uint8_t lByte = lTempGateway.GetByte(1);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_1", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_GW_ADD_2: {
+        uint32_t lGateway = sNetIFRec->GetGWAddr();
+        IPAddress lTempGateway(lGateway);
+        uint8_t lByte = lTempGateway.GetByte(2);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_2", lByte);
+    } break;
+    case SSI_TAG_IX_NET_STATIC_GW_ADD_3: {
+        uint32_t lGateway = sNetIFRec->GetGWAddr();
+        IPAddress lTempGateway(lGateway);
+        uint8_t lByte = lTempGateway.GetByte(3);
+        return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_3", lByte);
+    } break;
 
     case SSI_TAG_IX_STATS_TX:
     case SSI_TAG_IX_STATS_RX:
@@ -613,12 +690,12 @@ static uint16_t SSIHandler(
     case SSI_TAG_IX_STATS_ERR: {
         // Sub-handler for network stats.
         STAT_COUNTER lVal = SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
-        return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", lVal);
-    }
+        return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%u", lVal);
+    } break;
 
     }
 
-    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%d", 0);
+    return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%u", 0);
 }
 
 
@@ -630,7 +707,7 @@ static int SSIRadioButtonHandler(
     bool               aIsChecked
 ) {
 
-    static char const * const sInputRadioStr = "<input type=\"radio\" name=\"";
+    static constexpr auto sInputRadioStr = "<input type=\"radio\" name=\"";
     if (aIsChecked) {
         return snprintf(
             aInsertStr,
@@ -658,7 +735,7 @@ static int SSICalendarHandler(
     unsigned int aHour
 ) {
 
-    static char const *sFeedingCalStr =
+    static constexpr auto sFeedingCalStr =
         "<input type=\"checkbox\" name=\"feed_time\" value=\"";
 
     Time lTime(aHour, 0, 0, true, false);
@@ -684,10 +761,9 @@ static int SSICalendarHandler(
 }
 
 
-static int FullIPAddressHandler(char * const aInsertStr, uint32_t aAddress) {
-    IPAddress lAddress(aAddress);
-    char lAddressStr[32] = {0};
-    lAddress.GetString(&lAddressStr[0]);
+static int FullIPAddressHandler(char * const aInsertStr, IPAddress const &aAddress) {
+    char lAddressStr[32]{0};
+    aAddress.GetString(&lAddressStr[0]);
     return snprintf(
         aInsertStr,
         LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -701,20 +777,21 @@ static int SSINetworkHandler(
     int                aTagIx,
     char       * const aInsertStr,
     int                aInsertStrLen,
-    char const * const aTagNameStr
+    char const * const aTagNameStr,
+    uint8_t aValue
 ) {
 
-    static char const * const sInputTagStr = "<input name=\"";
-    static char const * const sInputValueStr =
+    static constexpr auto sInputTagStr = "<input name=\"";
+    static constexpr auto sInputValueStr =
         "\" type=\"text\" size=\"2\" maxlength=\"3\" value=\"";
     return snprintf(
         aInsertStr,
         LWIP_HTTPD_MAX_TAG_INSERT_LEN,
-        "%s%s%s%d\">",
+        "%s%s%s%u\">",
         sInputTagStr,
         aTagNameStr,
         sInputValueStr,
-        0
+        aValue
     );
 }
 
@@ -762,7 +839,7 @@ static char const *DispIndex(
         // Param found.
         // Send event with value as parameter.
         unsigned int lTime = 0;
-        sscanf(aValsVec[0], "%d", &lTime);
+        sscanf(aValsVec[0], "%u", &lTime);
         PFPP::Event::Mgr::TimedFeedCmd *lEvtPtr = Q_NEW(
             PFPP::Event::Mgr::TimedFeedCmd,
             FEED_MGR_TIMED_FEED_CMD_SIG,
@@ -772,7 +849,10 @@ static char const *DispIndex(
         // Could use QF_Publish() to decouple from active object.
         // Here, there's only this well-known recipient.
         //BFHMgr_AO::AOInstance().POST(lEvtPtr, 0);
-        QP::QF::PUBLISH(lEvtPtr, nullptr);
+#ifdef Q_SPY
+        static QP::QSpyId const sNetDispIndex = {0U};
+#endif // Q_SPY
+        QP::QF::PUBLISH(lEvtPtr, &sNetDispIndex);
 
         // Return where we're coming from.
         return "/index.shtml";
@@ -797,46 +877,48 @@ static char const *DispCfg(
         aValsVec
     );
     if (0 == strcmp(lSubmitVal, "Apply")) {
-        for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-            if (0 == strcmp(aParamsVec[lIx], "date")) {
-                unsigned int lYear  = 0;
-                unsigned int lMonth = 0;
-                unsigned int lDayDate  = 0;
-                sscanf(aValsVec[lIx], "%d-%d-%d", &lYear, &lMonth, &lDayDate);
-                Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
+        // There's only time & date widgets here.
+        char const *lDateVal = FindTagVal(
+            "date",
+            aParamsQty,
+            aParamsVec,
+            aValsVec
+        );
 
-                // Send event to write new date.
-	            RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
-                    RTCC::Event::TimeAndDate,
-                    RTCC_SET_DATE_SIG,
-                    Time(),
-                    lDate
-                );
-                sRTCC_AO->POST(lEvtPtr, 0);
+        char const *lTimeVal = FindTagVal(
+            "time",
+            aParamsQty,
+            aParamsVec,
+            aValsVec
+        );
 
-            } else if (0 == strcmp(aParamsVec[lIx], "time")) {
-                unsigned int lHours   = 0;
-                unsigned int lMinutes = 0;
-                sscanf(aValsVec[lIx], "%d%%3A%d", &lHours, &lMinutes);
-                Time lTime(lHours, lMinutes, 0);
+        if ((lDateVal != nullptr) && (lTimeVal != nullptr)) {
+            unsigned int lYear  = 0;
+            unsigned int lMonth = 0;
+            unsigned int lDayDate  = 0;
+            sscanf(lDateVal, "%u-%u-%u", &lYear, &lMonth, &lDayDate);
+            Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
 
-                // Send event to write new time.
-                // Send event to write new date.
-            	RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
-	                RTCC::Event::TimeAndDate,
-                    RTCC_SET_TIME_SIG,
-                    lTime,
-                    Date()
-                );
-                sRTCC_AO->POST(lEvtPtr, 0);
+            unsigned int lHours   = 0;
+            unsigned int lMinutes = 0;
+            sscanf(lTimeVal, "%u%%3A%u", &lHours, &lMinutes);
+            Time lTime(lHours, lMinutes, 0);
 
-            }
+            // Send event to write new time.
+            // Send event to write new date.
+            RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
+                RTCC::Event::TimeAndDate,
+                RTCC_SET_TIME_AND_DATE_SIG,
+                lTime,
+                lDate
+            );
+            sRTCC_AO->POST(lEvtPtr, 0);
         }
+
         // Return where we're coming from.
         return "/config.shtml";
     }
 
-    bool lIsCalendarRecChanged = false;
     // Try to find the Config and Calendar apply button.
     lSubmitVal = FindTagVal(
         "set_cfg",
@@ -857,28 +939,87 @@ static char const *DispCfg(
                 }
             } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
                 unsigned int lFeedingTime = 0;
-                sscanf(aValsVec[lIx], "%d", &lFeedingTime);
+                sscanf(aValsVec[lIx], "%u", &lFeedingTime);
                 Net::sFeedCfgRec->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
             } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
                 unsigned int lHour = 0;
-                sscanf(aValsVec[lIx], "%d", &lHour);
+                sscanf(aValsVec[lIx], "%u", &lHour);
                 Time lTime(lHour, 0, 0);
                 Net::sCalendarRec->SetTimeEntry(lTime);
-                lIsCalendarRecChanged = true;
             }
         }
 
         // Send event to trigger updated DB writing.
-        RTCC::Event::SaveToRAM *lSaveEvtPtr = Q_NEW(
+        static constexpr bool sIsDataImpure = true;
+        RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
             RTCC::Event::SaveToRAM,
             RTCC_SAVE_TO_NV_MEMORY_SIG,
-            lIsCalendarRecChanged
+            sIsDataImpure
         );
         sRTCC_AO->POST(lSaveEvtPtr, 0);
     }
 
     // Return where we're coming from.
     return "/config.shtml";
+}
+
+
+static char const *DispNet(
+    int   aCGIIx,
+    int   aParamsQty,
+    char *aParamsVec[],
+    char *aValsVec[]
+) {
+    // Try to find the apply button.
+    char const *lSubmitVal = FindTagVal("set_ip", aParamsQty, aParamsVec, aValsVec);
+    if (0 == strcmp(lSubmitVal, "Apply")) {
+        // Fields of the addresses have changed:
+        // Read now and modify bytes.
+        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress lNewIPAddress(lIPAddress);
+
+        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress lNewSubnetMask(lSubnetMask);
+
+        uint32_t lGWAddress = sNetIFRec->GetGWAddr();
+        IPAddress lNewGWAddress(lGWAddress);
+
+        for (int lIx = 0; lIx < aParamsQty; ++lIx) {
+            size_t lByteIx = 0;
+            uint8_t lByteValue = 0;
+            if (0 == strcmp(aParamsVec[lIx], "use_dhcp")) {
+                if ('y' == *aValsVec[lIx]) {
+                    sNetIFRec->SetUseDHCP(true);
+                } else {
+                    sNetIFRec->SetUseDHCP(false);
+                }
+            } else if (1 == sscanf(aValsVec[lIx], "%hhu", &lByteValue)) {
+                // Everything else is a byte field of an IP address. Get it.
+                if (1 == sscanf(aParamsVec[lIx], "ipaddr_%uz", &lByteIx)) {
+                    lNewIPAddress.SetByte(lByteIx, lByteValue);
+                    sNetIFRec->SetIPAddr(lNewIPAddress.GetValue());
+                } else if (1 == sscanf(aParamsVec[lIx], "ipmask_%uz", &lByteIx)) {
+                    lNewSubnetMask.SetByte(lByteIx, lByteValue);
+                    sNetIFRec->SetSubnetMask(lNewSubnetMask.GetValue());
+                } else if (1 == sscanf(aParamsVec[lIx], "ipgw_%uz", &lByteIx)) {
+                    lNewGWAddress.SetByte(lByteIx, lByteValue);
+                    sNetIFRec->SetGWAddr(lNewGWAddress.GetValue());
+                }
+            }
+        }
+
+        // Send event to trigger updated DB writing.
+        static constexpr bool sIsDataImpure = true;
+        RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
+            RTCC::Event::SaveToRAM,
+            RTCC_SAVE_TO_NV_MEMORY_SIG,
+            sIsDataImpure
+        );
+        sRTCC_AO->POST(lSaveEvtPtr, 0);
+    }
+
+    // Return where we're coming from.
+    return "/network.shtml";
 }
 
 

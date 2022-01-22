@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2019, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2021, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -42,13 +42,17 @@ namespace CoreLink {
 }
 
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief MicroSD card driver class.
 class SDC
     : public FatFSDisk {
  public:
-    SDC(unsigned int const aDriveIx, CoreLink::ISPIDev &aSPIDev, GPIO const &aCSnPin);
+    explicit SDC(
+        unsigned int const aDriveIx,
+        CoreLink::ISPIDev &aSPIDev,
+        GPIO const &aCSnPin,
+        GPIO const &aDetectPin,
+        unsigned int const aSPIBitRate = 4000000UL
+    );
 
     // FatFSDisk interface.
     DSTATUS GetDiskStatus(void) override;
@@ -126,11 +130,12 @@ class SDC
 
     CoreLink::ISPIDev &mSPIDev;
     CoreLink::SPISlaveCfg mSPICfg;
+    GPIO const mDetectPin;
+    unsigned int const mSPIBitRate;
 
     DSTATUS mStatus = STA_NOINIT;
     uint8_t mCardType = 0;
 
-    static unsigned int constexpr mSPIBitRate = 4000000;
     static unsigned int constexpr sSectorSize = 512;
     static uint8_t constexpr sDummyByte = 0xFF;
 };

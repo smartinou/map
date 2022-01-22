@@ -2,17 +2,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding configuration.
+// Module: Feeding configuration DB.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief Feeding configuration class.
+//! \brief Feeding configuration DB class.
 //! \ingroup utils_db
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -94,32 +94,9 @@ void FeedCfgRec::ResetDflt(void) {
     mRec.mIsTimedFeedEnable = true;
     mRec.mUseSystemTime = true;
 
-    mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
     SetIsDirty();
 }
 
-
-size_t FeedCfgRec::GetRecSize(void) const {
-    return sizeof(struct RecData);
-}
-
-
-// Trivial serialization function.
-void FeedCfgRec::Serialize(uint8_t * const aDataPtr) const {
-
-    memcpy(aDataPtr, &mRec, GetRecSize());
-}
-
-
-// Trivial serialization function.
-void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
-
-    memcpy(&mRec, aDataPtr, GetRecSize());
-}
-
-//
-// Start of child methods.
-//
 
 uint8_t FeedCfgRec::GetManualFeedWaitPeriod(void) const {
     return mRec.mManualFeedWaitPeriod;
@@ -154,26 +131,56 @@ bool FeedCfgRec::UseSystemTime(void) const {
 
 void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
     mRec.mTimedFeedPeriod = aPeriod;
+    SetIsDirty();
 }
 
 
 void FeedCfgRec::SetManualFeedEnabled(bool aIsEnabled) {
     mRec.mIsManualFeedEnable = aIsEnabled;
+    SetIsDirty();
 }
 
 
 void FeedCfgRec::SetTimedFeedEnabled(bool aIsEnabled) {
     mRec.mIsTimedFeedEnable = aIsEnabled;
+    SetIsDirty();
 }
 
 
 void FeedCfgRec::SetUseSystemTime(bool aUseSystemTime) {
     mRec.mUseSystemTime = aUseSystemTime;
+    SetIsDirty();
 }
 
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
+
+size_t FeedCfgRec::GetRecSize(void) const {
+    return sizeof(struct RecData);
+}
+
+
+// Trivial serialization function.
+void FeedCfgRec::Serialize(uint8_t * const aDataPtr) const {
+
+    memcpy(aDataPtr, &mRec, GetRecSize());
+}
+
+
+// Trivial serialization function.
+void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
+
+    memcpy(&mRec, aDataPtr, GetRecSize());
+}
+
+
+void FeedCfgRec::UpdateCRC() {
+    mRec.mBase.mCRC = ComputeCRC(
+        reinterpret_cast<uint8_t const * const>(&mRec),
+        sizeof(struct RecData)
+    );
+}
 
 // *****************************************************************************
 //                                END OF FILE

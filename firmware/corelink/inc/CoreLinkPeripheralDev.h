@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,7 +21,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <stdint.h>
+#include <cstdint>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -35,20 +35,35 @@ namespace CoreLink {
 
 
 //! \class PeripheralDev
-// \brief CoreLink Peripheral Device base class.
-//
-// This is the base class from which all CoreLink peripheral device drivers
-// are derived.
-//
+//! \brief CoreLink Peripheral Device base class.
+//!
+//! This is the base class from which all CoreLink peripheral device drivers
+//! are derived.
+//!
 class PeripheralDev {
-public:
-    virtual ~PeripheralDev() {}
-
 protected:
-    PeripheralDev(uint32_t aBaseAddr, uint32_t aClkRate);
+    constexpr PeripheralDev(uint32_t aBaseAddr, uint32_t aClkRate) noexcept
+        : mBaseAddr(aBaseAddr)
+        , mClkRate(aClkRate)
+        , mIDRegMapPtr(reinterpret_cast<id_reg_map_t const * const>(aBaseAddr + 0x0FE0))
+        , mPeripheralID{0}
+        , mPrimeCellID(0)
+    {
+        mPeripheralID[0]  = (mIDRegMapPtr->mPeripheralID[0] <<  0);
+        mPeripheralID[0] |= (mIDRegMapPtr->mPeripheralID[1] <<  8);
+        mPeripheralID[0] |= (mIDRegMapPtr->mPeripheralID[2] << 16);
+        mPeripheralID[0] |= (mIDRegMapPtr->mPeripheralID[3] << 24);
 
-    uint32_t GetBaseAddr(void) const { return mBaseAddr; }
-    uint32_t GetClkRate(void) const {return mClkRate;}
+        mPrimeCellID  = (mIDRegMapPtr->mPrimeCellID[0] <<  0);
+        mPrimeCellID |= (mIDRegMapPtr->mPrimeCellID[1] <<  8);
+        mPrimeCellID |= (mIDRegMapPtr->mPrimeCellID[2] << 16);
+        mPrimeCellID |= (mIDRegMapPtr->mPrimeCellID[3] << 24);
+    }
+
+    constexpr uint32_t GetBaseAddr(void) const noexcept {return mBaseAddr;}
+    constexpr uint32_t GetClkRate(void) const noexcept {return mClkRate;}
+    constexpr uint32_t GetPeripheralID(void) const noexcept {return mPeripheralID[0];}
+    constexpr uint32_t GetPrimCellID(void) const noexcept {return mPrimeCellID;}
 
 private:
     typedef uint32_t volatile reg_t;
@@ -59,8 +74,9 @@ private:
     };
     typedef struct ID_REG_MAP_STRUCT_TAG id_reg_map_t;
 
-    uint32_t mBaseAddr;
-    uint32_t mClkRate;
+    uint32_t const mBaseAddr;
+    uint32_t const mClkRate;
+    id_reg_map_t const * const mIDRegMapPtr;
     uint32_t mPeripheralID[1];
     uint32_t mPrimeCellID;
 };

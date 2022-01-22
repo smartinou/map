@@ -43,7 +43,7 @@
 #include <driverlib/sysctl.h>
 
 #include "netif/etharp.h"
-#include "netif/tm4c129/EthDrv.h"
+#include "EthDrv.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS

@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -33,14 +33,13 @@ namespace CoreLink {
 
 class SSIPinCfg {
 public:
-    SSIPinCfg(unsigned int aSSIID) : mID(aSSIID) {}
-    virtual ~SSIPinCfg() {}
+    constexpr SSIPinCfg(unsigned int aSSIID) noexcept : mID(aSSIID) {}
 
-    unsigned int GetID(void) const { return mID; }
+    constexpr unsigned int GetID(void) const { return mID; }
     virtual void SetPins(void) const = 0;
 
 private:
-    unsigned int mID;
+    unsigned int const mID;
 };
 
 

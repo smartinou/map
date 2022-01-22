@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -54,7 +54,8 @@ public:
 
     bool Init(std::shared_ptr<IBSPFactory> mFactory);
 
-    static RTCC::AO::RTCC_AO *GetRTCCAO(void) { return mRTCC_AO.get(); }
+    static RTCC::AO::RTCC_AO *GetRTCCAO(void) {return sRTCC_AO.get();}
+    static FATFS *GetFatFS(void) {return &sFatFS;}
 
 private:
     static void NetInitCallback(void);
@@ -74,9 +75,9 @@ private:
     QP::QEvt const *mDisplayMgrEventQueue[sSmallQueueSize] = {nullptr};
     QP::QEvt const *mBLEMgrEventQueue[sSmallQueueSize] = {nullptr};
 
-    static std::shared_ptr<RTCC::AO::RTCC_AO> mRTCC_AO;
+    static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO;
 
-    FATFS mFatFS = {0};
+    static FATFS sFatFS;
 };
 
 // ******************************************************************************

@@ -1,114 +1,64 @@
 // *****************************************************************************
 //
-//     Copyright (c) 2006, Pleora Technologies Inc., All rights reserved.
+// Project: Network utilities
+//
+// Module: Ethernet.
 //
 // *****************************************************************************
 
-#include <sstream>
+//! \file
+//! \brief Ethernet class.
+//! \ingroup utils_network
+
+// *****************************************************************************
+//
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
+//
+// *****************************************************************************
+
+// *****************************************************************************
+//                              INCLUDE FILES
+// *****************************************************************************
+
+//#include <sstream>
 
 #include "EthernetAddress.h"
 #include "IPAddress.h"
 
+// *****************************************************************************
+//                      DEFINED CONSTANTS AND MACROS
+// *****************************************************************************
+
+// *****************************************************************************
+//                         TYPEDEFS AND STRUCTURES
+// *****************************************************************************
+
+// *****************************************************************************
+//                            FUNCTION PROTOTYPES
+// *****************************************************************************
+
+// *****************************************************************************
+//                             GLOBAL VARIABLES
+// *****************************************************************************
 
 const IPAddress IPAddress::BROADCAST(0xFF, 0xFF, 0xFF, 0xFF);
-constexpr size_t IPAddress::SIZE;
 
-
-///
-/// \brief Constructor.
-///
-
-IPAddress::IPAddress(uint8_t a0, uint8_t a1, uint8_t a2, uint8_t a3)
-	: mValue(0)
-    , mAny(false) {
-
-	Set(a0, a1, a2, a3);
-}
-
-
-///
-/// \brief Constructor
-///
-
-IPAddress::IPAddress(uint32_t aIn)
-	: mValue(aIn)
-    , mAny(false) {
-
-}
-
-
-///
-/// \brief Constructor
-///
-
-IPAddress::IPAddress(const void * const aIn)
-	: mValue(*reinterpret_cast<const uint32_t * const>(aIn))
-    , mAny(false) {
-
-}
-
-
-///
-/// \brief Constructor
-///
-
-IPAddress::IPAddress(const IPAddress &aIn)
-	: mValue(aIn.mValue)
-    , mAny(false)
-{
-}
-
-
-///
-/// \brief Constructor.
-///
-
-IPAddress::IPAddress(const char * const aIn)
-	: mValue(0)
-    , mAny(false) {
-	
-    Set(aIn);
-}
-
-
-///
-/// \brief Constructor.
-///
-
-IPAddress::IPAddress(const std::string &aIn)
-	: mValue(0)
-    , mAny(false) {
-	
-    Set(aIn.c_str());
-}
-
+// *****************************************************************************
+//                            EXPORTED FUNCTIONS
+// *****************************************************************************
 
 ///
 /// \brief Data accessor.
 ///
 
-uint8_t IPAddress::GetByte(uint32_t aIndex) const {
+uint8_t IPAddress::GetByte(size_t aIndex) const {
 
-    //PtAssert(aIndex < sizeof(mValue));
-	return (reinterpret_cast< const uint8_t * const>(&mValue)[aIndex]);
+	return (reinterpret_cast<const uint8_t * const>(&mValue)[aIndex]);
 }
 
 
-///
-/// \brief Data accessor (const)
-///
-
-const void *IPAddress::GetData() const {
-	return (&mValue);
-}
-
-
-///
-/// \brief Data accessor
-///
-
-void *IPAddress::GetData() {
-	return (&mValue);
+void IPAddress::SetByte(size_t aIndex, uint8_t aByte) noexcept {
+    reinterpret_cast<uint8_t * const>(&mValue)[aIndex] = aByte;
 }
 
 
@@ -130,18 +80,8 @@ void IPAddress::GetEthernetAddress(EthernetAddress * const aOut) const
         aOut->Set(4, GetByte(2));
         aOut->Set(5, GetByte(3));
     } else {
-        *aOut = EthernetAddress::BROADCAST;
+        *aOut = EthernetAddress::sBroadcast;
     }
-}
-
-
-///
-/// \brief Data accessor.
-///
-
-unsigned short IPAddress::GetWord(uint32_t aIndex) const {
-	//PtAssert(aIndex < (sizeof(mValue) / sizeof(unsigned short)));
-	return (reinterpret_cast< const unsigned short * const>(&mValue)[aIndex]);
 }
 
 
@@ -152,9 +92,8 @@ unsigned short IPAddress::GetWord(uint32_t aIndex) const {
 ///
 
 void IPAddress::GetString(char * aOut) const {
-	//PtAssert(aOut != nullptr);
 
-	for (unsigned int lIndex = 0; lIndex < SIZE; lIndex++) {
+	for (unsigned int lIndex = 0; lIndex < sSize; lIndex++) {
 		unsigned short lByte = GetByte(lIndex);
 		if (lByte >= 100) {
 			*aOut = static_cast<char>('0' + (lByte / 100)); aOut++;
@@ -179,132 +118,11 @@ void IPAddress::GetString(char * aOut) const {
 
 
 ///
-/// \brief Data accessor.
-///
-
-void IPAddress::Set(const void * const aIn) {
-	//PtAssert(aIn != nullptr);
-    mAny = false;
-	memcpy(&mValue, aIn, sizeof(mValue));
-}
-
-
-///
-/// \brief Data accessor.
-///
-
-void IPAddress::Set(uint8_t a0, uint8_t a1, uint8_t a2, uint8_t a3) {
-    mAny = false;
-	mValue = a0 | (a1 << 8) | (a2 << 16) | (a3 << 24);
-}
-
-///
-/// \brief Data accessor.
-///
-#if 0
-Result IPAddress::Set(const char * const aIn) {
-	//PtAssert(aIn != nullptr);
-    mAny = false;
-
-	uint32_t lValue = 0;
-
-	uint8_t *lPtr = reinterpret_cast< uint8_t *>(&lValue);
-	//PtAssert(lPtr != nullptr);
-
-	uint32_t lIndex = 0;
-
-    const char *lIn = aIn;
-	while ((*lIn) != '\0') {
-		switch (*lIn) {
-        case '[' :
-            // Skip '[' if first character
-            if (lIn != aIn) {
-                return Result::INVALID_ARGUMENT;
-            }
-        break;
-
-        case ']' :
-            // Skip ']' if last character
-            if (*(lIn + 1) != '\0') {
-                return Result::INVALID_ARGUMENT;
-            }
-        break;
-
-		case '.' :
-			lIndex++;
-			if (lIndex >= SIZE) {
-				return Result::INVALID_ARGUMENT;
-			}
-		break;
-
-		case '0' :
-		case '1' :
-		case '2' :
-		case '3' :
-		case '4' :
-		case '5' :
-			if (lPtr[lIndex] > 25) {
-				return Result::INVALID_ARGUMENT;
-			}
-
-			lPtr[lIndex] *= 10;
-			lPtr[lIndex] += (*lIn) - '0';
-	    break;
-
-		case '6' :
-		case '7' :
-		case '8' :
-		case '9' :
-			if (lPtr[lIndex] > 24) {
-				return Result::INVALID_ARGUMENT;
-			}
-
-			lPtr[lIndex] *= 10;
-			lPtr[lIndex] += (*lIn) - '0';
-			break;
-
-		default :
-			return Result::INVALID_ARGUMENT;
-		}
-
-		lIn++;
-	}
-
-	if (lIndex != 3) {
-		return Result::INVALID_ARGUMENT;
-	}
-
-	mValue = lValue;
-
-	return Result::OK;
-}
-#endif
-
-///
-/// \brief Boring uint32_t 'raw' set.
-///
-
-void IPAddress::Set(uint32_t aValue) {
-    mAny = false;
-    mValue = aValue;
-}
-
-
-///
-/// \brief Sets as the 'any' address.
-///
-
-void IPAddress::SetAny(bool aEnable) {
-    mAny = true;
-    mValue = 0;
-}
-
-
-///
 /// \brief Returns a PtUtilsLib::String representation of the IP address.
 ///
 
 std::string IPAddress::GetString() const {
+#if 0
     const uint8_t * const lData = reinterpret_cast<const uint8_t *>(&mValue);
 
     std::stringstream lSS;
@@ -315,6 +133,12 @@ std::string IPAddress::GetString() const {
 
     //return lSS.str().c_str();
     return lSS.str();
+#else
+    // Cheaper version.
+    char lStr[32]{0};
+    GetString(&lStr[0]);
+    return std::string(lStr);
+#endif
 }
 
 
@@ -355,3 +179,21 @@ bool IPAddress::IsValidMask() const {
 
     return (lOne && lZero);
 }
+
+
+///
+/// \brief Sets as the 'any' address.
+///
+
+void IPAddress::SetAny(bool aEnable) {
+    mIsAny = true;
+    mValue = 0;
+}
+
+// *****************************************************************************
+//                              LOCAL FUNCTIONS
+// *****************************************************************************
+
+// *****************************************************************************
+//                                END OF FILE
+// *****************************************************************************

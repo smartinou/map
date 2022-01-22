@@ -44,7 +44,7 @@ help:
 #
 
 # Project name
-PROJECT := beastfeedher
+PROJECT := pfpp
 
 # Directories/paths.
 REPO_ROOT_DIR := ../../../../../../..
@@ -256,7 +256,8 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
+GNU_ARM = C:/apps/GNU\ Arm\ Embedded\ Toolchain/10\ 2021.10
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -379,8 +380,8 @@ $(shell $(MKDIR) $(BIN_DIR))
 endif
 
 # Web & HTML variables.
-WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html
-WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/fs
+WEB_INPUT_DIR   := $(PROJECT_FW_DIR)/src/html/in
+WEB_OUTPUT_DIR  := $(PROJECT_FW_DIR)/src/html/out
 MAKE_FSDATA_DIR := $(LWIPDIR)/apps/http/makefsdata
 
 WEB_HTML_FILES := \
@@ -395,7 +396,7 @@ WEB_BIN_FILES := \
 
 HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
 
-BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
+BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
 
 QM_PATH := c:/apps/qm/bin
 QM_BIN := $(QM_PATH)/qmc.exe

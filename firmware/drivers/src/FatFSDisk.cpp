@@ -12,13 +12,17 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2019, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2022, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
+
+// Standard libraries.
+#include <climits>
+#include <string>
 
 // This module.
 #include "FatFSDisk.h"
@@ -40,6 +44,7 @@
 // ******************************************************************************
 
 std::vector<FatFSDisk *> FatFSDisk::mVector;
+unsigned int FatFSDisk::mMountedDiskIndex = UINT_MAX;
 
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -50,7 +55,7 @@ DSTATUS FatFSDisk::StaticGetDiskStatus(unsigned int aDriveIndex) {
         return mVector[aDriveIndex]->GetDiskStatus();
     }
 
-    return RES_PARERR;
+    return STA_NODISK;
 }
 
 
@@ -59,7 +64,29 @@ DSTATUS FatFSDisk::StaticInitDisk(unsigned int aDriveIndex) {
         return mVector[aDriveIndex]->InitDisk();
     }
 
-    return RES_PARERR;
+    return STA_NODISK;
+}
+
+
+FRESULT FatFSDisk::StaticMountDisk(unsigned int aDriveIndex, FATFS * const aFatFS) {
+    static constexpr auto sForceMount = 1;
+    if (aDriveIndex < mVector.size()) {
+        if (aDriveIndex == mMountedDiskIndex) {
+            // Disk already mounted.
+            return FR_OK;
+        }
+
+        switch (aDriveIndex) {
+            case 0: return f_mount(aFatFS, "", sForceMount);
+            default: {
+                return f_mount(aFatFS, std::to_string(aDriveIndex).c_str(), sForceMount);
+            }
+        }
+
+        mMountedDiskIndex = aDriveIndex;
+    }
+
+    return FR_INVALID_DRIVE;
 }
 
 

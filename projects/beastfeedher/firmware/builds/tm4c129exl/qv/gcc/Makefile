@@ -25,14 +25,12 @@ help:
 	@echo Targets:
 	@echo 'make          - Debug (default) configuration.'
 	@echo 'make CONF=rel - Release configuration.'
-	@echo 'make CONF=spy - Spy configuration.'
 	@echo
 	@echo Cleaning configurations: Debug $(default), Release, and Spy
 	@echo 
 	@echo Targets:
 	@echo 'make clean         - Debug (default) configuration.'
 	@echo 'make CONF=rel clean - Release configuration.'
-	@echo 'make CONF=spy clean - Spy configuration.'
 	@echo
 	@echo 'make *_clean - Cleans target and intermediate files.'
 
@@ -62,7 +60,7 @@ include $(LWIPDIR)/Filelists.mk
 
 # Location of the QP/C++ framework (if not provided in an environemnt var.)
 ifeq ($(QPCPP),)
-QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp_6_5_1
+QPCPP := $(FIRMWARE_PATH)/3rdparty/qp/qpcpp_6_9_4rc3
 endif
 
 # QP port used in this project
@@ -80,70 +78,71 @@ MBEDCRYPTO_LIB := mbedcrypto
 MBEDX509_LIB := mbedx509
 MBEDTLS_USER_CONFIG_FILE := mbedtls_user_config.h
 
+# SEGGER RTT library.
+SEGGER_RTT_PATH := $(FIRMWARE_PATH)/3rdparty/segger_rtt_v758
+
 # CMSIS library.
 CMSIS_LIB := $(FIRMWARE_PATH)/3rdparty/CMSIS_5-5.1.1
 
 # List of all source directories used by this project.
 VPATH = \
-	../../ \
-	$(PROJECT_FW_DIR)/src \
-	$(PROJECT_FW_DIR)/src/models/codegen \
-	$(PROJECT_FW_DIR)/src/lwip_port/arch \
-	$(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
-	$(FIRMWARE_PATH)/corelink/src \
-	$(FIRMWARE_PATH)/drivers/src \
-	$(FIRMWARE_PATH)/qp_ao/codegen \
-	$(FIRMWARE_PATH)/qp_ao/src \
-	$(FIRMWARE_PATH)/utils/date \
-	$(FIRMWARE_PATH)/utils/db \
-	$(FIRMWARE_PATH)/utils/net \
-	$(FIRMWARE_PATH)/utils/src \
-	$(FIRMWARE_PATH)/utils/time \
-	$(QPCPP)/src/qf \
-	$(QPCPP)/src/qs \
-	$(QPCPP)/src/qv \
-	$(QP_PORT_DIR) \
-	$(LWIPDIR)/core \
-	$(LWIPDIR)/core/ipv4 \
-	$(LWIPDIR)/api \
-	$(LWIPDIR)/netif \
-	$(LWIPDIR)/apps/altcp_tls \
-	$(LWIPDIR)/apps/http \
-	$(LWIPDIR)/apps/mqtt \
-	$(LWIPDIR)/apps/snmp \
-	$(LWIPDIR)/apps/sntp \
-	$(FAT_FS_SRC_DIR)
+    ../../ \
+    $(PROJECT_FW_DIR)/src \
+    $(PROJECT_FW_DIR)/src/models/codegen \
+    $(PROJECT_FW_DIR)/src/lwip_port/arch \
+    $(PROJECT_FW_DIR)/src/lwip_port/netif/tm4c129 \
+    $(FIRMWARE_PATH)/corelink/src \
+    $(FIRMWARE_PATH)/drivers/src \
+    $(FIRMWARE_PATH)/qp_ao/codegen \
+    $(FIRMWARE_PATH)/qp_ao/src \
+    $(FIRMWARE_PATH)/utils/date \
+    $(FIRMWARE_PATH)/utils/db \
+    $(FIRMWARE_PATH)/utils/net \
+    $(FIRMWARE_PATH)/utils/src \
+    $(FIRMWARE_PATH)/utils/time \
+    $(QPCPP)/src/qf \
+    $(QPCPP)/src/qs \
+    $(QPCPP)/src/qv \
+    $(QP_PORT_DIR) \
+    $(LWIPDIR)/core \
+    $(LWIPDIR)/core/ipv4 \
+    $(LWIPDIR)/api \
+    $(LWIPDIR)/netif \
+    $(LWIPDIR)/apps/altcp_tls \
+    $(LWIPDIR)/apps/http \
+    $(LWIPDIR)/apps/mqtt \
+    $(LWIPDIR)/apps/snmp \
+    $(LWIPDIR)/apps/sntp \
+    $(FAT_FS_SRC_DIR) \
+    $(SEGGER_RTT_PATH)/RTT \
+    $(SEGGER_RTT_PATH)/SysCalls
 
-#        $(QPCPP)/3rd_party/gnu_cpp \
-#        $(QPCPP)/3rd_party/ek-tm4c123gxl \
-#        $(QPCPP)/3rd_party/ek-tm4c123gxl/gnu \
 
 # List of all include directories needed by this project.
 INCLUDES  = \
-	-I. \
-	-I../.. \
-	-I$(PROJECT_ROOT_DIR)/firmware/src \
-	-I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
-	-I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
-	-I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
-	-I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c129exl \
-	-I$(WEB_OUTPUT_DIR) \
-	-I$(FIRMWARE_PATH)/corelink/inc \
-	-I$(FIRMWARE_PATH)/drivers/inc \
-	-I$(FIRMWARE_PATH)/qp_ao/inc \
-	-I$(FIRMWARE_PATH)/qp_ao/codegen \
-	-I$(FIRMWARE_PATH)/utils \
-	-I$(TIVAWARE_LIB) \
-	-I$(QPCPP)/include \
-	-I$(QPCPP)/src \
-	-I$(QP_PORT_DIR) \
-	-I$(CMSIS_LIB)/CMSIS/Core/Include \
-	-I$(LWIPDIR)/include \
-	-I$(MBEDTLS_PATH)/include \
-	-I$(FAT_FS_INC_DIR)
-
-#        -I$(QPCPP)/3rd_party/CMSIS/Include \
-#        -I$(QPCPP)/3rd_party/ek-tm4c123gxl \
+    -I. \
+    -I../.. \
+    -I$(PROJECT_ROOT_DIR)/firmware/src \
+    -I$(PROJECT_ROOT_DIR)/firmware/src/ble/apps/ble_pfpp/src \
+    -I$(PROJECT_ROOT_DIR)/firmware/src/lwip_port \
+    -I$(PROJECT_ROOT_DIR)/firmware/src/models/codegen \
+    -I$(PROJECT_ROOT_DIR)/firmware/builds/tm4c129exl \
+    -I$(WEB_OUTPUT_DIR) \
+    -I$(FIRMWARE_PATH)/corelink/inc \
+    -I$(FIRMWARE_PATH)/drivers/inc \
+    -I$(FIRMWARE_PATH)/qp_ao/inc \
+    -I$(FIRMWARE_PATH)/qp_ao/codegen \
+    -I$(FIRMWARE_PATH)/utils \
+    -I$(TIVAWARE_LIB) \
+    -I$(QPCPP)/include \
+    -I$(QPCPP)/src \
+    -I$(QP_PORT_DIR) \
+    -I$(CMSIS_LIB)/CMSIS/Core/Include \
+    -I$(LWIPDIR)/include \
+    -I$(MBEDTLS_PATH)/include \
+    -I$(FAT_FS_INC_DIR) \
+    -I$(SEGGER_RTT_PATH)/RTT \
+    -I$(SEGGER_RTT_PATH)/Config
 
 # Files
 # Assembler source files.
@@ -151,12 +150,16 @@ ASM_SRCS :=
 
 
 
-FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff13a
+FAT_FS_DIR := $(FIRMWARE_PATH)/3rdparty/ff14b
 FAT_FS_SRC_DIR := $(FAT_FS_DIR)/source
 FAT_FS_INC_DIR := $(FAT_FS_SRC_DIR)
 
 FAT_FS_SRCS := \
-        ff.c
+    ff.c
+
+SEGGER_RTT_SRCS := \
+    SEGGER_RTT.c \
+    SEGGER_RTT_printf.c
 
 # C source files.
 C_SRCS := \
@@ -171,7 +174,8 @@ C_SRCS := \
     $(HTTPFILES) \
     $(MQTTFILES) \
     $(MBEDTLS_FILES) \
-    $(FAT_FS_SRCS)
+    $(FAT_FS_SRCS) \
+	$(SEGGER_RTT_SRCS)
 
 
 # C++ source files.
@@ -181,7 +185,6 @@ CPP_SRCS := \
     Button.cpp \
     Main.cpp \
     CalendarRec.cpp \
-    CoreLinkPeripheralDev.cpp \
     Date.cpp \
     DBRec.cpp \
     Display_AOs.cpp \
@@ -194,7 +197,7 @@ CPP_SRCS := \
     IPAddress.cpp \
     Limit.cpp \
     Logging_AOs.cpp \
-    Logger.cpp \
+    Logger2.cpp \
     LogLevel.cpp \
 	LwIP_AOs.cpp \
 	LwIPDrv.cpp \
@@ -206,7 +209,7 @@ CPP_SRCS := \
     RTCC_AOs.cpp \
     RxDescriptor.cpp \
     SDC.cpp \
-    SPI.cpp \
+    SPIDev.cpp \
     SPISlaveCfg.cpp \
     TB6612.cpp \
     Time.cpp \
@@ -215,26 +218,26 @@ CPP_SRCS := \
 
 
 QP_SRCS := \
-        qep_hsm.cpp \
-        qep_msm.cpp \
-        qf_act.cpp \
-        qf_actq.cpp \
-        qf_defer.cpp \
-        qf_dyn.cpp \
-        qf_mem.cpp \
-        qf_ps.cpp \
-        qf_qact.cpp \
-        qf_qeq.cpp \
-        qf_qmact.cpp \
-        qf_time.cpp \
-        qv.cpp \
-        qv_port.cpp
+    qep_hsm.cpp \
+    qep_msm.cpp \
+    qf_act.cpp \
+    qf_actq.cpp \
+    qf_defer.cpp \
+    qf_dyn.cpp \
+    qf_mem.cpp \
+    qf_ps.cpp \
+    qf_qact.cpp \
+    qf_qeq.cpp \
+    qf_qmact.cpp \
+    qf_time.cpp \
+    qv.cpp \
+    qv_port.cpp
 
 QP_ASMS :=
 QS_SRCS := \
-        qs.cpp \
-        qs_rx.cpp \
-        qs_fp.cpp
+    qs.cpp \
+    qs_rx.cpp \
+    qs_fp.cpp
 
 
 OUTPUT    := $(PROJECT)
@@ -263,6 +266,7 @@ DEFINES   += -DPART_TM4C129ENCPDT
 DEFINES   += -DUSE_TIVAWARE
 DEFINES   += -DTM4C129ENCPDT
 
+DEFINES   += -D__ARM_ARCH_7EM__
 
 # ARM CPU, ARCH, FPU, and Float-ABI types...
 # ARM_CPU:   [cortex-m0 | cortex-m0plus | cortex-m1 | cortex-m3 | cortex-m4]
@@ -270,18 +274,18 @@ DEFINES   += -DTM4C129ENCPDT
 # ARM_FPU:   [ | vfp]
 # FLOAT_ABI: [ | soft | softfp | hard]
 ARM_CPU   := -mcpu=cortex-m4
-ARM_ARCH  := 7   # NOTE: must match the ARM_CPU!
-ARM_FPU   := -mfpu=vfp
+#ARM_ARCH  := -march=armv7-m   # NOTE: must match the ARM_CPU!
+ARM_ARCH :=
+ARM_FPU   := -mfpu=auto
 FLOAT_ABI := -mfloat-abi=hard
 
 # GNU-ARM toolset (NOTE: You need to adjust to your machine)
 # see http://gnutoolchains.com/arm-eabi/
 ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
-#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/4.9\ 2015q3
-#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/6\ 2017-q2-update
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
-GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
+#GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
+GNU_ARM = C:/apps/GNU\ Arm\ Embedded\ Toolchain/10\ 2021.10
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -310,8 +314,8 @@ ASM_SRCS += $(QP_ASMS)
 
 # Add the pre-defined symbol __FPU_PRESENT if needed...
 ifneq (,$(ARM_FPU))
-#DEFINES += -D__FPU_PRESENT
-#ASM_FPU += -defsym=__FPU_PRESENT=1
+DEFINES += -D__FPU_PRESENT=1
+ASM_FPU += -defsym=__FPU_PRESENT=1
 endif
 
 
@@ -320,50 +324,37 @@ ifeq (rel, $(CONF))
 
 BIN_DIR := rel
 
-ASFLAGS = $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
+ASFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
-CFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections \
-	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+CFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections \
+    -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
-CPPFLAGS = $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++14 \
-	-O2 $(INCLUDES) $(DEFINES) -DNDEBUG
-
-
-else ifeq (spy, $(CONF))
-# Spy configuration.
-
-BIN_DIR := spy
-
-CPP_SRCS += $(QS_SRCS)
-
-ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
-
-CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
-
-CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++14 \
-	-O $(INCLUDES) $(DEFINES) -DQ_SPY
+CPPFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+    -std=c++17 -Wno-register \
+    -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 else
 # Default Debug configuration.
 BIN_DIR := dbg
 
-ASFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
+CPP_SRCS += $(QS_SRCS)
 
-CFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections \
-	-O $(INCLUDES) $(DEFINES)
+ASFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
-CPPFLAGS = -g $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) -mthumb -Wall \
-	-ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-	-std=c++14 \
-	-O $(INCLUDES) $(DEFINES)
+CFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections \
+    -O $(INCLUDES) $(DEFINES) -DQ_SPY
+
+CPPFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
+    -mthumb -Wall \
+    -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
+    -std=c++17 -Wno-register \
+    -O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 endif
 
@@ -373,6 +364,7 @@ LIB_DIRS += -L$(BIN_DIR)
 LINKFLAGS = -T$(LD_SCRIPT) $(ARM_CPU) $(ARM_FPU) $(FLOAT_ABI) \
 	-mthumb \
 	-specs=nosys.specs -specs=nano.specs \
+	-u _printf_float \
 	-Wl,-Map,$(BIN_DIR)/$(OUTPUT).map,--cref,--gc-sections $(LIB_DIRS)
 
 
@@ -409,7 +401,7 @@ WEB_BIN_FILES := \
   BGround.png
 
 HTML_OUTPUT_FILES := $(foreach FILE, $(WEB_HTML_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
-BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(WEB_BIN_FILES))
+BIN_OUTPUT_FILES := $(foreach FILE, $(WEB_BIN_FILES), $(WEB_OUTPUT_DIR)/$(FILE))
 
 QM_PATH := c:/apps/qm/bin
 QM_BIN := $(QM_PATH)/qmc.exe
@@ -436,6 +428,8 @@ MODEL_OUT_FILES := \
 all: show version generate_fsdata mbedtls $(TARGET_BIN)
 #all: $(TARGET_ELF)
 
+.SILENT:
+
 .PHONY: version
 version:
 	./make_version.sh
@@ -449,7 +443,7 @@ generate_fsdata: remove_white_space copy_binary_files
 	cd $(WEB_OUTPUT_DIR) && \
   $(abspath $(MAKE_FSDATA_DIR))/makefsdata && \
   sed -i 's/^static\s*const\s*unsigned\s*char\s*[a-zA-Z_]*\[\]/& __attribute__ (( section (".data")))/' fsdata.c && \
-  mv fsdata.c $(abspath $(WEB_OUTPUT_DIR))/fsdata_custom.c
+  mv fsdata.c $(abspath $(PROJECT_FW_DIR))/src/fsdata_custom.c
 
 
 CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=$(MBEDTLS_USER_CONFIG_FILE) -I$(shell cygpath -w $(PWD))\..\..
@@ -474,22 +468,28 @@ $(TARGET_BIN): $(TARGET_ELF)
 	$(SIZE) $<
 
 $(TARGET_ELF) : $(ASM_OBJS_EXT) $(C_OBJS_EXT) $(CPP_OBJS_EXT)
+	echo "  LD    $@"
 	$(CPP) $(CPPFLAGS) -c $(QPCPP)/include/qstamp.cpp -o $(BIN_DIR)/qstamp.o
 	$(LINK) $(LINKFLAGS) -o $@ $^ $(BIN_DIR)/qstamp.o $(LIBS)
 
 $(BIN_DIR)/%.d : %.c
+	echo "  DEP   $<"
 	$(CC) -MM -MT $(@:.d=.o) $(CFLAGS) $< > $@
 
 $(BIN_DIR)/%.d : %.cpp
+	echo "  DEP   $<"
 	$(CPP) -MM -MT $(@:.d=.o) $(CPPFLAGS) $< > $@
 
 $(BIN_DIR)/%.o : %.s
+	echo "  AS    $<"
 	$(AS) $(ASFLAGS) $< -o $@
 
 $(BIN_DIR)/%.o : %.c
+	echo "  CC    $<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BIN_DIR)/%.o : %.cpp
+	echo "  CCP   $<"
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 # Include dependency files only if our goal depends on their existence
@@ -517,15 +517,16 @@ clean_mbedtls:
 
 show:
 	@echo PROJECT = $(PROJECT)
-	@echo CONF = $(CONF)
-	@echo DEFINES = $(DEFINES)
-	@echo off ASM_FPU = $(ASM_FPU)
-	@echo off ASM_SRCS = $(ASM_SRCS)
-	@echo off C_SRCS = $(C_SRCS)
-	@echo off CPP_SRCS = $(CPP_SRCS)
-	@echo off ASM_OBJS_EXT = $(ASM_OBJS_EXT)
-	@echo off C_OBJS_EXT = $(C_OBJS_EXT)
-	@echo off C_DEPS_EXT = $(C_DEPS_EXT)
-	@echo off CPP_DEPS_EXT = $(CPP_DEPS_EXT)
-	@echo TARGET_ELF = $(TARGET_ELF)
-	@echo TARGET_BIN = $(TARGET_BIN)
+
+#	@echo CONF = $(CONF)
+#	@echo DEFINES = $(DEFINES)
+#	@echo ASM_FPU = $(ASM_FPU)
+#	@echo ASM_SRCS = $(ASM_SRCS)
+#	@echo C_SRCS = $(C_SRCS)
+#	@echo CPP_SRCS = $(CPP_SRCS)
+#	@echo ASM_OBJS_EXT = $(ASM_OBJS_EXT)
+#	@echo C_OBJS_EXT = $(C_OBJS_EXT)
+#	@echo C_DEPS_EXT = $(C_DEPS_EXT)
+#	@echo CPP_DEPS_EXT = $(CPP_DEPS_EXT)
+#	@echo TARGET_ELF = $(TARGET_ELF)
+#	@echo TARGET_BIN = $(TARGET_BIN)

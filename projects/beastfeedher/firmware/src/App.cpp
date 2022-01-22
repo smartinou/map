@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -44,6 +44,7 @@
 #include "BSP.h"
 #include "FatFSDisk.h"
 #include "Logging_AOs.h"
+#include "Logging_Events.h"
 #include "IBSP.h"
 #include "LwIP_Events.h"
 #include "Net.h"
@@ -71,13 +72,14 @@ CalendarRec *App::sCalendar   = nullptr;
 NetIFRec    *App::sNetIFRec   = nullptr;
 FeedCfgRec  *App::sFeedCfgRec = nullptr;
 
-std::shared_ptr<RTCC::AO::RTCC_AO> App::mRTCC_AO;
+std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO;
+FATFS App::sFatFS{0};
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-App::App(){
+App::App() {
     // Ctor body left intentionally empty.
 }
 
@@ -95,11 +97,45 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     sFeedCfgRec = new FeedCfgRec();
 
     // Create all AOs.
-    // RTCC AO.
-    App::mRTCC_AO = aFactory->CreateRTCCAO();
-    if (mRTCC_AO.get() != nullptr) {
+    // RTCC AO + FileLogSink.
+    App::sRTCC_AO = aFactory->CreateRTCCAO();
+    if (App::sRTCC_AO != nullptr) {
+        // Create SDC instance to use in FS stubs.
+        // WARNING: if SD card disks exist, they should be mounted before calling
+        // any other device triggering SPI bus activity.
+        // This can be handled in different order when SDCard socket is
+        // powered via PIO, but it's not guaranteed the case on all targets.
+        // See http://elm-chan.org/docs/mmc/mmc_e.html
+        // Section: Consideration on Multi-slave Configuration
+        unsigned int lDiskQty = aFactory->CreateDisks();
+        if (0 != lDiskQty) {
+            // Disks found: mount the default drive.
+            static constexpr auto sDefaultDiskIndex = 0;
+            FRESULT lResult = FatFSDisk::StaticMountDisk(sDefaultDiskIndex, &sFatFS);
+            if (FR_OK == lResult) {
+                // FS mounted on default disk: add log sink.
+                std::shared_ptr<QP::QActive> mFileLogSink_AO = aFactory->CreateLogFileSinkAO();
+                if (mFileLogSink_AO != nullptr) {
+                    reinterpret_cast<Logging::AO::FileSink_AO * const>(
+                        mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
+
+                    std::unordered_set<std::string> lCategories = {"PFPP"};
+                    Logging::Event::Init lFileLogInitEvent(DUMMY_SIG, lCategories);
+                    mFileLogSink_AO->start(
+                        2U,
+                        mFileLogSinkEventQueue,
+                        Q_DIM(mFileLogSinkEventQueue),
+                        nullptr,
+                        0U,
+                        &lFileLogInitEvent
+                    );
+                }
+            }
+        }
+
+        // Now that disks are mounted, start the RTCC.
         RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
-        App::mRTCC_AO->start(
+        App::sRTCC_AO->start(
             1U,
             mRTCCEventQueue,
             Q_DIM(mRTCCEventQueue),
@@ -108,36 +144,12 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
             &lRTCCInitEvent
         );
     } else {
-        // This application can't be w/o RTCC.
+        // This application has no meaning w/o RTCC.
         return false;
     }
 
-
-    // Create SDC instance to use in FS stubs.
-    unsigned int lDiskQty = aFactory->CreateDisks();
-    if (0 != lDiskQty) {
-        // Disks found: mount the default drive.
-        FRESULT lResult = f_mount(&mFatFS, "", 1);
-        if (FR_OK == lResult) {
-            // Found some disks and FS mounted: add log sink.
-            auto mFileLogSink_AO = aFactory->CreateLogFileSinkAO();
-            if (mFileLogSink_AO.get() != nullptr) {
-                reinterpret_cast<Logging::AO::FileSink_AO * const>(
-                    mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
-                mFileLogSink_AO->start(
-                    2U,
-                    mFileLogSinkEventQueue,
-                    Q_DIM(mFileLogSinkEventQueue),
-                    nullptr,
-                    0U
-                );
-            }
-        }
-    }
-
-
     auto lPFPPMgr_AO = aFactory->CreatePFPPAO(*App::sFeedCfgRec);
-    if (lPFPPMgr_AO.get() != nullptr) {
+    if (lPFPPMgr_AO != nullptr) {
         lPFPPMgr_AO->start(
             3U,
             mPFPPMgrEventQueue,
@@ -146,7 +158,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
             0U
         );
     } else {
-        // This application can't be w/o PFPP Manager.
+        // This application has no meaning w/o PFPP Manager.
         return false;
     }
 
@@ -155,7 +167,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     // -if we use support web pages.
     // -For larger IoT support.
     auto lLwIPMgr_AO = aFactory->CreateLwIPMgrAO();
-    if (lLwIPMgr_AO.get() != nullptr) {
+    if (lLwIPMgr_AO != nullptr) {
         LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
         lLwIPMgr_AO->start(
             4U,
@@ -168,8 +180,9 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     }
 
 
+#if 0
     std::shared_ptr<QP::QActive> lDisplayMgr_AO = aFactory->CreateDisplayMgrAO();
-    if (lDisplayMgr_AO.get() != nullptr) {
+    if (lDisplayMgr_AO != nullptr) {
         lDisplayMgr_AO->start(
             5U,
             mDisplayMgrEventQueue,
@@ -181,10 +194,10 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
 
     std::shared_ptr<QP::QActive> lBLEMgr_AO = aFactory->CreateBLEAO();
-    if (lBLEMgr_AO.get() != nullptr) {
+    if (lBLEMgr_AO != nullptr) {
         PFPP::Event::BLE::Init lBLEInitEvent(
             DUMMY_SIG,
-            App::mRTCC_AO,
+            App::sRTCC_AO,
             sCalendar,
             sNetIFRec,
             sFeedCfgRec
@@ -198,7 +211,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
             &lBLEInitEvent
         );
     }
-
+#endif
 
     // Send signal dictionaries for globally published events...
     //QS_SIG_DICTIONARY(SIG_TIME_TICK, static_cast<void *>(0));
@@ -220,7 +233,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
 void App::NetInitCallback(void) {
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
-    Net::InitCallback(App::mRTCC_AO, App::sCalendar, App::sNetIFRec, App::sFeedCfgRec);
+    Net::InitCallback(App::sRTCC_AO, App::sCalendar, App::sNetIFRec, App::sFeedCfgRec);
 #endif
 }
 

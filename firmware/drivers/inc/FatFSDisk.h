@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2019, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2022, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -24,7 +24,9 @@
 #include <cstdint>
 #include <vector>
 
+// FatFS.
 #include "diskio.h"
+#include "ff.h"
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -38,6 +40,7 @@ class FatFSDisk {
 public:
     static DSTATUS StaticGetDiskStatus(unsigned int aDriveIndex);
     static DSTATUS StaticInitDisk(unsigned int aDriveIndex);
+    static FRESULT StaticMountDisk(unsigned int aDriveIndex, FATFS * const aFatFS);
     static DRESULT StaticRdDisk(
         unsigned int aDriveIndex,
         uint8_t * const aBuffer,
@@ -88,6 +91,7 @@ private:
      unsigned int mDriveIndex = 0;
 
      static std::vector<FatFSDisk *> mVector;
+     static unsigned int mMountedDiskIndex;
 };
 
 // ******************************************************************************

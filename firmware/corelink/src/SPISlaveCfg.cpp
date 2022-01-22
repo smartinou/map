@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include <stdio.h>
+#include <cstdint>
 
 // TI Library.
 // Compatible with both StellarisWare & TivaWare.
@@ -55,8 +55,8 @@ CoreLink::SPISlaveCfg::SPISlaveCfg(GPIO const &aGPIO)
     : mProtocol(PROTOCOL::MOTO_0)
     , mBitRate(0)
     , mDataWidth(8)
-    //: SPISlaveCfg(aGPIO.GetPort(), aGPIO.GetPin()) {
-    , mCSnGPIO(aGPIO) {
+    , mCSnGPIO(aGPIO)
+{
     // Ctor body.
     SetCSnGPIO();
 }

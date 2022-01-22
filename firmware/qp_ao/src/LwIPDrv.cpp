@@ -70,9 +70,9 @@ std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
 void LwIPDrv::StaticInit(
     QP::QActive * const aAO,
     bool aUseDHCP,
-    uint32_t aIPAddress,
-    uint32_t aSubnetMask,
-    uint32_t aGWAddress
+    IPAddress aIPAddress,
+    IPAddress aSubnetMask,
+    IPAddress aGWAddress
 ) {
     // Go through all registered network drivers and call their Init() function.
     // For now, this forces to have the same IP address scheme, but for now it's fine.
@@ -88,22 +88,22 @@ void LwIPDrv::StaticISR(unsigned int aIndex) {
 }
 
 
-uint8_t const *LwIPDrv::StaticGetMACAddress(unsigned int aIndex) {
+EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int aIndex) {
     return sVector[aIndex]->GetMACAddress();
 }
 
 
-uint32_t LwIPDrv::StaticGetIPAddress(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetIPAddress(unsigned int aIndex) {
     return sVector[aIndex]->GetIPAddress();
 }
 
 
-uint32_t LwIPDrv::StaticGetSubnetMask(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int aIndex) {
     return sVector[aIndex]->GetSubnetMask();
 }
 
 
-uint32_t LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
     return sVector[aIndex]->GetDefaultGW();
 }
 
@@ -154,12 +154,11 @@ void LwIPDrv::StaticExtCallback(
     const netif_ext_callback_args_t *aArgs) {
     // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
-    lThis->ExtCallback(aNetIF, aReason, aArgs);
+    lThis->ExtCallback(aReason, aArgs);
 }
 
 
 void LwIPDrv::ExtCallback(
-    struct netif * const aNetIF,
     netif_nsc_reason_t aReason,
     const netif_ext_callback_args_t *aArgs
 ) {
@@ -178,16 +177,21 @@ void LwIPDrv::ExtCallback(
     if (aReason
         & (LWIP_NSC_IPV4_ADDRESS_CHANGED
             | LWIP_NSC_IPV4_NETMASK_CHANGED
-            | LWIP_NSC_IPV4_GATEWAY_CHANGED)) {
+            | LWIP_NSC_IPV4_GATEWAY_CHANGED)
+    ) {
         // Some components of IP address changed.
+        // Could cast aArgs to ipv4_changed* for old addresses.
         LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
             LwIP::Event::IPAddressChanged,
             LWIP_IP_CHANGED_SIG,
-            mNetIF.ip_addr.addr,
-            mNetIF.netmask.addr,
-            mNetIF.gw.addr
+            IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF))),
+            IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF))),
+            IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)))
         );
-        QP::QF::PUBLISH(lEvent, this);
+#ifdef Q_SPY
+        static QP::QSpyId const sLwIPDrvExtCallback = {0U};
+#endif // Q_SPY
+        QP::QF::PUBLISH(lEvent, &sLwIPDrvExtCallback);
     } else {
         // Discard all other reasons (netif.h):
         // LWIP_NSC_NONE, LWIP_NSC_NETIF_ADDED, LWIP_NSC_NETIF_REMOVED
@@ -196,38 +200,43 @@ void LwIPDrv::ExtCallback(
 #endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 
-uint8_t const *LwIPDrv::GetMACAddress(void) const {
-    return &mNetIF.hwaddr[0];
+EthernetAddress const &LwIPDrv::GetMACAddress(void) const {
+    return mEthernetAddress;
 }
 
 
-uint32_t LwIPDrv::GetIPAddress(void) const {
-    return mNetIF.ip_addr.addr;
+IPAddress LwIPDrv::GetIPAddress(void) const {
+    return IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF)));
 }
 
 
-uint32_t LwIPDrv::GetSubnetMask(void) const {
-    return mNetIF.netmask.addr;
+IPAddress LwIPDrv::GetSubnetMask(void) const {
+    return IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF)));
 }
 
 
-uint32_t LwIPDrv::GetDefaultGW(void) const {
-    return mNetIF.gw.addr;
+IPAddress LwIPDrv::GetDefaultGW(void) const {
+    return IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)));
 }
 
 
 void LwIPDrv::StartIPCfg(void) {
-    if (IsUsingDHCP()) {
+    if ((mNetIF.ip_addr.addr & mNetIF.netmask.addr) == 0) {
+        // No IP address configured: set it automatically.
+        if (IsUsingDHCP()) {
 #if (LWIP_DHCP != 0)
-        // Start DHCP if configured in lwipopts.h.
-        dhcp_start(&GetNetIF());
-        // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
-        // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
-        // AutoIP after DHCP fails for 59 seconds.
-#elif (LWIP_AUTOIP != 0)
-        // Start AutoIP if configured in lwipopts.h.
-        autoip_start(&GetNetIF());
+            // Start DHCP if configured in lwipopts.h.
+            dhcp_start(&GetNetIF());
+            // NOTE: If LWIP_AUTOIP is configured in lwipopts.h and
+            // LWIP_DHCP_AUTOIP_COOP is set as well, the DHCP process will start
+            // AutoIP after DHCP fails for 59 seconds.
 #endif
+#if (LWIP_AUTOIP != 0)
+        } else {
+            // Start AutoIP if configured in lwipopts.h.
+            autoip_start(&GetNetIF());
+#endif
+        }
     }
 }
 
@@ -238,7 +247,9 @@ void LwIPDrv::StartIPCfg(void) {
 LwIPDrv::LwIPDrv(
     unsigned int aIndex,
     EthernetAddress const &aEthernetAddress
-)   : mMyIndex(aIndex)
+)
+    : mMyIndex(aIndex)
+    , mEthernetAddress(aEthernetAddress)
     , mNetIF{0}
     , mExtCallback{0}
     , mUseDHCP(false)
@@ -248,16 +259,16 @@ LwIPDrv::LwIPDrv(
 
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
-    memcpy(&GetNetIF().hwaddr[0], aEthernetAddress.GetData(), NETIF_MAX_HWADDR_LEN);
+    aEthernetAddress.GetData(&GetNetIF().hwaddr[0]);
 }
 
 
 void LwIPDrv::DrvInit(
     QP::QActive * const aAO,
     bool aUseDHCP,
-    uint32_t aIPAddr,
-    uint32_t aSubnetMask,
-    uint32_t aGWAddr
+    IPAddress aIPAddr,
+    IPAddress aSubnetMask,
+    IPAddress aGWAddr
 ) {
     // Save the active object associated with this driver.
     SetAO(aAO);
@@ -268,14 +279,14 @@ void LwIPDrv::DrvInit(
     ip_addr_t lGWAddr;
 
     if (aUseDHCP) {
-        IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
-        IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
-        IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
-    } else if (IPADDR_ANY != (aIPAddr & aSubnetMask)) {
+        ip4_addr_set_zero(&lIPAddr);
+        ip4_addr_set_zero(&lSubnetMask);
+        ip4_addr_set_zero(&lGWAddr);
+    } else if (IPADDR_ANY != (aIPAddr.GetValue() & aSubnetMask.GetValue())) {
         // IP Address from persistence.
-        lIPAddr.addr = htonl(aIPAddr);
-        lSubnetMask.addr = htonl(aSubnetMask);
-        lGWAddr.addr = htonl(aGWAddr);
+        ip4_addr_set_u32(&lIPAddr, aIPAddr.GetValue());
+        ip4_addr_set_u32(&lSubnetMask, aSubnetMask.GetValue());
+        ip4_addr_set_u32(&lGWAddr, aGWAddr.GetValue());
     } else {
 #if (LWIP_DHCP == 0) && (LWIP_AUTOIP == 0)
         // No mechanism of obtaining IP address specified, use static IP.
@@ -296,9 +307,9 @@ void LwIPDrv::DrvInit(
         );
 #else
         // Either DHCP or AUTOIP are configured, start with zero IP addresses.
-        IP4_ADDR(&lIPAddr, 0, 0, 0, 0);
-        IP4_ADDR(&lSubnetMask, 0, 0, 0, 0);
-        IP4_ADDR(&lGWAddr, 0, 0, 0, 0);
+        ip4_addr_set_zero(&lIPAddr);
+        ip4_addr_set_zero(&lSubnetMask);
+        ip4_addr_set_zero(&lGWAddr);
 #endif
     }
 

@@ -44,15 +44,15 @@ public:
     virtual ~IBSPFactory() {}
 
     virtual std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) = 0;
-    virtual QP::QActive *GetOpaqueRTCCAO(void) const = 0;
-    virtual QP::QActive *GetOpaqueBLEAO(void) const = 0;
+    virtual std::shared_ptr<QP::QActive> GetOpaqueRTCCAO(void) const = 0;
+    virtual std::shared_ptr<QP::QActive> GetOpaqueBLEAO(void) const = 0;
     virtual unsigned int CreateDisks(void) = 0;
 
     virtual std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) = 0;
-    virtual QP::QActive *GetOpaquePFPPAO(void) const = 0;
+    virtual std::shared_ptr<QP::QActive> GetOpaquePFPPAO(void) const = 0;
     virtual std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) = 0;
-    virtual QP::QActive *GetOpaqueDisplayMgrAO(void) const = 0;
+    virtual std::shared_ptr<QP::QActive> GetOpaqueDisplayMgrAO(void) const = 0;
     virtual std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreateBLEAO(void) = 0;
 };

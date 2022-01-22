@@ -54,18 +54,21 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
 
 // Ctor body left empty.</code>
    </operation>
-   <operation name="GetTemperature" type="float" visibility="0x00" properties="0x08">
+   <operation name="GetTemperature" type="float" visibility="0x00" properties="0x00">
+    <specifiers>const</specifiers>
     <documentation>Returns the last snapshot of temperature if available.
 If not returns 0.0.
 </documentation>
     <code>return mTemperature;</code>
    </operation>
-   <operation name="GetTime" type="Time const &amp;" visibility="0x00" properties="0x08">
+   <operation name="GetTime" type="Time const &amp;" visibility="0x00" properties="0x00">
+    <specifiers>const</specifiers>
     <documentation>Returns the last snapshot of Time readout.
 </documentation>
     <code>return mTime;</code>
    </operation>
-   <operation name="GetDate" type="Date const &amp;" visibility="0x00" properties="0x08">
+   <operation name="GetDate" type="Date const &amp;" visibility="0x00" properties="0x00">
+    <specifiers>const</specifiers>
     <documentation>Returns the last snapshot of Date readout.
 </documentation>
     <code>return mDate;</code>
@@ -120,20 +123,14 @@ if ((nullptr != lInitEvent) &amp;&amp; (nullptr != lInitEvent-&gt;mCalendarRec))
 // no alarms will be set.
 </code>
    </operation>
-   <operation name="InitInterrupt" type="void" visibility="0x02" properties="0x00">
-    <documentation>Initialize interrupt of RTCC.</documentation>
-    <parameter name="e" type="QP::QEvt  const * const"/>
-    <code>// Set interrupt pin and periodic alarm.
-//RTCCInitEvent const * const lRTCCInitEvent = static_cast&lt;RTCCInitEvent const * const&gt;(e);
-static_cast&lt;void&gt;(e);
-mRTCC.SetInterrupt(true);
-</code>
-   </operation>
    <operation name="WrToNVMem" type="void" visibility="0x02" properties="0x00">
     <documentation>Write buffer to NV memory.</documentation>
-    <code>unsigned int lDBSize = DBRec::GetDBSize();
-DBRec::SerializeDB(mNVMemBuf);
-mNVMem.WrToNVMem(mNVMemBuf, 0, lDBSize);
+    <code>if (DBRec::IsDBDirty()) {
+    unsigned int lDBSize = DBRec::GetDBSize();
+    DBRec::StaticUpdateCRC();
+    DBRec::SerializeDB(mNVMemBuf);
+    mNVMem.WrToNVMem(mNVMemBuf, 0, lDBSize);
+}
 </code>
    </operation>
    <operation name="SetNextCalendarEvent" type="void" visibility="0x02" properties="0x00">
@@ -179,7 +176,6 @@ if (lIsNextEntry) {
 
 // Subscribe to signals if any.
 subscribe(RTCC_INTERRUPT_SIG);
-subscribe(RTCC_SET_TIME_SIG);
 subscribe(RTCC_SET_DATE_SIG);
 subscribe(RTCC_SET_TIME_SIG);
 subscribe(RTCC_SET_TIME_AND_DATE_SIG);
@@ -188,7 +184,6 @@ subscribe(RTCC_SAVE_TO_NV_MEMORY_SIG);
 // Init database and calendar.
 InitDB();
 InitCalendar(e);
-InitInterrupt(e);
 
 // Set logging category.
 //LOGGER.AddCategory(RTCC_LOG, &amp;sLogCategory[0]);
@@ -205,13 +200,15 @@ InitInterrupt(e);
       <action brief="Stop();">// Requires QF_ACTIVE_STOP to be defined.
 stop();</action>
       <tran_glyph conn="70,10,0,-1,-6,6">
-       <action box="0,-6,10,4"/>
+       <action box="0,-8,10,4"/>
       </tran_glyph>
      </tran>
      <tran trig="RTCC_SET_TIME">
       <action brief="SetTime(aTime);">//LOG_INFO(&amp;sLogCategory[0], &quot;New time set.&quot;);
 RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrTime(lSetTimeEvent-&gt;mTime);
+mRTCC.GetTimeAndDate(mTime, mDate);
+
 SetNextCalendarEvent();
 </action>
       <tran_glyph conn="4,20,3,-1,40">
@@ -222,6 +219,8 @@ SetNextCalendarEvent();
       <action brief="SetDate(aDate);">//LOG_INFO(&amp;sLogCategory[0], &quot;New date set.&quot;);
 RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrDate(lSetEventDate-&gt;mDate);
+mRTCC.GetTimeAndDate(mTime, mDate);
+
 SetNextCalendarEvent();
 </action>
       <tran_glyph conn="4,24,3,-1,40">
@@ -240,7 +239,8 @@ RTCC::Event::TimeAndDate * const lTickAlarmEvent =
         RTCC::Event::TimeAndDate,
         RTCC_TIME_TICK_ALARM_SIG,
         mTime,
-        mDate);
+        mDate
+    );
 QP::QF::PUBLISH(lTickAlarmEvent, this);
 
 bool lIsCalendarAlarm = mRTCC.IsAlarmOn();
@@ -250,16 +250,14 @@ mRTCC.AckInterrupt();
        <guard brief="Source == CalendarAlarm">lIsCalendarAlarm == true</guard>
        <action brief="PublishCalendarEvent();">// Got a calendar event alarm: create event.
 // Set next calendar alarm event.
-#if defined(RTCC_DBG) &amp;&amp; !defined(Q_SPY)
-UARTprintf(&quot;A&quot;);
-#endif // RTCC_DBG
 //LOG_INFO(&amp;sLogCategory[0], &quot;Calendar event.&quot;);
 RTCC::Event::TimeAndDate * const lCalendarEvent =
     Q_NEW(
         RTCC::Event::TimeAndDate,
         RTCC_CALENDAR_EVENT_ALARM_SIG,
         mTime,
-        mDate);
+        mDate
+    );
 QP::QF::PUBLISH(lCalendarEvent, this);
 
 SetNextCalendarEvent();
@@ -279,6 +277,7 @@ SetNextCalendarEvent();
        <guard brief="CalendarChanged == true">lSaveEvent-&gt;mIsDataImpure</guard>
        <action brief="WriteToNvMemory();">// Save to NV mem.
 WrToNVMem();
+SetNextCalendarEvent();
 </action>
        <choice_glyph conn="44,34,5,-1,28">
         <action box="1,0,27,4"/>
@@ -291,6 +290,8 @@ WrToNVMem();
      <tran trig="RTCC_SET_TIME_AND_DATE">
       <action brief="SetTimeAndDate(aTime, aDate)">RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
 mRTCC.WrTimeAndDate(lSetTimeEvent-&gt;mTime, lSetTimeEvent-&gt;mDate);
+mRTCC.GetTimeAndDate(mTime, mDate);
+
 SetNextCalendarEvent();
 </action>
       <tran_glyph conn="4,38,3,-1,40">
@@ -302,7 +303,7 @@ SetNextCalendarEvent();
       <exit box="1,4,23,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="80,44"/>
+    <state_diagram size="80,46"/>
    </statechart>
   </class>
  </package>
@@ -383,7 +384,8 @@ $declare${RTCC::AOs::RTCC_AO}
 </text>
   </file>
   <file name="RTCC_AOs.cpp">
-   <text>#include &lt;db/CalendarRec.h&gt;
+   <text>#include &lt;cstring&gt;
+#include &lt;db/CalendarRec.h&gt;
 #include &quot;IRTCC.h&quot;
 #include &quot;INVMem.h&quot;
 #include &quot;ITemperature.h&quot;

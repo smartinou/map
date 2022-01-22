@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="4.5.1" links="0">
+<model version="5.1.3" links="0">
  <framework name="qpcpp"/>
  <package name="project" stereotype="0x04" namespace="PFPP::">
   <package name="AOs" stereotype="0x02" namespace="AO::">
@@ -31,6 +31,9 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mLogCategory" type="char const *" visibility="0x02" properties="0x00">
      <documentation>The string representing the log categories from this AO.</documentation>
     </attribute>
+    <attribute name="mLogThreshold" type="LogLevel" visibility="0x02" properties="0x00">
+     <documentation>The threshold under which events are displayed.</documentation>
+    </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
      <parameter name="aMotorControl" type="IMotorControl &amp;"/>
@@ -44,6 +47,7 @@ This is where all the feeding actions are taken, based on calendar events and in
     , mDate()
     , mTime()
     , mLogCategory(&quot;PFPP&quot;)
+    , mLogThreshold(LogLevel::prio::INFO)
 
 // Ctor body left empty.</code>
     </operation>
@@ -68,7 +72,8 @@ mMotorControl.TurnOnCW();</code>
      <code>// Stop feeder.
 mMotorControl.TurnOff();</code>
     </operation>
-    <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+    <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns the manual waiting period as per FeedCfgRec if any, or default value.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;GetManualFeedWaitPeriod() * BSP::TICKS_PER_SEC;
@@ -77,7 +82,8 @@ mMotorControl.TurnOff();</code>
 static QP::QTimeEvtCtr constexpr sManualWaitPeriod = 2 * BSP::TICKS_PER_SEC;
 return sManualWaitPeriod;</code>
     </operation>
-    <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+    <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns the manual feed period as per FeedCfgRec if any, or default value.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;GetManualFeedMaxFeedPeriod() * BSP::TICKS_PER_SEC;
@@ -86,7 +92,8 @@ return sManualWaitPeriod;</code>
 static QP::QTimeEvtCtr constexpr sManualMaxFeedPeriod = 10 * BSP::TICKS_PER_SEC;
 return sManualMaxFeedPeriod;</code>
     </operation>
-    <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x08">
+    <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns the timed feed period as per FeedCfgRec if any, or default value.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;GetTimedFeedPeriod() * BSP::TICKS_PER_SEC;
@@ -95,7 +102,8 @@ return sManualMaxFeedPeriod;</code>
 static QP::QTimeEvtCtr constexpr sTimedFeedPeriod = 4 * BSP::TICKS_PER_SEC;
 return sTimedFeedPeriod;</code>
     </operation>
-    <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+    <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns if manual feed is allowed or not.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;IsManualFeedEnable();
@@ -103,7 +111,8 @@ return sTimedFeedPeriod;</code>
 
 return true;</code>
     </operation>
-    <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x08">
+    <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Returns if timed feed is allowed or not.</documentation>
      <code>if (nullptr != mFeedCfgRec) {
     return mFeedCfgRec-&gt;IsTimedFeedEnable();
@@ -130,6 +139,31 @@ Display::Event::DisplayText * const lTextEvent = Q_NEW(
 QP::QF::PUBLISH(lTextEvent, this);
 </code>
     </operation>
+    <operation name="PrintEvent?def USE_RTT" type="void" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
+     <documentation>Event sink: print to SEGGER RTT.</documentation>
+     <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
+     <code>char lDateStr[32] = {0};
+DateHelper::ToStr(aLogEvent.mDate, &amp;lDateStr[0]);
+char lTimeStr[32] = {0};
+TimeHelper::ToStr(aLogEvent.mTime, &amp;lTimeStr[0]);
+static constexpr unsigned int sBufferIndex = 0;
+int lLen = SEGGER_RTT_printf(
+    sBufferIndex,
+    &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
+    &amp;lDateStr[0],
+    &amp;lTimeStr[0],
+    LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
+    aLogEvent.mFileStr,
+    aLogEvent.mFunctionStr,
+    aLogEvent.mLine,
+    aLogEvent.mCategoryStr,
+    &amp;aLogEvent.mMsg[0]
+);
+
+// Do nothing with returned Len for now.
+static_cast&lt;void&gt;(lLen);</code>
+    </operation>
     <statechart properties="0x02">
      <initial target="../1">
       <action brief="Init();">StopFeeder();
@@ -146,7 +180,9 @@ subscribe(LWIP_IP_CHANGED_SIG);
 subscribe(LWIP_SYSTEM_TIME_UPDATE_SIG);
 
 // Set logging category.
-LOGGER.AddCategory(LOG_EVENT_SIG, mLogCategory, LogLevel::prio::INFO);
+// Add self to logging sink.
+Logger::AddCategory(mLogCategory, LOG_EVENT_SIG, LogLevel::prio::INFO);
+Logger::AddSink(mLogCategory, this);
 </action>
       <initial_glyph conn="4,6,5,0,8,6">
        <action box="0,-2,10,2"/>
@@ -165,17 +201,17 @@ Display::Event::DisplayText * const lFrameEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lFrameEvent, this);
 </entry>
-      <initial target="../9">
+      <initial target="../10">
        <initial_glyph conn="32,18,5,0,6,6">
         <action box="0,-2,10,2"/>
        </initial_glyph>
       </initial>
-      <tran trig="FEED_MGR_TIMEOUT" target="../9">
+      <tran trig="FEED_MGR_TIMEOUT" target="../10">
        <tran_glyph conn="4,28,3,3,28">
         <action box="0,-2,22,2"/>
        </tran_glyph>
       </tran>
-      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../11">
+      <tran trig="RTCC_CALENDAR_EVENT_ALARM" target="../12">
        <tran_glyph conn="4,88,3,3,28">
         <action box="0,-2,28,4"/>
        </tran_glyph>
@@ -183,13 +219,13 @@ QP::QF::PUBLISH(lFrameEvent, this);
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
        <action brief="GetState();">PFPP::Event::Mgr::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::Mgr::ManualFeedCmd const * const&gt;(e);
 </action>
-       <choice target="../../10">
+       <choice target="../../11">
         <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
         <choice_glyph conn="18,46,5,3,14">
          <action box="0,-2,24,2"/>
         </choice_glyph>
        </choice>
-       <choice target="../../9">
+       <choice target="../../10">
         <guard brief="else"/>
         <choice_glyph conn="18,46,4,3,-16,14">
          <action box="0,-16,10,2"/>
@@ -200,7 +236,7 @@ QP::QF::PUBLISH(lFrameEvent, this);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_TIMED_FEED_CMD">
-       <choice target="../../11">
+       <choice target="../../12">
         <guard brief="IsAllowed == true">IsTimedFeedAllowed()</guard>
         <choice_glyph conn="18,94,5,3,14">
          <action box="1,0,13,2"/>
@@ -244,11 +280,9 @@ QP::QF::PUBLISH(lTimeChangedEvent, this);</action>
       </tran>
       <tran trig="LWIP_IP_CHANGED">
        <action brief="^DISPLAY_TEXT(IPAddress), ^LOG_ENTRY;">LwIP::Event::IPAddressChanged const * const lEvent = static_cast&lt;LwIP::Event::IPAddressChanged const * const&gt;( e );
-IPAddress lIPAddress(lEvent-&gt;mIPAddress);
-char lIPAddressStr[32] = {0};
+char lIPAddressStr[32]{0};
 // Erase previous IP address, in case this one is longer.
 memset(&amp;lIPAddressStr[0], ' ', 15);
-lIPAddress.GetString(&amp;lIPAddressStr[0]);
 Display::Event::DisplayText * const lEraseLineEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
@@ -259,6 +293,7 @@ Display::Event::DisplayText * const lEraseLineEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lEraseLineEvent, this);
 
+lEvent-&gt;mIPAddress.GetString(&amp;lIPAddressStr[0]);
 Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
@@ -308,6 +343,20 @@ QP::QF::PUBLISH(lEvtPtr, this);
        </choice>
        <tran_glyph conn="4,114,3,-1,28">
         <action box="0,-2,24,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="FEED_MGR_LOG?def USE_RTT">
+       <action brief="ParseEvent();">Logging::Event::LogEntry const * const lEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);
+</action>
+       <choice>
+        <guard brief="Level &lt;= Threshold">lEvent-&gt;mLogLevel &lt;= mLogThreshold</guard>
+        <action brief="PrintEvent();">PrintEvent(*lEvent);</action>
+        <choice_glyph conn="32,122,5,-1,22">
+         <action box="1,-2,25,2"/>
+        </choice_glyph>
+       </choice>
+       <tran_glyph conn="4,122,3,-1,28">
+        <action box="0,-2,26,2"/>
        </tran_glyph>
       </tran>
       <state name="Waiting">
@@ -399,11 +448,11 @@ LOG_INFO(mLogCategory, mDate, mTime, &quot;Timed feed.&quot;);</exit>
         <exit box="1,4,39,2"/>
        </state_glyph>
       </state>
-      <state_glyph node="4,12,76,108">
+      <state_glyph node="4,12,76,116">
        <entry box="1,2,17,2"/>
       </state_glyph>
      </state>
-     <state_diagram size="84,124"/>
+     <state_diagram size="84,132"/>
     </statechart>
    </class>
    <class name="BLE_AO" superclass="qpcpp::QActive">
@@ -558,10 +607,15 @@ $declare${project::AOs::Mgr_AO}
 
 #include &quot;net/IPAddress.h&quot;
 
+#ifdef USE_RTT
+// SEGGER RTT.
+#include &lt;SEGGER_RTT.h&gt;
+#endif // USE_RTT
+
 #include &quot;Display_Events.h&quot;
 #include &quot;LwIP_Events.h&quot;
 #include &quot;RTCC_Events.h&quot;
-#include &quot;Logger.h&quot;
+#include &quot;Logger2.h&quot;
 
 #include &quot;PFPP_AOs.h&quot;
 #include &quot;PFPP_Events.h&quot;

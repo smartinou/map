@@ -3,17 +3,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding calendar.
+// Module: Feeding calendar DB.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief Feeding calendar class.
+//! \brief Feeding calendar DB class.
 //! \ingroup utils_db
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -39,44 +39,43 @@
 // ******************************************************************************
 
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Feeding calendar database class.
 class CalendarRec
     : public DBRec {
 public:
     CalendarRec();
     ~CalendarRec();
 
-    // DBRec.
+    // DBRec interface.
     bool IsSane(void) const override;
     void ResetDflt(void) override;
 
     // Extended object's interface.
 
-  // Sets/clears the entry for the specified time, rounded to quarter hour.
-  void SetEntry(Weekday const &aWeekday, Time const &aTime);
-  void SetEntry(unsigned int const aWeekday, Time const &aTime);
-  void ClrEntry(Weekday const &aWeekday, Time const &aTime);
-  void ClrEntry(unsigned int const aWeekday, Time const &aTime);
-  void SetTimeEntry(Time const &aTime);
-  void ClrAllEntries(void);
+    // Sets/clears the entry for the specified time, rounded to quarter hour.
+    void SetEntry(Weekday const &aWeekday, Time const &aTime);
+    void SetEntry(unsigned int const aWeekday, Time const &aTime);
+    void ClrEntry(Weekday const &aWeekday, Time const &aTime);
+    void ClrEntry(unsigned int const aWeekday, Time const &aTime);
+    void SetTimeEntry(Time const &aTime);
+    void ClrAllEntries(void);
 
-  bool IsEntrySet(Time const &aTime);
+    bool IsEntrySet(Time const &aTime);
 
-  // Gets the next set entry from current time.
-  bool GetNextEntry(
-      Weekday const &aWeekday,
-      Time    const &aTime,
-      Weekday       &aNextWeekday,
-      Time          &aNextTime
-  );
+    // Gets the next set entry from current time.
+    bool GetNextEntry(
+        Weekday const &aWeekday,
+        Time    const &aTime,
+        Weekday       &aNextWeekday,
+        Time          &aNextTime
+    );
 
 private:
-    // DBRec.
+    // DBRec interface.
     size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aData) const override;
     void Deserialize(uint8_t const * const aData) override;
+    void UpdateCRC(void) override;
 
     unsigned int GetArrayIx(Time const &aTime);
     unsigned int WeekdayToBitMask(Weekday const &aWeekday);

@@ -2,17 +2,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding calendar.
+// Module: Network interface DB.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief Feeding calendar class class.
+//! \brief Network interface DB class.
 //! \ingroup utils_db
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -93,7 +93,6 @@ void NetIFRec::ResetDflt(void) {
     mRec.mSubnetMask = 0x00000000;
     mRec.mGWAddr = 0x00000000;
 
-    mRec.mBase.mCRC = ComputeCRC(reinterpret_cast<uint8_t *>(&mRec), sizeof(struct RecData));
     SetIsDirty();
 }
 
@@ -115,6 +114,15 @@ void NetIFRec::Deserialize(uint8_t const *aDataPtr) {
 
     memcpy(&mRec, aDataPtr, GetRecSize());
 }
+
+
+void NetIFRec::UpdateCRC() {
+    mRec.mBase.mCRC = ComputeCRC(
+        reinterpret_cast<uint8_t const * const>(&mRec),
+        sizeof(struct RecData)
+    );
+}
+
 
 //
 // Start of child methods.
@@ -142,21 +150,25 @@ uint32_t NetIFRec::GetGWAddr(void) const {
 
 void NetIFRec::SetUseDHCP(bool aUseDHCP) {
     mRec.mUseDHCP = aUseDHCP;
+    SetIsDirty();
 }
 
 
 void NetIFRec::SetIPAddr(uint32_t aIPAddr) {
     mRec.mIPAddr = aIPAddr;
+    SetIsDirty();
 }
 
 
 void NetIFRec::SetSubnetMask(uint32_t aSubnetMask) {
     mRec.mSubnetMask = aSubnetMask;
+    SetIsDirty();
 }
 
 
 void NetIFRec::SetGWAddr(uint32_t aGWAddr) {
     mRec.mGWAddr = aGWAddr;
+    SetIsDirty();
 }
 
 // *****************************************************************************

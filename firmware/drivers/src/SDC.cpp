@@ -12,7 +12,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2020, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2022, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "SPI.h"
+#include "SPIDev.h"
 
 // This module.
 #include "SDC.h"
@@ -133,10 +133,18 @@ static uint8_t constexpr sStopBlock = 0xFD;
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-SDC::SDC(unsigned int const aDriveIx, CoreLink::ISPIDev &aSPIDev, GPIO const &aCSnPin)
+SDC::SDC(
+    unsigned int const aDriveIx,
+    CoreLink::ISPIDev &aSPIDev,
+    GPIO const &aCSnPin,
+    GPIO const &aDetectPin,
+    unsigned int const aSPIBitRate
+)
     : mSPIDev(aSPIDev)
-    , mSPICfg(aCSnPin) {
-
+    , mSPICfg(aCSnPin)
+    , mDetectPin(aDetectPin)
+    , mSPIBitRate(aSPIBitRate)
+{
     // Ctor body.
     // Create an SPI slave to operate at maximum device speed.
     mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_0);
@@ -170,7 +178,12 @@ DSTATUS SDC::InitDisk(void) {
     R1_RESPONSE_PKT lR1 = SendCmd(CMD0, L_CMD0_PARAM);
     if (L_R1_MASK_IN_IDLE_STATE == lR1) {
         R7_RESPONSE_PKT lR7 = {0};
-        lR7.mR1 = SendCmd(CMD8, L_CMD8_PARAM, reinterpret_cast<uint8_t *>(&lR7.mIFCond), sizeof(lR7.mIFCond));
+        lR7.mR1 = SendCmd(
+            CMD8,
+            L_CMD8_PARAM,
+            reinterpret_cast<uint8_t *>(&lR7.mIFCond),
+            sizeof(lR7.mIFCond)
+        );
         if (L_R1_MASK_IN_IDLE_STATE == lR7.mR1) {
             // Ver2.00 or later memory card.
             // Valid response?
@@ -178,7 +191,12 @@ DSTATUS SDC::InitDisk(void) {
                 // Compatible voltage range and check pattern correct.
                 // Read OCR.
                 R3_RESPONSE_PKT lR3 = {0};
-                lR3.mR1 = SendCmd(CMD58, L_CMD58_PARAM, reinterpret_cast<uint8_t *>(&lR3.mOCR), sizeof(lR3.mOCR));
+                lR3.mR1 = SendCmd(
+                    CMD58,
+                    L_CMD58_PARAM,
+                    reinterpret_cast<uint8_t *>(&lR3.mOCR),
+                    sizeof(lR3.mOCR)
+                );
 
                 // Compare with expected voltage range.
                 if (IsExpectedVoltageRange()) {
@@ -189,7 +207,12 @@ DSTATUS SDC::InitDisk(void) {
                         lR1 = SendCmd(ACMD41, L_ACMD41_PARAM);
                     } while (0 != lR1);
 
-                    lR3.mR1 = SendCmd(CMD58, L_CMD58_PARAM, reinterpret_cast<uint8_t *>(&lR3.mOCR), sizeof(lR3.mOCR));
+                    lR3.mR1 = SendCmd(
+                        CMD58,
+                        L_CMD58_PARAM,
+                        reinterpret_cast<uint8_t *>(&lR3.mOCR),
+                        sizeof(lR3.mOCR)
+                    );
                     if (REG32TOH(lR3.mOCR) & L_OCR_MASK_CCS) {
                         // Ver2.00 or later High Capacity | Extended Capacity SD Memory Card.
                         mCardType = CT_SD2 | CT_BLOCK;
@@ -216,7 +239,12 @@ DSTATUS SDC::InitDisk(void) {
 
             // Read OCR.
             R3_RESPONSE_PKT lR3 = {0};
-            lR3.mR1 = SendCmd(CMD58, L_CMD58_PARAM, reinterpret_cast<uint8_t *>(&lR3.mOCR), sizeof(lR3.mOCR));
+            lR3.mR1 = SendCmd(
+                CMD58,
+                L_CMD58_PARAM,
+                reinterpret_cast<uint8_t *>(&lR3.mOCR),
+                sizeof(lR3.mOCR)
+            );
             if (L_R1_MASK_IN_IDLE_STATE == lR3.mR1) {
                 // Compare with expected voltage range.
                 if (IsExpectedVoltageRange()) {
@@ -267,7 +295,8 @@ DSTATUS SDC::InitDisk(void) {
 DRESULT SDC::RdDisk(
     uint8_t     *aBuffer,
     uint32_t     aStartSector,
-    unsigned int aSectorCount) {
+    unsigned int aSectorCount
+) {
 
     // Check parameter.
     if (!aBuffer || !aSectorCount) {
@@ -323,7 +352,8 @@ DRESULT SDC::RdDisk(
 DRESULT SDC::WrDisk(
     uint8_t const *aBuffer,
     uint32_t       aStartSector,
-    unsigned int   aSectorCount) {
+    unsigned int   aSectorCount
+) {
 
     if (mStatus & STA_NOINIT) {
         // Check drive status.
@@ -439,12 +469,12 @@ void SDC::WaitReady(void) {
 
 
 void SDC::PowerOn(void) {
-
+    // Turn power on.
 }
 
 
 void SDC::PowerOff(void) {
-
+    // Turn power off.
 }
 
 
@@ -464,7 +494,7 @@ bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
 
     // Store trailing data to the buffer.
     // Data. Can't use mSPIDev.RdData() since it asserts/deasserts CSn.
-    while (aBuffer > 0) {
+    while (aBlockLen > 0) {
         *aBuffer = mSPIDev.PushPullByte(0);
         aBuffer++;
         aBlockLen--;

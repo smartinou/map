@@ -3,17 +3,17 @@
 //
 // Project: Utils.
 //
-// Module: Feeding configuration.
+// Module: Feeding configuration DB.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief Feeding configuration class class.
+//! \brief Feeding configuration DB class.
 //! \ingroup module_group
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -31,16 +31,14 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Feeding configuratino database.
 class FeedCfgRec
     : public DBRec {
 public:
     FeedCfgRec();
     ~FeedCfgRec();
 
-    // DBRec.
+    // DBRec interface.
     bool IsSane(void) const override;
     void ResetDflt(void) override;
 
@@ -58,10 +56,11 @@ public:
     void SetUseSystemTime(bool aUseSystemTime);
 
 private:
-    // DBRec.
+    // DBRec interface.
     size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;
     void Deserialize(uint8_t const * const aDataPtr) override;
+    void UpdateCRC(void) override;
 
     struct RecData {
         struct BaseRec mBase;

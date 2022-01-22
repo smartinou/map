@@ -13,15 +13,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
-#include <stdio.h>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -31,18 +29,16 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief Describes a GPIO pin.
 class GPIO {
 public:
-    GPIO(unsigned long const aPort, unsigned int const aPin);
-    ~GPIO();
+    constexpr GPIO(unsigned long const aPort, unsigned int const aPin) noexcept
+        : mPort(aPort), mPin(aPin) {}
 
-    unsigned long GetPort(void) const;
-    unsigned int  GetPin(void)  const;
+    constexpr unsigned long GetPort(void) const noexcept {return mPort;}
+    constexpr unsigned int  GetPin(void)  const noexcept {return mPin;}
 
-    static void EnableSysCtlPeripheral(uint32_t aPort);
+    static void EnableSysCtlPeripheral(unsigned long aPort);
 
 private:
     unsigned long const mPort;
