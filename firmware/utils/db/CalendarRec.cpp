@@ -85,8 +85,14 @@ void CalendarRec::ResetDflt(void) {
     // Set time entries in whole week.
     // 8:00 and 17:00.
     ClrAllEntries();
-    SetTimeEntry(Time(8, 0, 0, true));
-    SetTimeEntry(Time(17, 0, 0, true));
+    {
+        static constexpr Time sDefaultTime(8, 0, 0, true);
+        SetTimeEntry(sDefaultTime);
+    }
+    {
+        static constexpr Time sDefaultTime(17, 0, 0, true);
+        SetTimeEntry(sDefaultTime);
+    }
 
     SetIsDirty();
 }
@@ -226,10 +232,11 @@ bool CalendarRec::GetNextEntry(
     }
 
     if (lIsEntryFound) {
-        Time lNextTime(lHourIx / SLOTS_PER_HOUR, (lHourIx % SLOTS_PER_HOUR) * (60 / SLOTS_PER_HOUR), 0, true);
+        const Time lNextTime(lHourIx / SLOTS_PER_HOUR, (lHourIx % SLOTS_PER_HOUR) * (60 / SLOTS_PER_HOUR), 0, true);
         aNextTime = lNextTime;
-        unsigned int lWeekdayUI = BitMaskToWeekday(lNextWeekdayMask);
-        aNextWeekday.Set(lWeekdayUI);
+        const unsigned int lWeekdayUI = BitMaskToWeekday(lNextWeekdayMask);
+        const Weekday lNextWeekday(lWeekdayUI);
+        aNextWeekday = lNextWeekday;
     }
 
     return lIsEntryFound;

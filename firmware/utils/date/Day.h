@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,12 +32,12 @@
 // ******************************************************************************
 
 //! \brief Day class.
-class Day
-  : public Limit {
- public:
-  explicit Day(unsigned int aVal = 1)
-    : Limit(1, 31, aVal) {}
-  ~Day() {}
+class Day final
+    : public Limit {
+public:
+    constexpr explicit Day(const unsigned int aVal = 1) noexcept
+        : Limit(1, 31, aVal) {}
+    ~Day() = default;
 };
 
 // ******************************************************************************

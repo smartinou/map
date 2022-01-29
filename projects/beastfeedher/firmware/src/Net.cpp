@@ -193,10 +193,10 @@ static int SSIStatsHandler(
 );
 
 static char const *FindTagVal(
-    char  const *aTagNameStr,
-    int          aParamsQty,
-    char * const aParamsVec[],
-    char * const aValsVec[]
+    char const * const aTagNameStr,
+    int                aParamsQty,
+    char const * const aParamsVec[],
+    char const * const aValsVec[]
 );
 #endif // LWIP_HTTPD_SSI
 
@@ -238,7 +238,7 @@ static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO(nullptr);
 
 #if LWIP_HTTPD_SSI
 // Server-Side Include (SSI) demo.
-char const * sSSITags[] = {
+static char const * sSSITags[] = {
     // Common/misc. tags.
     "_zero",     // SSI_TAG_IX_ZERO
     "_empty",    // SSI_TAG_IX_EMPTY
@@ -314,7 +314,7 @@ char const * sSSITags[] = {
 
 
 #if LWIP_HTTPD_CGI
-tCGI const sCGIEntries[] = {
+static tCGI const sCGIEntries[] = {
     {"/index.cgi",  DispIndex},
     {"/config.cgi", DispCfg},
     {"/network.cgi", DispNet}
@@ -347,7 +347,7 @@ void InitCallback(
     http_set_ssi_handler(
         SSIHandler,
         Net::sSSITags,
-        Q_DIM(Net::sSSITags)
+        sizeof(Net::sSSITags)
     );
 #endif // LWIP_HTTPD_SSI
 
@@ -461,7 +461,7 @@ static uint16_t SSIHandler(
             "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
         char lDateBuf[16]{0};
         Date const &lDate = sRTCC_AO->GetDate();
-        char const *lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
+        char const * const lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -472,11 +472,11 @@ static uint16_t SSIHandler(
     } break;
 
     case SSI_TAG_IX_CFG_GLOBAL_TIME: {
-        static char const * const lTimeInputStr =
+        static constexpr auto lTimeInputStr =
             "<input type=\"time\" name=\"time\" value=\"";
         char lTimeBuf[16]{0};
         Time const &lTime = sRTCC_AO->GetTime();
-        char const *lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
+        char const * const lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -738,7 +738,7 @@ static int SSICalendarHandler(
     static constexpr auto sFeedingCalStr =
         "<input type=\"checkbox\" name=\"feed_time\" value=\"";
 
-    Time lTime(aHour, 0, 0, true, false);
+    const Time lTime(aHour, 0, 0, true, false);
     if (Net::sCalendarRec->IsEntrySet(lTime)) {
         return snprintf(
             aInsertStr,
@@ -778,7 +778,7 @@ static int SSINetworkHandler(
     char       * const aInsertStr,
     int                aInsertStrLen,
     char const * const aTagNameStr,
-    uint8_t aValue
+    uint8_t            aValue
 ) {
 
     static constexpr auto sInputTagStr = "<input name=\"";
@@ -897,12 +897,13 @@ static char const *DispCfg(
             unsigned int lMonth = 0;
             unsigned int lDayDate  = 0;
             sscanf(lDateVal, "%u-%u-%u", &lYear, &lMonth, &lDayDate);
-            Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
+            const Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
 
             unsigned int lHours   = 0;
             unsigned int lMinutes = 0;
+            static constexpr unsigned int sSeconds = 0;
             sscanf(lTimeVal, "%u%%3A%u", &lHours, &lMinutes);
-            Time lTime(lHours, lMinutes, 0);
+            const Time lTime(lHours, lMinutes, sSeconds);
 
             // Send event to write new time.
             // Send event to write new date.
@@ -944,7 +945,7 @@ static char const *DispCfg(
             } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
                 unsigned int lHour = 0;
                 sscanf(aValsVec[lIx], "%u", &lHour);
-                Time lTime(lHour, 0, 0);
+                const Time lTime(lHour, 0, 0);
                 Net::sCalendarRec->SetTimeEntry(lTime);
             }
         }
@@ -971,17 +972,17 @@ static char const *DispNet(
     char *aValsVec[]
 ) {
     // Try to find the apply button.
-    char const *lSubmitVal = FindTagVal("set_ip", aParamsQty, aParamsVec, aValsVec);
+    char const * const lSubmitVal = FindTagVal("set_ip", aParamsQty, aParamsVec, aValsVec);
     if (0 == strcmp(lSubmitVal, "Apply")) {
         // Fields of the addresses have changed:
         // Read now and modify bytes.
-        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
+        const uint32_t lIPAddress = sNetIFRec->GetIPAddr();
         IPAddress lNewIPAddress(lIPAddress);
 
-        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
+        const uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
         IPAddress lNewSubnetMask(lSubnetMask);
 
-        uint32_t lGWAddress = sNetIFRec->GetGWAddr();
+        const uint32_t lGWAddress = sNetIFRec->GetGWAddr();
         IPAddress lNewGWAddress(lGWAddress);
 
         for (int lIx = 0; lIx < aParamsQty; ++lIx) {
@@ -1024,10 +1025,10 @@ static char const *DispNet(
 
 
 static char const *FindTagVal(
-    char  const *aTagNameStr,
-    int          aParamsQty,
-    char * const aParamsVec[],
-    char * const aValsVec[]
+    char const * const aTagNameStr,
+    int                aParamsQty,
+    char const * const aParamsVec[],
+    char const * const aValsVec[]
 ) {
 
     for (int lIx = 0; lIx < aParamsQty; lIx++) {

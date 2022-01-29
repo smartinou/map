@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,12 +32,12 @@
 // ******************************************************************************
 
 //! \brief Minute class.
-class Minute
-  : public Limit {
- public:
-  explicit Minute(unsigned int aVal = 0)
-    : Limit(0, 59, aVal) {}
-  ~Minute() {}
+class Minute final
+    : public Limit {
+public:
+    constexpr explicit Minute(const unsigned int aVal = 0) noexcept
+        : Limit(0, 59, aVal) {}
+    ~Minute() = default;
 };
 
 // ******************************************************************************

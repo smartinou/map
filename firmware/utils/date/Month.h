@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,35 +32,52 @@
 // ******************************************************************************
 
 //! \brief Month class.
-class Month
-  : public Limit {
- public:
-  enum class Name : unsigned int {
-    January = 1,
-    February,
-    March,
-    April,
-    May,
-    June,
-    July,
-    August,
-    September,
-    October,
-    November,
-    December,
-    Min = January,
-    Max = December
-  };
+class Month final
+    : public Limit {
+public:
+    enum class Name : unsigned int {
+        January = 1,
+        February,
+        March,
+        April,
+        May,
+        June,
+        July,
+        August,
+        September,
+        October,
+        November,
+        December,
+        Min = January,
+        Max = December
+    };
 
- public:
-  explicit Month(unsigned int aMonth);
-  explicit Month(Name aMonthName = Name::January);
-  ~Month() {}
+public:
+    constexpr explicit Month(const unsigned int aMonth) noexcept
+        : Limit(
+            Month::NameToUI(Name::January),
+            Month::NameToUI(Name::December),
+            aMonth) {}
+    constexpr explicit Month(const Name aMonthName = Name::January) noexcept
+        : Limit(
+                Month::NameToUI(Name::January),
+                Month::NameToUI(Name::December),
+                NameToUI(aMonthName)) {}
+    ~Month() = default;
 
-  Name ToName(void) const;
+    constexpr Name ToName(void) const {
+        unsigned int lMonthUI = Limit::Get();
+        return UIToName(lMonthUI);
+    }
 
-  static unsigned int NameToUI(Name aMonthName);
-  static Name         UIToName(unsigned int aMonth);
+    static constexpr unsigned int NameToUI(const Name aMonthName) {
+        unsigned int lMonthUI = static_cast<unsigned int>(aMonthName);
+        return lMonthUI;
+    }
+
+    static constexpr Name UIToName(const unsigned int aMonth) {
+        return static_cast<Name>(aMonth);
+    }
 };
 
 // ******************************************************************************
@@ -76,8 +93,8 @@ class Month
 // ******************************************************************************
 
 namespace MonthHelper {
-  char const * ToStr(Month const &aMonth);
-  char const * ToStr(unsigned int aMonth);
+    char const * ToStr(Month const &aMonth);
+    char const * ToStr(unsigned int const aMonth);
 }
 
 // ******************************************************************************

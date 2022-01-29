@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,12 +32,12 @@
 // ******************************************************************************
 
 //! \brief Second class.
-class Second
-  : public Limit {
- public:
-  explicit Second(unsigned int aVal = 0)
-    : Limit(0, 59, aVal) {}
-  ~Second() {}
+class Second final
+    : public Limit {
+public:
+    constexpr explicit Second(const unsigned int aVal = 0) noexcept
+        : Limit(0, 59, aVal) {}
+    ~Second() = default;
 };
 
 // ******************************************************************************

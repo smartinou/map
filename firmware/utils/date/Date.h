@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -50,30 +50,35 @@ public:
 
 
 //! \brief Date class as aggregate class.
-class Date
+class Date final
     : public IDate {
 public:
-    explicit Date(
+    constexpr explicit Date(
         unsigned int  aYear    = 2000,
         Month::Name   aMonth   = Month::Name::January,
         unsigned int  aDate    = 1,
         Weekday::Name aWeekday = Weekday::Name::Saturday
-    );
+    ) noexcept
+        : mYear(aYear)
+        , mMonth(aMonth)
+        , mDate(aDate)
+        , mWeekday(aWeekday) {}
 
-    explicit Date(struct tm const * const aDate);
-    ~Date();
+    constexpr explicit Date(struct tm const * const aDate) noexcept
+        : mYear(aDate->tm_year + 1900) // year since 1900.
+        , mMonth(aDate->tm_mon + 1) // 0-11 since January.
+        , mDate(aDate->tm_mday)
+        , mWeekday((aDate->tm_wday + 1) % 7) {}
+    ~Date() = default;
 
     // IDate.
-    unsigned int GetYear(void)    const;
-    unsigned int GetMonth(void)   const;
-    unsigned int GetDate(void)    const;
-    unsigned int GetWeekday(void) const;
+    constexpr unsigned int GetYear(void) const {return mYear.Get();}
+    constexpr unsigned int GetMonth(void) const {return mMonth.Get();}
+    constexpr unsigned int GetDate(void) const {return mDate.Get();}
+    constexpr unsigned int GetWeekday(void) const {return mWeekday.Get();}
 
-    Month::Name   GetMonthName(void)   const;
-    Weekday::Name GetWeekdayName(void) const;
-
-    bool operator==(Date const &rhs);
-    inline bool operator!=(Date const &rhs){ return !(*this == rhs); }
+    constexpr Month::Name GetMonthName(void) const {return mMonth.ToName();}
+    constexpr Weekday::Name GetWeekdayName(void) const {return mWeekday.ToName();}
 
 private:
     Year    mYear;
@@ -97,8 +102,10 @@ private:
 // Helper functions.
 namespace DateHelper {
 
-char const *ToStr(Date const &aDate, char * const aInStr, size_t aStrSize = (10 + 1));
-char const *ToStr2(Date const &aDate, char * const aInStr, size_t aStrSize = (12 + 1));
+// YYYY-MM-DD.
+char const *ToStr(Date const &aDate, char * const aInStr, size_t const aStrSize = (10 + 1));
+// YYYY-Month-DD
+char const *ToStr2(Date const &aDate, char * const aInStr, size_t const aStrSize = (12 + 1));
 
 } // namespace DateHelper
 

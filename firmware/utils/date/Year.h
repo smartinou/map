@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,12 +32,12 @@
 // ******************************************************************************
 
 //! \brief Year class.
-class Year
-  : public Limit {
- public:
-  explicit Year(unsigned int aVal = 2000)
-    : Limit(2000, 2100, aVal) {}
-  ~Year() {}
+class Year final
+    : public Limit {
+public:
+    constexpr explicit Year(const unsigned int aVal = 2000) noexcept
+        : Limit(2000, 2100, aVal) {}
+    ~Year() = default;
 };
 
 // ******************************************************************************

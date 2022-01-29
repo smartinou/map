@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2018, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -32,12 +32,12 @@
 // ******************************************************************************
 
 //! \brief Hour class.
-class Hour
-  : public Limit {
- public:
-  explicit Hour(unsigned int aVal = 0)
-    : Limit(0, 23, aVal) {}
-  ~Hour() {}
+class Hour final
+    : public Limit {
+public:
+    constexpr explicit Hour(const unsigned int aVal = 0) noexcept
+        : Limit(0, 23, aVal) {}
+    ~Hour() = default;
 };
 
 // ******************************************************************************

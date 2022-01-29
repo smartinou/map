@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -44,80 +44,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Date::Date(
-    unsigned int  aYear,
-    Month::Name   aMonth,
-    unsigned int  aDate,
-    Weekday::Name aWeekday
-)   : mYear(aYear)
-    , mMonth(aMonth)
-    , mDate(aDate)
-    , mWeekday(aWeekday) {
-
-    // Ctor intentionally empty.
-}
-
-
-Date::Date(struct tm const * const aDate)
-    : mYear(aDate->tm_year + 1900) // year since 1900.
-    , mMonth(aDate->tm_mon + 1) // 0-11 since January.
-    , mDate(aDate->tm_mday)
-    , mWeekday((aDate->tm_wday + 1) % 7) { // 0-6 since Sunday.
-
-    // Ctor intentionally empty.
-}
-
-
-Date::~Date() {
-
-    // Dtor intentionally empty.
-}
-
-
-unsigned int Date::GetYear(void) const {
-    return mYear.Get();
-}
-
-
-unsigned int Date::GetMonth(void) const {
-    return mMonth.Get();
-}
-
-
-unsigned int Date::GetDate(void) const {
-    return mDate.Get();
-}
-
-
-unsigned int Date::GetWeekday(void) const {
-    return mWeekday.Get();
-}
-
-
-Month::Name Date::GetMonthName(void) const {
-    return mMonth.ToName();
-}
-
-
-Weekday::Name Date::GetWeekdayName(void) const {
-    return mWeekday.ToName();
-}
-
-
-bool Date::operator==(Date const &rhs) {
-    if ((this->mYear == rhs.mYear) &&
-        (this->mMonth == rhs.mMonth) &&
-        (this->mDate == rhs.mDate) &&
-        (this->mWeekday == rhs.mWeekday)) {
-        return true;
-    }
-
-    return false;
-}
-
-
 // TimeHelper functions.
-char const *DateHelper::ToStr(Date const &aDate, char * const aInStr, size_t aStrSize) {
+char const *DateHelper::ToStr(Date const &aDate, char * const aInStr, size_t const aStrSize) {
 
     snprintf(
         aInStr,
@@ -132,7 +60,7 @@ char const *DateHelper::ToStr(Date const &aDate, char * const aInStr, size_t aSt
 }
 
 
-char const *DateHelper::ToStr2(Date const &aDate, char * const aInStr, size_t aStrSize) {
+char const *DateHelper::ToStr2(Date const &aDate, char * const aInStr, size_t const aStrSize) {
 
     snprintf(
         aInStr,

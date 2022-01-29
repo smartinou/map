@@ -160,9 +160,9 @@ bool DBRec::IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic
 
 
 bool DBRec::IsCRCGood(uint8_t const * const aData, size_t aSize) const {
-    uint8_t mRecCRC = reinterpret_cast<DBRec::BaseRec const * const>(aData)->mCRC;
-    uint8_t lCRC = ComputeCRC(aData, aSize);
-    if (lCRC == mRecCRC) {
+    const uint8_t lRecCRC = reinterpret_cast<DBRec::BaseRec const * const>(aData)->mCRC;
+    const uint8_t lComputedCRC = ComputeCRC(aData, aSize);
+    if (lComputedCRC == lRecCRC) {
         return true;
     }
 

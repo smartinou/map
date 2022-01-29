@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -51,43 +51,57 @@ public:
 // from an RTCC for example.
 // It will not properly overflow and keep time if two objects
 // are added together.
-class Time
+class Time final
     : public ITime {
 public:
-    explicit Time(
-        Hour   aHours,
-        Minute aMinutes,
-        Second aSeconds,
-        bool   aIs24H = true,
-        bool   aIsPM  = false
-    );
+    constexpr explicit Time(
+        const Hour &aHours,
+        const Minute &aMinutes,
+        const Second &aSeconds,
+        const bool aIs24H = true,
+        const bool aIsPM  = false
+    ) noexcept
+        : mHours(aHours)
+        , mMinutes(aMinutes)
+        , mSeconds(aSeconds)
+        , mIs24H(aIs24H)
+        , mIsPM(aIsPM) {}
 
-    explicit Time(
-        unsigned int aHours = 0,
-        unsigned int aMinutes = 0,
-        unsigned int aSeconds = 0,
-        bool         aIs24H = true,
-        bool         aIsPM  = false
-    );
+    constexpr explicit Time(
+        const unsigned int aHours = 0,
+        const unsigned int aMinutes = 0,
+        const unsigned int aSeconds = 0,
+        const bool aIs24H = true,
+        const bool aIsPM  = false
+    ) noexcept
+        : mHours(aHours)
+        , mMinutes(aMinutes)
+        , mSeconds(aSeconds)
+        , mIs24H(aIs24H)
+        , mIsPM(aIsPM) {}
 
-    explicit Time(struct tm const * const aTime);
-    ~Time();
+    constexpr explicit Time(struct tm const * const aTime) noexcept
+        : mHours(aTime->tm_hour)
+        , mMinutes(aTime->tm_min)
+        , mSeconds(aTime->tm_sec)
+        , mIs24H(true)
+        , mIsPM(false) {}
+    ~Time() = default;
 
     // ITime.
-    unsigned int GetHours(void)   const;
-    unsigned int GetMinutes(void) const;
-    unsigned int GetSeconds(void) const;
+    constexpr unsigned int GetHours(void)   const {return mHours.Get();}
+    constexpr unsigned int GetMinutes(void) const {return mMinutes.Get();}
+    constexpr unsigned int GetSeconds(void) const {return mSeconds.Get();}
 
-    bool Is24H(void) const;
-    bool IsPM(void)  const;
+    constexpr bool Is24H(void) const {return mIs24H;}
+    constexpr bool IsPM(void)  const {return mIsPM;}
 
 private:
     Hour   mHours;
     Minute mMinutes;
     Second mSeconds;
-
-    bool   mIs24H;
-    bool   mIsPM;
+    bool mIs24H;
+    bool mIsPM;
 };
 
 // ******************************************************************************

@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -31,33 +31,74 @@
 
 //! \brief Limit class.
 class Limit {
- public:
-  explicit Limit(
-    unsigned int aLowerLimit,
-    unsigned int aUpperLimit);
-  explicit Limit(
-    unsigned int aLowerLimit,
-    unsigned int aUpperLimit,
-    unsigned int aVal);
+public:
+    constexpr explicit Limit(
+        const unsigned int aLower,
+        const unsigned int aUpper,
+        const unsigned int aVal = 0
+    ) noexcept
+        : mLowerLimit(aLower)
+        , mUpperLimit(aUpper)
+        , mVal(
+            [&]() -> unsigned int {
+                if (aVal < aLower) {
+                    return aLower;
+                } else if (aUpper < aVal) {
+                    return aUpper;
+                } else {
+                    return aVal;
+                }
+            }()
+        ) {}
 
-  virtual ~Limit() {};
+    constexpr unsigned int Get(void) const noexcept {return mVal;}
 
-  virtual unsigned int Get(void) const { return mVal; }
-  virtual void Set(unsigned int mVal);
+    constexpr Limit& operator++ () {
+        if (mVal == mUpperLimit) {
+            mVal = mLowerLimit;
+        } else {
+            ++mVal;
+        }
+        return *this;
+    }
 
-  Limit& operator++ ();
-  Limit  operator++ (int);
+    constexpr Limit operator++ (int) {
+        Limit lResult(*this);
+        ++(*this);
+        return lResult;
+    }
 
-  Limit& operator-- ();
-  Limit  operator-- (int);
+    constexpr Limit& operator-- () {
+        if (mVal <= mLowerLimit) {
+            mVal = mUpperLimit;
+        } else {
+            --mVal;
+        }
+        return *this;
+    }
 
-  bool operator==(Limit const &rhs);
-  inline bool operator!=(Limit const &rhs) { return !(*this == rhs); }
+    constexpr Limit operator-- (int) {
+        // Make a copy for result.
+        // Now use the prefix version to do the work.
+        // Return the copy (the old) value.
+        Limit result(*this);
+        --(*this);
+        return result;
+    }
 
- private:
-  unsigned int mLowerLimit;
-  unsigned int mUpperLimit;
-  unsigned int mVal;
+    constexpr bool operator==(Limit const &rhs) {
+        if (this->mVal == rhs.mVal) {
+            return true;
+        }
+        return false;
+    }
+
+    constexpr bool operator!=(Limit const &rhs) { return !(*this == rhs); }
+
+private:
+    unsigned int mLowerLimit;
+    unsigned int mUpperLimit;
+    unsigned int mVal;
 };
 
 // ******************************************************************************
