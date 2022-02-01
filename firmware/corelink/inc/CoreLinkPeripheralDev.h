@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -42,23 +42,34 @@ namespace CoreLink {
 //!
 class PeripheralDev {
 protected:
-    constexpr PeripheralDev(uint32_t aBaseAddr, uint32_t aClkRate) noexcept
+    constexpr explicit PeripheralDev(
+        uint32_t const aBaseAddr,
+        uint32_t const aClkRate
+    ) noexcept
         : mBaseAddr(aBaseAddr)
         , mClkRate(aClkRate)
-        , mIDRegMapPtr(reinterpret_cast<id_reg_map_t const * const>(aBaseAddr + 0x0FE0))
-        , mPeripheralID{0}
-        , mPrimeCellID(0)
-    {
-        mPeripheralID[0]  = (mIDRegMapPtr->mPeripheralID[0] <<  0);
-        mPeripheralID[0] |= (mIDRegMapPtr->mPeripheralID[1] <<  8);
-        mPeripheralID[0] |= (mIDRegMapPtr->mPeripheralID[2] << 16);
-        mPeripheralID[0] |= (mIDRegMapPtr->mPeripheralID[3] << 24);
-
-        mPrimeCellID  = (mIDRegMapPtr->mPrimeCellID[0] <<  0);
-        mPrimeCellID |= (mIDRegMapPtr->mPrimeCellID[1] <<  8);
-        mPrimeCellID |= (mIDRegMapPtr->mPrimeCellID[2] << 16);
-        mPrimeCellID |= (mIDRegMapPtr->mPrimeCellID[3] << 24);
-    }
+        , mPeripheralID{
+            [&]() -> uint32_t {
+                id_reg_map_t const * const lIDRegMapPtr =
+                    reinterpret_cast<id_reg_map_t const * const>(aBaseAddr + 0x0FE0);
+                uint32_t lID = (lIDRegMapPtr->mPeripheralID[0] <<  0);
+                lID |= (lIDRegMapPtr->mPeripheralID[1] <<  8);
+                lID |= (lIDRegMapPtr->mPeripheralID[2] << 16);
+                lID |= (lIDRegMapPtr->mPeripheralID[3] << 24);
+                return lID;
+            } ()
+        }
+        , mPrimeCellID(
+            [&]() -> uint32_t {
+                id_reg_map_t const * const lIDRegMapPtr =
+                    reinterpret_cast<id_reg_map_t const * const>(aBaseAddr + 0x0FE0);
+                uint32_t lID = (lIDRegMapPtr->mPrimeCellID[0] <<  0);
+                lID |= (lIDRegMapPtr->mPrimeCellID[1] <<  8);
+                lID |= (lIDRegMapPtr->mPrimeCellID[2] << 16);
+                lID |= (lIDRegMapPtr->mPrimeCellID[3] << 24);
+                return lID;
+            } ()
+        ) {}
 
     constexpr uint32_t GetBaseAddr(void) const noexcept {return mBaseAddr;}
     constexpr uint32_t GetClkRate(void) const noexcept {return mClkRate;}
@@ -66,7 +77,7 @@ protected:
     constexpr uint32_t GetPrimCellID(void) const noexcept {return mPrimeCellID;}
 
 private:
-    typedef uint32_t volatile reg_t;
+    typedef uint32_t reg_t;
 
     struct ID_REG_MAP_STRUCT_TAG {
         reg_t mPeripheralID[4];
@@ -76,9 +87,8 @@ private:
 
     uint32_t const mBaseAddr;
     uint32_t const mClkRate;
-    id_reg_map_t const * const mIDRegMapPtr;
-    uint32_t mPeripheralID[1];
-    uint32_t mPrimeCellID;
+    uint32_t const mPeripheralID[1];
+    uint32_t const mPrimeCellID;
 };
 
 

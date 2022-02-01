@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -55,26 +55,25 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CoreLink::SPIDev::SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg const &aSPIMasterPinCfgRef)
+CoreLink::SPIDev::SPIDev(
+    uint32_t const aBaseAddr,
+    uint32_t const aClkRate,
+    SSIPinCfg const &aSPIMasterPinCfgRef
+)
     : PeripheralDev(aBaseAddr, aClkRate)
-    , mLastSPICfgPtr(nullptr) {
-
+    , mLastSPICfgPtr(nullptr)
+{
     MAP_SSIDisable(aBaseAddr);
         aSPIMasterPinCfgRef.SetPins();
     MAP_SSIEnable(aBaseAddr);
 }
 
 
-CoreLink::SPIDev::~SPIDev() {
-
-}
-
-
 void CoreLink::SPIDev::RdData(
-    uint8_t aAddr,
+    uint8_t const aAddr,
     uint8_t * const aData,
-    unsigned int aLen,
-    CoreLink::ISPISlaveCfg &aSPICfgRef
+    std::size_t aLen,
+    CoreLink::ISPISlaveCfg const &aSPICfgRef
 )
 {
 
@@ -95,13 +94,14 @@ void CoreLink::SPIDev::RdData(
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
+    return;
 }
 
 
 void CoreLink::SPIDev::RdData(
     uint8_t * const aData,
     unsigned int aLen,
-    CoreLink::ISPISlaveCfg &aSPICfgRef
+    CoreLink::ISPISlaveCfg const &aSPICfgRef
 ) {
 
     SetCfg(aSPICfgRef);
@@ -119,14 +119,15 @@ void CoreLink::SPIDev::RdData(
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
+    return;
 }
 
 
 void CoreLink::SPIDev::WrData(
-    uint8_t aAddr,
+    uint8_t const aAddr,
     uint8_t const * const aData,
     unsigned int aLen,
-    CoreLink::ISPISlaveCfg &aSPICfgRef
+    CoreLink::ISPISlaveCfg const &aSPICfgRef
 ) {
 
     SetCfg(aSPICfgRef);
@@ -149,13 +150,14 @@ void CoreLink::SPIDev::WrData(
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
+    return;
 }
 
 
 void CoreLink::SPIDev::WrData(
     uint8_t const * const aData,
     unsigned int aLen,
-    CoreLink::ISPISlaveCfg &aSPICfgRef
+    CoreLink::ISPISlaveCfg const &aSPICfgRef
 ) {
 
     SetCfg(aSPICfgRef);
@@ -175,6 +177,7 @@ void CoreLink::SPIDev::WrData(
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
+    return;
 }
 
 
@@ -189,7 +192,10 @@ uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte) {
 }
 
 
-uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte, CoreLink::ISPISlaveCfg &aSPICfgRef) {
+uint8_t CoreLink::SPIDev::PushPullByte(
+    uint8_t const aByte,
+    CoreLink::ISPISlaveCfg const &aSPICfgRef
+) {
 
     SetCfg(aSPICfgRef);
     return PushPullByte(aByte);
@@ -199,18 +205,18 @@ uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte, CoreLink::ISPISlaveC
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void CoreLink::SPIDev::SetCfg(ISPISlaveCfg &aSPISlaveCfgRef) {
+void CoreLink::SPIDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
 
     if (mLastSPICfgPtr != &aSPISlaveCfgRef) {
         // The config changed since the last SPI call.
         // Reconfigure with the newly specified config.
         // Set the new SPI config as the new one.
-        uint32_t lBaseAddr = GetBaseAddr();
+        uint32_t const lBaseAddr = GetBaseAddr();
         MAP_SSIDisable(lBaseAddr);
 
         // Could check that data width is in range [4, 16].
-        ISPISlaveCfg::PROTOCOL lProtocol = aSPISlaveCfgRef.GetProtocol();
-        unsigned int lNativeProtocol = ToNativeProtocol(lProtocol);
+        ISPISlaveCfg::PROTOCOL const lProtocol = aSPISlaveCfgRef.GetProtocol();
+        unsigned int const lNativeProtocol = ToNativeProtocol(lProtocol);
         MAP_SSIConfigSetExpClk(
             lBaseAddr,
             GetClkRate(),
@@ -225,10 +231,11 @@ void CoreLink::SPIDev::SetCfg(ISPISlaveCfg &aSPISlaveCfgRef) {
         mLastSPICfgPtr = &aSPISlaveCfgRef;
         MAP_SSIEnable(lBaseAddr);
     }
+    return;
 }
 
 
-unsigned int CoreLink::SPIDev::ToNativeProtocol(ISPISlaveCfg::PROTOCOL aProtocol) {
+unsigned int CoreLink::SPIDev::ToNativeProtocol(ISPISlaveCfg::PROTOCOL const aProtocol) {
 
     switch (aProtocol) {
     case ISPISlaveCfg::PROTOCOL::MOTO_0: return SSI_FRF_MOTO_MODE_0;

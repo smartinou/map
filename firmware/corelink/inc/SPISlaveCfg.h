@@ -13,14 +13,13 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
 // ******************************************************************************
 //                              INCLUDE FILES
 // ******************************************************************************
-
 
 #include "inc/GPIO.h"
 
@@ -40,25 +39,25 @@ namespace CoreLink {
 class SPISlaveCfg final
     : public ISPISlaveCfg {
 public:
-    SPISlaveCfg(GPIO const &aGPIO);
+    explicit SPISlaveCfg(GPIO const &aGPIO) noexcept;
     ~SPISlaveCfg() = default;
 
     // ISPISlaveCfg interface.
-    void SetProtocol(protocol_t aProtocol) override {mProtocol = aProtocol;}
-    void SetBitRate(unsigned int aBitRate) override {mBitRate = aBitRate;}
-    void SetDataWidth(unsigned int aDataWidth) override {mDataWidth = aDataWidth;}
+    void SetProtocol(protocol_t const aProtocol) override {mProtocol = aProtocol;}
+    void SetBitRate(unsigned int const aBitRate) override {mBitRate = aBitRate;}
+    void SetDataWidth(unsigned int const aDataWidth) override {mDataWidth = aDataWidth;}
 
     protocol_t GetProtocol(void) const override {return mProtocol;}
     unsigned int GetBitRate(void) const override {return mBitRate;}
     unsigned int GetDataWidth(void) const override {return mDataWidth;}
 
-    void AssertCSn(void) override;
-    void DeassertCSn(void) override;
+    void AssertCSn(void) const override;
+    void DeassertCSn(void) const override;
 
 private:
     SPISlaveCfg() = delete;
 
-    void SetCSnGPIO(void);
+    void SetCSnGPIO(void) const;
 
     protocol_t mProtocol;
     unsigned long mBitRate;
@@ -84,4 +83,3 @@ private:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-

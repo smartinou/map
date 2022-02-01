@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -62,7 +62,7 @@ CoreLink::SPISlaveCfg::SPISlaveCfg(GPIO const &aGPIO)
 }
 
 
-void CoreLink::SPISlaveCfg::SetCSnGPIO(void) {
+void CoreLink::SPISlaveCfg::SetCSnGPIO(void) const {
 
     // Enable and configures the GPIO pin used for CSn.
     // The proper GPIO peripheral must be enabled using
@@ -81,13 +81,13 @@ void CoreLink::SPISlaveCfg::SetCSnGPIO(void) {
 }
 
 
-void CoreLink::SPISlaveCfg::AssertCSn(void) {
+void CoreLink::SPISlaveCfg::AssertCSn(void) const {
 
     MAP_GPIOPinWrite(mCSnGPIO.GetPort(), mCSnGPIO.GetPin(), 0);
 }
 
 
-void CoreLink::SPISlaveCfg::DeassertCSn(void) {
+void CoreLink::SPISlaveCfg::DeassertCSn(void) const {
 
     MAP_GPIOPinWrite(mCSnGPIO.GetPort(), mCSnGPIO.GetPin(), mCSnGPIO.GetPin());
 }

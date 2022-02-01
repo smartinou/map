@@ -62,12 +62,12 @@ protected:
     };
 
     DBRec();
-    virtual ~DBRec();
+    virtual ~DBRec() = default;
 
     void SetIsDirty(void) { mIsDirty = true; }
     bool IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic[]) const;
-    bool IsCRCGood(uint8_t const * const aData, size_t aSize) const;
-    uint8_t ComputeCRC(uint8_t const * const aData, size_t aSize) const;
+    bool IsCRCGood(uint8_t const * const aData, size_t const aSize) const;
+    uint8_t ComputeCRC(uint8_t const * const aData, size_t const aSize) const;
 
 private:
     virtual size_t GetRecSize(void) const = 0;

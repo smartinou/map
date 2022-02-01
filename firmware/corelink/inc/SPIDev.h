@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -21,7 +21,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "ISPI.h"
+#include "CoreLinkPeripheralDev.h"
+#include "ISPIDev.h"
 #include "ISPISlaveCfg.h"
 #include "SSIPinCfg.h"
 
@@ -42,43 +43,47 @@ class SPIDev
     , public PeripheralDev {
 
 public:
-    SPIDev(uint32_t aBaseAddr, uint32_t aClkRate, SSIPinCfg const &aSPIMasterPinCfgRef);
-    ~SPIDev();
+    explicit SPIDev(
+        uint32_t const aBaseAddr,
+        uint32_t const aClkRate,
+        SSIPinCfg const &aSPIMasterPinCfgRef
+    ) noexcept;
+    ~SPIDev() = default;
 
     // ISPIDev interface.
     void RdData(
-        uint8_t aAddr,
+        uint8_t const aAddr,
         uint8_t * const aData,
-        unsigned int aLen,
-        ISPISlaveCfg &aSPICfgRef
+        std::size_t aLen,
+        ISPISlaveCfg const &aSPICfgRef
     ) override;
 
     void RdData(
         uint8_t * const aData,
         unsigned int aLen,
-        ISPISlaveCfg &aSPICfgRef
+        ISPISlaveCfg const &aSPICfgRef
     ) override;
 
     void WrData(
-        uint8_t aAddr,
+        uint8_t const aAddr,
         uint8_t const * const aData,
         unsigned int aLen,
-        ISPISlaveCfg &aSPICfgRef
+        ISPISlaveCfg const &aSPICfgRef
     ) override;
 
     void WrData(
         uint8_t const * const aData,
         unsigned int aLen,
-        ISPISlaveCfg &aSPICfgRef
+        ISPISlaveCfg const &aSPICfgRef
     ) override;
 
     uint8_t PushPullByte(uint8_t const aByte) override;
-    uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg &aSPICfgRef) override;
+    uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg const &aSPICfgRef) override;
 
 private:
-    void SetCfg(ISPISlaveCfg &aSPISlaveCfgRef);
+    void SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef);
 
-    static unsigned int ToNativeProtocol(ISPISlaveCfg::PROTOCOL aProtocol);
+    static unsigned int ToNativeProtocol(ISPISlaveCfg::PROTOCOL const aProtocol);
 
     ISPISlaveCfg const *mLastSPICfgPtr;
 };
@@ -101,4 +106,3 @@ private:
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-

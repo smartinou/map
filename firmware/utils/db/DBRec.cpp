@@ -77,6 +77,8 @@ void DBRec::ResetDBDflt(void) {
     for (const auto lRec : mRecList) {
         lRec->ResetDflt();
     }
+
+    return;
 }
 
 
@@ -97,6 +99,8 @@ void DBRec::SerializeDB(uint8_t * aData) {
         unsigned int lSize = lRec->GetRecSize();
         aData += lSize;
     }
+
+    return;
 }
 
 
@@ -106,6 +110,8 @@ void DBRec::DeserializeDB(uint8_t const * aData) {
         unsigned int lSize = lRec->GetRecSize();
         aData += lSize;
     }
+
+    return;
 }
 
 
@@ -113,6 +119,8 @@ void DBRec::StaticUpdateCRC(void) {
     for (auto lRec : mRecList) {
         lRec->UpdateCRC();
     }
+
+    return;
 }
 
 // *****************************************************************************
@@ -127,19 +135,16 @@ DBRec::DBRec()
 }
 
 
-DBRec::~DBRec() {
-    // Dtor body left intentionally empty.
-}
-
-
 void DBRec::AddRec(void) {
     mRecList.push_back(this);
+    return;
 }
 
 
-uint8_t DBRec::ComputeCRC(uint8_t const * const aData, size_t aSize) const {
+uint8_t DBRec::ComputeCRC(uint8_t const * const aData, size_t const aSize) const {
 
     uint8_t lCRC = 0;
+    // Computed CRC is at offset 0 of struct BaseRec that prepends remaining data.
     for (size_t lIx = 1; lIx < aSize; lIx++) {
         lCRC += aData[lIx];
     }
@@ -159,7 +164,7 @@ bool DBRec::IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic
 }
 
 
-bool DBRec::IsCRCGood(uint8_t const * const aData, size_t aSize) const {
+bool DBRec::IsCRCGood(uint8_t const * const aData, size_t const aSize) const {
     const uint8_t lRecCRC = reinterpret_cast<DBRec::BaseRec const * const>(aData)->mCRC;
     const uint8_t lComputedCRC = ComputeCRC(aData, aSize);
     if (lComputedCRC == lRecCRC) {
