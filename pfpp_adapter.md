@@ -37,8 +37,6 @@ The PCB was also captured using KiCad. It's a 2-layer board of minimal size of 1
 
 The back side being mostly a ground plane with a few straps. It was not possible to avoid these few ones.
 
-![front side](./images/pfpp_assembled_cropped_horiz.png)
-
 ### Front Side
 
 The front side host all components.
@@ -52,6 +50,10 @@ The gerber files were uploaded to [JLC PCB](https://jlcpcb.com/) with minor mods
 I also got all capacitors, resistors/networks, even the MicroSD card cage installed at the factory for a fairly cheap price.
 
 The DS3234 and connectors were soldered manually. The TB6612 was still BO at the time I received the boards.
+
+![assembled_board](./images/pfpp_assembled_cropped_horiz.png)
+
+The 2nd BoosterPack hosts an LCD with another MicroSD Card reader.
 
 ### Future Improvements
 
