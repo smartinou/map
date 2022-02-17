@@ -37,13 +37,17 @@ The PCB was also captured using KiCad. It's a 2-layer board of minimal size of 1
 
 The back side being mostly a ground plane with a few straps. It was not possible to avoid these few ones.
 
+![front side](./images/pfpp_assembled_cropped_horiz.png)
+
 ### Front Side
 
 The front side host all components.
 
+![front side](./images/pfpp_front.jpg)
+
 ### Fabrication
 
-The gerber files were uploaded to [JLC PCB][https://jlcpcb.com/] with minor mods to fit their expected file formats and csv layout/fields.
+The gerber files were uploaded to [JLC PCB](https://jlcpcb.com/) with minor mods to fit their expected file formats and csv layout/fields.
 
 I also got all capacitors, resistors/networks, even the MicroSD card cage installed at the factory for a fairly cheap price.
 
