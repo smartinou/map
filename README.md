@@ -37,12 +37,18 @@ I'm the sole contributor of code for this project.
 
 ### Design Documents
 
+#### 1st Version
+
 *  [Electronics](./bfh_electronics)
    * [Adapter board construction](./bfh_adapter)
 *  [Firmware](./bfh_firmware)
    * [class diagrams](./bfh_class_diagrams)
    * [state machines](./bfh_state_machines)
 *  [software](./bfh_software)
+
+#### 2nd Version
+
+* [Adapter board construction](./pfpp_adapter)
 
 
 ## High Power Rocket Flight Computer
