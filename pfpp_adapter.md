@@ -41,7 +41,7 @@ The back side being mostly a ground plane with a few straps. It was not possible
 
 The front side host all components.
 
-![front side](./images/pfpp_front.jpg)
+<img src="./images/pfpp_front.jpg" alt="front side" height="300" width="400">
 
 ### Fabrication
 
@@ -51,7 +51,7 @@ I also got all capacitors, resistors/networks, even the MicroSD card cage instal
 
 The DS3234 and connectors were soldered manually. The TB6612 was still BO at the time I received the boards.
 
-![assembled_board](./images/pfpp_assembled_cropped_horiz.png)
+<img src="./images/pfpp_assembled_cropped_horiz.png" alt="assembled board" height="280" width="600">
 
 The 2nd BoosterPack hosts an LCD with another MicroSD Card reader.
 
