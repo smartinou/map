@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2021, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2022, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -22,6 +22,7 @@
 // ******************************************************************************
 
 #include <cstdint>
+#include <memory>
 
 #include "FatFSDisk.h"
 
@@ -48,7 +49,7 @@ class SDC
  public:
     explicit SDC(
         unsigned int const aDriveIx,
-        CoreLink::ISPIDev &aSPIDev,
+        std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
         GPIO const &aCSnPin,
         GPIO const &aDetectPin,
         unsigned int const aSPIBitRate = 4000000UL
@@ -128,8 +129,8 @@ class SDC
     );
     bool IsExpectedVoltageRange(void);
 
-    CoreLink::ISPIDev &mSPIDev;
-    CoreLink::SPISlaveCfg mSPICfg;
+    std::shared_ptr<CoreLink::ISPIDev> mSPIMasterDev;
+    CoreLink::SPISlaveCfg mSPISlaveCfg;
     GPIO const mDetectPin;
     unsigned int const mSPIBitRate;
 

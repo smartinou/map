@@ -56,29 +56,29 @@ public:
         uint8_t * const aData,
         std::size_t aLen,
         ISPISlaveCfg const &aSPICfgRef
-    ) override;
+    ) final;
 
     void RdData(
         uint8_t * const aData,
         unsigned int aLen,
         ISPISlaveCfg const &aSPICfgRef
-    ) override;
+    ) final;
 
     void WrData(
         uint8_t const aAddr,
         uint8_t const * const aData,
         unsigned int aLen,
         ISPISlaveCfg const &aSPICfgRef
-    ) override;
+    ) final;
 
     void WrData(
         uint8_t const * const aData,
         unsigned int aLen,
         ISPISlaveCfg const &aSPICfgRef
-    ) override;
+    ) final;
 
-    uint8_t PushPullByte(uint8_t const aByte) override;
-    uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg const &aSPICfgRef) override;
+    uint8_t PushPullByte(uint8_t const aByte) final;
+    uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg const &aSPICfgRef) final;
 
 private:
     void SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef);

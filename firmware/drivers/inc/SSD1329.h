@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -23,6 +23,7 @@
 
 // Standard Libraries.
 #include <string>
+#include <memory>
 
 #include "inc/GPIO.h"
 #include "ILCD.h"
@@ -36,37 +37,28 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declaration.
-namespace CoreLink {
-    class ISPIDev;
-    //class SPISlaveCfg;
-}
-
-
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief SSD1329 OLED controller.
 class SSD1329
     : public ILCD {
  
 public:
-   SSD1329(
-       CoreLink::ISPIDev &aSPIDev,
-       CoreLink::SPISlaveCfg const &aSPICfg,
-       GPIO const &aDCnGPIO,
-       GPIO const &aEn15VGPIO,
-       unsigned int const aDisplayWidth  = 128,
-       unsigned int const aDisplayHeight = 128
-   );
-   SSD1329(
-       CoreLink::ISPIDev &aSPIDev,
-       GPIO const &aCsPin,
-       GPIO const &aDCnGPIO,
-       GPIO const &aEn15VGPIO,
-       unsigned int const aDisplayWidth = 128,
-       unsigned int const aDisplayHeight = 128
-   );
-   virtual ~SSD1329();
+    explicit SSD1329(
+        std::shared_ptr<CoreLink::ISPIDev> aSPIDev,
+        CoreLink::SPISlaveCfg const &aSPICfg,
+        GPIO const &aDCnGPIO,
+        GPIO const &aEn15VGPIO,
+        unsigned int const aDisplayWidth  = 128,
+        unsigned int const aDisplayHeight = 128
+    ) noexcept;
+    explicit SSD1329(
+        std::shared_ptr<CoreLink::ISPIDev> aSPIDev,
+        GPIO const &aCsPin,
+        GPIO const &aDCnGPIO,
+        GPIO const &aEn15VGPIO,
+        unsigned int const aDisplayWidth = 128,
+        unsigned int const aDisplayHeight = 128
+    ) noexcept;
+    virtual ~SSD1329() = default;
 
     void Init() override;
     void DisplayOn(void) override;
@@ -75,16 +67,16 @@ public:
     void Clr(void) override;
     void DrawStr(
         std::string const &aStr,
-        unsigned int aXPos,
-        unsigned int aYPos,
-        unsigned int aGreyLevel
+        unsigned int const aXPos,
+        unsigned int const aYPos,
+        unsigned int const aGreyLevel
     ) override;
     void DrawImg(
         uint8_t const *aImgBufPtr,
-	    unsigned int aXPos,
-	    unsigned int aYPos,
-	    unsigned int aWidth,
-	    unsigned int aHeight
+	    unsigned int const aXPos,
+	    unsigned int const aYPos,
+	    unsigned int const aWidth,
+	    unsigned int const aHeight
     ) override;
 
  private:
@@ -122,14 +114,14 @@ public:
         SET_COMMAND_LOCK = 0xFD,
     };
 
-    void WrCmd(uint8_t const *aCmdBufPtr, unsigned int aLen);
-    void WrData(uint8_t const *aDataBufPtr, unsigned int aLen);
+    void WrCmd(uint8_t const *aCmdBufPtr, unsigned int const aLen);
+    void WrData(uint8_t const *aDataBufPtr, unsigned int const aLen);
 
     void AssertDataLine(void);
     void AssertCmdLine(void);
 
-    CoreLink::ISPIDev     &mSPIDev;
-    CoreLink::SPISlaveCfg mSPICfg;
+    std::shared_ptr<CoreLink::ISPIDev> mSPIMasterDev;
+    CoreLink::SPISlaveCfg const mSPISlaveCfg;
 
     GPIO const mDCnGPIO;
     GPIO const mEn15VGPIO;

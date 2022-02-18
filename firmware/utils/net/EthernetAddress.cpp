@@ -20,6 +20,8 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+#include <algorithm>
+
 #include <net/EthernetAddress.h>
 
 // *****************************************************************************
@@ -44,10 +46,11 @@ const EthernetAddress EthernetAddress::sBroadcast{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-void EthernetAddress::GetData(uint8_t * aByte) const noexcept {
-    for (size_t lIndex = 0; lIndex < sizeof(mValue); lIndex++) {
-        *aByte = mValue[lIndex]; aByte++;
+void EthernetAddress::GetData(uint8_t * aOutByte) const noexcept {
+    for (auto const &lByte : mValue) {
+        *aOutByte = lByte; aOutByte++;
     }
+    return;
 }
 
 ///
@@ -57,14 +60,15 @@ void EthernetAddress::GetData(uint8_t * aByte) const noexcept {
 void EthernetAddress::GetString(char *aOut) const noexcept {
 
     static constexpr auto sDigits{"0123456789abcdef"};
-	for (size_t lIndex = 0; lIndex < sizeof(mValue); lIndex++) {
-		*aOut = sDigits[mValue[lIndex] >> 4]; aOut++;
-		*aOut = sDigits[mValue[lIndex] & 0x0F]; aOut++;
-		*aOut = ':'; aOut++;
-	}
+    for (auto const &lByte : mValue) {
+        *aOut = sDigits[lByte >> 4]; aOut++;
+        *aOut = sDigits[lByte & 0x0F]; aOut++;
+        *aOut = ':'; aOut++;
+    }
 
 	aOut--;
 	*aOut = '\0';
+    return;
 }
 
 
@@ -118,11 +122,14 @@ uint64_t EthernetAddress::GetValue(void) const noexcept {
 ///
 
 bool EthernetAddress::IsBroadcast(void) const noexcept {
-	for (size_t lIndex = 0; lIndex < sizeof(mValue); lIndex++) {
-		if (mValue[lIndex] != 0xFF) {
-			return false;
-		}
-	}
+    bool lFound = std::any_of(
+        std::cbegin(mValue),
+        std::cend(mValue),
+        [](const uint8_t aByte) {return (aByte != 0xFF);}
+    );
+    if (lFound) {
+        return false;
+    }
 
 	return true;
 }
@@ -156,13 +163,14 @@ bool EthernetAddress::IsUnicast(void) const noexcept {
 ///
 
 bool EthernetAddress::IsValid(void) const noexcept {
-	for (size_t lIndex = 0; lIndex < sizeof(mValue); lIndex++) {
-		// First non-zero we hit will indicate that the address
-		// is valid - exact logical opposite of IsBroadcast behavior.
-		if (mValue[lIndex] != 0x00) {
-			return true;
-		}
-	}
+    bool lFound = std::any_of(
+        std::cbegin(mValue),
+        std::cend(mValue),
+        [](const uint8_t aByte) {return (aByte != 0x00);}
+    );
+    if (lFound) {
+        return true;
+    }
 
 	// If we made it here we're stuck with a bunch of zeroes.
 	return false;

@@ -51,18 +51,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CoreLink::SPISlaveCfg::SPISlaveCfg(GPIO const &aGPIO)
-    : mProtocol(PROTOCOL::MOTO_0)
-    , mBitRate(0)
-    , mDataWidth(8)
-    , mCSnGPIO(aGPIO)
-{
-    // Ctor body.
-    SetCSnGPIO();
-}
-
-
-void CoreLink::SPISlaveCfg::SetCSnGPIO(void) const {
+void CoreLink::SPISlaveCfg::InitCSnGPIO(void) const {
 
     // Enable and configures the GPIO pin used for CSn.
     // The proper GPIO peripheral must be enabled using

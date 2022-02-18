@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -59,9 +59,9 @@ namespace Net {
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
 void InitCallback(
     std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
-    CalendarRec * const aCalendar,
-    NetIFRec * const aNetIFRec,
-    FeedCfgRec * const aFeedCfgRec
+    std::shared_ptr<CalendarRec> aCalendar,
+    std::shared_ptr<NetIFRec> aNetIFRec,
+    std::shared_ptr<FeedCfgRec> aFeedCfgRec
 );
 #endif
 

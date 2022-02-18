@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -45,6 +45,9 @@
 #include <driverlib/uart.h>
 
 #include <net/EthernetAddress.h>
+
+// FatFS.
+#include "ff.h"
 
 #include "inc/Button.h"
 #include "inc/GPIO.h"
@@ -184,10 +187,10 @@ private:
     // PD0: SSI0RX
     // PD1: SSI0TX
     static struct SSI2GPIO {
-        unsigned long mPort;
-        unsigned int  mClkPin;
-        unsigned int  mRxPin;
-        unsigned int  mTxPin;
+        unsigned long const mPort;
+        unsigned int  const mClkPin;
+        unsigned int  const mRxPin;
+        unsigned int  const mTxPin;
     } constexpr sSSIPins = {
         GPIOD_AHB_BASE,
         GPIO_PIN_3, // Clk.
@@ -248,20 +251,17 @@ private:
 };
 
 
-class Factory
+class Factory final
     : public IBSPFactory {
 
 public:
-    virtual ~Factory() {
-        // Empty Dtor.
-    }
+    ~Factory() = default;
 
-
-    static std::shared_ptr<IBSPFactory> Instance(void) {
+    static std::shared_ptr<BSP::Factory> Instance(void) {
         if (nullptr == Factory::mInstance) {
             // Assigning the instance this way rather than with std::make_shared<>()
             // allows to make the Ctor private.
-            BSP::Factory::mInstance = std::shared_ptr<IBSPFactory>(new Factory);
+            BSP::Factory::mInstance = std::shared_ptr<BSP::Factory>(new Factory);
         }
 
         return Factory::mInstance;
@@ -269,35 +269,42 @@ public:
 
 
     // IBSPFactory Interface.
-    std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) override {
+    std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen,
+        QP::QEvt const * const aInitEvt
+    ) final {
         if (mRTCCAO == nullptr) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
             mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC, *mRTCC);
+            if (mRTCCAO != nullptr) {
+                mRTCCAO->start(aPrio, aQSto, aQLen, nullptr, 0U, aInitEvt);
+            }
         }
         return mRTCCAO;
     }
-
 
     // This could be used to get a temporary opaque pointer to RTCC AO,
     // For direct posting to AO for instance:
     //     QP::QActive * lPtr = GetOpaqueRTCCAO();
     //     lPtr->Post(myEvent);
-    std::shared_ptr<QP::QActive> GetOpaqueRTCCAO(void) const override { return mRTCCAO; }
+    std::shared_ptr<QP::QActive> GetOpaqueRTCCAO(void) const { return mRTCCAO; }
 
 
-    std::shared_ptr<QP::QActive> GetOpaqueBLEAO(void) const override { return nullptr; }
+    std::shared_ptr<QP::QActive> GetOpaqueBLEAO(void) const { return nullptr; }
     //QP::QActive *GetOpaqueBLEAO(void) override { return mBLEAO.get(); }
 
 
-    unsigned int CreateDisks(void) override {
+    unsigned int CreateDisks(void) {
         // This BSP has one or two SDC devices.
         if (mSDCDefault == nullptr) {
             // Drive index 0 is the default drive.
             static constexpr auto sDriveIndex = 0;
             static constexpr GPIO sCSnPin(GPIOD_AHB_BASE, GPIO_PIN_4);
             static constexpr GPIO sDetectPin(GPIOF_AHB_BASE, GPIO_PIN_7);
-            mSDCDefault = std::make_shared<SDC>(sDriveIndex, *mSPI3Dev, sCSnPin, sDetectPin);
+            mSDCDefault = std::make_shared<SDC>(sDriveIndex, mSPI3Dev, sCSnPin, sDetectPin);
         }
 
         if (mSDCBoosterPack == nullptr) {
@@ -306,51 +313,121 @@ public:
             static constexpr auto sDriveIndex = 1;
             static constexpr GPIO sCSnPin(GPIOC_AHB_BASE, GPIO_PIN_7);
             static constexpr GPIO sDetectPin(GPIOP_BASE, GPIO_PIN_2);
-            mSDCBoosterPack = std::make_shared<SDC>(sDriveIndex, *mSPI2Dev, sCSnPin, sDetectPin);
+            mSDCBoosterPack = std::make_shared<SDC>(sDriveIndex, mSPI2Dev, sCSnPin, sDetectPin);
         }
 
         return FatFSDisk::GetDiskQty();
     }
 
 
-    std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) override {
-        if (mFileLogSink == nullptr) {
-            mFileLogSink = std::make_shared<Logging::AO::FileSink_AO>(10 * 60 * BSP::TICKS_PER_SEC);
+    [[maybe_unused]] bool MountFS(void) final {
+        // Create SDC instance to use in FS stubs.
+        // WARNING: if SD card disks exist, they should be mounted before calling
+        // any other device triggering SPI bus activity.
+        // This can be handled in different order when SDCard socket is
+        // powered via PIO, but it's not guaranteed the case on all targets.
+        // See http://elm-chan.org/docs/mmc/mmc_e.html
+        // Section: Consideration on Multi-slave Configuration
+        unsigned int const lDiskQty = CreateDisks();
+        if (0 != lDiskQty) {
+            // Disks found: mount the default drive.
+            static constexpr auto sDefaultDiskIndex = 0;
+            FRESULT const lResult = FatFSDisk::StaticMountDisk(sDefaultDiskIndex, &sFatFS);
+            if (FR_OK == lResult) {
+                return true;
+            }
         }
-        return mFileLogSink;
+
+        // No disk found, or failed to mount default disk.
+        return false;
     }
 
 
-    std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) override {
+    [[maybe_unused]] bool StartFileSinkAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen
+    ) final {
+        // FS mounted on default disk: add log sink.
+        if (mFileLogSinkAO == nullptr) {
+            mFileLogSinkAO = std::make_shared<Logging::AO::FileSink_AO>(10 * 60 * BSP::TICKS_PER_SEC);
+            if (mFileLogSinkAO != nullptr) {
+                reinterpret_cast<Logging::AO::FileSink_AO * const>(
+                    mFileLogSinkAO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
+
+                std::unordered_set<std::string> const lCategories = {"PFPP"};
+                Logging::Event::Init const lFileLogInitEvent(DUMMY_SIG, lCategories);
+                mFileLogSinkAO->start(
+                    aPrio,
+                    aQSto,
+                    aQLen,
+                    nullptr,
+                    0U,
+                    &lFileLogInitEvent
+                );
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    [[maybe_unused]] bool StartPFPPAO(
+        FeedCfgRec &aFeedCfgRec,
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen
+    ) final {
         if (mPFPPAO == nullptr) {
             mMotorControl = CreateMotorControl();
             mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(*mMotorControl, &aFeedCfgRec);
+            if (mPFPPAO != nullptr) {
+                mPFPPAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
+                return true;
+            }
         }
-        return mPFPPAO;
+        return false;
     }
 
 
     std::shared_ptr<QP::QActive> GetOpaquePFPPAO(void) const { return mPFPPAO; }
 
 
-    std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) override {
-        return std::shared_ptr<Display::AO::Mgr_AO>(nullptr);
+    [[maybe_unused]] bool StartDisplayMgrAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen
+    ) final {
+        if (mDisplayMgrAO == nullptr) {
+            // TODO: CREATE AN ACTUAL OBJECT WHEN AVAILABLE.
+            mDisplayMgrAO = std::shared_ptr<Display::AO::Mgr_AO>(nullptr);
+            if (mDisplayMgrAO != nullptr) {
+                mDisplayMgrAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
+                return true;
+            }
+        }
+        return false;
     }
 
 
-    std::shared_ptr<QP::QActive> GetOpaqueDisplayMgrAO(void) const override { return nullptr; }
-
-
-    std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) override {
-        // Only one instance of this object can exist.
+    [[maybe_unused]] bool StartLwIPMgrAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen,
+        QP::QEvt const * const aInitEvt
+    ) final {
         if (mLwIPMgrAO == nullptr) {
             // Create all Ethernet drivers required before the AO.
             // LwIP::AO::Mgr doesn't use any local references to LwIPDrv.
             // They are referenced via LwIPDrv static functions.
             CreateEthDrv();
             mLwIPMgrAO = std::make_shared<LwIP::AO::Mgr_AO>();
+            if (mLwIPMgrAO != nullptr) {
+                mLwIPMgrAO->start(aPrio, aQSto, aQLen, nullptr, 0U, aInitEvt);
+                return true;
+            }
         }
-        return mLwIPMgrAO;
+        return false;
     }
 
 
@@ -375,7 +452,7 @@ private:
         , mSPI3Dev(nullptr)
         , mRTCC(nullptr)
         , mRTCCAO(nullptr)
-        , mFileLogSink(nullptr)
+        , mFileLogSinkAO(nullptr)
         , mMotorControl(nullptr)
         , mPFPPAO(nullptr)
         , mDisplayMgrAO(nullptr)
@@ -386,9 +463,8 @@ private:
         Init();
 
         // SPIDev is required with several devices.
-        mSPI2Dev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(2));
-        mSPI3Dev = std::unique_ptr<CoreLink::SPIDev>(CreateSPIDev(3));
-
+        CreateSPIDev(2);
+        CreateSPIDev(3);
         // TODO: CONSIDER CREATING RTCC HERE TOO.
     }
 
@@ -507,26 +583,34 @@ private:
     }
 
 
-    CoreLink::SPIDev * CreateSPIDev(unsigned int aSSIID) {
+    void CreateSPIDev(unsigned int aSSIID) {
         switch (aSSIID) {
         case 2: {
             // Create pin configuration.
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
             static constexpr SSI2PinCfg lSSIPinCfg;
-            return new CoreLink::SPIDev(SSI2_BASE, mClkRate, lSSIPinCfg);
+            mSPI2Dev = std::make_shared<CoreLink::SPIDev>(
+                SSI2_BASE,
+                mClkRate,
+                lSSIPinCfg
+            );
         } break;
         case 3: {
             // Create pin configuration.
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI3);
             static constexpr SSI3PinCfg lSSIPinCfg;
-            return new CoreLink::SPIDev(SSI3_BASE, mClkRate, lSSIPinCfg);
+            mSPI3Dev = std::make_shared<CoreLink::SPIDev>(
+                SSI3_BASE,
+                mClkRate,
+                lSSIPinCfg
+            );
         } break;
         case 0:
         case 1:
         default:
-            return nullptr;
+            return;
         }
     }
 
@@ -543,7 +627,7 @@ private:
             2000,
             sInterruptNumber,
             mRTCCInterruptPin,
-            *mSPI3Dev,
+            mSPI3Dev,
             sCSnPin
         );
 
@@ -563,7 +647,7 @@ private:
     // it won't be necessary for this function to return a pointer to EthDrv.
     // It will be referenced via LwIPDrv static functions.
     void CreateEthDrv(void) {
-        EthernetAddress lMAC = GetMACAddress();
+        EthernetAddress const lMAC = GetMACAddress();
         static constexpr unsigned int sMyNetIFIndex = 0;
         static constexpr unsigned int sPBufQueueSize = 8;
         mEthDrv = std::make_unique<EthDrv>(
@@ -618,11 +702,11 @@ private:
     }
 
     uint32_t mClkRate;
-    std::unique_ptr<CoreLink::SPIDev> mSPI2Dev;
-    std::unique_ptr<CoreLink::SPIDev> mSPI3Dev;
+    std::shared_ptr<CoreLink::SPIDev> mSPI2Dev;
+    std::shared_ptr<CoreLink::SPIDev> mSPI3Dev;
     std::unique_ptr<DS3234> mRTCC;
     std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
-    std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSink;
+    std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO;
     std::unique_ptr<TB6612> mMotorControl;
     std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
     std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
@@ -636,7 +720,9 @@ private:
     static constexpr GPIO mRTCCInterruptPin{GPIOP_BASE, GPIO_PIN_3};
     //static constexpr GPIO mBLEInterruptPin{GPIOB_AHB_BASE, GPIO_PIN_1};
 
-    static std::shared_ptr<IBSPFactory> mInstance;
+    static std::shared_ptr<BSP::Factory> mInstance;
+
+    FATFS sFatFS{0};
 };
 
 } // namespace BSP
@@ -678,8 +764,7 @@ namespace BSP {
 
 
 // Button class should become GPIO class.
-std::shared_ptr<IBSPFactory> BSP::Factory::mInstance = nullptr;
-//GPIO constexpr BSP::Factory::mRTCCInterruptPin(GPIOP_BASE, GPIO_PIN_3);
+std::shared_ptr<BSP::Factory> BSP::Factory::mInstance = nullptr;
 //GPIO const BSP::Factory::mBLEInterruptPin(GPIOB_AHB_BASE, GPIO_PIN_1);
 
 

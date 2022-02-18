@@ -39,29 +39,37 @@ namespace CoreLink {
 class SPISlaveCfg final
     : public ISPISlaveCfg {
 public:
-    explicit SPISlaveCfg(GPIO const &aGPIO) noexcept;
+    constexpr explicit SPISlaveCfg(
+        GPIO const &aGPIO,
+        protocol_t const aProtocol = PROTOCOL::MOTO_0,
+        unsigned int const aBitRate = 0,
+        unsigned int const aDataWidth = 8
+    ) noexcept
+        : mProtocol(aProtocol)
+        , mBitRate(aBitRate)
+        , mDataWidth(aDataWidth)
+        , mCSnGPIO(aGPIO) {}
+
     ~SPISlaveCfg() = default;
 
     // ISPISlaveCfg interface.
-    void SetProtocol(protocol_t const aProtocol) override {mProtocol = aProtocol;}
-    void SetBitRate(unsigned int const aBitRate) override {mBitRate = aBitRate;}
-    void SetDataWidth(unsigned int const aDataWidth) override {mDataWidth = aDataWidth;}
+    void SetBitRate(unsigned int const aBitRate) final {mBitRate = aBitRate;}
 
-    protocol_t GetProtocol(void) const override {return mProtocol;}
-    unsigned int GetBitRate(void) const override {return mBitRate;}
-    unsigned int GetDataWidth(void) const override {return mDataWidth;}
+    constexpr protocol_t GetProtocol(void) const final {return mProtocol;}
+    constexpr unsigned int GetBitRate(void) const final {return mBitRate;}
+    constexpr unsigned int GetDataWidth(void) const final {return mDataWidth;}
 
-    void AssertCSn(void) const override;
-    void DeassertCSn(void) const override;
+    void AssertCSn(void) const final;
+    void DeassertCSn(void) const final;
+
+    void InitCSnGPIO(void) const final;
 
 private:
     SPISlaveCfg() = delete;
 
-    void SetCSnGPIO(void) const;
-
-    protocol_t mProtocol;
+    protocol_t const mProtocol;
     unsigned long mBitRate;
-    unsigned long mDataWidth;
+    unsigned long const mDataWidth;
     GPIO const mCSnGPIO;
 };
 

@@ -68,130 +68,71 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-CalendarRec *App::sCalendar   = nullptr;
-NetIFRec    *App::sNetIFRec   = nullptr;
-FeedCfgRec  *App::sFeedCfgRec = nullptr;
+std::shared_ptr<CalendarRec> App::sCalendar   = nullptr;
+std::shared_ptr<NetIFRec>    App::sNetIFRec   = nullptr;
+std::shared_ptr<FeedCfgRec>  App::sFeedCfgRec = nullptr;
 
 std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO;
-FATFS App::sFatFS{0};
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-App::App() {
-    // Ctor body left intentionally empty.
-}
-
-
-App::~App() {
-    // Dtor body.
-}
-
-
 bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
     // Create records and assign them to DB.
-    sCalendar = new CalendarRec();
-    sNetIFRec = new NetIFRec();
-    sFeedCfgRec = new FeedCfgRec();
+    sCalendar = std::make_shared<CalendarRec>();
+    sNetIFRec = std::make_shared<NetIFRec>();
+    sFeedCfgRec = std::make_shared<FeedCfgRec>();
 
     // Create all AOs.
     // RTCC AO + FileLogSink.
-    App::sRTCC_AO = aFactory->CreateRTCCAO();
-    if (App::sRTCC_AO != nullptr) {
-        // Create SDC instance to use in FS stubs.
-        // WARNING: if SD card disks exist, they should be mounted before calling
-        // any other device triggering SPI bus activity.
-        // This can be handled in different order when SDCard socket is
-        // powered via PIO, but it's not guaranteed the case on all targets.
-        // See http://elm-chan.org/docs/mmc/mmc_e.html
-        // Section: Consideration on Multi-slave Configuration
-        unsigned int lDiskQty = aFactory->CreateDisks();
-        if (0 != lDiskQty) {
-            // Disks found: mount the default drive.
-            static constexpr auto sDefaultDiskIndex = 0;
-            FRESULT lResult = FatFSDisk::StaticMountDisk(sDefaultDiskIndex, &sFatFS);
-            if (FR_OK == lResult) {
-                // FS mounted on default disk: add log sink.
-                std::shared_ptr<QP::QActive> mFileLogSink_AO = aFactory->CreateLogFileSinkAO();
-                if (mFileLogSink_AO != nullptr) {
-                    reinterpret_cast<Logging::AO::FileSink_AO * const>(
-                        mFileLogSink_AO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
-
-                    std::unordered_set<std::string> lCategories = {"PFPP"};
-                    Logging::Event::Init lFileLogInitEvent(DUMMY_SIG, lCategories);
-                    mFileLogSink_AO->start(
-                        2U,
-                        mFileLogSinkEventQueue,
-                        Q_DIM(mFileLogSinkEventQueue),
-                        nullptr,
-                        0U,
-                        &lFileLogInitEvent
-                    );
-                }
-            }
-        }
-
-        // Now that disks are mounted, start the RTCC.
-        RTCC::Event::Init lRTCCInitEvent(DUMMY_SIG, sCalendar);
-        App::sRTCC_AO->start(
-            1U,
-            mRTCCEventQueue,
-            Q_DIM(mRTCCEventQueue),
-            nullptr,
-            0U,
-            &lRTCCInitEvent
+    bool const lIsFSMounted = aFactory->MountFS();
+    if (lIsFSMounted) {
+        aFactory->StartFileSinkAO(
+            2U,
+            mFileLogSinkEventQueue,
+            Q_DIM(mFileLogSinkEventQueue)
         );
-    } else {
-        // This application has no meaning w/o RTCC.
+    }
+
+    // Now that disks are mounted, start the RTCC.
+    RTCC::Event::Init const lRTCCInitEvent(DUMMY_SIG, sCalendar.get());
+    App::sRTCC_AO = aFactory->StartRTCCAO(
+        1U,
+        mRTCCEventQueue,
+        Q_DIM(mRTCCEventQueue),
+        &lRTCCInitEvent
+    );
+    if (App::sRTCC_AO == nullptr) {
         return false;
     }
 
-    auto lPFPPMgr_AO = aFactory->CreatePFPPAO(*App::sFeedCfgRec);
-    if (lPFPPMgr_AO != nullptr) {
-        lPFPPMgr_AO->start(
-            3U,
-            mPFPPMgrEventQueue,
-            Q_DIM(mPFPPMgrEventQueue),
-            nullptr,
-            0U
-        );
-    } else {
-        // This application has no meaning w/o PFPP Manager.
+    bool const lRes = aFactory->StartPFPPAO(
+        *App::sFeedCfgRec,
+        3U,
+        mPFPPMgrEventQueue,
+        Q_DIM(mPFPPMgrEventQueue)
+    );
+    if (lRes == false) {
         return false;
     }
 
-
-    // Network makes sense in the following cases:
-    // -if we use support web pages.
-    // -For larger IoT support.
-    auto lLwIPMgr_AO = aFactory->CreateLwIPMgrAO();
-    if (lLwIPMgr_AO != nullptr) {
-        LwIP::Event::Init lLwIPInitEvent(DUMMY_SIG, sNetIFRec, NetInitCallback);
-        lLwIPMgr_AO->start(
-            4U,
-            mLwIPEventQueue,
-            Q_DIM(mLwIPEventQueue),
-            nullptr,
-            0U,
-            &lLwIPInitEvent
-        );
-    }
+    LwIP::Event::Init const lLwIPInitEvent(DUMMY_SIG, sNetIFRec.get(), NetInitCallback);
+    aFactory->StartLwIPMgrAO(
+        4U,
+        mLwIPEventQueue,
+        Q_DIM(mLwIPEventQueue),
+        &lLwIPInitEvent
+    );
 
 
 #if 0
-    std::shared_ptr<QP::QActive> lDisplayMgr_AO = aFactory->CreateDisplayMgrAO();
-    if (lDisplayMgr_AO != nullptr) {
-        lDisplayMgr_AO->start(
-            5U,
-            mDisplayMgrEventQueue,
-            Q_DIM(mDisplayMgrEventQueue),
-            nullptr,
-            0U
-        );
-    }
-
+    aFactory->StartDisplayMgrAO(
+        5U,
+        mDisplayMgrEventQueue,
+        Q_DIM(mDisplayMgrEventQueue),
+    );
 
     std::shared_ptr<QP::QActive> lBLEMgr_AO = aFactory->CreateBLEAO();
     if (lBLEMgr_AO != nullptr) {
@@ -233,7 +174,12 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
 void App::NetInitCallback(void) {
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
-    Net::InitCallback(App::sRTCC_AO, App::sCalendar, App::sNetIFRec, App::sFeedCfgRec);
+    Net::InitCallback(
+        App::sRTCC_AO,
+        App::sCalendar,
+        App::sNetIFRec,
+        App::sFeedCfgRec
+    );
 #endif
 }
 

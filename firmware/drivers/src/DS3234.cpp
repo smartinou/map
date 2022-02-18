@@ -91,26 +91,21 @@ DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
     GPIO const &aInterruptPin,
-    CoreLink::ISPIDev &aSPIDev,
+    std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
     GPIO const &aCSnPin
 )
     : mBaseYear(aBaseYear)
-    , mSPIDev(aSPIDev)
-    , mSPICfg(aCSnPin)
+    , mSPIMasterDev(aSPIMasterDev)
+    , mSPISlaveCfg(
+        aCSnPin,
+        CoreLink::ISPISlaveCfg::PROTOCOL::MOTO_1,
+        4000000,
+        8
+    )
     , mInterruptNumber(aInterruptNumber)
-    , mInterruptGPIO(aInterruptPin) {
-
-    // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::ISPISlaveCfg::PROTOCOL::MOTO_1);
-    mSPICfg.SetBitRate(4000000);
-    mSPICfg.SetDataWidth(8);
-    //mSPICfg.SetCSnGPIO(aCSnPin.GetPort(), aCSnPin.GetPin());
-}
-
-
-DS3234::~DS3234() {
-
-    // Dtor body intentionally left empty.
+    , mInterruptGPIO(aInterruptPin)
+{
+    mSPISlaveCfg.InitCSnGPIO();
 }
 
 
@@ -123,13 +118,13 @@ void DS3234::Init(void) {
     //   -Alarm 'N' disabled.
     mRegMap.mCtrl = Ctrl::INTCn;
 
-    // Disable all and clear all flags in status regiser.
+    // Disable all and clear all flags in status register.
     mRegMap.mStatus = 0x00;
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mCtrl),
         const_cast<uint8_t *>(&mRegMap.mCtrl),
         2 * sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -260,11 +255,11 @@ void DS3234::UpdateCachedVal(void) {
 
     if (IsImpure()) {
         // Read the whole RTC.
-        mSPIDev.RdData(
+        mSPIMasterDev->RdData(
             0,
             reinterpret_cast<uint8_t *>(&mRegMap),
             sizeof(rtcc_reg_map_t),
-            mSPICfg
+            mSPISlaveCfg
         );
         mIsImpure = false;
     }
@@ -275,11 +270,11 @@ void DS3234::RdTime(Time &aTime) {
 
     // Read the Time portion of the RTC.
     // Update time ref.
-    mSPIDev.RdData(
+    mSPIMasterDev->RdData(
         L_RD_ADDR(mTime),
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
         sizeof(time2_t),
-        mSPICfg
+        mSPISlaveCfg
     );
     UpdateTime(aTime);
 }
@@ -289,11 +284,11 @@ void DS3234::RdDate(Date &aDate) {
 
     // Read the date portion out of RTC.
     // Update date ref.
-    mSPIDev.RdData(
+    mSPIMasterDev->RdData(
         L_RD_ADDR(mDate),
         reinterpret_cast<uint8_t *>(&mRegMap.mDate),
         sizeof(date_t),
-        mSPICfg
+        mSPISlaveCfg
     );
     UpdateDate(aDate);
 }
@@ -304,11 +299,11 @@ void DS3234::RdTimeAndDate(Time &aTime, Date &aDate) {
     // Read the whole RTC into register map structure.
     // Update time ref.
     // Update date ref.
-    mSPIDev.RdData(
+    mSPIMasterDev->RdData(
         L_RD_ADDR(mTime),
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
         sizeof(time2_t) + sizeof(date_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 
     UpdateTime(aTime);
@@ -321,11 +316,11 @@ void DS3234::WrTime(Time const &aTime) {
     // Fill time structure to write to RTC.
     // Send only the time portion of the structure to RTC.
     FillTimeStruct(aTime);
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mTime),
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
         sizeof(time2_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -335,11 +330,11 @@ void DS3234::WrDate(Date const &aDate) {
     // Fill date structure to write to RTC.
     // Send only the date portion of the structure to RTC.
     FillDateStruct(aDate);
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mDate),
         reinterpret_cast<uint8_t *>(&mRegMap.mDate),
         sizeof(date_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -351,11 +346,11 @@ void DS3234::WrTimeAndDate(Time const &aTime, Date const &aDate) {
     // Send time and date portion of the structure to RTC.
     FillTimeStruct(aTime);
     FillDateStruct(aDate);
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mTime),
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
         sizeof(time2_t) + sizeof(date_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -453,11 +448,11 @@ void DS3234::DisableAlarm(void) {
     case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl &= ~AEI2; break;
     }
 
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mCtrl),
         const_cast<uint8_t const *>(&mRegMap.mCtrl),
         sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -477,11 +472,11 @@ void DS3234::RdFromNVMem(
     // Write SRAM address register.
     // Cap size.
     // Loop into data register.
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mSRAMAddr),
         reinterpret_cast<uint8_t *>(aOffset),
         sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 
     unsigned int lMaxSize = mNVMemSize - aOffset;
@@ -489,11 +484,11 @@ void DS3234::RdFromNVMem(
         aSize = lMaxSize;
     }
 
-    mSPIDev.RdData(
+    mSPIMasterDev->RdData(
         L_RD_ADDR(mSRAMData),
         reinterpret_cast<uint8_t *>(aDataPtr),
         aSize * sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -507,11 +502,11 @@ void DS3234::WrToNVMem(
     // Write SRAM address register.
     // Cap size.
     // Loop into data register.
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mSRAMAddr),
         reinterpret_cast<uint8_t *>(aOffset),
         sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 
     unsigned int lMaxSize = mNVMemSize - aOffset;
@@ -519,11 +514,11 @@ void DS3234::WrToNVMem(
         aSize = lMaxSize;
     }
 
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mSRAMData),
         reinterpret_cast<uint8_t const *>(aDataPtr),
         aSize * sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 
@@ -687,29 +682,29 @@ void DS3234::TxAlarmStruct(alarm_id_t const aAlarmID) {
 
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
-        mSPIDev.WrData(
+        mSPIMasterDev->WrData(
             L_WR_ADDR(mAlarm1Seconds),
             const_cast<uint8_t const *>(&mRegMap.mAlarm1Seconds),
             sizeof(rtcc_reg_t) + sizeof(rtcc_alarm_t),
-            mSPICfg
+            mSPISlaveCfg
         );
 
         // Control register needs to be written after alarm 1 registers.
-        mSPIDev.WrData(
+        mSPIMasterDev->WrData(
             L_WR_ADDR(mCtrl),
             const_cast<uint8_t const *>(&mRegMap.mCtrl),
             sizeof(rtcc_reg_t),
-            mSPICfg
+            mSPISlaveCfg
         );
     break;
 
     case ALARM_ID::ALARM_ID_2:
         // Control register follows alarm 2 registers.
-        mSPIDev.WrData(
+        mSPIMasterDev->WrData(
             L_WR_ADDR(mAlarm2),
             reinterpret_cast<uint8_t const *>(&mRegMap.mAlarm2),
             sizeof(rtcc_alarm_t) + sizeof(rtcc_reg_t),
-            mSPICfg
+            mSPISlaveCfg
         );
     break;
     }
@@ -735,11 +730,11 @@ void DS3234::ClrAlarmFlag(alarm_id_t const aAlarmID) {
     case ALARM_ID::ALARM_ID_2: mRegMap.mStatus &= ~AF2; break;
     }
 
-    mSPIDev.WrData(
+    mSPIMasterDev->WrData(
         L_WR_ADDR(mStatus),
         const_cast<uint8_t const *>(&mRegMap.mStatus),
         sizeof(rtcc_reg_t),
-        mSPICfg
+        mSPISlaveCfg
     );
 }
 

@@ -45,23 +45,23 @@ namespace QP {
 
 class LwIPDrv {
 public:
-    virtual ~LwIPDrv() {}
+    virtual ~LwIPDrv() = default;
 
     static void StaticInit(
         QP::QActive * const aAO,
-        bool aUseDHCP,
-        IPAddress aIPAddress,
-        IPAddress aSubnetMask,
-        IPAddress aGWAddress
+        bool const aUseDHCP,
+        IPAddress const aIPAddress,
+        IPAddress const aSubnetMask,
+        IPAddress const aGWAddress
     );
-    static void StaticISR(unsigned int aIndex);
+    static void StaticISR(unsigned int const aIndex);
     virtual void Rd(void) = 0;
     virtual void Wr(void) = 0;
 
-    static EthernetAddress const &StaticGetMACAddress(unsigned int aIndex);
-    static IPAddress StaticGetIPAddress(unsigned int aIndex);
-    static IPAddress StaticGetSubnetMask(unsigned int aIndex);
-    static IPAddress StaticGetDefaultGW(unsigned int aIndex);
+    static EthernetAddress const &StaticGetMACAddress(unsigned int const aIndex);
+    static IPAddress StaticGetIPAddress(unsigned int const aIndex);
+    static IPAddress StaticGetSubnetMask(unsigned int const aIndex);
+    static IPAddress StaticGetDefaultGW(unsigned int const aIndex);
 
     static void DNSFoundCallback(
         const char *aName,
@@ -69,8 +69,6 @@ public:
         void *aArgs
     );
 
-    //uint8_t const *GetMACAddress(void) const;
-    //void GetMACAddress(uint8_t * const aMACAddr) const;
     EthernetAddress const &GetMACAddress(void) const;
     IPAddress GetIPAddress(void) const;
     IPAddress GetSubnetMask(void) const;
@@ -82,13 +80,13 @@ public:
     virtual void EnableAllInt(void) = 0;
 
 protected:
-    LwIPDrv(unsigned int aIndex, EthernetAddress const &aEthernetAddress);
+    LwIPDrv(unsigned int const aIndex, EthernetAddress const &aEthernetAddress);
 
     void PostRxEvent(void);
     void PostTxEvent(void);
     void PostOverrunEvent(void);
-    void PostNetIFChangedEvent(bool aIsUp);
-    void PostLinkChangedEvent(bool aIsUp);
+    void PostNetIFChangedEvent(bool const aIsUp);
+    void PostLinkChangedEvent(bool const aIsUp);
     void PostPHYInterruptEvent(void);
 
     unsigned int GetIndex(void) const {return mMyIndex;}
@@ -101,10 +99,10 @@ protected:
 private:
     void DrvInit(
         QP::QActive * const aAO,
-        bool aUseDHCP,
-        IPAddress aIPAddress,
-        IPAddress aSubnetMask,
-        IPAddress aGWAddress
+        bool const aUseDHCP,
+        IPAddress const aIPAddress,
+        IPAddress const aSubnetMask,
+        IPAddress const aGWAddress
     );
 
     // Static functions to hook to 'C' code.
@@ -125,12 +123,12 @@ private:
 #if LWIP_NETIF_EXT_STATUS_CALLBACK
     static void StaticExtCallback(
         struct netif * const aNetIF,
-        netif_nsc_reason_t aReason,
-        const netif_ext_callback_args_t *aArgs
+        netif_nsc_reason_t const aReason,
+        netif_ext_callback_args_t const *aArgs
     );
     virtual void ExtCallback(
-        netif_nsc_reason_t aReason,
-        const netif_ext_callback_args_t *aArgs
+        netif_nsc_reason_t const aReason,
+        netif_ext_callback_args_t const *aArgs
     );
 #endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
@@ -144,7 +142,7 @@ private:
 
     static std::vector<LwIPDrv *> sVector;
 
-    unsigned int mMyIndex;
+    unsigned int const mMyIndex;
     EthernetAddress mEthernetAddress;
     struct netif mNetIF;
     netif_ext_callback_t mExtCallback;

@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <string>
 #include <string.h>
+#include <array>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -38,14 +39,14 @@ class EthernetAddress final {
 public:
 
     static const EthernetAddress sBroadcast;
-	static constexpr size_t sSize{6 * sizeof(uint8_t)};
+    static constexpr size_t sSize{6 * sizeof(uint8_t)};
 
     constexpr EthernetAddress() noexcept : mValue{0} {}
-	constexpr explicit EthernetAddress(
+    constexpr explicit EthernetAddress(
         uint8_t aB0, uint8_t aB1, uint8_t aB2, uint8_t aB3, uint8_t aB4, uint8_t aB5
     ) noexcept
         : mValue{aB0, aB1, aB2, aB3, aB4, aB5} {}
-	constexpr explicit EthernetAddress(const char * const aStr) noexcept
+    constexpr explicit EthernetAddress(const char * const aStr) noexcept
         : EthernetAddress(aStr[0], aStr[1], aStr[2], aStr[3], aStr[4], aStr[5]) {}
     constexpr explicit EthernetAddress(const uint64_t &aValue) noexcept
         : EthernetAddress(
@@ -59,26 +60,23 @@ public:
     explicit EthernetAddress(const std::string &aStr)
         : EthernetAddress(aStr.c_str()) {}
 
-    bool operator == (const EthernetAddress &aAddress) const {return (memcmp(mValue, aAddress.mValue, sizeof(mValue)) == 0 );}
-    bool operator != (const EthernetAddress &aAddress) const {return (memcmp(mValue, aAddress.mValue, sizeof(mValue)) != 0 );}
-
-	constexpr uint8_t GetByte(size_t aIndex) const {return mValue[aIndex];}
+    constexpr uint8_t GetByte(size_t aIndex) const {return mValue[aIndex];}
 
     void GetData(uint8_t * aByte) const noexcept;
     void GetString(char * aOut) const noexcept;
     std::string GetString(void) const noexcept;
     uint64_t GetValue(void) const noexcept;
 
-	bool IsBroadcast(void) const noexcept;
-	bool IsMulticast(void) const noexcept;
-	bool IsUnicast(void) const noexcept;
-	bool IsValid(void) const noexcept;
+    bool IsBroadcast(void) const noexcept;
+    bool IsMulticast(void) const noexcept;
+    bool IsUnicast(void) const noexcept;
+    bool IsValid(void) const noexcept;
 
     constexpr void Set(unsigned int aIndex, uint8_t aValue) noexcept {mValue[aIndex] = aValue;}
 
 private:
-	// Bytes to bytes copy is allowed.
-	uint8_t mValue[EthernetAddress::sSize];
+    // Bytes to bytes copy is allowed.
+    std::array<uint8_t, EthernetAddress::sSize> mValue;
 };
 
 // ******************************************************************************

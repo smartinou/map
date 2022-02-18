@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2019-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2019-2022, Martin Garon, All rights reserved.
 //
 // ******************************************************************************
 
@@ -41,20 +41,42 @@ namespace QP {
 
 class IBSPFactory {
 public:
-    virtual ~IBSPFactory() {}
 
-    virtual std::shared_ptr<RTCC::AO::RTCC_AO> CreateRTCCAO(void) = 0;
-    virtual std::shared_ptr<QP::QActive> GetOpaqueRTCCAO(void) const = 0;
-    virtual std::shared_ptr<QP::QActive> GetOpaqueBLEAO(void) const = 0;
-    virtual unsigned int CreateDisks(void) = 0;
-
-    virtual std::shared_ptr<QP::QActive> CreateLogFileSinkAO(void) = 0;
-    virtual std::shared_ptr<QP::QActive> CreatePFPPAO(FeedCfgRec &aFeedCfgRec) = 0;
-    virtual std::shared_ptr<QP::QActive> GetOpaquePFPPAO(void) const = 0;
-    virtual std::shared_ptr<QP::QActive> CreateDisplayMgrAO(void) = 0;
-    virtual std::shared_ptr<QP::QActive> GetOpaqueDisplayMgrAO(void) const = 0;
-    virtual std::shared_ptr<QP::QActive> CreateLwIPMgrAO(void) = 0;
     virtual std::shared_ptr<QP::QActive> CreateBLEAO(void) = 0;
+
+    virtual std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen,
+        QP::QEvt const * const aInitEvt
+    ) = 0;
+
+    virtual bool MountFS(void) = 0;
+    virtual bool StartFileSinkAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen
+    ) = 0;
+
+    virtual bool StartPFPPAO(
+        FeedCfgRec &aFeedCfgRec,
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen
+    ) = 0;
+
+    virtual bool StartLwIPMgrAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen,
+        QP::QEvt const * const aInitEvt
+    ) = 0;
+
+    virtual bool StartDisplayMgrAO(
+        uint8_t const aPrio,
+        QP::QEvt const * aQSto[],
+        uint32_t const aQLen
+    ) = 0;
 };
 
 // ******************************************************************************

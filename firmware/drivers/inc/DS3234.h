@@ -21,6 +21,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include <memory>
+
 #include "IRTCC.h"
 #include "INVMem.h"
 #include "ITemperature.h"
@@ -53,10 +55,10 @@ class DS3234
         unsigned int const aBaseYear,
         unsigned long const aInterruptNumber,
         GPIO const &aInterruptPin,
-        CoreLink::ISPIDev &aSPIDev,
+        std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
         GPIO const &aCSnPin
     );
-    ~DS3234();
+    ~DS3234() = default;
 
     // RTCC Interface.
     void Init(void) override;
@@ -271,8 +273,8 @@ private:
     unsigned int mBaseYear = 0;
     unsigned int mCentury = 0;
 
-    CoreLink::ISPIDev &mSPIDev;
-    CoreLink::SPISlaveCfg mSPICfg;
+    std::shared_ptr<CoreLink::ISPIDev> mSPIMasterDev;
+    CoreLink::SPISlaveCfg const mSPISlaveCfg;
 
     unsigned long mInterruptNumber = 0;
     GPIO const &mInterruptGPIO;

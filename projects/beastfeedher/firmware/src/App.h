@@ -23,9 +23,6 @@
 
 #include <memory>
 
-// FatFS.
-#include "ff.h"
-
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -49,21 +46,20 @@ namespace RTCC {
 
 class App {
 public:
-    App();
-    ~App();
+    App() = default;
+    ~App() = default;
 
     bool Init(std::shared_ptr<IBSPFactory> mFactory);
 
     static RTCC::AO::RTCC_AO *GetRTCCAO(void) {return sRTCC_AO.get();}
-    static FATFS *GetFatFS(void) {return &sFatFS;}
 
 private:
     static void NetInitCallback(void);
 
     // DB records.
-    static CalendarRec *sCalendar;
-    static NetIFRec    *sNetIFRec;
-    static FeedCfgRec  *sFeedCfgRec;
+    static std::shared_ptr<CalendarRec> sCalendar;
+    static std::shared_ptr<NetIFRec>    sNetIFRec;
+    static std::shared_ptr<FeedCfgRec>  sFeedCfgRec;
 
     // QP Event Queues.
     static size_t constexpr sSmallQueueSize = 5;
@@ -76,8 +72,6 @@ private:
     QP::QEvt const *mBLEMgrEventQueue[sSmallQueueSize] = {nullptr};
 
     static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO;
-
-    static FATFS sFatFS;
 };
 
 // ******************************************************************************

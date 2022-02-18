@@ -135,20 +135,22 @@ static uint8_t constexpr sStopBlock = 0xFD;
 
 SDC::SDC(
     unsigned int const aDriveIx,
-    CoreLink::ISPIDev &aSPIDev,
+    std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
     GPIO const &aCSnPin,
     GPIO const &aDetectPin,
     unsigned int const aSPIBitRate
 )
-    : mSPIDev(aSPIDev)
-    , mSPICfg(aCSnPin)
+    : mSPIMasterDev(aSPIMasterDev)
+    , mSPISlaveCfg(
+        aCSnPin,
+        CoreLink::SPISlaveCfg::PROTOCOL::MOTO_0,
+        400000,
+        8
+    )
     , mDetectPin(aDetectPin)
     , mSPIBitRate(aSPIBitRate)
 {
-    // Ctor body.
-    // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_0);
-    mSPICfg.SetDataWidth(8);
+    mSPISlaveCfg.InitCSnGPIO();
 }
 
 
@@ -166,12 +168,12 @@ DSTATUS SDC::InitDisk(void) {
 
     // Set clock to Clock Frequency Identification Mode Max (400KHz).
     static unsigned int constexpr sClkFreqIDMode = 400000;
-    mSPICfg.SetBitRate(sClkFreqIDMode);
+    mSPISlaveCfg.SetBitRate(sClkFreqIDMode);
 
     // Send 80 dummy clocks, CSn de-asserted.
-    mSPICfg.DeassertCSn();
+    mSPISlaveCfg.DeassertCSn();
     for (unsigned int lByteIx = 0; lByteIx < (80/8); lByteIx++) {
-        mSPIDev.PushPullByte(sDummyByte);
+        mSPIMasterDev->PushPullByte(sDummyByte);
     }
 
     // Put the card in SPI mode.
@@ -287,7 +289,7 @@ DSTATUS SDC::InitDisk(void) {
 
     Deselect();
     // Set to normal operation bit rate.
-    mSPICfg.SetBitRate(mSPIBitRate);
+    mSPISlaveCfg.SetBitRate(mSPIBitRate);
     return mStatus;
 }
 
@@ -376,7 +378,7 @@ DRESULT SDC::WrDisk(
         R1_RESPONSE_PKT lR1 = SendCmd(CMD24, aStartSector);
         if (lR1 == 0) {
             // Need at least 8 clock cycles after receiving command response.
-            mSPIDev.PushPullByte(sDummyByte);
+            mSPIMasterDev->PushPullByte(sDummyByte);
             if (TxDataBlock(aBuffer, sStartBlock)) {
                 aSectorCount = 0;
             }
@@ -392,7 +394,7 @@ DRESULT SDC::WrDisk(
         R1_RESPONSE_PKT lR1 = SendCmd(CMD25, aStartSector);
         if (lR1 == 0) {
             // Need at least 8 clock cycles after receiving command response.
-            mSPIDev.PushPullByte(sDummyByte);
+            mSPIMasterDev->PushPullByte(sDummyByte);
             do {
                 static uint8_t constexpr sDataTokenCmd25 = 0xFC;
                 if (!TxDataBlock(aBuffer, sDataTokenCmd25)) {
@@ -435,8 +437,8 @@ bool SDC::Select(void) {
     // Dummy clock: force DO enabled.
     // These extra clocks shouldn't be necessary right after asserting CSn,
     // but they do not hurt either.
-    mSPICfg.AssertCSn();
-    mSPIDev.PushPullByte(sDummyByte, mSPICfg);
+    mSPISlaveCfg.AssertCSn();
+    mSPIMasterDev->PushPullByte(sDummyByte, mSPISlaveCfg);
 
     if (1) {
         // Leading busy check.
@@ -445,7 +447,7 @@ bool SDC::Select(void) {
     }
 
     // Can never get here, right? Inifite loop above.
-    mSPICfg.DeassertCSn();
+    mSPISlaveCfg.DeassertCSn();
     return false;
 }
 
@@ -453,8 +455,8 @@ bool SDC::Select(void) {
 void SDC::Deselect(void) {
     // Deassert CSn.
     // Dummy clock: force DO high-Z for multiple slave SPI.
-    mSPICfg.DeassertCSn();
-    mSPIDev.PushPullByte(sDummyByte);
+    mSPISlaveCfg.DeassertCSn();
+    mSPIMasterDev->PushPullByte(sDummyByte);
 }
 
 
@@ -463,7 +465,7 @@ void SDC::WaitReady(void) {
     // Wait until busy to deassert (DO going '1').
     uint8_t lVal = 0;
     do {
-        lVal = mSPIDev.PushPullByte(sDummyByte);
+        lVal = mSPIMasterDev->PushPullByte(sDummyByte);
     } while (lVal != sDummyByte);
 }
 
@@ -484,7 +486,7 @@ bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
     uint8_t lToken = 0x00;
     unsigned int lRetryCount = 200;
     do {
-        lToken = mSPIDev.PushPullByte(sDummyByte);
+        lToken = mSPIMasterDev->PushPullByte(sDummyByte);
     } while ((lToken == sDummyByte) && lRetryCount--);
 
     if (lToken != sStartBlock) {
@@ -493,16 +495,16 @@ bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
     }
 
     // Store trailing data to the buffer.
-    // Data. Can't use mSPIDev.RdData() since it asserts/deasserts CSn.
+    // Data. Can't use mSPIMasterDev->RdData() since it asserts/deasserts CSn.
     while (aBlockLen > 0) {
-        *aBuffer = mSPIDev.PushPullByte(0);
+        *aBuffer = mSPIMasterDev->PushPullByte(0);
         aBuffer++;
         aBlockLen--;
     }
 
     // Discard CRC.
-    mSPIDev.PushPullByte(sDummyByte);
-    mSPIDev.PushPullByte(sDummyByte);
+    mSPIMasterDev->PushPullByte(sDummyByte);
+    mSPIMasterDev->PushPullByte(sDummyByte);
 
     return true;
 }
@@ -512,24 +514,24 @@ bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
 bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
 
     // Send token byte.
-    mSPIDev.PushPullByte(aToken);
+    mSPIMasterDev->PushPullByte(aToken);
 
     // Send data if token is other than StopTran.
     if (aToken != sStopBlock) {
-        // Data. Can't use mSPIDev.WrData() since it asserts/deasserts CSn.
+        // Data. Can't use mSPIMasterDev->WrData() since it asserts/deasserts CSn.
         unsigned int lLen = SDC::sSectorSize;
         while (lLen > 0) {
-            mSPIDev.PushPullByte(*aBuffer);
+            mSPIMasterDev->PushPullByte(*aBuffer);
             aBuffer++;
             lLen--;
         }
 
         // Dummy CRC.
-        mSPIDev.PushPullByte(sDummyByte);
-        mSPIDev.PushPullByte(sDummyByte);
+        mSPIMasterDev->PushPullByte(sDummyByte);
+        mSPIMasterDev->PushPullByte(sDummyByte);
 
         // Receive data response token.
-        uint8_t lVal = mSPIDev.PushPullByte(sDummyByte);
+        uint8_t lVal = mSPIMasterDev->PushPullByte(sDummyByte);
         static uint8_t constexpr sDataAccepted = 0x05;
         if ((lVal & 0x1F) != sDataAccepted) {
             // Function fails if the data packet was not accepted.
@@ -538,10 +540,10 @@ bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
     }
 
     // Busy wait: Get R1 1st (discard), then get busy signal.
-    R1_RESPONSE_PKT lR1b = mSPIDev.PushPullByte(sDummyByte);
+    R1_RESPONSE_PKT lR1b = mSPIMasterDev->PushPullByte(sDummyByte);
     lR1b = 0x00;
     while (!lR1b) {
-        lR1b = mSPIDev.PushPullByte(sDummyByte);
+        lR1b = mSPIMasterDev->PushPullByte(sDummyByte);
     }
 
     return true;
@@ -574,34 +576,34 @@ SDC::R1_RESPONSE_PKT SDC::SendCmd(
 
     // Send command packet: start + command.
     static uint8_t constexpr sTransmitBit = 0x40;
-    mSPIDev.PushPullByte(aCmd | sTransmitBit, mSPICfg);
-    mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >> 24));
-    mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >> 16));
-    mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >>  8));
-    mSPIDev.PushPullByte(static_cast<uint8_t>(aArg >>  0));
+    mSPIMasterDev->PushPullByte(aCmd | sTransmitBit, mSPISlaveCfg);
+    mSPIMasterDev->PushPullByte(static_cast<uint8_t>(aArg >> 24));
+    mSPIMasterDev->PushPullByte(static_cast<uint8_t>(aArg >> 16));
+    mSPIMasterDev->PushPullByte(static_cast<uint8_t>(aArg >>  8));
+    mSPIMasterDev->PushPullByte(static_cast<uint8_t>(aArg >>  0));
 
     // Known or dummy CRCs.
     switch (aCmd) {
-    case CMD0: mSPIDev.PushPullByte(0x95); break;
-    case CMD8: mSPIDev.PushPullByte(0x87); break;
-    default:   mSPIDev.PushPullByte(0x1); break;
+    case CMD0: mSPIMasterDev->PushPullByte(0x95); break;
+    case CMD8: mSPIMasterDev->PushPullByte(0x87); break;
+    default:   mSPIMasterDev->PushPullByte(0x1); break;
     }
 
     if (CMD12 == aCmd) {
         // Discard following one byte when CMD12.
-        mSPIDev.PushPullByte(sDummyByte);
+        mSPIMasterDev->PushPullByte(sDummyByte);
     }
 
     // Wait for response (10 bytes max).
     unsigned int lWaitCycles = 10;
     R1_RESPONSE_PKT lR1 = 0;
     do {
-        lR1 = mSPIDev.PushPullByte(sDummyByte);
+        lR1 = mSPIMasterDev->PushPullByte(sDummyByte);
     } while ((lR1 & L_R1_MASK_BUSY) && (lWaitCycles--));
 
     // Pull data back into output pointer.
     while (aRegLen > 0) {
-        *(static_cast<uint8_t *>(aRegPtr)) = mSPIDev.PushPullByte(sDummyByte);
+        *(static_cast<uint8_t *>(aRegPtr)) = mSPIMasterDev->PushPullByte(sDummyByte);
         aRegPtr++;
         aRegLen--;
     }

@@ -69,41 +69,41 @@ std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
 
 void LwIPDrv::StaticInit(
     QP::QActive * const aAO,
-    bool aUseDHCP,
-    IPAddress aIPAddress,
-    IPAddress aSubnetMask,
-    IPAddress aGWAddress
+    bool const aUseDHCP,
+    IPAddress const aIPAddress,
+    IPAddress const aSubnetMask,
+    IPAddress const aGWAddress
 ) {
     // Go through all registered network drivers and call their Init() function.
     // For now, this forces to have the same IP address scheme, but for now it's fine.
     // Could at least increment IP address?
-    for (std::vector<LwIPDrv *>::iterator lIt = sVector.begin(); lIt != sVector.end(); ++lIt) {
-        (*lIt)->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
+    for (auto &lNetDrv : sVector) {
+        lNetDrv->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
     }
 }
 
 
-void LwIPDrv::StaticISR(unsigned int aIndex) {
+void LwIPDrv::StaticISR(unsigned int const aIndex) {
     sVector[aIndex]->ISR();
 }
 
 
-EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int aIndex) {
+EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int const aIndex) {
     return sVector[aIndex]->GetMACAddress();
 }
 
 
-IPAddress LwIPDrv::StaticGetIPAddress(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetIPAddress(unsigned int const aIndex) {
     return sVector[aIndex]->GetIPAddress();
 }
 
 
-IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int const aIndex) {
     return sVector[aIndex]->GetSubnetMask();
 }
 
 
-IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int aIndex) {
+IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int const aIndex) {
     return sVector[aIndex]->GetDefaultGW();
 }
 
@@ -150,8 +150,8 @@ void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
 #if LWIP_NETIF_EXT_STATUS_CALLBACK
 void LwIPDrv::StaticExtCallback(
     struct netif * const aNetIF,
-    netif_nsc_reason_t aReason,
-    const netif_ext_callback_args_t *aArgs) {
+    netif_nsc_reason_t const aReason,
+    netif_ext_callback_args_t const *aArgs) {
     // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
     LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
     lThis->ExtCallback(aReason, aArgs);
@@ -159,8 +159,8 @@ void LwIPDrv::StaticExtCallback(
 
 
 void LwIPDrv::ExtCallback(
-    netif_nsc_reason_t aReason,
-    const netif_ext_callback_args_t *aArgs
+    netif_nsc_reason_t const aReason,
+    netif_ext_callback_args_t const *aArgs
 ) {
     static_cast<void>(aArgs);
 
@@ -245,7 +245,7 @@ void LwIPDrv::StartIPCfg(void) {
 // *****************************************************************************
 
 LwIPDrv::LwIPDrv(
-    unsigned int aIndex,
+    unsigned int const aIndex,
     EthernetAddress const &aEthernetAddress
 )
     : mMyIndex(aIndex)
@@ -265,10 +265,10 @@ LwIPDrv::LwIPDrv(
 
 void LwIPDrv::DrvInit(
     QP::QActive * const aAO,
-    bool aUseDHCP,
-    IPAddress aIPAddr,
-    IPAddress aSubnetMask,
-    IPAddress aGWAddr
+    bool const aUseDHCP,
+    IPAddress const aIPAddr,
+    IPAddress const aSubnetMask,
+    IPAddress const aGWAddr
 ) {
     // Save the active object associated with this driver.
     SetAO(aAO);
@@ -412,7 +412,7 @@ void LwIPDrv::PostOverrunEvent(void) {
 }
 
 
-void LwIPDrv::PostNetIFChangedEvent(bool aIsUp) {
+void LwIPDrv::PostNetIFChangedEvent(bool const aIsUp) {
     if (aIsUp) {
         static const LwIP::Event::NetStatusChanged sEvent(LWIP_NETIF_CHANGED_SIG, &GetNetIF(), true);
         GetAO().POST(&sEvent, this);
@@ -423,7 +423,7 @@ void LwIPDrv::PostNetIFChangedEvent(bool aIsUp) {
 }
 
 
-void LwIPDrv::PostLinkChangedEvent(bool aIsUp) {
+void LwIPDrv::PostLinkChangedEvent(bool const aIsUp) {
     if (aIsUp) {
         static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), true);
         GetAO().POST(&sEvent, this);

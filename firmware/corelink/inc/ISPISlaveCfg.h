@@ -33,7 +33,6 @@ namespace CoreLink {
 
 class ISPISlaveCfg {
 public:
-    virtual ~ISPISlaveCfg() = default;
 
     enum class PROTOCOL {
         MOTO_0 = 0,
@@ -49,9 +48,7 @@ public:
 #else
     typedef enum PROTOCOL protocol_t;
 #endif
-    virtual void SetProtocol(protocol_t const aProtocol) = 0;
     virtual void SetBitRate(unsigned int const aBitRate) = 0;
-    virtual void SetDataWidth(unsigned int const aDataWidth) = 0;
 
     virtual protocol_t GetProtocol(void) const = 0;
     virtual unsigned int GetBitRate(void) const = 0;
@@ -59,6 +56,8 @@ public:
 
     virtual void AssertCSn(void) const = 0;
     virtual void DeassertCSn(void) const = 0;
+
+    virtual void InitCSnGPIO(void) const = 0;
 };
 
 

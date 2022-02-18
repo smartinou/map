@@ -48,9 +48,6 @@ public:
 	constexpr explicit IPAddress(const void * const aIn) noexcept
         : mValue(*reinterpret_cast<const uint32_t * const>(aIn)), mIsAny(false) {}
 
-    bool operator == (const IPAddress &aB) const {return (mValue == aB.mValue);}
-    bool operator != (const IPAddress &aB) const {return (mValue != aB.mValue);}
-
 	uint8_t GetByte(size_t aIndex) const noexcept;
     void SetByte(size_t aIndex, uint8_t aByte) noexcept;
     uint32_t GetValue(void) const noexcept {return mValue;}

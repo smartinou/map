@@ -320,9 +320,9 @@ static tCGI const sCGIEntries[] = {
     {"/network.cgi", DispNet}
 };
 
-static CalendarRec *sCalendarRec = nullptr;
-static NetIFRec *sNetIFRec = nullptr;
-static FeedCfgRec *sFeedCfgRec = nullptr;
+static std::shared_ptr<CalendarRec> sCalendarRec = nullptr;
+static std::shared_ptr<NetIFRec> sNetIFRec = nullptr;
+static std::shared_ptr<FeedCfgRec> sFeedCfgRec = nullptr;
 
 #endif // LWIP_HTTPD_CGI
 
@@ -337,9 +337,9 @@ namespace Net {
     // Vraiment, ceci est plutot un setup de HTTP.
 void InitCallback(
     std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
-    CalendarRec * const aCalendarRec,
-    NetIFRec * const aNetIFRec,
-    FeedCfgRec * const aFeedCfgRec
+    std::shared_ptr<CalendarRec> aCalendarRec,
+    std::shared_ptr<NetIFRec> aNetIFRec,
+    std::shared_ptr<FeedCfgRec> aFeedCfgRec
 ) {
 
     httpd_init();
@@ -365,9 +365,9 @@ void InitCallback(
     sFeedCfgRec = aFeedCfgRec;
 #else
     static_cast<void>(aRTCC_AO);
-    static_cast<void *>(aCalendarRec);
-    static_cast<void *>(aNetIFRec);
-    static_cast<void *>(aFeedCfgRec);
+    static_cast<void>(aCalendarRec);
+    static_cast<void>(aNetIFRec);
+    static_cast<void>(aFeedCfgRec);
 #endif
 }
 
