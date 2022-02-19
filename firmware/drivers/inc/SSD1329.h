@@ -43,7 +43,7 @@ class SSD1329
  
 public:
     explicit SSD1329(
-        std::shared_ptr<CoreLink::ISPIDev> aSPIDev,
+        std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         CoreLink::SPISlaveCfg const &aSPICfg,
         GPIO const &aDCnGPIO,
         GPIO const &aEn15VGPIO,
@@ -51,7 +51,7 @@ public:
         unsigned int const aDisplayHeight = 128
     ) noexcept;
     explicit SSD1329(
-        std::shared_ptr<CoreLink::ISPIDev> aSPIDev,
+        std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         GPIO const &aCsPin,
         GPIO const &aDCnGPIO,
         GPIO const &aEn15VGPIO,
@@ -120,7 +120,7 @@ public:
     void AssertDataLine(void);
     void AssertCmdLine(void);
 
-    std::shared_ptr<CoreLink::ISPIDev> mSPIMasterDev;
+    std::shared_ptr<CoreLink::ISPIMasterDev> mSPIMasterDev;
     CoreLink::SPISlaveCfg const mSPISlaveCfg;
 
     GPIO const mDCnGPIO;

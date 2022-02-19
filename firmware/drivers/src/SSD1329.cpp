@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -161,50 +161,40 @@ uint8_t const SSD1329::sFontTbl[96][FONT_WIDTH_MAX] = {
 // *****************************************************************************
 
 SSD1329::SSD1329(
-    CoreLink::ISPIDev &aSPIDev,
-    CoreLink::SPISlaveCfg const &aSPICfg,
+    std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
+    CoreLink::SPISlaveCfg const &aSPISlaveCfg,
     GPIO const &aDCnGPIO,
     GPIO const &aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight
 )
-    : mSPIDev(aSPIDev)
-    , mSPICfg(aSPICfg)
+    : mSPIMasterDev(aSPIMasterDev)
+    , mSPISlaveCfg(aSPISlaveCfg)
     , mDCnGPIO(aDCnGPIO)
     , mEn15VGPIO(aEn15VGPIO)
     , mDisplayWidth(aDisplayWidth)
     , mDisplayHeight(aDisplayHeight)
 {
-    // Ctor body left intentionally empty.
+    mSPISlaveCfg.InitCSnGPIO();
 }
 
 
 SSD1329::SSD1329(
-    CoreLink::ISPIDev &aSPIDev,
+    std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
     GPIO const &aCsPin,
     GPIO const &aDCnGPIO,
     GPIO const &aEn15VGPIO,
     unsigned int const aDisplayWidth,
     unsigned int const aDisplayHeight
 )
-    : mSPIDev(aSPIDev)
-    , mSPICfg(aCsPin)
+    : mSPIMasterDev(aSPIMasterDev)
+    , mSPISlaveCfg(aCsPin, CoreLink::SPISlaveCfg::PROTOCOL::MOTO_3, 4000000, 8)
     , mDCnGPIO(aDCnGPIO)
     , mEn15VGPIO(aEn15VGPIO)
     , mDisplayWidth(aDisplayWidth)
     , mDisplayHeight(aDisplayHeight)
 {
-    // Create an SPI slave to operate at maximum device speed.
-    mSPICfg.SetProtocol(CoreLink::SPISlaveCfg::PROTOCOL::MOTO_3);
-    mSPICfg.SetBitRate(4000000);
-    mSPICfg.SetDataWidth(8);
-    //mSPICfg.SetCSnGPIO(aCsPin.GetPort(), aCsPin.GetPin());
-}
-
-
-SSD1329::~SSD1329() {
-
-  // Dtor body left intentionally empty.
+    mSPISlaveCfg.InitCSnGPIO();
 }
 
 
@@ -232,6 +222,7 @@ void SSD1329::Init(void) {
 
     // Clear screen.
     Clr();
+    return;
 }
 
 
@@ -295,6 +286,7 @@ void SSD1329::DisplayOn(void) {
 
     static uint8_t const sCmdDisplayOn[] = { SET_SLEEP_MODE_OFF };
     WrCmd(&sCmdDisplayOn[0], sizeof(sCmdDisplayOn));
+    return;
 }
 
 
@@ -303,6 +295,7 @@ void SSD1329::DisplayOff(void) {
     // Put the display to sleep.
     uint8_t const lCmdSleep[] = {SET_SLEEP_MODE_ON};
     WrCmd(&lCmdSleep[0], sizeof(lCmdSleep));
+    return;
 }
 
 
@@ -329,14 +322,15 @@ void SSD1329::Clr(void) {
             WrData(&lDataBuf[0], sizeof(lDataBuf));
         }
     }
+    return;
 }
 
 
 void SSD1329::DrawStr(
     std::string const &aStr,
-    unsigned int aXPos,
-    unsigned int aYPos,
-    unsigned int aGreyLevel
+    unsigned int const aXPos,
+    unsigned int const aYPos,
+    unsigned int const aGreyLevel
 ) {
 
     // Setup a window starting at the specified column and row,
@@ -356,10 +350,9 @@ void SSD1329::DrawStr(
     static uint8_t const sCmdVerticalInc[] = {SET_REMAP, 0x56};
     WrCmd(&sCmdVerticalInc[0], sizeof(sCmdVerticalInc));
 
-    for (std::string::const_iterator lIt = aStr.begin(); lIt != aStr.end(); ++lIt) {
+    for (auto lTmpChr : aStr) {
         // Get a working copy of the current character and convert to an index
         // into the character bit-map array.
-        unsigned char lTmpChr = *lIt;
         lTmpChr &= 0x7F;
         if (lTmpChr < ' ') {
             lTmpChr = ' ';
@@ -399,15 +392,16 @@ void SSD1329::DrawStr(
             }
         }
     }
+    return;
 }
 
 
 void SSD1329::DrawImg(
     uint8_t const *aImgBufPtr,
-	unsigned int   aXPos,
-	unsigned int   aYPos,
-	unsigned int   aWidth,
-	unsigned int   aHeight
+	unsigned int const aXPos,
+	unsigned int const aYPos,
+	unsigned int const aWidth,
+	unsigned int const aHeight
 ) {
 
   // [MG] BUNCH OF ASSERTS TO PUT DOWN HERE.
@@ -446,6 +440,7 @@ void SSD1329::DrawImg(
         WrData(aImgBufPtr, (aWidth / 2));
         aImgBufPtr += (aWidth / 2);
     }
+    return;
 }
 
 
@@ -453,21 +448,22 @@ void SSD1329::DrawImg(
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void SSD1329::WrCmd(uint8_t const *aCmdBufPtr, unsigned int aLen) {
+void SSD1329::WrCmd(uint8_t const *aCmdBufPtr, unsigned int const aLen) {
 
     // Set the command/control bit to enable command mode.
     // Send all bytes via SPI.
     AssertCmdLine();
-    mSPIDev.WrData(aCmdBufPtr, aLen, mSPICfg);
+    mSPIMasterDev->WrData(aCmdBufPtr, aLen, mSPISlaveCfg);
+    return;
 }
 
 
-void SSD1329::WrData(uint8_t const *aDataBufPtr, unsigned int aLen) {
+void SSD1329::WrData(uint8_t const *aDataBufPtr, unsigned int const aLen) {
 #if 1
     // Clear the command/control bit to enable command mode.
     // Send all bytes via SPI.
     AssertDataLine();
-    mSPIDev.WrData(aDataBufPtr, aLen, mSPICfg);
+    mSPIMasterDev->WrData(aDataBufPtr, aLen, mSPISlaveCfg);
 #else
 
     // Clear the command/control bit to enable command mode.
@@ -475,28 +471,31 @@ void SSD1329::WrData(uint8_t const *aDataBufPtr, unsigned int aLen) {
     // Should insert a NOP command before de-asserting CSn.
     // Requires manual SPI functions.
     AssertDataLine();
-    mSPIDev.AssertCSn(mSPICfg);
-    mSPIDev.WrData(aDataBufPtr, aLen);
+    mSPIMasterDev->AssertCSn(mSPISlaveCfg);
+    mSPIMasterDev->WrData(aDataBufPtr, aLen);
 
     AssertCmdLine();
     uint8_t const lCmdNOP[] = {NOP};
-    mSPIDev.WrData(&lCmdNOP[0], 1);
+    mSPIMasterDev->WrData(&lCmdNOP[0], 1);
     AssertDataLine();
-    mSPIDev.DeasserCSn(mSPICfg);
+    mSPIMasterDev->DeasserCSn(mSPISlaveCfg);
 
 #endif
+    return;
 }
 
 
 inline void SSD1329::AssertCmdLine(void) {
 
     MAP_GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), 0);
+    return;
 }
 
 
 inline void SSD1329::AssertDataLine(void) {
 
     MAP_GPIOPinWrite(mDCnGPIO.GetPort(), mDCnGPIO.GetPin(), mDCnGPIO.GetPin());
+    return;
 }
 
 // *****************************************************************************

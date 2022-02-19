@@ -22,7 +22,7 @@
 // ******************************************************************************
 
 #include "CoreLinkPeripheralDev.h"
-#include "ISPIDev.h"
+#include "ISPIMasterDev.h"
 #include "ISPISlaveCfg.h"
 #include "SSIPinCfg.h"
 
@@ -36,21 +36,21 @@ namespace CoreLink {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \class SPIDev
+//! \class SPIMasterDev
 //! \brief SPI device
-class SPIDev
-    : public ISPIDev
+class SPIMasterDev
+    : public ISPIMasterDev
     , public PeripheralDev {
 
 public:
-    explicit SPIDev(
+    explicit SPIMasterDev(
         uint32_t const aBaseAddr,
         uint32_t const aClkRate,
         SSIPinCfg const &aSPIMasterPinCfgRef
     ) noexcept;
-    ~SPIDev() = default;
+    ~SPIMasterDev() = default;
 
-    // ISPIDev interface.
+    // ISPIMasterDev interface.
     void RdData(
         uint8_t const aAddr,
         uint8_t * const aData,

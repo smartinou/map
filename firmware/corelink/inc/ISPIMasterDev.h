@@ -34,9 +34,9 @@ namespace CoreLink {
 // ******************************************************************************
 
 //! \brief Interface for SPI devices.
-class ISPIDev {
+class ISPIMasterDev {
 public:
-    virtual ~ISPIDev() {}
+    virtual ~ISPIMasterDev() {}
 
     virtual void RdData(
         uint8_t const aAddr,

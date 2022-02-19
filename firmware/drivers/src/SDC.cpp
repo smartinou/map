@@ -20,7 +20,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "SPIDev.h"
+#include "SPIMasterDev.h"
 
 // This module.
 #include "SDC.h"
@@ -135,7 +135,7 @@ static uint8_t constexpr sStopBlock = 0xFD;
 
 SDC::SDC(
     unsigned int const aDriveIx,
-    std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
+    std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
     GPIO const &aCSnPin,
     GPIO const &aDetectPin,
     unsigned int const aSPIBitRate

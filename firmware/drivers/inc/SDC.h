@@ -39,7 +39,7 @@
 
 // Forward declaration.
 namespace CoreLink {
-    class ISPIDev;
+    class ISPIMasterDev;
 }
 
 
@@ -49,7 +49,7 @@ class SDC
  public:
     explicit SDC(
         unsigned int const aDriveIx,
-        std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
+        std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         GPIO const &aCSnPin,
         GPIO const &aDetectPin,
         unsigned int const aSPIBitRate = 4000000UL
@@ -129,7 +129,7 @@ class SDC
     );
     bool IsExpectedVoltageRange(void);
 
-    std::shared_ptr<CoreLink::ISPIDev> mSPIMasterDev;
+    std::shared_ptr<CoreLink::ISPIMasterDev> mSPIMasterDev;
     CoreLink::SPISlaveCfg mSPISlaveCfg;
     GPIO const mDetectPin;
     unsigned int const mSPIBitRate;

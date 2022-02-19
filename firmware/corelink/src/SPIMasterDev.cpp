@@ -33,7 +33,7 @@
 #include <driverlib/ssi.h>
 #include <driverlib/sysctl.h>
 
-#include "SPIDev.h"
+#include "SPIMasterDev.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -55,7 +55,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CoreLink::SPIDev::SPIDev(
+CoreLink::SPIMasterDev::SPIMasterDev(
     uint32_t const aBaseAddr,
     uint32_t const aClkRate,
     SSIPinCfg const &aSPIMasterPinCfgRef
@@ -69,13 +69,12 @@ CoreLink::SPIDev::SPIDev(
 }
 
 
-void CoreLink::SPIDev::RdData(
+void CoreLink::SPIMasterDev::RdData(
     uint8_t const aAddr,
     uint8_t * const aData,
     std::size_t aLen,
     CoreLink::ISPISlaveCfg const &aSPICfgRef
-)
-{
+) {
 
     SetCfg(aSPICfgRef);
 
@@ -98,7 +97,7 @@ void CoreLink::SPIDev::RdData(
 }
 
 
-void CoreLink::SPIDev::RdData(
+void CoreLink::SPIMasterDev::RdData(
     uint8_t * const aData,
     unsigned int aLen,
     CoreLink::ISPISlaveCfg const &aSPICfgRef
@@ -123,7 +122,7 @@ void CoreLink::SPIDev::RdData(
 }
 
 
-void CoreLink::SPIDev::WrData(
+void CoreLink::SPIMasterDev::WrData(
     uint8_t const aAddr,
     uint8_t const * const aData,
     unsigned int aLen,
@@ -154,7 +153,7 @@ void CoreLink::SPIDev::WrData(
 }
 
 
-void CoreLink::SPIDev::WrData(
+void CoreLink::SPIMasterDev::WrData(
     uint8_t const * const aData,
     unsigned int aLen,
     CoreLink::ISPISlaveCfg const &aSPICfgRef
@@ -181,7 +180,7 @@ void CoreLink::SPIDev::WrData(
 }
 
 
-uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte) {
+uint8_t CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) {
 
     unsigned int const lBaseAddr = GetBaseAddr();
     unsigned long lRxData = 0UL;
@@ -192,7 +191,7 @@ uint8_t CoreLink::SPIDev::PushPullByte(uint8_t const aByte) {
 }
 
 
-uint8_t CoreLink::SPIDev::PushPullByte(
+uint8_t CoreLink::SPIMasterDev::PushPullByte(
     uint8_t const aByte,
     CoreLink::ISPISlaveCfg const &aSPICfgRef
 ) {
@@ -205,7 +204,7 @@ uint8_t CoreLink::SPIDev::PushPullByte(
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void CoreLink::SPIDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
+void CoreLink::SPIMasterDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
 
     if (mLastSPICfgPtr != &aSPISlaveCfgRef) {
         // The config changed since the last SPI call.
@@ -235,7 +234,7 @@ void CoreLink::SPIDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
 }
 
 
-unsigned int CoreLink::SPIDev::ToNativeProtocol(ISPISlaveCfg::PROTOCOL const aProtocol) {
+unsigned int CoreLink::SPIMasterDev::ToNativeProtocol(ISPISlaveCfg::PROTOCOL const aProtocol) {
 
     switch (aProtocol) {
     case ISPISlaveCfg::PROTOCOL::MOTO_0: return SSI_FRF_MOTO_MODE_0;

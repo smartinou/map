@@ -30,7 +30,7 @@
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
 
-#include "SPIDev.h"
+#include "SPIMasterDev.h"
 
 #include "DS3234.h"
 
@@ -91,7 +91,7 @@ DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
     GPIO const &aInterruptPin,
-    std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
+    std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
     GPIO const &aCSnPin
 )
     : mBaseYear(aBaseYear)

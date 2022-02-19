@@ -39,7 +39,7 @@
 
 // Forward declaration.
 namespace CoreLink {
-    class ISPIDev;
+    class ISPIMasterDev;
 }
 
 
@@ -55,7 +55,7 @@ class DS3234
         unsigned int const aBaseYear,
         unsigned long const aInterruptNumber,
         GPIO const &aInterruptPin,
-        std::shared_ptr<CoreLink::ISPIDev> aSPIMasterDev,
+        std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         GPIO const &aCSnPin
     );
     ~DS3234() = default;
@@ -273,7 +273,7 @@ private:
     unsigned int mBaseYear = 0;
     unsigned int mCentury = 0;
 
-    std::shared_ptr<CoreLink::ISPIDev> mSPIMasterDev;
+    std::shared_ptr<CoreLink::ISPIMasterDev> mSPIMasterDev;
     CoreLink::SPISlaveCfg const mSPISlaveCfg;
 
     unsigned long mInterruptNumber = 0;
