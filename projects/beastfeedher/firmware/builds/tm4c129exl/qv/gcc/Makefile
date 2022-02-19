@@ -195,12 +195,11 @@ CPP_SRCS := \
     FeedCfgRec.cpp \
     GPIO.cpp \
     IPAddress.cpp \
-    Limit.cpp \
     Logging_AOs.cpp \
     Logger2.cpp \
     LogLevel.cpp \
-	LwIP_AOs.cpp \
-	LwIPDrv.cpp \
+    LwIP_AOs.cpp \
+    LwIPDrv.cpp \
     Month.cpp \
     Net.cpp \
     NetIFRec.cpp \
@@ -209,12 +208,11 @@ CPP_SRCS := \
     RTCC_AOs.cpp \
     RxDescriptor.cpp \
     SDC.cpp \
-    SPIDev.cpp \
+    SPIMasterDev.cpp \
     SPISlaveCfg.cpp \
     TB6612.cpp \
     Time.cpp \
-    TxDescriptor.cpp \
-    Weekday.cpp
+    TxDescriptor.cpp
 
 
 QP_SRCS := \

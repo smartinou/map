@@ -54,7 +54,7 @@
 
 #include "FatFSDisk.h"
 #include "SDC.h"
-#include "SPIDev.h"
+#include "SPIMasterDev.h"
 #include "DS3234.h"
 #include "TB6612.h"
 
@@ -458,11 +458,11 @@ private:
         , mDisplayMgrAO(nullptr)
         , mSDCDefault(nullptr)
         , mSDCBoosterPack(nullptr)
-{
+    {
         // Ctor.
         Init();
 
-        // SPIDev is required with several devices.
+        // SPIMasterDev is required with several devices.
         CreateSPIDev(2);
         CreateSPIDev(3);
         // TODO: CONSIDER CREATING RTCC HERE TOO.
@@ -590,7 +590,7 @@ private:
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
             static constexpr SSI2PinCfg lSSIPinCfg;
-            mSPI2Dev = std::make_shared<CoreLink::SPIDev>(
+            mSPI2Dev = std::make_shared<CoreLink::SPIMasterDev>(
                 SSI2_BASE,
                 mClkRate,
                 lSSIPinCfg
@@ -601,7 +601,7 @@ private:
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI3);
             static constexpr SSI3PinCfg lSSIPinCfg;
-            mSPI3Dev = std::make_shared<CoreLink::SPIDev>(
+            mSPI3Dev = std::make_shared<CoreLink::SPIMasterDev>(
                 SSI3_BASE,
                 mClkRate,
                 lSSIPinCfg
@@ -702,8 +702,8 @@ private:
     }
 
     uint32_t mClkRate;
-    std::shared_ptr<CoreLink::SPIDev> mSPI2Dev;
-    std::shared_ptr<CoreLink::SPIDev> mSPI3Dev;
+    std::shared_ptr<CoreLink::SPIMasterDev> mSPI2Dev;
+    std::shared_ptr<CoreLink::SPIMasterDev> mSPI3Dev;
     std::unique_ptr<DS3234> mRTCC;
     std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
     std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO;
