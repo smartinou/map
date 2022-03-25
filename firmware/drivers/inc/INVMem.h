@@ -3,17 +3,17 @@
 //
 // Project: Drivers.
 //
-// Module: Motor controller.
+// Module: NVMem.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief Motor controller interface class.
+//! \brief Non-volatile memory interface class.
 //! \ingroup ext_peripherals
 
 // ******************************************************************************
 //
-//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // This source code is licensed under the GPL-3.0-style license found in the
 // LICENSE file in the root directory of this source tree.
@@ -32,13 +32,21 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Motor Controller interface.
-class IMotorControl {
+
+//! \brief Non-Volatile Memory interface.
+class INVMem {
 public:
-    // Sets/clears the entry for the specified time, rounded to quarter hour.
-    virtual void TurnOnCW(unsigned int const aDutyCycle = 100) const = 0;
-    virtual void TurnOnCCW(unsigned int const aDutyCycle = 100) const = 0;
-    virtual void TurnOff(void) const = 0;
+    virtual unsigned int GetNVMemSize(void) const = 0;
+    virtual void RdFromNVMem(
+        uint8_t * const aDataPtr,
+        std::size_t aOffset,
+        std::size_t aSize
+    ) = 0;
+    virtual void WrToNVMem(
+        uint8_t const * const aDataPtr,
+        std::size_t aOffset,
+        std::size_t aSize
+    ) = 0;
 };
 
 // ******************************************************************************

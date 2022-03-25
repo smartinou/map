@@ -13,7 +13,10 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2019, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
+//
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
 //
 // ******************************************************************************
 
@@ -32,13 +35,10 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Brief description.
-//! Details follow...
-//! ...here.
+//! \brief LCD interface.
 class ILCD {
 public:
 
-    virtual ~ILCD() {}
     virtual void Init() = 0;
     virtual void DisplayOn(void) = 0;
     virtual void DisplayOff(void) = 0;
@@ -48,13 +48,15 @@ public:
         std::string const &aStr,
         unsigned int aXPos,
         unsigned int aYPos,
-        unsigned int aGreyLvl) = 0;
+        unsigned int aGreyLvl
+    ) = 0;
     virtual void DrawImg(
         uint8_t const *aImgBufPtr,
         unsigned int aXPos,
         unsigned int aYPos,
         unsigned int aWidth,
-        unsigned int aHeight) = 0;
+        unsigned int aHeight
+    ) = 0;
 
 };
 
