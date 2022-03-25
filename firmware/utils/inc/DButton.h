@@ -1,20 +1,22 @@
-#ifndef DBUTTON_H_
-#define DBUTTON_H_
+#pragma once
 // *******************************************************************************
 //
-// Project: Beast Feed'Her!
+// Project: Utilities.
 //
 // Module: Debounced button class.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup module_group
+//! \brief DButton class.
+//! \ingroup utils_dbutton
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2016, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
+//
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
 //
 // ******************************************************************************
 
@@ -95,4 +97,3 @@ class DButton : public QP::QHsm { //QActive {
 // ******************************************************************************
 //                                END OF FILE
 // ******************************************************************************
-#endif // DBUTTON_H_

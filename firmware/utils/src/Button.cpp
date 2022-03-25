@@ -2,17 +2,20 @@
 //
 // Project: Utilities.
 //
-// Module: GPIO.
+// Module: Button.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief MyClass device class.
-//! \ingroup utils_gpio
+//! \brief Button class.
+//! \ingroup utils_button
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2020, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
+//
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
 //
 // *****************************************************************************
 
