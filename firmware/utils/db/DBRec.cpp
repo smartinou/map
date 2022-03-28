@@ -45,7 +45,7 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::vector<DBRec *> DBRec::mRecList;
+std::vector<DBRec::Ptr> DBRec::mRecList;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -134,13 +134,11 @@ DBRec::DBRec()
     : mIsDirty(false) {
 
     // Ctor body.
-    AddRec();
 }
 
 
-void DBRec::AddRec(void) {
-    mRecList.push_back(this);
-    return;
+void DBRec::AddRec(DBRec::Ptr aDBRec) {
+    mRecList.push_back(aDBRec);
 }
 
 

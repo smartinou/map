@@ -15,6 +15,9 @@
 //
 //        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
+//
 // ******************************************************************************
 
 // ******************************************************************************
@@ -57,7 +60,7 @@ private:
     static void NetInitCallback(void);
 
     // DB records.
-    static std::shared_ptr<CalendarRec> sCalendar;
+    static std::shared_ptr<CalendarRec> sCalendarRec;
     static std::shared_ptr<NetIFRec>    sNetIFRec;
     static std::shared_ptr<FeedCfgRec>  sFeedCfgRec;
 

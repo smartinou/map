@@ -14,6 +14,9 @@
 //
 //        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
+//
 // *****************************************************************************
 
 // *****************************************************************************
@@ -68,9 +71,9 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::shared_ptr<CalendarRec> App::sCalendar   = nullptr;
-std::shared_ptr<NetIFRec>    App::sNetIFRec   = nullptr;
-std::shared_ptr<FeedCfgRec>  App::sFeedCfgRec = nullptr;
+std::shared_ptr<CalendarRec> App::sCalendarRec = nullptr;
+std::shared_ptr<NetIFRec> App::sNetIFRec = nullptr;
+std::shared_ptr<FeedCfgRec> App::sFeedCfgRec = nullptr;
 
 std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO;
 
@@ -81,9 +84,9 @@ std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO;
 bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
     // Create records and assign them to DB.
-    sCalendar = std::make_shared<CalendarRec>();
-    sNetIFRec = std::make_shared<NetIFRec>();
-    sFeedCfgRec = std::make_shared<FeedCfgRec>();
+    sCalendarRec = CalendarRec::Create();
+    sNetIFRec = NetIFRec::Create();
+    sFeedCfgRec = FeedCfgRec::Create();
 
     // Create all AOs.
     // RTCC AO + FileLogSink.
@@ -97,7 +100,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     }
 
     // Now that disks are mounted, start the RTCC.
-    RTCC::Event::Init const lRTCCInitEvent(DUMMY_SIG, sCalendar.get());
+    RTCC::Event::Init const lRTCCInitEvent(DUMMY_SIG, sCalendarRec.get());
     App::sRTCC_AO = aFactory->StartRTCCAO(
         1U,
         mRTCCEventQueue,
@@ -109,7 +112,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     }
 
     bool const lRes = aFactory->StartPFPPAO(
-        *App::sFeedCfgRec,
+        *sFeedCfgRec,
         3U,
         mPFPPMgrEventQueue,
         Q_DIM(mPFPPMgrEventQueue)
@@ -139,7 +142,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
         PFPP::Event::BLE::Init lBLEInitEvent(
             DUMMY_SIG,
             App::sRTCC_AO,
-            sCalendar,
+            sCalendarRec,
             sNetIFRec,
             sFeedCfgRec
         );
@@ -176,7 +179,7 @@ void App::NetInitCallback(void) {
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(
         App::sRTCC_AO,
-        App::sCalendar,
+        App::sCalendarRec,
         App::sNetIFRec,
         App::sFeedCfgRec
     );

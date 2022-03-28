@@ -44,9 +44,9 @@
 
 //! \brief Feeding calendar database class.
 class CalendarRec
-    : public DBRec {
+    : public DBRec
+    , public std::enable_shared_from_this<CalendarRec> {
 public:
-    CalendarRec();
     ~CalendarRec() = default;
 
     // DBRec interface.
@@ -73,7 +73,18 @@ public:
         Time          &aNextTime
     );
 
+    // std::enable_shared_from_this<>
+    //std::shared_ptr<CalendarRec> GetPtr(void) {return shared_from_this();}
+    [[nodiscard]] static std::shared_ptr<CalendarRec> Create(void) {
+        // Not using std::make_shared<CalendarRec> because the c'tor is private.
+        auto lRec = std::shared_ptr<CalendarRec>(new CalendarRec());
+        AddRec(lRec);
+        return lRec;
+    }
+
 private:
+    CalendarRec();
+
     // DBRec interface.
     size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aData) const override;

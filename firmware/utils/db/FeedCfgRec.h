@@ -34,11 +34,11 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Feeding configuratino database.
+//! \brief Feeding configuration database.
 class FeedCfgRec
-    : public DBRec {
+    : public DBRec
+    , public std::enable_shared_from_this<FeedCfgRec> {
 public:
-    FeedCfgRec();
     ~FeedCfgRec() = default;
 
     // DBRec interface.
@@ -58,7 +58,18 @@ public:
     void SetTimedFeedEnabled(bool aIsEnabled);
     void SetUseSystemTime(bool aUseSystemTime);
 
+    // std::enable_shared_from_this<>
+    //std::shared_ptr<FeedCfgRec> GetPtr(void) {return shared_from_this();}
+    [[nodiscard]] static std::shared_ptr<FeedCfgRec> Create(void) {
+        // Not using std::make_shared<FeedCfgRec> because the c'tor is private.
+        auto lRec = std::shared_ptr<FeedCfgRec>(new FeedCfgRec());
+        AddRec(lRec);
+        return lRec;
+    }
+
 private:
+    FeedCfgRec();
+
     // DBRec interface.
     size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;

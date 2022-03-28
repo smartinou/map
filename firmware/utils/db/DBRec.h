@@ -24,6 +24,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <vector>
@@ -36,14 +37,11 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declarations
-
-
 //! \brief Base database class.
 //! Register each object of DBRec into vector on ctor.
 class DBRec {
 public:
-    bool IsDirty(void) const { return mIsDirty; }
+    bool IsDirty(void) const {return mIsDirty;}
 
     virtual bool IsSane(void) const = 0;
     virtual void ResetDflt(void) = 0;
@@ -67,6 +65,9 @@ protected:
     DBRec();
     virtual ~DBRec() = default;
 
+    using Ptr = std::shared_ptr<DBRec>;
+
+    static void AddRec(Ptr aDBRec);
     void SetIsDirty(void) { mIsDirty = true; }
     bool IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic[]) const;
     bool IsCRCGood(uint8_t const * const aData, size_t const aSize) const;
@@ -78,9 +79,7 @@ private:
     virtual void Deserialize(uint8_t const * const aData) = 0;
     virtual void UpdateCRC(void) = 0;
 
-    void AddRec(void);
-
-    static std::vector<DBRec *> mRecList;
+    static std::vector<Ptr> mRecList;
     bool mIsDirty;
 
 };
