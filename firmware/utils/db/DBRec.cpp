@@ -131,8 +131,8 @@ void DBRec::StaticUpdateCRC(void) {
 // *****************************************************************************
 
 DBRec::DBRec()
-    : mIsDirty(false) {
-
+    : mIsDirty(false)
+{
     // Ctor body.
 }
 

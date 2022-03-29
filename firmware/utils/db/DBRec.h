@@ -67,8 +67,8 @@ protected:
 
     using Ptr = std::shared_ptr<DBRec>;
 
-    static void AddRec(Ptr aDBRec);
-    void SetIsDirty(void) { mIsDirty = true; }
+    void AddRec(Ptr aDBRec);
+    void SetIsDirty(void) {mIsDirty = true;}
     bool IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic[]) const;
     bool IsCRCGood(uint8_t const * const aData, size_t const aSize) const;
     uint8_t ComputeCRC(uint8_t const * const aData, size_t const aSize) const;

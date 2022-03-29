@@ -35,8 +35,7 @@
 // ******************************************************************************
 
 class NetIFRec
-    : public DBRec
-    , public std::enable_shared_from_this<NetIFRec> {
+    : public DBRec {
 public:
     ~NetIFRec() = default;
 
@@ -55,12 +54,10 @@ public:
     void SetSubnetMask(uint32_t aSubnetMask);
     void SetGWAddr(uint32_t aGWAddr);
 
-    // std::enable_shared_from_this<>
-    //std::shared_ptr<NetIFRec> GetPtr(void) {return shared_from_this();}
     [[nodiscard]] static std::shared_ptr<NetIFRec> Create(void) {
         // Not using std::make_shared<NetIFRec> because the c'tor is private.
         auto lRec = std::shared_ptr<NetIFRec>(new NetIFRec());
-        AddRec(lRec);
+        lRec->AddRec(lRec);
         return lRec;
     }
 
