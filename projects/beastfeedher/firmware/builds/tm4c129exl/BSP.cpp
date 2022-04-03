@@ -20,6 +20,8 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+#include <array>
+
 // QP Library.
 #include "qpcpp.h"
 
@@ -270,7 +272,7 @@ public:
 
     // IBSPFactory Interface.
     std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(
-        const std::shared_ptr<CalendarRec> &aCalendarRec,
+        std::shared_ptr<CalendarRec> const &aCalendarRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
@@ -373,7 +375,7 @@ public:
 
 
     [[maybe_unused]] bool StartPFPPAO(
-        const std::shared_ptr<FeedCfgRec> &aFeedCfgRec,
+        std::shared_ptr<FeedCfgRec> const &aFeedCfgRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
@@ -392,9 +394,6 @@ public:
         }
         return false;
     }
-
-
-    std::shared_ptr<QP::QActive> GetOpaquePFPPAO(void) const { return mPFPPAO; }
 
 
     [[maybe_unused]] bool StartDisplayMgrAO(
@@ -738,9 +737,9 @@ private:
 
 namespace BSP {
 static void InitEtherLED(void);
-static void InitUserLED(void);
-static void SetUserLED(void);
-static void ClrUserLED(void);
+static void InitUserLED(GPIO const &aUserLEDPin);
+static void SetUserLED(GPIO const &aUserLEDPin);
+static void ClrUserLED(GPIO const &aUserLEDPin);
 } // namespace BSP
 
 #ifdef Q_SPY
@@ -778,7 +777,8 @@ namespace BSP {
 static Button const mManualFeedButton(GPIOJ_AHB_BASE, GPIO_PIN_0, INT_GPIOJ, 0);
 static Button const mTimedFeedButton(GPIOJ_AHB_BASE, GPIO_PIN_1, INT_GPIOJ, 0);
 
-static constexpr GPIO sUserLEDPin(GPION_BASE, GPIO_PIN_1);
+static constexpr GPIO sUserLED1Pin(GPION_BASE, GPIO_PIN_1);
+static constexpr GPIO sUserLED2Pin(GPION_BASE, GPIO_PIN_0);
 } // namespace BSP
 
 // *****************************************************************************
@@ -830,38 +830,33 @@ static void InitEtherLED(void) {
 }
 
 
-static void InitUserLED(void) {
+static void InitUserLED(GPIO const &aUserLEDPin) {
     // GPIO for user LED toggling during idle.
-    MAP_GPIOPinTypeGPIOOutput(sUserLEDPin.GetPort(), sUserLEDPin.GetPin());
+    MAP_GPIOPinTypeGPIOOutput(aUserLEDPin.GetPort(), aUserLEDPin.GetPin());
     MAP_GPIOPadConfigSet(
-        sUserLEDPin.GetPort(),
-        sUserLEDPin.GetPin(),
+        aUserLEDPin.GetPort(),
+        aUserLEDPin.GetPin(),
         GPIO_STRENGTH_2MA,
         GPIO_PIN_TYPE_STD
     );
+}
+
+
+static void SetUserLED(GPIO const &aUserLEDPin) {
+
     MAP_GPIOPinWrite(
-        sUserLEDPin.GetPort(),
-        sUserLEDPin.GetPin(),
-        sUserLEDPin.GetPin()
+        aUserLEDPin.GetPort(),
+        aUserLEDPin.GetPin(),
+        aUserLEDPin.GetPin()
     );
 }
 
 
-static void SetUserLED(void) {
+static void ClrUserLED(GPIO const &aUserLEDPin) {
 
     MAP_GPIOPinWrite(
-        sUserLEDPin.GetPort(),
-        sUserLEDPin.GetPin(),
-        sUserLEDPin.GetPin()
-    );
-}
-
-
-static void ClrUserLED(void) {
-
-    MAP_GPIOPinWrite(
-        sUserLEDPin.GetPort(),
-        sUserLEDPin.GetPin(),
+        aUserLEDPin.GetPort(),
+        aUserLEDPin.GetPin(),
         0
     );
 }
@@ -894,13 +889,9 @@ void QP::QF::onStartup(void) {
 
     // Init user LED.
     // Init Ethernet LEDs.
-    BSP::InitUserLED();
+    BSP::InitUserLED(BSP::sUserLED1Pin);
+    BSP::InitUserLED(BSP::sUserLED2Pin);
     BSP::InitEtherLED();
-
-    // Manual Feed cap sensor input.
-    // Timed Feed cap sensor input.
-    BSP::mManualFeedButton.EnableInt();
-    BSP::mTimedFeedButton.EnableInt();
 
 #if defined(Q_SPY) && defined(USE_UART0)
     // UART0 interrupt used for QS-RX.
@@ -915,8 +906,8 @@ void QP::QF::onStartup(void) {
 void QP::QV::onIdle(void) {
 
     // Toggle LED for visual effect.
-    BSP::SetUserLED();
-    BSP::ClrUserLED();
+    BSP::SetUserLED(BSP::sUserLED1Pin);
+    BSP::ClrUserLED(BSP::sUserLED1Pin);
 
 #ifdef Q_SPY
     QF_INT_ENABLE();
@@ -937,7 +928,6 @@ void QP::QV::onIdle(void) {
 
     // TX done?
     TxData();
-
 #elif defined NDEBUG
     // Put the CPU and peripherals to the low-power mode.
     // you might need to customize the clock management for your application,
@@ -1179,6 +1169,61 @@ void sntp_set_system_time(time_t aTime) {
     QP::QF::PUBLISH(lEvent, &sSNTPSetSystemTime);
 }
 
+static void DebounceSwitches(void) {
+
+    static constexpr std::size_t sStateDepth = 5;
+    static std::array<int32_t, sStateDepth> sPinsState {0};
+    static int32_t sPreviousDebounce {0};
+    static std::size_t lStateIx = 0;
+    sPinsState[lStateIx] = ~MAP_GPIOPinRead(GPIOJ_AHB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    lStateIx++;
+    if (lStateIx >= sStateDepth) {
+        lStateIx = 0;
+    }
+
+    // Bitwise-AND all last current pin states.
+    int32_t lCurrentDebounce = GPIO_PIN_0 | GPIO_PIN_1;
+    for (auto const lPinState : sPinsState) {
+        lCurrentDebounce &= lPinState;
+    }
+
+#ifdef Q_SPY
+    static QP::QSpyId const sSysTick_Handler = {0U};
+#endif // Q_SPY
+    // What changed now? Look for pressed states.
+    if ((!sPreviousDebounce) & lCurrentDebounce) {
+        if (lCurrentDebounce & GPIO_PIN_0) {
+            BSP::SetUserLED(BSP::sUserLED2Pin);
+            static PFPP::Event::Mgr::ManualFeedCmd const sOnEvent(
+                FEED_MGR_MANUAL_FEED_CMD_SIG,
+                true
+            );
+            QP::QF::PUBLISH(&sOnEvent, &sSysTick_Handler);
+        }
+        if (lCurrentDebounce & GPIO_PIN_1) {
+            static PFPP::Event::Mgr::TimedFeedCmd const sOnEvent(
+                FEED_MGR_TIMED_FEED_CMD_SIG,
+                true
+            );
+            QP::QF::PUBLISH(&sOnEvent, &sSysTick_Handler);
+        }
+    }
+
+    // Look for released states.
+    if (sPreviousDebounce & !lCurrentDebounce) {
+        if (!lCurrentDebounce & GPIO_PIN_0) {
+            BSP::ClrUserLED(BSP::sUserLED2Pin);
+            static PFPP::Event::Mgr::ManualFeedCmd const sOffEvent(
+                FEED_MGR_MANUAL_FEED_CMD_SIG,
+                false
+            );
+            QP::QF::PUBLISH(&sOffEvent, &sSysTick_Handler);
+        }
+    }
+
+    sPreviousDebounce = lCurrentDebounce;
+}
+
 
 void SysTick_Handler(void);
 void SysTick_Handler(void) {
@@ -1201,6 +1246,8 @@ void SysTick_Handler(void) {
     // Publish to subscribers.
     //static QP::QEvt const sTickEvent(TIME_TICK_SIG);
     //QP::QF::PUBLISH(&sTickEvent, &sSysTick_Handler);
+
+    DebounceSwitches();
 }
 
 
@@ -1228,9 +1275,9 @@ void GPIOPortP3_IRQHandler(void) {
 
 
 // GPIO port B interrupt handler.
+#if 0
 void GPIOPortB_IRQHandler(void);
 void GPIOPortB_IRQHandler(void) {
-#if 0
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked = true;
     unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOB_AHB_BASE, lIsMasked);
@@ -1243,47 +1290,13 @@ void GPIOPortB_IRQHandler(void) {
         //QP::QF::PUBLISH(&sBLEIntEvent, 0);
         BSP::Factory::Instance()->GetOpaqueBLEAO()->POST(&sBLEIntEvent, 0);
     }
-#endif
 }
+#endif
 
-
+#if 0
 // GPIO port J interrupt handler.
 void GPIOPortJ_IRQHandler(void);
 void GPIOPortJ_IRQHandler(void) {
-    // Get the state of the GPIO and issue the corresponding event.
-    static const bool lIsMasked = true;
-    unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOJ_AHB_BASE, lIsMasked);
-
-    unsigned int lPin = BSP::mManualFeedButton.GetPin();
-    if (lPin & lIntStatus) {
-        MAP_GPIOIntClear(GPIOJ_AHB_BASE, lPin);
-        std::shared_ptr<QP::QActive> lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
-        if (nullptr != lPFPPAO) {
-            if (Button::IS_HIGH == BSP::mManualFeedButton.GetGPIOPinState()) {
-                static PFPP::Event::Mgr::ManualFeedCmd const sOnEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, true);
-                //QP::QF::PUBLISH(&sOnEvent, 0);
-                lPFPPAO->POST(&sOnEvent, 0);
-            } else {
-                static PFPP::Event::Mgr::ManualFeedCmd const sOffEvent(FEED_MGR_MANUAL_FEED_CMD_SIG, false);
-                //QP::QF::PUBLISH(&sOffEvent, 0);
-                lPFPPAO->POST(&sOffEvent, 0);
-            }
-        }
-    }
-
-    lPin = BSP::mTimedFeedButton.GetPin();
-    if (lPin & lIntStatus) {
-        MAP_GPIOIntClear(GPIOJ_AHB_BASE, lPin);
-        // Only interested in the pin coming high.
-        std::shared_ptr<QP::QActive> lPFPPAO = BSP::Factory::Instance()->GetOpaquePFPPAO();
-        if (nullptr != lPFPPAO) {
-            if (Button::IS_HIGH == BSP::mTimedFeedButton.GetGPIOPinState()) {
-                static PFPP::Event::Mgr::TimedFeedCmd const sEvent(FEED_MGR_TIMED_FEED_CMD_SIG, 0);
-                //QP::QF::PUBLISH(&sEvent, 0);
-                lPFPPAO->POST(&sEvent, 0);
-            }
-        }
-    }
 }
 
 
@@ -1292,6 +1305,7 @@ void GPIOPortD_IRQHandler(void);
 void GPIOPortD_IRQHandler(void) {
 
 }
+#endif
 
 
 #if defined(Q_SPY) && defined (USE_UART0)
