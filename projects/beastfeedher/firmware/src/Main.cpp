@@ -63,7 +63,7 @@ int main(void) {
 
     // BSP::Init() has to be called early.
     // QS has to be initialized before creating dictionary items.
-    std::shared_ptr<IBSPFactory> lFactory = BSP::Init();
+    std::shared_ptr<IBSPFactory> const lFactory = BSP::Init();
 
     // Initialize event pool.
     static QF_MPOOL_EL(PFPP::Event::Mgr::ManualFeedCmd) sSmallPoolSto[20];

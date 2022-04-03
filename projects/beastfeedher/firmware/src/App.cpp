@@ -122,7 +122,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
     LwIP::Event::Init const lLwIPInitEvent(
         DUMMY_SIG,
-        mNetIFRec.get(),
+        mNetIFRec,
         NetInitCallback,
         this
     );
