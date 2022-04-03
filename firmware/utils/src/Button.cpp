@@ -23,7 +23,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include <stdio.h>
+#include <cstdint>
 
 // TI Library.
 #include <inc/hw_types.h>

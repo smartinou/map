@@ -315,7 +315,7 @@ lEtherDrv-&gt;PHYISR();</action>
  <package name="Events" stereotype="0x01" namespace="Event::">
   <class name="Init" superclass="qpcpp::QEvt">
    <documentation>Init event.</documentation>
-   <attribute name="mNetIFRec" type="NetIFRec const * const" visibility="0x00" properties="0x00">
+   <attribute name="mNetIFRec" type="std::shared_ptr&lt;NetIFRec&gt; const" visibility="0x00" properties="0x00">
     <documentation>Pointer to Net IF record.</documentation>
    </attribute>
    <attribute name=" (*const mCallbackInit)(void *)" type="void" visibility="0x00" properties="0x00">
@@ -327,7 +327,7 @@ lEtherDrv-&gt;PHYISR();</action>
    <operation name="Init" type="" visibility="0x00" properties="0x02">
     <documentation>// Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
-    <parameter name="aNetIFRec" type="NetIFRec const * const"/>
+    <parameter name="aNetIFRec" type="std::shared_ptr&lt;NetIFRec&gt; const &amp;"/>
     <parameter name="(*const aCallbackInit)(void *)" type="void"/>
     <parameter name="aCallbackParam" type="void *"/>
     <code>    : QP::QEvt(aSig)
@@ -510,6 +510,7 @@ $define${LwIP::AOs::Mgr_AO}</text>
   <file name="LwIP_Events.h">
    <text>#pragma once
 
+#include &lt;memory&gt;
 #include &lt;string&gt;
 
 #include &quot;lwip/apps/sntp.h&quot;
