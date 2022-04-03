@@ -36,12 +36,14 @@
 // ******************************************************************************
 
 //! \brief TB6612 motor controller.
-class TB6612
+// Creates one motor controller instance.
+// A physical TB6612 has two control instances (A & B).
+class TB6612 final
     : public IMotorControl {
 
 public:
     TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM);
-    virtual ~TB6612() {}
+    ~TB6612() = default;
 
     // IMotorController interface.
     void TurnOnCW(unsigned int const aDutyCycle = 100) const override;

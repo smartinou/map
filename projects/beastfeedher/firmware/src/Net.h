@@ -15,6 +15,9 @@
 //
 //        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
 //
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
+//
 // ******************************************************************************
 
 // ******************************************************************************
@@ -58,10 +61,10 @@ namespace Net {
 
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
 void InitCallback(
-    std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
-    std::shared_ptr<CalendarRec> aCalendar,
-    std::shared_ptr<NetIFRec> aNetIFRec,
-    std::shared_ptr<FeedCfgRec> aFeedCfgRec
+    std::shared_ptr<RTCC::AO::RTCC_AO> const &aRTCC_AO,
+    std::shared_ptr<CalendarRec> const &aCalendar,
+    std::shared_ptr<NetIFRec> const &aNetIFRec,
+    std::shared_ptr<FeedCfgRec> const &aFeedCfgRec
 );
 #endif
 

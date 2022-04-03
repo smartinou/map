@@ -35,6 +35,8 @@
 //! \brief Motor Controller interface.
 class IMotorControl {
 public:
+    virtual ~IMotorControl() = default;
+
     // Sets/clears the entry for the specified time, rounded to quarter hour.
     virtual void TurnOnCW(unsigned int const aDutyCycle = 100) const = 0;
     virtual void TurnOnCCW(unsigned int const aDutyCycle = 100) const = 0;

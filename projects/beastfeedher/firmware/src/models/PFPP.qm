@@ -16,10 +16,10 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mFeedTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
      <documentation>Timer for fixed and time-capped feeding periods.</documentation>
     </attribute>
-    <attribute name="mMotorControl" type="IMotorControl &amp;" visibility="0x02" properties="0x00">
+    <attribute name="mMotorControl" type="const std::unique_ptr&lt;IMotorControl&gt;" visibility="0x02" properties="0x00">
      <documentation>Motor controller for activating feeder.</documentation>
     </attribute>
-    <attribute name="mFeedCfgRec" type="FeedCfgRec const * const" visibility="0x02" properties="0x00">
+    <attribute name="mFeedCfgRec" type="const std::shared_ptr&lt;FeedCfgRec&gt;" visibility="0x02" properties="0x00">
      <documentation>A pointer to the Feeder configuration record.</documentation>
     </attribute>
     <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
@@ -36,13 +36,13 @@ This is where all the feeding actions are taken, based on calendar events and in
     </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
-     <parameter name="aMotorControl" type="IMotorControl &amp;"/>
-     <parameter name="aFeedCfgRec" type="FeedCfgRec const * const"/>
+     <parameter name="aMotorControl" type="std::unique_ptr&lt;IMotorControl&gt;"/>
+     <parameter name="aFeedCfgRec" type="const std::shared_ptr&lt;FeedCfgRec&gt; &amp;"/>
      <code>    : QP::QActive(Q_STATE_CAST(&amp;PFPP::AO::Mgr_AO::initial))
     , mDeferredEventQueueSto{nullptr}
     , mDeferredEventQueue()
     , mFeedTimer(this, FEED_MGR_TIMEOUT_SIG, 0U)
-    , mMotorControl(aMotorControl)
+    , mMotorControl(std::move(aMotorControl))
     , mFeedCfgRec(aFeedCfgRec)
     , mDate()
     , mTime()
@@ -65,60 +65,42 @@ mFeedTimer.disarm();</code>
     <operation name="StartFeeder" type="void" visibility="0x02" properties="0x00">
      <documentation>Start whatever mechanism used to distribute food.</documentation>
      <code>// Start motor.
-mMotorControl.TurnOnCW();</code>
+mMotorControl-&gt;TurnOnCW();</code>
     </operation>
     <operation name="StopFeeder" type="void" visibility="0x02" properties="0x00">
      <documentation>Stops whatever mechanism is used to distribute food.</documentation>
      <code>// Stop feeder.
-mMotorControl.TurnOff();</code>
+mMotorControl-&gt;TurnOff();</code>
     </operation>
     <operation name="GetManualWaitPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
      <specifiers>const</specifiers>
      <documentation>Returns the manual waiting period as per FeedCfgRec if any, or default value.</documentation>
-     <code>if (nullptr != mFeedCfgRec) {
-    return mFeedCfgRec-&gt;GetManualFeedWaitPeriod() * BSP::TICKS_PER_SEC;
-}
-
-static QP::QTimeEvtCtr constexpr sManualWaitPeriod = 2 * BSP::TICKS_PER_SEC;
-return sManualWaitPeriod;</code>
+     <code>return mFeedCfgRec-&gt;GetManualFeedWaitPeriod() * BSP::TICKS_PER_SEC;
+</code>
     </operation>
     <operation name="GetManualMaxFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
      <specifiers>const</specifiers>
      <documentation>Returns the manual feed period as per FeedCfgRec if any, or default value.</documentation>
-     <code>if (nullptr != mFeedCfgRec) {
-    return mFeedCfgRec-&gt;GetManualFeedMaxFeedPeriod() * BSP::TICKS_PER_SEC;
-}
-
-static QP::QTimeEvtCtr constexpr sManualMaxFeedPeriod = 10 * BSP::TICKS_PER_SEC;
-return sManualMaxFeedPeriod;</code>
+     <code>return mFeedCfgRec-&gt;GetManualFeedMaxFeedPeriod() * BSP::TICKS_PER_SEC;
+</code>
     </operation>
     <operation name="GetTimedFeedPeriod" type="QP::QTimeEvtCtr" visibility="0x02" properties="0x00">
      <specifiers>const</specifiers>
      <documentation>Returns the timed feed period as per FeedCfgRec if any, or default value.</documentation>
-     <code>if (nullptr != mFeedCfgRec) {
-    return mFeedCfgRec-&gt;GetTimedFeedPeriod() * BSP::TICKS_PER_SEC;
-}
-
-static QP::QTimeEvtCtr constexpr sTimedFeedPeriod = 4 * BSP::TICKS_PER_SEC;
-return sTimedFeedPeriod;</code>
+     <code>return mFeedCfgRec-&gt;GetTimedFeedPeriod() * BSP::TICKS_PER_SEC;
+</code>
     </operation>
     <operation name="IsManualFeedAllowed" type="bool" visibility="0x02" properties="0x00">
      <specifiers>const</specifiers>
      <documentation>Returns if manual feed is allowed or not.</documentation>
-     <code>if (nullptr != mFeedCfgRec) {
-    return mFeedCfgRec-&gt;IsManualFeedEnable();
-}
-
-return true;</code>
+     <code>return mFeedCfgRec-&gt;IsManualFeedEnable();
+</code>
     </operation>
     <operation name="IsTimedFeedAllowed" type="bool" visibility="0x02" properties="0x00">
      <specifiers>const</specifiers>
      <documentation>Returns if timed feed is allowed or not.</documentation>
-     <code>if (nullptr != mFeedCfgRec) {
-    return mFeedCfgRec-&gt;IsTimedFeedEnable();
-}
-
-return true;</code>
+     <code>return mFeedCfgRec-&gt;IsTimedFeedEnable();
+</code>
     </operation>
     <operation name="DisplayFeedTime" type="void" visibility="0x02" properties="0x00">
      <documentation>Sends a &quot;Display Text&quot; signal to show last feeding time.</documentation>
@@ -589,7 +571,9 @@ $declare${project::Events::Mgr::TimedFeedCmd}
 //$declare${project::Events::Init}</text>
    </file>
    <file name="PFPP_AOs.h">
-    <text>#include &lt;qpcpp.h&gt;
+    <text>#include &lt;memory&gt;
+
+#include &lt;qpcpp.h&gt;
 
 
 #include &lt;db/FeedCfgRec.h&gt;

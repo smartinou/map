@@ -270,17 +270,17 @@ public:
 
     // IBSPFactory Interface.
     std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(
+        const std::shared_ptr<CalendarRec> &aCalendarRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
-        uint32_t const aQLen,
-        QP::QEvt const * const aInitEvt
+        uint32_t const aQLen
     ) final {
         if (mRTCCAO == nullptr) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
-            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC, *mRTCC);
+            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC, *mRTCC, aCalendarRec);
             if (mRTCCAO != nullptr) {
-                mRTCCAO->start(aPrio, aQSto, aQLen, nullptr, 0U, aInitEvt);
+                mRTCCAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
             }
         }
         return mRTCCAO;
@@ -373,14 +373,18 @@ public:
 
 
     [[maybe_unused]] bool StartPFPPAO(
-        FeedCfgRec &aFeedCfgRec,
+        const std::shared_ptr<FeedCfgRec> &aFeedCfgRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
     ) final {
         if (mPFPPAO == nullptr) {
-            mMotorControl = CreateMotorControl();
-            mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(*mMotorControl, &aFeedCfgRec);
+            // Create motor controller and pass ownership to Mgr_AO.
+            auto lMotorControl = CreateMotorControl();
+            mPFPPAO = std::make_shared<PFPP::AO::Mgr_AO>(
+                std::move(lMotorControl),
+                aFeedCfgRec
+            );
             if (mPFPPAO != nullptr) {
                 mPFPPAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
                 return true;
@@ -453,7 +457,6 @@ private:
         , mRTCC(nullptr)
         , mRTCCAO(nullptr)
         , mFileLogSinkAO(nullptr)
-        , mMotorControl(nullptr)
         , mPFPPAO(nullptr)
         , mDisplayMgrAO(nullptr)
         , mSDCDefault(nullptr)
@@ -634,11 +637,13 @@ private:
         return lRTCC;
     }
 
-    std::unique_ptr<TB6612> CreateMotorControl(void) {
+
+    std::unique_ptr<IMotorControl> CreateMotorControl(void) {
         static constexpr GPIO lIn1(GPIOB_AHB_BASE, GPIO_PIN_6);
         static constexpr GPIO lIn2(GPIOB_AHB_BASE, GPIO_PIN_5);
         static constexpr GPIO lPWM(GPIOB_AHB_BASE, GPIO_PIN_0);
 
+        // In fact, creates *half* a TB6612.
         return std::make_unique<TB6612>(lIn1, lIn2, lPWM);
     }
 
@@ -707,7 +712,6 @@ private:
     std::unique_ptr<DS3234> mRTCC;
     std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
     std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO;
-    std::unique_ptr<TB6612> mMotorControl;
     std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
     std::shared_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
     std::shared_ptr<SDC> mSDCDefault;

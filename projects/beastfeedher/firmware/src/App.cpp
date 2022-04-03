@@ -71,22 +71,22 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::shared_ptr<CalendarRec> App::sCalendarRec = nullptr;
-std::shared_ptr<NetIFRec> App::sNetIFRec = nullptr;
-std::shared_ptr<FeedCfgRec> App::sFeedCfgRec = nullptr;
-
-std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO;
+std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO(nullptr);
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
+App::App()
+    : mCalendarRec(CalendarRec::Create())
+    , mNetIFRec(NetIFRec::Create())
+    , mFeedCfgRec(FeedCfgRec::Create())
+{
+    // Ctor body.
+}
 
-    // Create records and assign them to DB.
-    sCalendarRec = CalendarRec::Create();
-    sNetIFRec = NetIFRec::Create();
-    sFeedCfgRec = FeedCfgRec::Create();
+
+bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 
     // Create all AOs.
     // RTCC AO + FileLogSink.
@@ -100,19 +100,18 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
     }
 
     // Now that disks are mounted, start the RTCC.
-    RTCC::Event::Init const lRTCCInitEvent(DUMMY_SIG, sCalendarRec.get());
     App::sRTCC_AO = aFactory->StartRTCCAO(
+        mCalendarRec,
         1U,
         mRTCCEventQueue,
-        Q_DIM(mRTCCEventQueue),
-        &lRTCCInitEvent
+        Q_DIM(mRTCCEventQueue)
     );
     if (App::sRTCC_AO == nullptr) {
         return false;
     }
 
     bool const lRes = aFactory->StartPFPPAO(
-        *sFeedCfgRec,
+        mFeedCfgRec,
         3U,
         mPFPPMgrEventQueue,
         Q_DIM(mPFPPMgrEventQueue)
@@ -121,7 +120,12 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
         return false;
     }
 
-    LwIP::Event::Init const lLwIPInitEvent(DUMMY_SIG, sNetIFRec.get(), NetInitCallback);
+    LwIP::Event::Init const lLwIPInitEvent(
+        DUMMY_SIG,
+        mNetIFRec.get(),
+        NetInitCallback,
+        this
+    );
     aFactory->StartLwIPMgrAO(
         4U,
         mLwIPEventQueue,
@@ -142,9 +146,9 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
         PFPP::Event::BLE::Init lBLEInitEvent(
             DUMMY_SIG,
             App::sRTCC_AO,
-            sCalendarRec,
-            sNetIFRec,
-            sFeedCfgRec
+            mCalendarRec,
+            mNetIFRec,
+            mFeedCfgRec
         );
         lBLEMgr_AO->start(
             6U,
@@ -175,13 +179,14 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void App::NetInitCallback(void) {
+void App::NetInitCallback(void *aParam) {
+    [[maybe_unused]] App * const lApp = reinterpret_cast<App * const>(aParam);
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(
-        App::sRTCC_AO,
-        App::sCalendarRec,
-        App::sNetIFRec,
-        App::sFeedCfgRec
+        sRTCC_AO,
+        lApp->mCalendarRec,
+        lApp->mNetIFRec,
+        lApp->mFeedCfgRec
     );
 #endif
 }

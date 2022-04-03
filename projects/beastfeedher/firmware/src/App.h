@@ -49,20 +49,21 @@ namespace RTCC {
 
 class App {
 public:
-    App() = default;
+    App();
     ~App() = default;
 
     bool Init(std::shared_ptr<IBSPFactory> mFactory);
 
-    static RTCC::AO::RTCC_AO *GetRTCCAO(void) {return sRTCC_AO.get();}
+    static std::shared_ptr<RTCC::AO::RTCC_AO> GetRTCCAO(void) {return sRTCC_AO;}
 
 private:
-    static void NetInitCallback(void);
+
+    static void NetInitCallback(void *aParam);
 
     // DB records.
-    static std::shared_ptr<CalendarRec> sCalendarRec;
-    static std::shared_ptr<NetIFRec>    sNetIFRec;
-    static std::shared_ptr<FeedCfgRec>  sFeedCfgRec;
+    std::shared_ptr<CalendarRec> const mCalendarRec;
+    std::shared_ptr<NetIFRec> const mNetIFRec;
+    std::shared_ptr<FeedCfgRec> const mFeedCfgRec;
 
     // QP Event Queues.
     static size_t constexpr sSmallQueueSize = 5;

@@ -29,7 +29,7 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
    <attribute name="mNVMem" type="INVMem &amp;" visibility="0x02" properties="0x00">
     <documentation>Reference to object implementing INVMem interface.</documentation>
    </attribute>
-   <attribute name="mCalendarRec" type="CalendarRec *" visibility="0x02" properties="0x00">
+   <attribute name="mCalendarRec" type="const std::shared_ptr&lt;CalendarRec&gt;" visibility="0x02" properties="0x00">
     <documentation>Pointer to CalendarRec object.
 </documentation>
    </attribute>
@@ -42,6 +42,7 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     <parameter name="aRTCC" type="IRTCC &amp;"/>
     <parameter name="aTemperature" type="ITemperature &amp;"/>
     <parameter name="aNVMem" type="INVMem &amp;"/>
+    <parameter name="aCalendarRec" type="const std::shared_ptr&lt;CalendarRec&gt; &amp;"/>
     <code>    : QP::QActive(Q_STATE_CAST(&amp;RTCC::AO::RTCC_AO::initial))
     , mTime()
     , mDate()
@@ -49,7 +50,7 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     , mRTCC(aRTCC)
     , mITemperature(aTemperature)
     , mNVMem(aNVMem)
-    , mCalendarRec(nullptr)
+    , mCalendarRec(aCalendarRec)
     , mNVMemBuf(nullptr)
 
 // Ctor body left empty.</code>
@@ -94,7 +95,6 @@ if (lNVMemSize) {
    </operation>
    <operation name="InitCalendar" type="void" visibility="0x02" properties="0x00">
     <documentation>Initializes the calendar record.</documentation>
-    <parameter name="e" type="QP::QEvt  const * const"/>
     <code>// -Get current time &amp; date, temperature.
 // -Read config from RTCC sram.
 // -Populate calendar.
@@ -102,22 +102,18 @@ if (lNVMemSize) {
 mRTCC.RdTimeAndDate(mTime, mDate);
 mTemperature = mITemperature.GetTemperature();
 
-RTCC::Event::Init const * const lInitEvent = static_cast&lt;RTCC::Event::Init const * const&gt;(e);
-if ((nullptr != lInitEvent) &amp;&amp; (nullptr != lInitEvent-&gt;mCalendarRec)) {
-    mCalendarRec = lInitEvent-&gt;mCalendarRec;
-    // Set some defaults if required.
-    if (!mCalendarRec-&gt;IsSane()) {
-        mCalendarRec-&gt;ResetDflt();
-    }
+// Set some defaults if required.
+if (!mCalendarRec-&gt;IsSane()) {
+    mCalendarRec-&gt;ResetDflt();
+}
 
-    // Check if a Calendar object was passed.
-    // If not, create one locally,
+// Check if a Calendar object was passed.
+// If not, create one locally,
 #ifdef RTCC_CALENDAR_DBG
-    mCalendarRec-&gt;ClrAllEntries();
+mCalendarRec-&gt;ClrAllEntries();
 #endif // RTCC_CALENDAR_DBG
 
-    SetNextCalendarEvent();
-}
+SetNextCalendarEvent();
 
 // If you haven't passed a Calendar record,
 // no alarms will be set.
@@ -183,7 +179,7 @@ subscribe(RTCC_SAVE_TO_NV_MEMORY_SIG);
 
 // Init database and calendar.
 InitDB();
-InitCalendar(e);
+InitCalendar();
 
 // Set logging category.
 //LOGGER.AddCategory(RTCC_LOG, &amp;sLogCategory[0]);
@@ -310,13 +306,13 @@ SetNextCalendarEvent();
  <package name="Events" stereotype="0x01" namespace="Event::">
   <class name="Init" superclass="qpcpp::QEvt">
    <documentation>Event for the pseudo-init event.</documentation>
-   <attribute name="mCalendarRec" type="CalendarRec * const" visibility="0x00" properties="0x00">
+   <attribute name="mCalendarRec" type="const std::shared_ptr&lt;CalendarRec&gt;" visibility="0x00" properties="0x00">
     <documentation>Pointer to calendar record.</documentation>
    </attribute>
    <operation name="Init" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSignal" type="QP::QSignal const"/>
-    <parameter name="aCalendarRec" type="CalendarRec * const"/>
+    <parameter name="aCalendarRec" type="const std::shared_ptr&lt;CalendarRec&gt; &amp;"/>
     <code>    : QP::QEvt(aSignal)
     , mCalendarRec(aCalendarRec)
 // Ctor left empty.</code>

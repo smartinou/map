@@ -83,7 +83,8 @@ bool     lUseDHCP    = false;
 IPAddress lIPAddr;//     = 0x00000000;
 IPAddress lSubnetMask;// = 0x00000000;
 IPAddress lGWAddr;//     = 0x00000000;
-void (*lCallbackInit)(void) = nullptr;
+void (*lCallbackInit)(void *) = nullptr;
+void *lCallbackParam = nullptr;
 if (nullptr != e) {
     LwIP::Event::Init const * const lInitEvt = static_cast&lt;LwIP::Event::Init const * const&gt;(e);
     lUseDHCP    = lInitEvt-&gt;mNetIFRec-&gt;UseDHCP();
@@ -92,6 +93,7 @@ if (nullptr != e) {
     lGWAddr     = IPAddress(lInitEvt-&gt;mNetIFRec-&gt;GetGWAddr());
 
     lCallbackInit = lInitEvt-&gt;mCallbackInit;
+    lCallbackParam = lInitEvt-&gt;mCallbackParam;
 }
 
 // Initialize the lwIP stack.
@@ -107,7 +109,7 @@ LwIPDrv::StaticInit(
 
 // Initialize the lwIP applications...
 if (nullptr != lCallbackInit) {
-    lCallbackInit();
+    lCallbackInit(lCallbackParam);
 }
 </action>
      <initial_glyph conn="4,4,5,0,6,6">
@@ -316,17 +318,22 @@ lEtherDrv-&gt;PHYISR();</action>
    <attribute name="mNetIFRec" type="NetIFRec const * const" visibility="0x00" properties="0x00">
     <documentation>Pointer to Net IF record.</documentation>
    </attribute>
-   <attribute name=" (*const mCallbackInit)(void)" type="void" visibility="0x00" properties="0x00">
+   <attribute name=" (*const mCallbackInit)(void *)" type="void" visibility="0x00" properties="0x00">
     <documentation>A callback function to set other network stack features.</documentation>
+   </attribute>
+   <attribute name="mCallbackParam" type="void *" visibility="0x00" properties="0x00">
+    <documentation>A pointer to parameter to pass to callback function.</documentation>
    </attribute>
    <operation name="Init" type="" visibility="0x00" properties="0x02">
     <documentation>// Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
     <parameter name="aNetIFRec" type="NetIFRec const * const"/>
-    <parameter name="(*const aCallbackInit)(void)" type="void"/>
+    <parameter name="(*const aCallbackInit)(void *)" type="void"/>
+    <parameter name="aCallbackParam" type="void *"/>
     <code>    : QP::QEvt(aSig)
     , mNetIFRec(aNetIFRec)
     , mCallbackInit(aCallbackInit)
+    , mCallbackParam(aCallbackParam)
 
 // Ctor body.</code>
    </operation>

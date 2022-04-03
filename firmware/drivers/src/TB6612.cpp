@@ -23,7 +23,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include <stdio.h>
+#include <cstdint>
 
 // TI Library.
 #include <inc/hw_types.h>
@@ -121,7 +121,8 @@ TB6612::TB6612(unsigned long aIn1GPIOPort,
 TB6612::TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM)
     : mIn1(aIn1)
     , mIn2(aIn2)
-    , mPWM(aPWM) {
+    , mPWM(aPWM)
+{
 
     // In1.
     MAP_GPIOPinTypeGPIOOutput(mIn1.GetPort(), mIn1.GetPin());

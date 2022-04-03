@@ -62,10 +62,10 @@ Button::Button(
     unsigned int  const aGPIOPin,
     unsigned long const aIntNbr,
     unsigned int  const aID
-)
-    : GPIO(aGPIOPort, aGPIOPin)
+)   : GPIO(aGPIOPort, aGPIOPin)
     , mIntNbr(aIntNbr)
-    , mID(aID) {
+    , mID(aID)
+{
 
     // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
     GPIO::EnableSysCtlPeripheral(aGPIOPort);

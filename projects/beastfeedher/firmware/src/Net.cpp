@@ -12,7 +12,10 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
+//
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
 //
 // *****************************************************************************
 
@@ -334,12 +337,12 @@ static std::shared_ptr<FeedCfgRec> sFeedCfgRec = nullptr;
 
 namespace Net {
 
-    // Vraiment, ceci est plutot un setup de HTTP.
+    // Really, this as more to do with HTTP init.
 void InitCallback(
-    std::shared_ptr<RTCC::AO::RTCC_AO> const aRTCC_AO,
-    std::shared_ptr<CalendarRec> aCalendarRec,
-    std::shared_ptr<NetIFRec> aNetIFRec,
-    std::shared_ptr<FeedCfgRec> aFeedCfgRec
+    std::shared_ptr<RTCC::AO::RTCC_AO> const &aRTCC_AO,
+    std::shared_ptr<CalendarRec> const &aCalendarRec,
+    std::shared_ptr<NetIFRec> const &aNetIFRec,
+    std::shared_ptr<FeedCfgRec> const &aFeedCfgRec
 ) {
 
     httpd_init();
