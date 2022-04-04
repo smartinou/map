@@ -23,13 +23,13 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     <documentation>Reference to a IRTCC-compatible interface.
 </documentation>
    </attribute>
-   <attribute name="mITemperature" type="ITemperature &amp;" visibility="0x02" properties="0x00">
+   <attribute name="mITemperature" type="std::shared_ptr&lt;ITemperature&gt; const" visibility="0x02" properties="0x00">
     <documentation>Reference to a ITemperature-compatible interface.</documentation>
    </attribute>
    <attribute name="mNVMem" type="INVMem &amp;" visibility="0x02" properties="0x00">
     <documentation>Reference to object implementing INVMem interface.</documentation>
    </attribute>
-   <attribute name="mCalendarRec" type="const std::shared_ptr&lt;CalendarRec&gt;" visibility="0x02" properties="0x00">
+   <attribute name="mCalendarRec" type="std::shared_ptr&lt;CalendarRec&gt; const" visibility="0x02" properties="0x00">
     <documentation>Pointer to CalendarRec object.
 </documentation>
    </attribute>
@@ -40,9 +40,9 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     <documentation>Ctor.
 </documentation>
     <parameter name="aRTCC" type="IRTCC &amp;"/>
-    <parameter name="aTemperature" type="ITemperature &amp;"/>
+    <parameter name="aTemperature" type="std::shared_ptr&lt;ITemperature&gt; const &amp;"/>
     <parameter name="aNVMem" type="INVMem &amp;"/>
-    <parameter name="aCalendarRec" type="const std::shared_ptr&lt;CalendarRec&gt; &amp;"/>
+    <parameter name="aCalendarRec" type="std::shared_ptr&lt;CalendarRec&gt; const &amp;"/>
     <code>    : QP::QActive(Q_STATE_CAST(&amp;RTCC::AO::RTCC_AO::initial))
     , mTime()
     , mDate()
@@ -100,7 +100,7 @@ if (lNVMemSize) {
 // -Populate calendar.
 // -Set next alarm.
 mRTCC.RdTimeAndDate(mTime, mDate);
-mTemperature = mITemperature.GetTemperature();
+mTemperature = mITemperature-&gt;GetTemperature();
 
 // Set some defaults if required.
 if (!mCalendarRec-&gt;IsSane()) {
@@ -227,7 +227,7 @@ SetNextCalendarEvent();
       <action brief="ReadTimeAndTemp(); PublishTick();">// Set data as impure to force refresh of data read from RTCC.
 mRTCC.SetImpure();
 mRTCC.GetTimeAndDate(mTime, mDate);
-mTemperature = mITemperature.GetTemperature();
+mTemperature = mITemperature-&gt;GetTemperature();
 
 // Publish Tick Alarm Event.
 RTCC::Event::TimeAndDate * const lTickAlarmEvent =

@@ -280,7 +280,7 @@ public:
         if (mRTCCAO == nullptr) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
-            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, *mRTCC, *mRTCC, aCalendarRec);
+            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, mRTCC, *mRTCC, aCalendarRec);
             if (mRTCCAO != nullptr) {
                 mRTCCAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
             }
@@ -617,7 +617,7 @@ private:
     }
 
 
-    std::unique_ptr<DS3234> CreateRTCC(void) {
+    std::shared_ptr<DS3234> CreateRTCC(void) {
         // Creates a DS3234 RTCC.
         // Reset input pin.
         static constexpr GPIO sResetPin(GPIOK_BASE, GPIO_PIN_7);
@@ -625,7 +625,7 @@ private:
         // with specified CSn pin.
         static constexpr unsigned long sInterruptNumber = INT_GPIOP3;
         static GPIO sCSnPin(GPIOQ_BASE, GPIO_PIN_1);
-        auto lRTCC = std::make_unique<DS3234>(
+        auto lRTCC = std::make_shared<DS3234>(
             2000,
             sInterruptNumber,
             mRTCCInterruptPin,
@@ -708,7 +708,7 @@ private:
     uint32_t mClkRate;
     std::shared_ptr<CoreLink::SPIMasterDev> mSPI2Dev;
     std::shared_ptr<CoreLink::SPIMasterDev> mSPI3Dev;
-    std::unique_ptr<DS3234> mRTCC;
+    std::shared_ptr<DS3234> mRTCC;
     std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
     std::shared_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO;
     std::shared_ptr<PFPP::AO::Mgr_AO> mPFPPAO;

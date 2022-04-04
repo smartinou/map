@@ -39,13 +39,13 @@ public:
     virtual unsigned int GetNVMemSize(void) const = 0;
     virtual void RdFromNVMem(
         uint8_t * const aDataPtr,
-        std::size_t aOffset,
-        std::size_t aSize
+        std::size_t const aOffset,
+        std::size_t const aSize
     ) = 0;
     virtual void WrToNVMem(
         uint8_t const * const aDataPtr,
-        std::size_t aOffset,
-        std::size_t aSize
+        std::size_t const aOffset,
+        std::size_t const aSize
     ) = 0;
 };
 

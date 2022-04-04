@@ -13,7 +13,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // This source code is licensed under the GPL-3.0-style license found in the
 // LICENSE file in the root directory of this source tree.
@@ -58,14 +58,14 @@ class DS3234
         unsigned int const aBaseYear,
         unsigned long const aInterruptNumber,
         GPIO const &aInterruptPin,
-        std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
+        std::shared_ptr<CoreLink::ISPIMasterDev> const &aSPIMasterDev,
         GPIO const &aCSnPin
     );
     ~DS3234() = default;
 
     // RTCC Interface.
     void Init(void) override;
-    void SetInterrupt(bool aEnable) override;
+    void SetInterrupt(bool const aEnable) override;
     void AckInterrupt(void) override;
     void SetImpure(void) override { mIsImpure = true; }
 
@@ -86,9 +86,17 @@ class DS3234
     void ClrAlarmFlag(void) override;
 
     // INVMem Interface.
-    unsigned int GetNVMemSize(void) const override { return mNVMemSize; }
-    void RdFromNVMem(uint8_t * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
-    void WrToNVMem(uint8_t const * const aDataPtr, unsigned int aOffset, unsigned int aSize) override;
+    std::size_t GetNVMemSize(void) const override { return mNVMemSize; }
+    void RdFromNVMem(
+        uint8_t * const aDataPtr,
+        std::size_t const aOffset,
+        std::size_t const aSize
+    ) override;
+    void WrToNVMem(
+        uint8_t const * const aDataPtr,
+        std::size_t const aOffset,
+        std::size_t const aSize
+    ) override;
 
     // ITemperature Interface.
     float GetTemperature(void) override;
@@ -273,13 +281,13 @@ private:
     uint8_t GetCtrl(void);
     uint8_t GetStatus(void);
 
-    unsigned int mBaseYear = 0;
+    unsigned int const mBaseYear;
     unsigned int mCentury = 0;
 
-    std::shared_ptr<CoreLink::ISPIMasterDev> mSPIMasterDev;
+    std::shared_ptr<CoreLink::ISPIMasterDev> const mSPIMasterDev;
     CoreLink::SPISlaveCfg const mSPISlaveCfg;
 
-    unsigned long mInterruptNumber = 0;
+    unsigned long const mInterruptNumber;
     GPIO const &mInterruptGPIO;
 
     rtcc_reg_map_t mRegMap = {0};

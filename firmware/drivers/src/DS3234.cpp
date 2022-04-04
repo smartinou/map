@@ -94,7 +94,7 @@ DS3234::DS3234(
     unsigned int const aBaseYear,
     unsigned long const aInterruptNumber,
     GPIO const &aInterruptPin,
-    std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
+    std::shared_ptr<CoreLink::ISPIMasterDev> const &aSPIMasterDev,
     GPIO const &aCSnPin
 )
     : mBaseYear(aBaseYear)
@@ -468,8 +468,8 @@ void DS3234::ClrAlarmFlag(void) {
 
 void DS3234::RdFromNVMem(
     uint8_t * const aDataPtr,
-    unsigned int const aOffset,
-    unsigned int aSize
+    std::size_t const aOffset,
+    std::size_t const aSize
 ) {
 
     // Write SRAM address register.
@@ -482,15 +482,16 @@ void DS3234::RdFromNVMem(
         mSPISlaveCfg
     );
 
-    unsigned int lMaxSize = mNVMemSize - aOffset;
-    if (aSize > lMaxSize) {
-        aSize = lMaxSize;
+    std::size_t const lMaxSize = mNVMemSize - aOffset;
+    std::size_t lSize = aSize;
+    if (lSize > lMaxSize) {
+        lSize = lMaxSize;
     }
 
     mSPIMasterDev->RdData(
         L_RD_ADDR(mSRAMData),
         reinterpret_cast<uint8_t *>(aDataPtr),
-        aSize * sizeof(rtcc_reg_t),
+        lSize * sizeof(rtcc_reg_t),
         mSPISlaveCfg
     );
 }
@@ -498,8 +499,8 @@ void DS3234::RdFromNVMem(
 
 void DS3234::WrToNVMem(
     uint8_t const * const aDataPtr,
-    unsigned int const aOffset,
-    unsigned int aSize
+    std::size_t const aOffset,
+    std::size_t const aSize
 ) {
 
     // Write SRAM address register.
@@ -512,15 +513,16 @@ void DS3234::WrToNVMem(
         mSPISlaveCfg
     );
 
-    unsigned int lMaxSize = mNVMemSize - aOffset;
-    if (aSize > lMaxSize) {
-        aSize = lMaxSize;
+    std::size_t const lMaxSize = mNVMemSize - aOffset;
+    std::size_t lSize = aSize;
+    if (lSize > lMaxSize) {
+        lSize = lMaxSize;
     }
 
     mSPIMasterDev->WrData(
         L_WR_ADDR(mSRAMData),
         reinterpret_cast<uint8_t const *>(aDataPtr),
-        aSize * sizeof(rtcc_reg_t),
+        lSize * sizeof(rtcc_reg_t),
         mSPISlaveCfg
     );
 }
