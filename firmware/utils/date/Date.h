@@ -24,7 +24,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <stdio.h>
+#include <string>
 #include <time.h>
 
 #include "Day.h"
@@ -40,27 +40,14 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class IDate {
-public:
-    virtual unsigned int GetYear(void)    const = 0;
-    virtual unsigned int GetMonth(void)   const = 0;
-    virtual unsigned int GetDate(void)    const = 0;
-    virtual unsigned int GetWeekday(void) const = 0;
-
-    virtual Month::Name   GetMonthName(void)   const = 0;
-    virtual Weekday::Name GetWeekdayName(void) const = 0;
-};
-
-
 //! \brief Date class as aggregate class.
-class Date final
-    : public IDate {
+class Date final {
 public:
     constexpr explicit Date(
-        unsigned int  aYear    = 2000,
-        Month::Name   aMonth   = Month::Name::January,
-        unsigned int  aDate    = 1,
-        Weekday::Name aWeekday = Weekday::Name::Saturday
+        unsigned int const aYear = 2000,
+        Month::Name const aMonth = Month::Name::January,
+        unsigned int const aDate = 1,
+        Weekday::Name const aWeekday = Weekday::Name::Saturday
     ) noexcept
         : mYear(aYear)
         , mMonth(aMonth)
@@ -74,14 +61,18 @@ public:
         , mWeekday((aDate->tm_wday + 1) % 7) {}
     ~Date() = default;
 
-    // IDate.
-    constexpr unsigned int GetYear(void) const {return mYear.Get();}
-    constexpr unsigned int GetMonth(void) const {return mMonth.Get();}
-    constexpr unsigned int GetDate(void) const {return mDate.Get();}
-    constexpr unsigned int GetWeekday(void) const {return mWeekday.Get();}
+    constexpr unsigned int GetYear(void) const noexcept {return mYear.Get();}
+    constexpr unsigned int GetMonth(void) const noexcept {return mMonth.Get();}
+    constexpr unsigned int GetDate(void) const noexcept {return mDate.Get();}
+    constexpr unsigned int GetWeekday(void) const noexcept {return mWeekday.Get();}
 
-    constexpr Month::Name GetMonthName(void) const {return mMonth.ToName();}
-    constexpr Weekday::Name GetWeekdayName(void) const {return mWeekday.ToName();}
+    constexpr Month::Name GetMonthName(void) const noexcept {return mMonth.ToName();}
+    constexpr Weekday::Name GetWeekdayName(void) const noexcept {return mWeekday.ToName();}
+
+    // YYYY-MM-DD.
+    std::string ToStr(void) const;
+    // YYYY-Month-DD
+    std::string ToStr2(void) const;
 
 private:
     Year mYear;
@@ -101,16 +92,6 @@ private:
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
-
-// Helper functions.
-namespace DateHelper {
-
-// YYYY-MM-DD.
-char const *ToStr(Date const &aDate, char * const aInStr, size_t const aStrSize = (10 + 1));
-// YYYY-Month-DD
-char const *ToStr2(Date const &aDate, char * const aInStr, size_t const aStrSize = (12 + 1));
-
-} // namespace DateHelper
 
 // ******************************************************************************
 //                                END OF FILE

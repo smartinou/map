@@ -23,6 +23,9 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+// Standard library.
+#include <memory>
+
 // QP Library.
 #include "qpcpp.h"
 
@@ -100,15 +103,15 @@ int main(void) {
 
     // Start master record.
     // Contains all AOs.
-    App * const lAppPtr = new App();
-    bool lInitGood = lAppPtr->Init(lFactory);
-    if (lInitGood) {
-        // Run the QF application.
-        return QP::QF::run();
+    if (auto lApp = std::make_unique<App>()) {
+        if ([[maybe_unused]] bool lInitGood = lApp->Init(lFactory)) {
+            // Run the QF application.
+            return QP::QF::run();
+        }
     }
 
-    // When lFactory gets out of scope,
-    // the Factory is destroyed and all that is responsible for as well.
+    // When lFactory and lApp go out of scope,
+    // they are destroyed and all that they are responsible for as well.
 
     // Should never get here, except if Init() went wrong.
     return 1;

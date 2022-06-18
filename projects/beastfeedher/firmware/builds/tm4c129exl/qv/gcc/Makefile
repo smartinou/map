@@ -185,6 +185,7 @@ CPP_SRCS := \
     Button.cpp \
     Main.cpp \
     CalendarRec.cpp \
+    DailyPlannerRec.cpp \
     Date.cpp \
     DBRec.cpp \
     Display_AOs.cpp \
@@ -200,7 +201,6 @@ CPP_SRCS := \
     LogLevel.cpp \
     LwIP_AOs.cpp \
     LwIPDrv.cpp \
-    Month.cpp \
     Net.cpp \
     NetIFRec.cpp \
     PFPP_AOs.cpp \
@@ -283,7 +283,8 @@ ifeq ($(GNU_ARM),)
 #GNU_ARM = C:/tools/gnu_arm-eabi
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/8\ 2019-q3-update
 #GNU_ARM = C:/apps/GNU\ Tools\ ARM\ Embedded/9\ 2019-q4-major
-GNU_ARM = C:/apps/GNU\ Arm\ Embedded\ Toolchain/10\ 2021.10
+#GNU_ARM = C:/apps/GNU\ Arm\ Embedded\ Toolchain/10\ 2021.10
+GNU_ARM = C:/apps/Arm\ GNU\ Toolchain\ arm-none-eabi/11.2\ 2022.02
 endif
 
 # make sure that the GNU-ARM toolset exists...
@@ -332,7 +333,7 @@ CFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
 CPPFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
     -mthumb -Wall \
     -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-    -std=c++17 -Wno-register \
+    -std=c++20 -Wno-register \
     -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 else
@@ -349,9 +350,9 @@ CFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
     -O $(INCLUDES) $(DEFINES) -DQ_SPY
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
-    -mthumb -Wall \
+    -mthumb -Wall -Wno-volatile -Wno-psabi \
     -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
-    -std=c++17 -Wno-register \
+    -std=c++20 -Wno-register \
     -O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT
 
 endif

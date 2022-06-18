@@ -247,6 +247,8 @@ private:
     };
 
 private:
+    DS3234() = delete;
+    DS3234 &operator=(DS3234 const &) = delete;
     void UpdateCachedVal(void);
     void UpdateTime(Time &aTime);
     void UpdateDate(Date &aDate);

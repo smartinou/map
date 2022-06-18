@@ -51,29 +51,28 @@ public:
     };
 
 public:
-    constexpr explicit Weekday(const unsigned int aVal) noexcept
+    constexpr explicit Weekday(unsigned const int aVal) noexcept
         : Limit(
             Weekday::NameToUI(Name::Min),
             Weekday::NameToUI(Name::Max),
             aVal) {}
-    constexpr explicit Weekday(const Name aWeekdayName = Name::Sunday) noexcept
+    constexpr explicit Weekday(Name const aWeekdayName = Name::Sunday) noexcept
         : Limit(
             Weekday::NameToUI(Name::Min),
             Weekday::NameToUI(Name::Max),
             Weekday::NameToUI(aWeekdayName)) {}
     ~Weekday() = default;
 
-    constexpr Name ToName(void) const {
-        unsigned int lWeekdayUI = Get();
+    constexpr Name ToName(void) const noexcept {
+        auto const lWeekdayUI = Get();
         return UIToName(lWeekdayUI);
     }
 
-    static constexpr unsigned int NameToUI(const Name aWeekdayName) {
-        unsigned int lWeekdayUI = static_cast<unsigned int>(aWeekdayName);
-        return lWeekdayUI;
+    static constexpr unsigned int NameToUI(Name const aWeekdayName) noexcept {
+        return static_cast<unsigned int>(aWeekdayName);
     }
 
-    static constexpr Name UIToName(const unsigned int aWeekday) {
+    static constexpr Name UIToName(unsigned const int aWeekday) noexcept {
         return static_cast<Name>(aWeekday);
     }
 };

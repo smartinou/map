@@ -280,7 +280,7 @@ public:
         if (mRTCCAO == nullptr) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
-            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(*mRTCC, mRTCC, *mRTCC, aCalendarRec);
+            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(mRTCC, mRTCC, mRTCC, aCalendarRec);
             if (mRTCCAO != nullptr) {
                 mRTCCAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
             }

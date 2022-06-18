@@ -85,7 +85,7 @@ private:
 
     struct RecData mRec;
 
-    static char constexpr sMagic[3] = { 'C', 'F', 'G' };
+    static DBRec::Magic constexpr sMagic = { 'C', 'F', 'G' };
 };
 
 // ******************************************************************************

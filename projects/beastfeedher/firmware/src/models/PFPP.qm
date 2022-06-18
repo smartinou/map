@@ -104,18 +104,15 @@ mMotorControl-&gt;TurnOff();</code>
     </operation>
     <operation name="DisplayFeedTime" type="void" visibility="0x02" properties="0x00">
      <documentation>Sends a &quot;Display Text&quot; signal to show last feeding time.</documentation>
-     <code>char lTimeAndDateStr[64] = {0};
-DateHelper::ToStr(mDate, &amp;lTimeAndDateStr[0]);
-size_t lStrLen = strlen(&amp;lTimeAndDateStr[0]);
-lTimeAndDateStr[lStrLen] = ' ';
-TimeHelper::ToStr(mTime, &amp;lTimeAndDateStr[lStrLen + 1]);
-
+     <code>auto const lDate = mDate.ToStr();
+auto const lTime = mTime.ToStr();
+auto const lTimeAndDate = lDate + ' ' + lTime;
 Display::Event::DisplayText * const lTextEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
     0, 60,
     0xF,
-    &amp;lTimeAndDateStr[0],
+    lTimeAndDate.c_str(),
     true
 );
 QP::QF::PUBLISH(lTextEvent, this);
@@ -125,16 +122,14 @@ QP::QF::PUBLISH(lTextEvent, this);
      <specifiers>const</specifiers>
      <documentation>Event sink: print to SEGGER RTT.</documentation>
      <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
-     <code>char lDateStr[32] = {0};
-DateHelper::ToStr(aLogEvent.mDate, &amp;lDateStr[0]);
-char lTimeStr[32] = {0};
-TimeHelper::ToStr(aLogEvent.mTime, &amp;lTimeStr[0]);
+     <code>auto const lDateStr = mDate.ToStr();
+auto const lTimeStr = mTime.ToStr();
 static constexpr unsigned int sBufferIndex = 0;
 int lLen = SEGGER_RTT_printf(
     sBufferIndex,
     &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
-    &amp;lDateStr[0],
-    &amp;lTimeStr[0],
+    lDateStr.c_str(),
+    lTimeStr.c_str(),
     LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
     aLogEvent.mFileStr,
     aLogEvent.mFunctionStr,
@@ -233,26 +228,24 @@ QP::QF::PUBLISH(lFrameEvent, this);
 mDate = lEvent-&gt;mDate;
 mTime = lEvent-&gt;mTime;
 
-char lDateStr[32] = {0};
-DateHelper::ToStr(lEvent-&gt;mDate, &amp;lDateStr[0]);
+auto const lDateStr = lEvent-&gt;mDate.ToStr();
 Display::Event::DisplayText * const lDateChangedEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
     0, 10,
     0xF,
-    &amp;lDateStr[0],
+    lDateStr.c_str(),
     false
 );
 QP::QF::PUBLISH(lDateChangedEvent, this);
 
-char lTimeStr[32] = {0};
-TimeHelper::ToStr(lEvent-&gt;mTime, &amp;lTimeStr[0]);
+auto const lTimeStr = lEvent-&gt;mTime.ToStr();
 Display::Event::DisplayText * const lTimeChangedEvent = Q_NEW(
     Display::Event::DisplayText,
     DISPLAY_TEXT_SIG,
     0, 20,
     0xF,
-    &amp;lTimeStr[0],
+    lTimeStr.c_str(),
     false
 );
 QP::QF::PUBLISH(lTimeChangedEvent, this);</action>

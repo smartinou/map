@@ -24,8 +24,10 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+// Standard Library.
 #include <memory>
-#include <stddef.h>
+#include <span>
+#include <cstdint>
 #include <stdint.h>
 #include <vector>
 
@@ -55,11 +57,13 @@ public:
     static void SerializeDB(uint8_t * aData);
     static void DeserializeDB(uint8_t const * aData);
     static void StaticUpdateCRC(void);
+    static void ClearAllDB(void) {mRecList.clear();}
 
 protected:
+    using Magic = std::array<char, 3>;
     struct BaseRec {
         uint8_t mCRC;
-        char mMagic[3];
+        Magic mMagic;
     };
 
     DBRec();
@@ -69,9 +73,9 @@ protected:
 
     void AddRec(Ptr aDBRec);
     void SetIsDirty(void) {mIsDirty = true;}
-    bool IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic[]) const;
-    bool IsCRCGood(uint8_t const * const aData, size_t const aSize) const;
-    uint8_t ComputeCRC(uint8_t const * const aData, size_t const aSize) const;
+    bool IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) const;
+    bool IsCRCGood(std::span<uint8_t const> const &aSpan) const;
+    uint8_t ComputeCRC(std::span<uint8_t const> const &aSpan) const;
 
 private:
     virtual size_t GetRecSize(void) const = 0;
@@ -81,7 +85,6 @@ private:
 
     static std::vector<Ptr> mRecList;
     bool mIsDirty;
-
 };
 
 // ******************************************************************************

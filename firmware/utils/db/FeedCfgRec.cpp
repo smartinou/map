@@ -62,26 +62,25 @@ FeedCfgRec::FeedCfgRec()
 //
 
 bool FeedCfgRec::IsSane(void) const {
-    // Check magic.
-    if (!IsMagicGood(reinterpret_cast<BaseRec const * const>(&mRec.mBase), sMagic)) {
-        return false;
+
+    bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
+    if (lIsMagicGood) {
+        return IsCRCGood(
+            {
+                reinterpret_cast<uint8_t const * const>(&mRec),
+                sizeof(struct RecData)
+            }
+        );
     }
 
-    // Check CRC.
-    if (!IsCRCGood(reinterpret_cast<uint8_t const * const>(&mRec), sizeof(struct RecData))) {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 
 void FeedCfgRec::ResetDflt(void) {
 
     // Set magic.
-    mRec.mBase.mMagic[0] = sMagic[0];
-    mRec.mBase.mMagic[1] = sMagic[1];
-    mRec.mBase.mMagic[2] = sMagic[2];
+    mRec.mBase.mMagic = sMagic;
 
     mRec.mManualFeedWaitPeriod = 2;
     mRec.mManualFeedMaxFeedPeriod = 5;
@@ -171,10 +170,12 @@ void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
 }
 
 
-void FeedCfgRec::UpdateCRC() {
+void FeedCfgRec::UpdateCRC(void) {
     mRec.mBase.mCRC = ComputeCRC(
-        reinterpret_cast<uint8_t const * const>(&mRec),
-        sizeof(struct RecData)
+        {
+            reinterpret_cast<uint8_t const * const>(&mRec.mBase.mMagic[0]),
+            sizeof(struct RecData) - sizeof(struct BaseRec)
+        }
     );
 }
 

@@ -58,24 +58,23 @@ CalendarRec::CalendarRec()
 
 
 bool CalendarRec::IsSane(void) const {
-    // Check magic.
-    if (!IsMagicGood(reinterpret_cast<BaseRec const * const>(&mRec.mBase), sMagic)) {
-        return false;
+
+    bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
+    if (lIsMagicGood) {
+        return IsCRCGood(
+            {
+                reinterpret_cast<uint8_t const * const>(&mRec),
+                sizeof(struct RecData)
+            }
+        );
     }
 
-    // Check CRC.
-    if (!IsCRCGood(reinterpret_cast<uint8_t const * const>(&mRec), sizeof(struct RecData))) {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 
 void CalendarRec::ResetDflt(void) {
-    mRec.mBase.mMagic[0] = sMagic[0];
-    mRec.mBase.mMagic[1] = sMagic[1];
-    mRec.mBase.mMagic[2] = sMagic[2];
+    mRec.mBase.mMagic = sMagic;
 
     // Set time entries in whole week.
     // 8:00 and 17:00.
@@ -110,10 +109,12 @@ void CalendarRec::Deserialize(uint8_t const * const aDataPtr) {
 }
 
 
-void CalendarRec::UpdateCRC() {
+void CalendarRec::UpdateCRC(void) {
     mRec.mBase.mCRC = ComputeCRC(
-        reinterpret_cast<uint8_t const * const>(&mRec),
-        sizeof(struct RecData)
+        {
+            reinterpret_cast<uint8_t const * const>(&mRec.mBase.mMagic[0]),
+            sizeof(struct RecData) - 1
+        }
     );
 }
 
@@ -130,7 +131,7 @@ void CalendarRec::ClrAllEntries(void) {
 
 bool CalendarRec::IsEntrySet(Time const &aTime) {
 
-    const unsigned int lArrayIx = GetArrayIx(aTime);
+    unsigned int const lArrayIx = GetArrayIx(aTime);
     if (mRec.mCalendarArray.at(lArrayIx)) {
         return true;
     }
@@ -141,15 +142,15 @@ bool CalendarRec::IsEntrySet(Time const &aTime) {
 
 void CalendarRec::SetEntry(Weekday const &aWeekday, Time const &aTime) {
 
-    const unsigned int lWeekdayUI = aWeekday.Get();
+    unsigned int const lWeekdayUI = aWeekday.Get();
     SetEntry(lWeekdayUI, aTime);
 }
 
 
 void CalendarRec::SetEntry(unsigned int const aWeekday, Time const &aTime) {
 
-    const unsigned int lArrayIx        = GetArrayIx(aTime);
-    const unsigned int lWeekdayBitMask = (1 << aWeekday);
+    unsigned int const lArrayIx = GetArrayIx(aTime);
+    unsigned int const lWeekdayBitMask = (1 << aWeekday);
 
     mRec.mCalendarArray.at(lArrayIx) |= lWeekdayBitMask;
 
@@ -164,7 +165,7 @@ void CalendarRec::SetEntry(unsigned int const aWeekday, Time const &aTime) {
 
 void CalendarRec::SetTimeEntry(Time const &aTime) {
 
-    const unsigned int lArrayIx = GetArrayIx(aTime);
+    unsigned int const lArrayIx = GetArrayIx(aTime);
     mRec.mCalendarArray.at(lArrayIx) |= ALL_WEEK_BIT_MASK;
     SetIsDirty();
 }
@@ -172,15 +173,15 @@ void CalendarRec::SetTimeEntry(Time const &aTime) {
 
 void CalendarRec::ClrEntry(Weekday const &aWeekday, Time const &aTime) {
 
-    const unsigned int lWeekdayUI = aWeekday.Get();
+    unsigned int const lWeekdayUI = aWeekday.Get();
     ClrEntry(lWeekdayUI, aTime);
 }
 
 
 void CalendarRec::ClrEntry(unsigned int const aWeekday, Time const &aTime) {
 
-    const unsigned int lArrayIx        = GetArrayIx(aTime);
-    const unsigned int lWeekdayBitMask = (0x1 << aWeekday);
+    unsigned int const lArrayIx = GetArrayIx(aTime);
+    unsigned int const lWeekdayBitMask = (0x1 << aWeekday);
 
     mRec.mCalendarArray.at(lArrayIx) &= ~lWeekdayBitMask;
     mRec.mCalendarArray.at(lArrayIx) &= ~ALL_WEEK_BIT_MASK;
@@ -188,11 +189,9 @@ void CalendarRec::ClrEntry(unsigned int const aWeekday, Time const &aTime) {
 }
 
 
-bool CalendarRec::GetNextEntry(
-    Weekday  const &aWeekday,
-    Time     const &aTime,
-    Weekday        &aNextWeekday,
-    Time           &aNextTime
+std::optional<std::pair<Time, Weekday>> CalendarRec::GetNextEntry(
+    Weekday const &aWeekday,
+    Time const &aTime
 ) {
 
     bool lIsEntryFound = false;
@@ -204,7 +203,7 @@ bool CalendarRec::GetNextEntry(
     for (unsigned int lTotArrayIx = 0; lTotArrayIx < (TIME_ENTRY_QTY * 7); lTotArrayIx++) {
         // Get weekday bit field of current time.
         // Find the next weekday closest to the current weekday.
-        const uint8_t lWeekdayField = mRec.mCalendarArray.at(lHourIx);
+        uint8_t const lWeekdayField = mRec.mCalendarArray.at(lHourIx);
 
         if ((lWeekdayField & lNextWeekdayMask) ||
             (lWeekdayField & ALL_WEEK_BIT_MASK)) {
@@ -227,14 +226,33 @@ bool CalendarRec::GetNextEntry(
     }
 
     if (lIsEntryFound) {
-        const Time lNextTime(lHourIx / SLOTS_PER_HOUR, (lHourIx % SLOTS_PER_HOUR) * (60 / SLOTS_PER_HOUR), 0, true);
-        aNextTime = lNextTime;
-        const unsigned int lWeekdayUI = BitMaskToWeekday(lNextWeekdayMask);
-        const Weekday lNextWeekday(lWeekdayUI);
-        aNextWeekday = lNextWeekday;
+        Time const lNextTime(
+            lHourIx / SLOTS_PER_HOUR,
+            (lHourIx % SLOTS_PER_HOUR) * (60 / SLOTS_PER_HOUR),
+            0,
+            true
+        );
+        auto const lWeekdayUI = BitMaskToWeekday(lNextWeekdayMask);
+        Weekday const lNextWeekday(lWeekdayUI);
+        auto const lNextEntry = std::make_pair(lNextTime, lNextWeekday);
+        return std::optional<std::pair<Time, Weekday>>{lNextEntry};
     }
 
-    return lIsEntryFound;
+    return std::nullopt;
+}
+
+
+std::optional<CalendarRec::TimeAndDate> CalendarRec::GetNextEntry(
+    CalendarRec::TimeAndDate const &aEntry)
+{
+    if (auto const lNextEntry = GetNextEntry(aEntry.mWeekday, aEntry.mTime)) {
+        TimeAndDate const lReturn = {
+            lNextEntry.value().first, lNextEntry.value().second
+        };
+        return std::optional<TimeAndDate>{lReturn};
+    }
+
+    return std::nullopt;
 }
 
 // *****************************************************************************
@@ -244,9 +262,9 @@ bool CalendarRec::GetNextEntry(
 unsigned int CalendarRec::GetArrayIx(Time const &aTime) {
 
     // Find minute bin index: from 0 to (SLOTS_PER_HOUR - 1).
-    static const unsigned int lMinuteBinRange = 60 / SLOTS_PER_HOUR;
-    const unsigned int lHour  = aTime.GetHours();
-    const unsigned int lBinIx = aTime.GetMinutes() / lMinuteBinRange;
+    static unsigned int constexpr lMinuteBinRange = 60 / SLOTS_PER_HOUR;
+    unsigned int const lHour  = aTime.GetHours();
+    unsigned int const lBinIx = aTime.GetMinutes() / lMinuteBinRange;
 
     // Manage pm vs am? Or is time in 24H format always?
     // Index is between 0 to (TIME_ENTRY_QTY - 1).
@@ -256,8 +274,8 @@ unsigned int CalendarRec::GetArrayIx(Time const &aTime) {
 
 unsigned int CalendarRec::WeekdayToBitMask(Weekday const &aWeekday) {
 
-    const unsigned int lWeekdayUI = aWeekday.Get();
-    const unsigned int lBitMask   = (1 << lWeekdayUI);
+    unsigned int const lWeekdayUI = aWeekday.Get();
+    unsigned int const lBitMask = (1 << lWeekdayUI);
     return lBitMask;
 }
 

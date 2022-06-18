@@ -62,26 +62,25 @@ NetIFRec::NetIFRec()
 //
 
 bool NetIFRec::IsSane(void) const {
-    // Check magic.
-    if (!IsMagicGood(reinterpret_cast<BaseRec const * const>(&mRec.mBase), &NetIFRec::sMagic[0])) {
-        return false;
+
+    bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
+    if (lIsMagicGood) {
+        return IsCRCGood(
+            {
+                reinterpret_cast<uint8_t const * const>(&mRec),
+                sizeof(struct RecData)
+            }
+        );
     }
 
-    // Check CRC.
-    if (!IsCRCGood(reinterpret_cast<uint8_t const * const>(&mRec), sizeof(struct RecData))) {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
 
 void NetIFRec::ResetDflt(void) {
 
     // Set magic.
-    mRec.mBase.mMagic[0] = NetIFRec::sMagic[0];
-    mRec.mBase.mMagic[1] = NetIFRec::sMagic[1];
-    mRec.mBase.mMagic[2] = NetIFRec::sMagic[2];
+    mRec.mBase.mMagic = NetIFRec::sMagic;
 
     mRec.mUseDHCP = 1;
     mRec.mUseIPv6 = 0;
@@ -112,10 +111,12 @@ void NetIFRec::Deserialize(uint8_t const *aDataPtr) {
 }
 
 
-void NetIFRec::UpdateCRC() {
+void NetIFRec::UpdateCRC(void) {
     mRec.mBase.mCRC = ComputeCRC(
-        reinterpret_cast<uint8_t const * const>(&mRec),
-        sizeof(struct RecData)
+        {
+            reinterpret_cast<uint8_t const * const>(&mRec.mBase.mMagic[0]),
+            sizeof(struct RecData) - 1
+        }
     );
 }
 

@@ -318,7 +318,7 @@ lEtherDrv-&gt;PHYISR();</action>
    <attribute name="mNetIFRec" type="std::shared_ptr&lt;NetIFRec&gt; const" visibility="0x00" properties="0x00">
     <documentation>Pointer to Net IF record.</documentation>
    </attribute>
-   <attribute name=" (*const mCallbackInit)(void *)" type="void" visibility="0x00" properties="0x00">
+   <attribute name=" (*const mCallbackInit)(void * const)" type="void" visibility="0x00" properties="0x00">
     <documentation>A callback function to set other network stack features.</documentation>
    </attribute>
    <attribute name="mCallbackParam" type="void *" visibility="0x00" properties="0x00">

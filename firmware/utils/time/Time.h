@@ -21,6 +21,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include <string>
 #include <time.h>
 
 #include "Hour.h"
@@ -35,31 +36,19 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class ITime {
-public:
-    virtual unsigned int GetHours(void)   const = 0;
-    virtual unsigned int GetMinutes(void) const = 0;
-    virtual unsigned int GetSeconds(void) const = 0;
-
-    virtual bool Is24H(void) const = 0;
-    virtual bool IsPM(void)  const = 0;
-};
-
-
 //! \brief Time class, as an aggregate of other classes.
 // This is a simple class, meant to represent time snapshots,
 // from an RTCC for example.
 // It will not properly overflow and keep time if two objects
 // are added together.
-class Time final
-    : public ITime {
+class Time final {
 public:
     constexpr explicit Time(
-        const Hour &aHours,
-        const Minute &aMinutes,
-        const Second &aSeconds,
-        const bool aIs24H = true,
-        const bool aIsPM  = false
+        Hour const &aHours,
+        Minute const &aMinutes,
+        Second const &aSeconds,
+        bool const aIs24H = true,
+        bool const aIsPM  = false
     ) noexcept
         : mHours(aHours)
         , mMinutes(aMinutes)
@@ -68,11 +57,11 @@ public:
         , mIsPM(aIsPM) {}
 
     constexpr explicit Time(
-        const unsigned int aHours = 0,
-        const unsigned int aMinutes = 0,
-        const unsigned int aSeconds = 0,
-        const bool aIs24H = true,
-        const bool aIsPM  = false
+        unsigned const int aHours = 0,
+        unsigned const int aMinutes = 0,
+        unsigned const int aSeconds = 0,
+        bool const aIs24H = true,
+        bool const aIsPM  = false
     ) noexcept
         : mHours(aHours)
         , mMinutes(aMinutes)
@@ -88,16 +77,17 @@ public:
         , mIsPM(false) {}
     ~Time() = default;
 
-    // ITime.
-    constexpr unsigned int GetHours(void)   const {return mHours.Get();}
-    constexpr unsigned int GetMinutes(void) const {return mMinutes.Get();}
-    constexpr unsigned int GetSeconds(void) const {return mSeconds.Get();}
+    constexpr unsigned int GetHours(void) const noexcept {return mHours.Get();}
+    constexpr unsigned int GetMinutes(void) const noexcept {return mMinutes.Get();}
+    constexpr unsigned int GetSeconds(void) const noexcept {return mSeconds.Get();}
 
-    constexpr bool Is24H(void) const {return mIs24H;}
-    constexpr bool IsPM(void)  const {return mIsPM;}
+    constexpr bool Is24H(void) const noexcept {return mIs24H;}
+    constexpr bool IsPM(void)  const noexcept {return mIsPM;}
+
+    std::string ToStr(void) const;
 
 private:
-    Hour   mHours;
+    Hour mHours;
     Minute mMinutes;
     Second mSeconds;
     bool mIs24H;
@@ -115,13 +105,6 @@ private:
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
-
-// Helper functions.
-namespace TimeHelper {
-
-char const *ToStr(Time const &aTime, char * const aInStr);
-
-} // namespace TimeHelper
 
 // ******************************************************************************
 //                                END OF FILE

@@ -58,15 +58,13 @@ The file is sync'ed right away.</documentation>
    <operation name="WrEvent" type="void" visibility="0x02" properties="0x00">
     <documentation>Common function to write event into file buffer.</documentation>
     <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
-    <code>char lDateStr[32] = {0};
-DateHelper::ToStr(aLogEvent.mDate, &amp;lDateStr[0]);
-char lTimeStr[32] = {0};
-TimeHelper::ToStr(aLogEvent.mTime, &amp;lTimeStr[0]);
+    <code>auto const lDateStr = aLogEvent.mDate.ToStr();
+auto const lTimeStr = aLogEvent.mTime.ToStr();
 int lLen = f_printf(
     &amp;mFile,
     &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
-    &amp;lDateStr[0],
-    &amp;lTimeStr[0],
+    lDateStr.c_str(),
+    lTimeStr.c_str(),
     LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
     aLogEvent.mFileStr,
     aLogEvent.mFunctionStr,
@@ -76,7 +74,8 @@ int lLen = f_printf(
 );
 
 // Do nothing with returned Len for now.
-(void)lLen;</code>
+static_cast&lt;void&gt;(lLen);
+</code>
    </operation>
    <statechart properties="0x02">
     <documentation>A logging sink AO.

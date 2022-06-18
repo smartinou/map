@@ -58,7 +58,7 @@ public:
 
 private:
 
-    static void NetInitCallback(void *aParam);
+    static void NetInitCallback(void * const aParam);
 
     // DB records.
     std::shared_ptr<CalendarRec> const mCalendarRec;

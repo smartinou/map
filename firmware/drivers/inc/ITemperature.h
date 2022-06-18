@@ -36,6 +36,7 @@
 //! \brief Temperature interface.
 class ITemperature {
 public:
+    virtual ~ITemperature() = default;
     virtual float GetTemperature(void) = 0;
 };
 

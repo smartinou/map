@@ -23,9 +23,6 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// Standard Library.
-#include <stddef.h>
-
 // This project.
 #include "DBRec.h"
 
@@ -53,7 +50,7 @@ std::vector<DBRec::Ptr> DBRec::mRecList;
 
 // DB static methods.
 bool DBRec::IsDBSane(void) {
-    for (const auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         // Return after 1st corrupted record.
         if (!lRec->IsSane()) {
             return false;
@@ -65,7 +62,7 @@ bool DBRec::IsDBSane(void) {
 
 
 bool DBRec::IsDBDirty(void) {
-    for (const auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         // Return after 1st dirty record.
         if (lRec->IsDirty()) {
             return true;
@@ -77,7 +74,7 @@ bool DBRec::IsDBDirty(void) {
 
 
 void DBRec::ResetDBDflt(void) {
-    for (const auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         lRec->ResetDflt();
     }
 
@@ -88,7 +85,7 @@ void DBRec::ResetDBDflt(void) {
 size_t DBRec::GetDBSize(void) {
 
     size_t lDBSize = 0;
-    for (const auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         lDBSize += lRec->GetRecSize();
     }
 
@@ -97,7 +94,7 @@ size_t DBRec::GetDBSize(void) {
 
 
 void DBRec::SerializeDB(uint8_t * aData) {
-    for (const auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         lRec->Serialize(aData);
         unsigned int lSize = lRec->GetRecSize();
         aData += lSize;
@@ -108,7 +105,7 @@ void DBRec::SerializeDB(uint8_t * aData) {
 
 
 void DBRec::DeserializeDB(uint8_t const * aData) {
-    for (const auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         lRec->Deserialize(aData);
         unsigned int lSize = lRec->GetRecSize();
         aData += lSize;
@@ -119,7 +116,7 @@ void DBRec::DeserializeDB(uint8_t const * aData) {
 
 
 void DBRec::StaticUpdateCRC(void) {
-    for (auto lRec : mRecList) {
+    for (const auto& lRec : mRecList) {
         lRec->UpdateCRC();
     }
 
@@ -142,37 +139,29 @@ void DBRec::AddRec(DBRec::Ptr aDBRec) {
 }
 
 
-uint8_t DBRec::ComputeCRC(uint8_t const * const aData, size_t const aSize) const {
+uint8_t DBRec::ComputeCRC(std::span<uint8_t const> const &aSpan) const {
 
     uint8_t lCRC = 0;
-    // Computed CRC is at offset 0 of struct BaseRec that prepends remaining data.
-    for (size_t lIx = 1; lIx < aSize; lIx++) {
-        lCRC += aData[lIx];
+    for (auto const lByte : aSpan) {
+        lCRC += lByte;
     }
     return ~lCRC;
 }
 
 
-bool DBRec::IsMagicGood(struct BaseRec const * const aBaseRec, char const aMagic[]) const {
-
-    if ((aMagic[0] == aBaseRec->mMagic[0])
-        && (aMagic[1] == aBaseRec->mMagic[1])
-        && (aMagic[2] == aBaseRec->mMagic[2])
-    ) {
-        return true;
-    }
-    return false;
+bool DBRec::IsMagicGood(
+    struct BaseRec const &aBaseRec,
+    Magic const &aMagic) const
+{
+    return (aMagic == aBaseRec.mMagic);
 }
 
 
-bool DBRec::IsCRCGood(uint8_t const * const aData, size_t const aSize) const {
-    const uint8_t lRecCRC = reinterpret_cast<DBRec::BaseRec const * const>(aData)->mCRC;
-    const uint8_t lComputedCRC = ComputeCRC(aData, aSize);
-    if (lComputedCRC == lRecCRC) {
-        return true;
-    }
-
-    return false;
+bool DBRec::IsCRCGood(std::span<uint8_t const> const &aSpan) const {
+    // Span contains full record, including computed CRC.
+    // Result should be 0x00.
+    auto const lComputedCRC = ComputeCRC(aSpan);
+    return (lComputedCRC == 0);
 }
 
 // *****************************************************************************

@@ -337,12 +337,12 @@ static std::shared_ptr<FeedCfgRec> sFeedCfgRec = nullptr;
 
 namespace Net {
 
-    // Really, this as more to do with HTTP init.
+// Really, this as more to do with HTTP init.
 void InitCallback(
-    std::shared_ptr<RTCC::AO::RTCC_AO> const &aRTCC_AO,
-    std::shared_ptr<CalendarRec> const &aCalendarRec,
-    std::shared_ptr<NetIFRec> const &aNetIFRec,
-    std::shared_ptr<FeedCfgRec> const &aFeedCfgRec
+    std::shared_ptr<RTCC::AO::RTCC_AO> aRTCC_AO,
+    std::shared_ptr<CalendarRec> aCalendarRec,
+    std::shared_ptr<NetIFRec> aNetIFRec,
+    std::shared_ptr<FeedCfgRec> aFeedCfgRec
 ) {
 
     httpd_init();
@@ -362,10 +362,10 @@ void InitCallback(
 #endif // LWIP_HTTPD_CGI
 
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
-    sRTCC_AO = aRTCC_AO;
-    sCalendarRec = aCalendarRec;
-    sNetIFRec = aNetIFRec;
-    sFeedCfgRec = aFeedCfgRec;
+    sRTCC_AO = std::move(aRTCC_AO);
+    sCalendarRec = std::move(aCalendarRec);
+    sNetIFRec = std::move(aNetIFRec);
+    sFeedCfgRec = std::move(aFeedCfgRec);
 #else
     static_cast<void>(aRTCC_AO);
     static_cast<void>(aCalendarRec);
@@ -449,6 +449,7 @@ static uint16_t SSIHandler(
         }
     } break;
     case SSI_TAG_IX_INFO_RTCC_TEMP: {
+        // [MG] REPLACE WITH CALL TO ITemperature INTERFACE.
         float lTemperature = sRTCC_AO->GetTemperature();
         return snprintf(
             aInsertStr,
@@ -462,30 +463,28 @@ static uint16_t SSIHandler(
     case SSI_TAG_IX_CFG_GLOBAL_DATE: {
         static constexpr auto lDateInputStr =
             "<input type=\"date\" name=\"date\" min=\"2018-01-01\" value=\"";
-        char lDateBuf[16]{0};
         Date const &lDate = sRTCC_AO->GetDate();
-        char const * const lDateStr = DateHelper::ToStr(lDate, &lDateBuf[0]);
+        auto const lDateStr = lDate.ToStr();
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s%s\">",
             lDateInputStr,
-            lDateStr
+            lDateStr.c_str()
         );
     } break;
 
     case SSI_TAG_IX_CFG_GLOBAL_TIME: {
         static constexpr auto lTimeInputStr =
             "<input type=\"time\" name=\"time\" value=\"";
-        char lTimeBuf[16]{0};
         Time const &lTime = sRTCC_AO->GetTime();
-        char const * const lTimeStr = TimeHelper::ToStr(lTime, &lTimeBuf[0]);
+        auto const lTimeStr = lTime.ToStr();
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
             "%s%s\">",
             lTimeInputStr,
-            lTimeStr
+            lTimeStr.c_str()
         );
     } break;
 
@@ -954,6 +953,8 @@ static char const *DispCfg(
         }
 
         // Send event to trigger updated DB writing.
+        // [MG] DECOUPLE ALL THIS FROM RTCC:
+        // [MG] SHOULD CALL GENERIC INVMem Event AND PUBLISH().
         static constexpr bool sIsDataImpure = true;
         RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
             RTCC::Event::SaveToRAM,
@@ -975,7 +976,12 @@ static char const *DispNet(
     char *aValsVec[]
 ) {
     // Try to find the apply button.
-    char const * const lSubmitVal = FindTagVal("set_ip", aParamsQty, aParamsVec, aValsVec);
+    char const * const lSubmitVal = FindTagVal(
+        "set_ip",
+        aParamsQty,
+        aParamsVec,
+        aValsVec
+    );
     if (0 == strcmp(lSubmitVal, "Apply")) {
         // Fields of the addresses have changed:
         // Read now and modify bytes.
@@ -1013,6 +1019,8 @@ static char const *DispNet(
         }
 
         // Send event to trigger updated DB writing.
+        // [MG] DECOUPLE ALL THIS FROM RTCC:
+        // [MG] SHOULD CALL GENERIC INVMem Event AND PUBLISH().
         static constexpr bool sIsDataImpure = true;
         RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
             RTCC::Event::SaveToRAM,

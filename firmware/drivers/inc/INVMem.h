@@ -36,6 +36,7 @@
 //! \brief Non-Volatile Memory interface.
 class INVMem {
 public:
+    virtual ~INVMem() = default;
     virtual unsigned int GetNVMemSize(void) const = 0;
     virtual void RdFromNVMem(
         uint8_t * const aDataPtr,

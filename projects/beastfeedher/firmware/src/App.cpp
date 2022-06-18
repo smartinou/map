@@ -179,8 +179,8 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void App::NetInitCallback(void *aParam) {
-    [[maybe_unused]] App * const lApp = reinterpret_cast<App * const>(aParam);
+void App::NetInitCallback(void * const aParam) {
+    [[maybe_unused]] auto const lApp = reinterpret_cast<App * const>(aParam);
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(
         sRTCC_AO,

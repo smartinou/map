@@ -47,34 +47,38 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-// TimeHelper functions.
-char const *DateHelper::ToStr(Date const &aDate, char * const aInStr, size_t const aStrSize) {
+std::string Date::ToStr(void) const {
 
+    static size_t constexpr sStrLen = 16;
+    char lDateStr[sStrLen]{'\0'};
     snprintf(
-        aInStr,
-        aStrSize,
+        &lDateStr[0],
+        sStrLen,
         "%04d-%02d-%02d",
-        aDate.GetYear(),
-        aDate.GetMonth(),
-        aDate.GetDate()
+        GetYear(),
+        GetMonth(),
+        GetDate()
     );
 
-    return aInStr;
+    return std::string(lDateStr);
 }
 
 
-char const *DateHelper::ToStr2(Date const &aDate, char * const aInStr, size_t const aStrSize) {
+std::string Date::ToStr2(void) const {
 
+    static size_t constexpr sStrLen = 16;
+    char lDateStr[sStrLen]{'\0'};
+    auto const lMonthStr = mMonth.ToStr();
     snprintf(
-        aInStr,
-        aStrSize,
+        &lDateStr[0],
+        sStrLen,
         "%04d-%s-%02d",
-        aDate.GetYear(),
-        MonthHelper::ToStr(aDate.GetMonth()),
-        aDate.GetDate()
+        GetYear(),
+        lMonthStr.data(),
+        GetDate()
     );
 
-    return aInStr;
+    return std::string(lDateStr);
 }
 
 // *****************************************************************************

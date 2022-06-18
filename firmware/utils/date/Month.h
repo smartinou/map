@@ -24,6 +24,9 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include <array>
+#include <string>
+
 #include "inc/Limit.h"
 
 // ******************************************************************************
@@ -56,29 +59,45 @@ public:
     };
 
 public:
-    constexpr explicit Month(const unsigned int aMonth) noexcept
+    constexpr explicit Month(unsigned int const aMonth = 1) noexcept
         : Limit(
             Month::NameToUI(Name::January),
             Month::NameToUI(Name::December),
             aMonth) {}
-    constexpr explicit Month(const Name aMonthName = Name::January) noexcept
-        : Limit(
-                Month::NameToUI(Name::January),
-                Month::NameToUI(Name::December),
-                NameToUI(aMonthName)) {}
+    constexpr explicit Month(Name const aMonthName = Name::January) noexcept
+        : Month(NameToUI(aMonthName)) {}
     ~Month() = default;
 
-    constexpr Name ToName(void) const {
-        unsigned int lMonthUI = Limit::Get();
+    constexpr Name ToName(void) const noexcept {
+        auto const lMonthUI = Limit::Get();
         return UIToName(lMonthUI);
     }
 
-    static constexpr unsigned int NameToUI(const Name aMonthName) {
-        unsigned int lMonthUI = static_cast<unsigned int>(aMonthName);
-        return lMonthUI;
+    constexpr std::string_view ToStr(void) const noexcept {
+        using namespace std::string_view_literals;
+        constexpr std::array<std::string_view, 12> lMonths = {
+            "Jan"sv,
+            "Feb"sv,
+            "Mar"sv,
+            "Apr"sv,
+            "May"sv,
+            "June"sv,
+            "July"sv,
+            "Aug"sv,
+            "Sep"sv,
+            "Oct"sv,
+            "Nov"sv,
+            "Dec"sv
+        };
+
+        return lMonths.at(Get());
     }
 
-    static constexpr Name UIToName(const unsigned int aMonth) {
+    static constexpr unsigned int NameToUI(Name const aMonthName) noexcept {
+        return static_cast<unsigned int>(aMonthName);
+    }
+
+    static constexpr Name UIToName(unsigned int const aMonth) noexcept {
         return static_cast<Name>(aMonth);
     }
 };
@@ -94,11 +113,6 @@ public:
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
-
-namespace MonthHelper {
-    char const * ToStr(Month const &aMonth);
-    char const * ToStr(unsigned int const aMonth);
-}
 
 // ******************************************************************************
 //                                END OF FILE

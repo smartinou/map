@@ -535,8 +535,8 @@ void DS3234::WrToNVMem(
 void DS3234::UpdateTime(Time &aTime) {
 
     // Apply proper mask and convert where needed.
-    unsigned int lSeconds = BCDToBinary(mRegMap.mTime.mSeconds);
-    unsigned int lMinutes = BCDToBinary(mRegMap.mTime.mMinutes);
+    unsigned int const lSeconds = BCDToBinary(mRegMap.mTime.mSeconds);
+    unsigned int const lMinutes = BCDToBinary(mRegMap.mTime.mMinutes);
     bool lIs24H = true;
     bool lIsPM  = false;
     unsigned int lHours = 0;
@@ -551,8 +551,7 @@ void DS3234::UpdateTime(Time &aTime) {
     }
 
     // "Return" via copy ctor.
-    Time lTime(lHours, lMinutes, lSeconds, lIs24H, lIsPM);
-    aTime = lTime;
+    aTime = Time(lHours, lMinutes, lSeconds, lIs24H, lIsPM);
 }
 
 
@@ -570,8 +569,7 @@ void DS3234::UpdateDate(Date &aDate) {
     Weekday::Name lWeekdayName = Weekday::UIToName(lWeekday);
 
     // "Return" via copy ctor.
-    Date lDate(lYear + mBaseYear + mCentury, lMonthName, lDay, lWeekdayName);
-    aDate = lDate;
+    aDate = Date(lYear + mBaseYear + mCentury, lMonthName, lDay, lWeekdayName);
 }
 
 

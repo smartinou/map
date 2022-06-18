@@ -61,10 +61,10 @@ namespace Net {
 
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
 void InitCallback(
-    std::shared_ptr<RTCC::AO::RTCC_AO> const &aRTCC_AO,
-    std::shared_ptr<CalendarRec> const &aCalendar,
-    std::shared_ptr<NetIFRec> const &aNetIFRec,
-    std::shared_ptr<FeedCfgRec> const &aFeedCfgRec
+    std::shared_ptr<RTCC::AO::RTCC_AO> aRTCC_AO,
+    std::shared_ptr<CalendarRec> aCalendar,
+    std::shared_ptr<NetIFRec> aNetIFRec,
+    std::shared_ptr<FeedCfgRec> aFeedCfgRec
 );
 #endif
 

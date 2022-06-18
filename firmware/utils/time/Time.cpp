@@ -44,18 +44,40 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-// TimeHelper functions.
-char const *TimeHelper::ToStr(Time const &aTime, char * const aInStr) {
+std::string Time::ToStr(void) const {
 
-    if (aTime.Is24H()) {
-        snprintf(aInStr, 5 + 1, "%02d:%02d", aTime.GetHours(), aTime.GetMinutes());
-    } else if (aTime.IsPM()) {
-        snprintf(aInStr, 8 + 1, "%02d:%02d PM", aTime.GetHours(), aTime.GetMinutes());
+    static constexpr std::string_view lFormatStr{"%02d:%02d"};
+    static constexpr std::string_view lFormatPMStr{"%02d:%02d PM"};
+    static constexpr std::string_view lFormatAMStr{"%02d:%02d AM"};
+
+    char lStr[16]{'\0'};
+    if (Is24H()) {
+        snprintf(
+            &lStr[0],
+            lFormatStr.size(),
+            lFormatStr.data(),
+            GetHours(),
+            GetMinutes()
+        );
+    } else if (IsPM()) {
+        snprintf(
+            &lStr[0],
+            lFormatPMStr.size(),
+            lFormatPMStr.data(),
+            GetHours(),
+            GetMinutes()
+        );
     } else {
-        snprintf(aInStr, 8 + 1, "%02d:%02d AM", aTime.GetHours(), aTime.GetMinutes());
+        snprintf(
+            &lStr[0],
+            lFormatAMStr.size(),
+            lFormatAMStr.data(),
+            GetHours(),
+            GetMinutes()
+        );
     }
 
-    return aInStr;
+    return std::string(lStr);
 }
 
 // *****************************************************************************

@@ -26,10 +26,10 @@
 
 // Standard Libraries.
 #include <array>
-#include <bitset>
+#include <optional>
 
-#include <time/Time.h>
-#include <date/Weekday.h>
+#include "time/Time.h"
+#include "date/Weekday.h"
 
 #include "DBRec.h"
 
@@ -65,12 +65,18 @@ public:
     bool IsEntrySet(Time const &aTime);
 
     // Gets the next set entry from current time.
-    bool GetNextEntry(
+    struct TimeAndDate_s {
+        Time mTime;
+        Weekday mWeekday;
+    };
+
+    using TimeAndDate = struct TimeAndDate_s;
+    std::optional<std::pair<Time, Weekday>> GetNextEntry(
         Weekday const &aWeekday,
-        Time    const &aTime,
-        Weekday       &aNextWeekday,
-        Time          &aNextTime
+        Time const &aTime
     );
+
+    std::optional<TimeAndDate> GetNextEntry(TimeAndDate const &aEntry);
 
     [[nodiscard]] static std::shared_ptr<CalendarRec> Create(void) {
         // Not using std::make_shared<CalendarRec> because the c'tor is private.
@@ -108,7 +114,7 @@ private:
 
     struct RecData mRec;
 
-    static char constexpr sMagic[3] = { 'C', 'A', 'L' };
+    static DBRec::Magic constexpr sMagic = { 'C', 'A', 'L' };
 };
 
 // ******************************************************************************
