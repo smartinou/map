@@ -34,10 +34,16 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
+//! \brief Network configuration database.
 class NetIFRec
     : public DBRec {
+protected:
+    class Token {};
+    template<class T>
+    friend std::shared_ptr<T> DBRec::Create();
+
 public:
-    ~NetIFRec() = default;
+    explicit NetIFRec(Token /* Dummy */);
 
     // DBRec interface.
     bool IsSane(void) const override;
@@ -54,16 +60,7 @@ public:
     void SetSubnetMask(uint32_t aSubnetMask);
     void SetGWAddr(uint32_t aGWAddr);
 
-    [[nodiscard]] static std::shared_ptr<NetIFRec> Create(void) {
-        // Not using std::make_shared<NetIFRec> because the c'tor is private.
-        auto lRec = std::shared_ptr<NetIFRec>(new NetIFRec());
-        lRec->AddRec(lRec);
-        return lRec;
-    }
-
 private:
-    NetIFRec();
-
     // DBRec interface.
     unsigned int GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;

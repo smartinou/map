@@ -48,6 +48,13 @@ std::vector<DBRec::Ptr> DBRec::mRecList;
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
+DBRec::DBRec(Token)
+    : mIsDirty(false)
+{
+    // Ctor body.
+}
+
+
 // DB static methods.
 bool DBRec::IsDBSane(void) {
     for (const auto& lRec : mRecList) {
@@ -126,13 +133,6 @@ void DBRec::StaticUpdateCRC(void) {
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
-
-DBRec::DBRec()
-    : mIsDirty(false)
-{
-    // Ctor body.
-}
-
 
 void DBRec::AddRec(DBRec::Ptr aDBRec) {
     mRecList.push_back(aDBRec);

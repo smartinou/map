@@ -59,15 +59,23 @@ public:
     static void StaticUpdateCRC(void);
     static void ClearAllDB(void) {mRecList.clear();}
 
+    template <typename T>
+    [[nodiscard]] static std::shared_ptr<T> Create(void) {
+        auto lRec = std::make_shared<T>(typename T::Token{});
+        lRec->AddRec(lRec);
+        return lRec;
+    }
+
 protected:
+    class Token {};
+    explicit DBRec(Token /* Dummy */);
+    virtual ~DBRec() = default;
+
     using Magic = std::array<char, 3>;
     struct BaseRec {
         uint8_t mCRC;
         Magic mMagic;
     };
-
-    DBRec();
-    virtual ~DBRec() = default;
 
     using Ptr = std::shared_ptr<DBRec>;
 

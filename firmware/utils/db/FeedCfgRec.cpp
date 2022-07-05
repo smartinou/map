@@ -49,8 +49,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-FeedCfgRec::FeedCfgRec()
-    : DBRec()
+FeedCfgRec::FeedCfgRec(FeedCfgRec::Token)
+    : DBRec{DBRec::Token{}}
     , mRec{0}
 {
     // Ctor body left intentionally empty.

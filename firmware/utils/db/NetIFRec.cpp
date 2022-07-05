@@ -49,8 +49,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-NetIFRec::NetIFRec()
-    : DBRec()
+NetIFRec::NetIFRec(NetIFRec::Token)
+    : DBRec{DBRec::Token{}}
     , mRec{0}
 {
     // Ctor body left intentionally empty.

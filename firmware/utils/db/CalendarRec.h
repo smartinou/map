@@ -45,8 +45,13 @@
 //! \brief Feeding calendar database class.
 class CalendarRec
     : public DBRec {
+protected:
+    class Token {};
+    template<class T>
+    friend std::shared_ptr<T> DBRec::Create();
+
 public:
-    ~CalendarRec() = default;
+    explicit CalendarRec(Token /* Dummy */);
 
     // DBRec interface.
     bool IsSane(void) const override;
@@ -78,16 +83,7 @@ public:
 
     std::optional<TimeAndDate> GetNextEntry(TimeAndDate const &aEntry);
 
-    [[nodiscard]] static std::shared_ptr<CalendarRec> Create(void) {
-        // Not using std::make_shared<CalendarRec> because the c'tor is private.
-        auto lRec = std::shared_ptr<CalendarRec>(new CalendarRec());
-        lRec->AddRec(lRec);
-        return lRec;
-    }
-
 private:
-    CalendarRec();
-
     // DBRec interface.
     size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aData) const override;

@@ -37,8 +37,13 @@
 //! \brief Feeding configuration database.
 class FeedCfgRec
     : public DBRec {
+protected:
+    class Token {};
+    template<class T>
+    friend std::shared_ptr<T> DBRec::Create();
+
 public:
-    ~FeedCfgRec() = default;
+    explicit FeedCfgRec(Token /* Dummy */);
 
     // DBRec interface.
     bool IsSane(void) const override;
@@ -57,16 +62,7 @@ public:
     void SetTimedFeedEnabled(bool aIsEnabled);
     void SetUseSystemTime(bool aUseSystemTime);
 
-    [[nodiscard]] static std::shared_ptr<FeedCfgRec> Create(void) {
-        // Not using std::make_shared<FeedCfgRec> because the c'tor is private.
-        auto lRec = std::shared_ptr<FeedCfgRec>(new FeedCfgRec());
-        lRec->AddRec(lRec);
-        return lRec;
-    }
-
 private:
-    FeedCfgRec();
-
     // DBRec interface.
     size_t GetRecSize(void) const override;
     void Serialize(uint8_t * const aDataPtr) const override;

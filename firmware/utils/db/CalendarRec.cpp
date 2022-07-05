@@ -49,8 +49,8 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-CalendarRec::CalendarRec()
-    : DBRec()
+CalendarRec::CalendarRec(Token)
+    : DBRec{DBRec::Token{}}
     , mRec{0}
 {
     ClrAllEntries();
