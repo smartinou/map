@@ -1,19 +1,19 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: PFPP.
+// Project: Utilities.
 //
-// Module: BSP.
+// Module: GPIO.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief BSP class.
-//! \ingroup application_bsp
+//! \brief PortPin class.
+//! \ingroup utils_gpio
 
 // ******************************************************************************
 //
-//        Copyright (c) 2019-2022, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // This source code is licensed under the GPL-3.0-style license found in the
 // LICENSE file in the root directory of this source tree.
@@ -24,8 +24,6 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <memory>
-
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
@@ -34,25 +32,22 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-// Forward declaration.
-class IBSPFactory;
-
-
-namespace BSP {
-
-// Non-member functions.
-std::unique_ptr<IBSPFactory> Create(void);
-
-} // namespace BSP
-
+//! \brief Describes a port pin.
+// No invariants, so implement as struct.
+struct PortPin {
+    unsigned long mPort {0};
+    unsigned int mPin {0};
+#if 0
+    explicit constexpr PortPin(
+        unsigned long const aPort, unsigned int const aPin
+    ) noexcept
+        : mPort{aPort}, mPin{aPin} {}
+    static void EnableSysCtlPeripheral(unsigned long aPort);
+#endif
+};
 // ******************************************************************************
 //                            EXPORTED VARIABLES
 // ******************************************************************************
-
-namespace BSP {
-  unsigned int constexpr TICKS_PER_SEC = 100;
-  unsigned int constexpr MS_PER_TICK = 1 / 100 * 1000;
-} // namespace BSP
 
 // ******************************************************************************
 //                                 EXTERNS

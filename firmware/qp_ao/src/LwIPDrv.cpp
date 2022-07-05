@@ -84,27 +84,27 @@ void LwIPDrv::StaticInit(
 
 
 void LwIPDrv::StaticISR(unsigned int const aIndex) {
-    sVector[aIndex]->ISR();
+    sVector.at(aIndex)->ISR();
 }
 
 
 EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int const aIndex) {
-    return sVector[aIndex]->GetMACAddress();
+    return sVector.at(aIndex)->GetMACAddress();
 }
 
 
 IPAddress LwIPDrv::StaticGetIPAddress(unsigned int const aIndex) {
-    return sVector[aIndex]->GetIPAddress();
+    return sVector.at(aIndex)->GetIPAddress();
 }
 
 
 IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int const aIndex) {
-    return sVector[aIndex]->GetSubnetMask();
+    return sVector.at(aIndex)->GetSubnetMask();
 }
 
 
 IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int const aIndex) {
-    return sVector[aIndex]->GetDefaultGW();
+    return sVector.at(aIndex)->GetDefaultGW();
 }
 
 

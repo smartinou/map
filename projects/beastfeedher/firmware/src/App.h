@@ -50,14 +50,12 @@ namespace RTCC {
 class App {
 public:
     App();
-    ~App() = default;
 
-    bool Init(std::shared_ptr<IBSPFactory> mFactory);
+    bool Init(std::unique_ptr<IBSPFactory> mFactory);
 
     static std::shared_ptr<RTCC::AO::RTCC_AO> GetRTCCAO(void) {return sRTCC_AO;}
 
 private:
-
     static void NetInitCallback(void * const aParam);
 
     // DB records.
@@ -66,14 +64,14 @@ private:
     std::shared_ptr<FeedCfgRec> const mFeedCfgRec;
 
     // QP Event Queues.
-    static size_t constexpr sSmallQueueSize = 5;
-    static size_t constexpr sLargeQueueSize = 10;
-    QP::QEvt const *mRTCCEventQueue[sLargeQueueSize] = {nullptr};
-    QP::QEvt const *mPFPPMgrEventQueue[sSmallQueueSize] = {nullptr};
-    QP::QEvt const *mFileLogSinkEventQueue[sLargeQueueSize] = {nullptr};
-    QP::QEvt const *mLwIPEventQueue[sLargeQueueSize] = {nullptr};
-    QP::QEvt const *mDisplayMgrEventQueue[sSmallQueueSize] = {nullptr};
-    QP::QEvt const *mBLEMgrEventQueue[sSmallQueueSize] = {nullptr};
+    static size_t constexpr sSmallQueueSize{5};
+    static size_t constexpr sLargeQueueSize{10};
+    QP::QEvt const *mRTCCEventQueue[sLargeQueueSize]{nullptr};
+    QP::QEvt const *mPFPPMgrEventQueue[sSmallQueueSize]{nullptr};
+    QP::QEvt const *mFileLogSinkEventQueue[sLargeQueueSize]{nullptr};
+    QP::QEvt const *mLwIPEventQueue[sLargeQueueSize]{nullptr};
+    QP::QEvt const *mDisplayMgrEventQueue[sSmallQueueSize]{nullptr};
+    QP::QEvt const *mBLEMgrEventQueue[sSmallQueueSize]{nullptr};
 
     static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO;
 };

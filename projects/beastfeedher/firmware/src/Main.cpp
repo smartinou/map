@@ -31,6 +31,7 @@
 
 // This application.
 #include "App.h"
+#include "IBSP.h"
 #include "BSP.h"
 #include "Logging_Events.h"
 #include "PFPP_Events.h"
@@ -66,7 +67,7 @@ int main(void) {
 
     // BSP::Init() has to be called early.
     // QS has to be initialized before creating dictionary items.
-    std::shared_ptr<IBSPFactory> const lFactory = BSP::Init();
+    std::unique_ptr<IBSPFactory> lFactory = BSP::Create();
 
     // Initialize event pool.
     static QF_MPOOL_EL(PFPP::Event::Mgr::ManualFeedCmd) sSmallPoolSto[20];
@@ -101,10 +102,11 @@ int main(void) {
 
     QS_FUN_DICTIONARY(&QP::QHsm::top);
 
-    // Start master record.
-    // Contains all AOs.
-    if (auto lApp = std::make_unique<App>()) {
-        if ([[maybe_unused]] bool lInitGood = lApp->Init(lFactory)) {
+    // Start application.
+    if (auto lApp = std::make_unique<App>(); lApp) {
+        if (bool const lInitGood = lApp->Init(std::move(lFactory));
+            lInitGood)
+        {
             // Run the QF application.
             return QP::QF::run();
         }

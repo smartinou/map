@@ -86,12 +86,11 @@ App::App()
 }
 
 
-bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
+bool App::Init(std::unique_ptr<IBSPFactory> aFactory) {
 
     // Create all AOs.
     // RTCC AO + FileLogSink.
-    bool const lIsFSMounted = aFactory->MountFS();
-    if (lIsFSMounted) {
+    if (auto const lIsFSMounted = aFactory->MountFS(); lIsFSMounted) {
         aFactory->StartFileSinkAO(
             2U,
             mFileLogSinkEventQueue,
@@ -110,13 +109,12 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
         return false;
     }
 
-    bool const lRes = aFactory->StartPFPPAO(
+    if (bool const lRes = aFactory->StartPFPPAO(
         mFeedCfgRec,
         3U,
         mPFPPMgrEventQueue,
-        Q_DIM(mPFPPMgrEventQueue)
-    );
-    if (lRes == false) {
+        Q_DIM(mPFPPMgrEventQueue) ); !lRes)
+    {
         return false;
     }
 
@@ -180,7 +178,7 @@ bool App::Init(std::shared_ptr<IBSPFactory> aFactory) {
 // *****************************************************************************
 
 void App::NetInitCallback(void * const aParam) {
-    [[maybe_unused]] auto const lApp = reinterpret_cast<App * const>(aParam);
+    [[maybe_unused]] auto const lApp{reinterpret_cast<App * const>(aParam)};
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(
         sRTCC_AO,
@@ -234,8 +232,8 @@ DRESULT disk_ioctl(BYTE aDriveIndex, BYTE aCmd, void *aBuffer) {
 #if (FF_FS_READONLY == 0) && (FF_FS_NORTC == 0)
 DWORD get_fattime(void) {
 
-    static unsigned int constexpr sBaseYear = 1980;
-    static unsigned int constexpr sFieldWidth = 5;
+    static unsigned int constexpr sBaseYear{1980};
+    static unsigned int constexpr sFieldWidth{5};
     Date const &lDate = App::GetRTCCAO()->GetDate();
     uint32_t lFatTime = (lDate.GetYear() - sBaseYear) & 0x3F;
     lFatTime <<= sFieldWidth;

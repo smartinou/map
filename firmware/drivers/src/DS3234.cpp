@@ -430,7 +430,7 @@ bool DS3234::IsAlarmOn(void) {
         if ((DS3234::AF2  & GetStatus()) && (DS3234::AEI2 & GetCtrl())) {
             return true;
         }
-    // Intentional fallthrough.
+    [[fallthrough]];
     default:
         return false;
     }
@@ -654,15 +654,15 @@ void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t const aAl
     switch (aAlarmMode) {
     case ALARM_MODE::ONCE_PER_SEC:
         mRegMap.mAlarm1Seconds |= AnMx;
-        // Intentional Fallthrough.
+        [[fallthrough]];
 
     case ALARM_MODE::WHEN_SECS_MATCH:
         aAlarmRef.mMinutes |= AnMx;
-        // Intentional Fallthrough.
+        [[fallthrough]];
 
     case ALARM_MODE::WHEN_MINS_SECS_MATCH:
         aAlarmRef.mHours |= AnMx;
-        // Intentional Fallthrough.
+        [[fallthrough]];
 
     case ALARM_MODE::WHEN_HOURS_MINS_SECS_MATCH:
         aAlarmRef.mDayDate |= AnMx;
@@ -674,6 +674,7 @@ void DS3234::FillAlarmModeStruct(rtcc_alarm_t &aAlarmRef, alarm_mode_t const aAl
     break;
 
     case ALARM_MODE::WHEN_DATE_HOURS_MINS_SECS_MATCH:
+    [[fallthrough]];
     default:
         // Nothing to set.
     break;

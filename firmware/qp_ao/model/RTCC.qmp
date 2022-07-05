@@ -339,11 +339,24 @@ SetNextCalendarEvent();
    <attribute name="mIsDataImpure" type="bool const" visibility="0x00" properties="0x00">
     <documentation>Data is impure, ready to be saved again.</documentation>
    </attribute>
-   <operation name="SaveToRAM" type="" visibility="0x00" properties="0x02">
+   <operation name="SaveToRAM" type="explicit" visibility="0x00" properties="0x02">
+    <specifiers>noexcept</specifiers>
     <documentation>Ctor.</documentation>
     <parameter name="aSignal" type="QP::QSignal const"/>
     <parameter name="aIsDataImpure" type="bool const"/>
     <code>    : QP::QEvt(aSignal)
+    , mIsDataImpure(aIsDataImpure)
+// Ctor left empty.</code>
+   </operation>
+   <operation name="SaveToRAM" type="explicit constexpr" visibility="0x00" properties="0x02">
+    <specifiers>noexcept</specifiers>
+    <documentation>Ctor (overload for static events).
+
+Pass QP::QEvt::StaticEvt::STATIC_EVT for aStatic parameter.</documentation>
+    <parameter name="aSignal" type="QP::QSignal const"/>
+    <parameter name="aIsDataImpure" type="bool const"/>
+    <parameter name="aStaticEvt" type="QP::QEvt::StaticEvt const"/>
+    <code>    : QP::QEvt(aSignal, QP::QEvt::StaticEvt::STATIC_EVT)
     , mIsDataImpure(aIsDataImpure)
 // Ctor left empty.</code>
    </operation>

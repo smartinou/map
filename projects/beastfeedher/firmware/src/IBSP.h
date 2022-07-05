@@ -44,7 +44,7 @@ namespace QP {
 
 class IBSPFactory {
 public:
-
+    virtual ~IBSPFactory() = default;
     virtual std::shared_ptr<QP::QActive> CreateBLEAO(void) = 0;
 
     virtual std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(

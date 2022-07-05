@@ -237,7 +237,9 @@ void CoreLink::SPIMasterDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
 }
 
 
-unsigned int CoreLink::SPIMasterDev::ToNativeProtocol(ISPISlaveCfg::PROTOCOL const aProtocol) {
+unsigned int CoreLink::SPIMasterDev::ToNativeProtocol(
+    ISPISlaveCfg::PROTOCOL const aProtocol
+) {
 
     switch (aProtocol) {
     case ISPISlaveCfg::PROTOCOL::MOTO_0: return SSI_FRF_MOTO_MODE_0;

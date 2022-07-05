@@ -57,23 +57,23 @@
 
 void GPIO::EnableSysCtlPeripheral(unsigned long aPort) {
     switch (aPort) {
-    case GPIO_PORTA_AHB_BASE:
+    case GPIO_PORTA_AHB_BASE: [[fallthrough]];
     case GPIO_PORTA_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); break;
-    case GPIO_PORTB_AHB_BASE:
+    case GPIO_PORTB_AHB_BASE: [[fallthrough]];
     case GPIO_PORTB_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB); break;
-    case GPIO_PORTC_AHB_BASE:
+    case GPIO_PORTC_AHB_BASE: [[fallthrough]];
     case GPIO_PORTC_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC); break;
-    case GPIO_PORTD_AHB_BASE:
+    case GPIO_PORTD_AHB_BASE: [[fallthrough]];
     case GPIO_PORTD_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD); break;
-    case GPIO_PORTE_AHB_BASE:
+    case GPIO_PORTE_AHB_BASE: [[fallthrough]];
     case GPIO_PORTE_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE); break;
-    case GPIO_PORTF_AHB_BASE:
+    case GPIO_PORTF_AHB_BASE: [[fallthrough]];
     case GPIO_PORTF_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF); break;
-    case GPIO_PORTG_AHB_BASE:
+    case GPIO_PORTG_AHB_BASE: [[fallthrough]];
     case GPIO_PORTG_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG); break;
-    case GPIO_PORTH_AHB_BASE:
+    case GPIO_PORTH_AHB_BASE: [[fallthrough]];
     case GPIO_PORTH_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH); break;
-    case GPIO_PORTJ_AHB_BASE:
+    case GPIO_PORTJ_AHB_BASE: [[fallthrough]];
     case GPIO_PORTJ_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ); break;
     case GPIO_PORTK_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK); break;
     case GPIO_PORTL_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL); break;
