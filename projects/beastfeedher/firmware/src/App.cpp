@@ -78,9 +78,9 @@ std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO(nullptr);
 // *****************************************************************************
 
 App::App()
-    : mCalendarRec(CalendarRec::Create())
-    , mNetIFRec(NetIFRec::Create())
-    , mFeedCfgRec(FeedCfgRec::Create())
+    : mCalendarRec(CalendarRec::Create<CalendarRec>())
+    , mNetIFRec(NetIFRec::Create<NetIFRec>())
+    , mFeedCfgRec(FeedCfgRec::Create<FeedCfgRec>())
 {
     // Ctor body.
 }

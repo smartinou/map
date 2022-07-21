@@ -719,9 +719,9 @@ static QP::QSTimeCtr QS_tickTime_{0};
 static QP::QSTimeCtr const QS_tickPeriod_{SystemCoreClock / BSP::TICKS_PER_SEC};
 
 namespace BSP {
-    // event-source identifiers used for tracing
-    uint8_t const Factory::sSysTick_Handler{0U};
-    uint8_t const Factory::sGPIOPortP3_IRQHandler{0U};
+// event-source identifiers used for tracing
+uint8_t constexpr Factory::sSysTick_Handler{0U};
+uint8_t constexpr Factory::sGPIOPortP3_IRQHandler{0U};
 }
 
 #endif // Q_SPY
@@ -734,8 +734,8 @@ namespace BSP {
 namespace BSP {
 
 // Those variables are used locally in various stubs and IRQ handlers.
-static Button const mManualFeedButton(GPIOJ_AHB_BASE, GPIO_PIN_0, INT_GPIOJ, 0);
-static Button const mTimedFeedButton(GPIOJ_AHB_BASE, GPIO_PIN_1, INT_GPIOJ, 0);
+static constexpr Button_s mManualFeedButton{GPIOJ_AHB_BASE, GPIO_PIN_0, INT_GPIOJ, 0};
+static constexpr Button_s mTimedFeedButton{GPIOJ_AHB_BASE, GPIO_PIN_1, INT_GPIOJ, 0};
 
 static constexpr PortPin sUserLED1PortPin{GPION_BASE, GPIO_PIN_1};
 static constexpr PortPin sUserLED2PortPin{GPION_BASE, GPIO_PIN_0};
@@ -907,8 +907,8 @@ extern "C" void Q_onAssert(char const *module, int loc) {
     //
     // NOTE: add here your application-specific error handling
     //
-    (void)module;
-    (void)loc;
+    static_cast<void>(module);
+    static_cast<void>(loc);
     QS_ASSERTION(module, loc, static_cast<uint32_t>(10000U));
     NVIC_SystemReset();
 
@@ -930,7 +930,9 @@ void QP::QActive::stop(void) {
 #ifdef Q_SPY
 
 //............................................................................
-bool QP::QS::onStartup(void const *aArgPtr) {
+bool QP::QS::onStartup(void const * const aArgs) {
+
+    static_cast<void>(aArgs);
 
     // Buffer for Quantum Spy.
     // Buffer for QS receive channel.
@@ -1114,7 +1116,7 @@ u32_t sys_now() {
 }
 
 
-void sntp_set_system_time(time_t aTime) {
+void sntp_set_system_time(time_t const aTime) {
     sSystemTime = aTime;
 
     // Send event with new system time from SNTP.

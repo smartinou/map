@@ -135,6 +135,36 @@ void Button::ClrInt(void) const {
 #endif
 }
 
+
+Button_s::State Button_s::GetGPIOPinState(void) const {
+
+    unsigned long const lGPIOPin = MAP_GPIOPinRead(mPortPin.mPort, mPortPin.mPin);
+    if (lGPIOPin & mPortPin.mPin) {
+        return IS_HIGH;
+    }
+
+    return IS_LOW;
+}
+
+
+void Button_s::DisableInt(void) const {
+    MAP_IntDisable(mIntNbr);
+}
+
+
+void Button_s::EnableInt(void) const {
+    MAP_IntEnable(mIntNbr);
+}
+
+
+void Button_s::ClrInt(void) const {
+#ifdef USE_TIVAWARE
+    MAP_GPIOIntClear(mPortPin.mPort, mPortPin.mPin);
+#elif defined (USE_STELLARISWARE)
+    MAP_GPIOPinIntClear(mPortPin.mPort, mPortPin.mPin);
+#endif
+}
+
 // *****************************************************************************
 //                              LOCAL FUNCTIONS
 // *****************************************************************************

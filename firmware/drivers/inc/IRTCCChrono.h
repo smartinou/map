@@ -1,17 +1,17 @@
 #pragma once
 // *******************************************************************************
 //
-// Project: Utilities.
+// Project: Drivers.
 //
-// Module: Button.
+// Module: RTCC.
 //
 // *******************************************************************************
 
 //! \file
-//! \brief Button class.
-//! \ingroup utils_button
+//! \brief RTCC interface class.
+//! \ingroup ext_peripherals
 
-// ****************************************************************************
+// ******************************************************************************
 //
 //        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
@@ -24,8 +24,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "GPIO.h"
-#include "PortPin.h"
+#include <chrono>
+#include <string>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -35,55 +35,44 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Button class.
-class Button
-    : public GPIO {
+namespace WithChrono {
+
+
+//! \brief RTCC interface.
+class IRTCCChrono {
 public:
-    enum State {
-        IS_LOW = 0,
-        IS_HIGH = 1
+    using Time = std::chrono::hh_mm_ss<std::chrono::seconds>;
+    using Date = std::chrono::year_month_day;
+    using Weekday = std::chrono::weekday;
+    struct Entry_s {
+        Time mTime{};
+        Date mDate{};
     };
+    using TimeAndDate = struct Entry_s;
 
-    Button(
-        unsigned long const aPort,
-        unsigned int  const aPin,
-        unsigned long const aIntNbr,
-        unsigned int  const aID
-    );
-    Button(
-        GPIO          const &aGPIO,
-        unsigned long const aIntNbr,
-        unsigned int  const aID
-    );
+    virtual void Init(void) = 0;
+    virtual void SetInterrupt(bool const aEnable) = 0;
+    virtual void AckInterrupt(void) = 0;
+    virtual void SetImpure(void) = 0;
 
-    enum State GetGPIOPinState(void) const;
+    virtual Time RdTime(void) = 0;
+    virtual Date RdDate(void) = 0;
+    virtual TimeAndDate RdTimeAndDate(void) = 0;
 
-    void DisableInt(void) const;
-    void EnableInt(void) const;
-    void ClrInt(void) const;
+    virtual void WrTime(Time const &aTimeRef) = 0;
+    virtual void WrDate(Date const &aDateRef) = 0;
+    virtual void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef) = 0;
+    virtual TimeAndDate GetCachedTimeAndDate(void) = 0;
 
-private:
-    unsigned long const mIntNbr;
-    unsigned int  const mID;
+    virtual void WrAlarm(Time const &aTimeRef, Date const &aDateRef) = 0;
+    virtual void WrAlarm(Time const &aTimeRef, Weekday const &aWeekdayRef) = 0;
+    virtual bool IsAlarmOn(void) = 0;
+    virtual void DisableAlarm(void) = 0;
+    virtual void ClrAlarmFlag(void) = 0;
 };
 
 
-struct Button_s {
-    enum State {
-        IS_LOW = 0,
-        IS_HIGH = 1
-    };
-
-    PortPin mPortPin;
-    unsigned long mIntNbr;
-    unsigned int mID;
-
-    enum State GetGPIOPinState(void) const;
-
-    void DisableInt(void) const;
-    void EnableInt(void) const;
-    void ClrInt(void) const;
-};
+} // namespace WithChrono
 
 // ******************************************************************************
 //                            EXPORTED VARIABLES
