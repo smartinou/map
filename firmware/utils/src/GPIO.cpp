@@ -23,6 +23,10 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+// This project.
+#include "inc/GPIO.h"
+
+// Standard Libraries.
 #include <cstdint>
 
 // TI Library.
@@ -31,9 +35,6 @@
 #include <driverlib/sysctl.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
-
-// This project.
-#include "inc/GPIO.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -55,8 +56,13 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-void GPIO::EnableSysCtlPeripheral(unsigned long aPort) {
-    switch (aPort) {
+void GPIO::EnableSysCtlPeripheral(GPIO const &aGPIO) noexcept {
+    EnableSysCtlPeripheral(aGPIO.mPort);
+}
+
+
+void GPIO::EnableSysCtlPeripheral(unsigned long const aPort) noexcept {
+switch (aPort) {
     case GPIO_PORTA_AHB_BASE: [[fallthrough]];
     case GPIO_PORTA_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); break;
     case GPIO_PORTB_AHB_BASE: [[fallthrough]];

@@ -35,17 +35,18 @@
 //! \brief Describes a GPIO pin.
 class GPIO {
 public:
-    constexpr GPIO(unsigned long const aPort, unsigned int const aPin) noexcept
+    constexpr explicit GPIO(unsigned long const aPort, unsigned int const aPin) noexcept
         : mPort(aPort), mPin(aPin) {}
 
-    constexpr unsigned long GetPort(void) const noexcept {return mPort;}
-    constexpr unsigned int  GetPin(void)  const noexcept {return mPin;}
+    constexpr auto GetPort() const noexcept -> unsigned long {return mPort;}
+    constexpr auto GetPin() const noexcept -> unsigned int {return mPin;}
 
-    static void EnableSysCtlPeripheral(unsigned long aPort);
+    static void EnableSysCtlPeripheral(unsigned long aPort) noexcept;
+    static void EnableSysCtlPeripheral(GPIO const &aGPIO) noexcept;
 
 private:
-    unsigned long const mPort;
-    unsigned int  const mPin;
+    unsigned long mPort;
+    unsigned int mPin;
 };
 
 // ******************************************************************************

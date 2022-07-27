@@ -23,6 +23,10 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+// This project.
+#include "inc/Button.h"
+
+// Standard Libraries.
 #include <cstdint>
 
 // TI Library.
@@ -33,9 +37,6 @@
 #include <driverlib/interrupt.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
-
-// This project.
-#include "inc/Button.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -58,17 +59,16 @@
 // *****************************************************************************
 
 Button::Button(
-    unsigned long const aGPIOPort,
-    unsigned int  const aGPIOPin,
+    GPIO const &aGPIO,
     unsigned long const aIntNbr,
-    unsigned int  const aID
-)   : GPIO(aGPIOPort, aGPIOPin)
+    unsigned int const aID
+) noexcept
+    : GPIO(aGPIO)
     , mIntNbr(aIntNbr)
     , mID(aID)
 {
-
     // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
-    GPIO::EnableSysCtlPeripheral(aGPIOPort);
+    GPIO::EnableSysCtlPeripheral(GetPort());
 
     DisableInt();
 
@@ -97,18 +97,9 @@ Button::Button(
 }
 
 
-Button::Button(
-    GPIO          const &aGPIO,
-    unsigned long const aIntNbr,
-    unsigned int  const aID
-)   : Button(aGPIO.GetPort(), aGPIO.GetPin(), aIntNbr, aID) {
-    // Ctor body left intentionally empty.
-}
+auto Button::GetGPIOPinState() const -> Button::State {
 
-
-Button::State Button::GetGPIOPinState(void) const {
-
-    unsigned long lGPIOPin = MAP_GPIOPinRead(GetPort(), GetPin());
+    unsigned long const lGPIOPin = MAP_GPIOPinRead(GetPort(), GetPin());
     if (lGPIOPin & GetPin()) {
         return IS_HIGH;
     }
@@ -117,17 +108,17 @@ Button::State Button::GetGPIOPinState(void) const {
 }
 
 
-void Button::DisableInt(void) const {
+void Button::DisableInt() const {
     MAP_IntDisable(mIntNbr);
 }
 
 
-void Button::EnableInt(void) const {
+void Button::EnableInt() const {
     MAP_IntEnable(mIntNbr);
 }
 
 
-void Button::ClrInt(void) const {
+void Button::ClrInt() const {
 #ifdef USE_TIVAWARE
     MAP_GPIOIntClear(GetPort(), GetPin());
 #elif defined (USE_STELLARISWARE)
@@ -136,7 +127,7 @@ void Button::ClrInt(void) const {
 }
 
 
-Button_s::State Button_s::GetGPIOPinState(void) const {
+auto Button_s::GetGPIOPinState() const -> Button_s::State {
 
     unsigned long const lGPIOPin = MAP_GPIOPinRead(mPortPin.mPort, mPortPin.mPin);
     if (lGPIOPin & mPortPin.mPin) {
@@ -147,17 +138,17 @@ Button_s::State Button_s::GetGPIOPinState(void) const {
 }
 
 
-void Button_s::DisableInt(void) const {
+void Button_s::DisableInt() const {
     MAP_IntDisable(mIntNbr);
 }
 
 
-void Button_s::EnableInt(void) const {
+void Button_s::EnableInt() const {
     MAP_IntEnable(mIntNbr);
 }
 
 
-void Button_s::ClrInt(void) const {
+void Button_s::ClrInt() const {
 #ifdef USE_TIVAWARE
     MAP_GPIOIntClear(mPortPin.mPort, mPortPin.mPin);
 #elif defined (USE_STELLARISWARE)

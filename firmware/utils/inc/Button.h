@@ -44,27 +44,21 @@ public:
         IS_HIGH = 1
     };
 
-    Button(
-        unsigned long const aPort,
-        unsigned int  const aPin,
-        unsigned long const aIntNbr,
-        unsigned int  const aID
-    );
-    Button(
-        GPIO          const &aGPIO,
-        unsigned long const aIntNbr,
-        unsigned int  const aID
-    );
+    explicit Button(
+        GPIO const &aGPIO,
+        unsigned long aIntNbr,
+        unsigned int aID
+    ) noexcept;
 
-    enum State GetGPIOPinState(void) const;
+    auto GetGPIOPinState() const -> enum State;
 
-    void DisableInt(void) const;
-    void EnableInt(void) const;
-    void ClrInt(void) const;
+    void DisableInt() const;
+    void EnableInt() const;
+    void ClrInt() const;
 
 private:
-    unsigned long const mIntNbr;
-    unsigned int  const mID;
+    unsigned long mIntNbr;
+    unsigned int mID;
 };
 
 
@@ -74,15 +68,15 @@ struct Button_s {
         IS_HIGH = 1
     };
 
-    PortPin mPortPin;
-    unsigned long mIntNbr;
-    unsigned int mID;
+    PortPin mPortPin{};
+    unsigned long mIntNbr{};
+    unsigned int mID{};
 
-    enum State GetGPIOPinState(void) const;
+    auto GetGPIOPinState() const -> enum State;
 
-    void DisableInt(void) const;
-    void EnableInt(void) const;
-    void ClrInt(void) const;
+    void DisableInt() const;
+    void EnableInt() const;
+    void ClrInt() const;
 };
 
 // ******************************************************************************

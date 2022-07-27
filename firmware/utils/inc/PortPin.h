@@ -35,16 +35,11 @@
 //! \brief Describes a port pin.
 // No invariants, so implement as struct.
 struct PortPin {
-    unsigned long mPort {0};
-    unsigned int mPin {0};
-#if 0
-    explicit constexpr PortPin(
-        unsigned long const aPort, unsigned int const aPin
-    ) noexcept
-        : mPort{aPort}, mPin{aPin} {}
-    static void EnableSysCtlPeripheral(unsigned long aPort);
-#endif
+    unsigned long mPort{};
+    unsigned int mPin{};
+    static void EnableSysCtlPeripheral(struct PortPin const &aPortPin);
 };
+
 // ******************************************************************************
 //                            EXPORTED VARIABLES
 // ******************************************************************************
