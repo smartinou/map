@@ -23,11 +23,11 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// Standard Library.
-#include <string.h>
-
 // This project.
 #include "NetIFRec.h"
+
+// Standard Library.
+#include <cstring>
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -49,19 +49,11 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-NetIFRec::NetIFRec(NetIFRec::Token)
-    : DBRec{DBRec::Token{}}
-    , mRec{0}
-{
-    // Ctor body left intentionally empty.
-}
-
-
 //
 // Start of IDBRec interface.
 //
 
-bool NetIFRec::IsSane(void) const {
+auto NetIFRec::IsSane() const noexcept -> bool {
 
     bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
     if (lIsMagicGood) {
@@ -77,7 +69,7 @@ bool NetIFRec::IsSane(void) const {
 }
 
 
-void NetIFRec::ResetDflt(void) {
+void NetIFRec::ResetDflt() noexcept {
 
     // Set magic.
     mRec.mBase.mMagic = NetIFRec::sMagic;
@@ -92,7 +84,7 @@ void NetIFRec::ResetDflt(void) {
 }
 
 
-unsigned int NetIFRec::GetRecSize(void) const {
+auto NetIFRec::GetRecSize() const noexcept -> size_t {
     return sizeof(struct RecData);
 }
 
@@ -100,21 +92,22 @@ unsigned int NetIFRec::GetRecSize(void) const {
 // Trivial serialization function.
 void NetIFRec::Serialize(uint8_t * const aDataPtr) const {
 
-    memcpy(aDataPtr, &mRec, GetRecSize());
+    std::memcpy(aDataPtr, &mRec, GetRecSize());
 }
 
 
 // Trivial serialization function.
-void NetIFRec::Deserialize(uint8_t const *aDataPtr) {
+void NetIFRec::Deserialize(uint8_t const * const aDataPtr) {
 
-    memcpy(&mRec, aDataPtr, GetRecSize());
+    std::memcpy(&mRec, aDataPtr, GetRecSize());
 }
 
 
-void NetIFRec::UpdateCRC(void) {
+void NetIFRec::UpdateCRC() noexcept {
     mRec.mBase.mCRC = ComputeCRC(
         {
-            reinterpret_cast<uint8_t const * const>(&mRec.mBase.mMagic[0]),
+            reinterpret_cast<uint8_t const * const>(mRec.mBase.mMagic.data()),
+            //mRec.mBase.mMagic.data(),
             sizeof(struct RecData) - 1
         }
     );
@@ -125,45 +118,45 @@ void NetIFRec::UpdateCRC(void) {
 // Start of child methods.
 //
 
-bool NetIFRec::UseDHCP(void) const {
+auto NetIFRec::UseDHCP() const noexcept -> bool {
     return static_cast<bool>(mRec.mUseDHCP);
 }
 
 
-uint32_t NetIFRec::GetIPAddr(void) const {
+auto NetIFRec::GetIPAddr() const noexcept -> uint32_t {
     return mRec.mIPAddr;
 }
 
 
-uint32_t NetIFRec::GetSubnetMask(void) const {
+auto NetIFRec::GetSubnetMask() const noexcept -> uint32_t {
     return mRec.mSubnetMask;
 }
 
 
-uint32_t NetIFRec::GetGWAddr(void) const {
+auto NetIFRec::GetGWAddr() const noexcept -> uint32_t {
     return mRec.mGWAddr;
 }
 
 
-void NetIFRec::SetUseDHCP(bool aUseDHCP) {
-    mRec.mUseDHCP = aUseDHCP;
+void NetIFRec::SetUseDHCP(bool const aUseDHCP) noexcept {
+    mRec.mUseDHCP = static_cast<uint8_t>(aUseDHCP);
     SetIsDirty();
 }
 
 
-void NetIFRec::SetIPAddr(uint32_t aIPAddr) {
+void NetIFRec::SetIPAddr(uint32_t const aIPAddr) noexcept {
     mRec.mIPAddr = aIPAddr;
     SetIsDirty();
 }
 
 
-void NetIFRec::SetSubnetMask(uint32_t aSubnetMask) {
+void NetIFRec::SetSubnetMask(uint32_t const aSubnetMask) noexcept {
     mRec.mSubnetMask = aSubnetMask;
     SetIsDirty();
 }
 
 
-void NetIFRec::SetGWAddr(uint32_t aGWAddr) {
+void NetIFRec::SetGWAddr(uint32_t const aGWAddr) noexcept {
     mRec.mGWAddr = aGWAddr;
     SetIsDirty();
 }

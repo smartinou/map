@@ -23,11 +23,11 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-// Standard Library.
-#include <string.h>
-
 // This project.
 #include "FeedCfgRec.h"
+
+// Standard Library.
+#include <cstring>
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -49,19 +49,11 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-FeedCfgRec::FeedCfgRec(FeedCfgRec::Token)
-    : DBRec{DBRec::Token{}}
-    , mRec{0}
-{
-    // Ctor body left intentionally empty.
-}
-
-
 //
 // Start of DBRec interface.
 //
 
-bool FeedCfgRec::IsSane(void) const {
+auto FeedCfgRec::IsSane() const noexcept -> bool {
 
     bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
     if (lIsMagicGood) {
@@ -77,14 +69,13 @@ bool FeedCfgRec::IsSane(void) const {
 }
 
 
-void FeedCfgRec::ResetDflt(void) {
+void FeedCfgRec::ResetDflt() noexcept {
 
     // Set magic.
     mRec.mBase.mMagic = sMagic;
-
-    mRec.mManualFeedWaitPeriod = 2;
-    mRec.mManualFeedMaxFeedPeriod = 5;
-    mRec.mTimedFeedPeriod = 4;
+    mRec.mManualFeedWaitPeriod = sDfltManualFeedWaitPeriod;
+    mRec.mManualFeedMaxFeedPeriod = sDfltManualFeedMaxFeedPeriod;
+    mRec.mTimedFeedPeriod = sDfltTimedFeedPeriod;
     mRec.mIsManualFeedEnable = true;
     mRec.mIsTimedFeedEnable = true;
     mRec.mUseSystemTime = true;
@@ -93,56 +84,55 @@ void FeedCfgRec::ResetDflt(void) {
 }
 
 
-uint8_t FeedCfgRec::GetManualFeedWaitPeriod(void) const {
+auto FeedCfgRec::GetManualFeedWaitPeriod() const noexcept -> uint8_t {
     return mRec.mManualFeedWaitPeriod;
 }
 
 
-uint8_t FeedCfgRec::GetManualFeedMaxFeedPeriod(void) const
-{
+auto FeedCfgRec::GetManualFeedMaxFeedPeriod() const noexcept -> uint8_t {
     return mRec.mManualFeedMaxFeedPeriod;
 }
 
 
-uint8_t FeedCfgRec::GetTimedFeedPeriod(void) const {
+auto FeedCfgRec::GetTimedFeedPeriod() const noexcept -> uint8_t {
     return mRec.mTimedFeedPeriod;
 }
 
 
-bool FeedCfgRec::IsManualFeedEnable(void) const {
+auto FeedCfgRec::IsManualFeedEnable() const noexcept -> bool {
     return mRec.mIsManualFeedEnable;
 }
 
 
-bool FeedCfgRec::IsTimedFeedEnable(void) const {
+auto FeedCfgRec::IsTimedFeedEnable() const noexcept -> bool {
     return mRec.mIsTimedFeedEnable;
 }
 
 
-bool FeedCfgRec::UseSystemTime(void) const {
+auto FeedCfgRec::UseSystemTime() const noexcept -> bool {
     return mRec.mUseSystemTime;
 }
 
 
-void FeedCfgRec::SetTimedFeedPeriod(uint8_t aPeriod) {
+void FeedCfgRec::SetTimedFeedPeriod(uint8_t const aPeriod) noexcept {
     mRec.mTimedFeedPeriod = aPeriod;
     SetIsDirty();
 }
 
 
-void FeedCfgRec::SetManualFeedEnabled(bool aIsEnabled) {
+void FeedCfgRec::SetManualFeedEnabled(bool const aIsEnabled) noexcept {
     mRec.mIsManualFeedEnable = aIsEnabled;
     SetIsDirty();
 }
 
 
-void FeedCfgRec::SetTimedFeedEnabled(bool aIsEnabled) {
+void FeedCfgRec::SetTimedFeedEnabled(bool const aIsEnabled) noexcept {
     mRec.mIsTimedFeedEnable = aIsEnabled;
     SetIsDirty();
 }
 
 
-void FeedCfgRec::SetUseSystemTime(bool aUseSystemTime) {
+void FeedCfgRec::SetUseSystemTime(bool const aUseSystemTime) noexcept {
     mRec.mUseSystemTime = aUseSystemTime;
     SetIsDirty();
 }
@@ -151,7 +141,7 @@ void FeedCfgRec::SetUseSystemTime(bool aUseSystemTime) {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-size_t FeedCfgRec::GetRecSize(void) const {
+auto FeedCfgRec::GetRecSize() const noexcept -> size_t {
     return sizeof(struct RecData);
 }
 
@@ -159,21 +149,21 @@ size_t FeedCfgRec::GetRecSize(void) const {
 // Trivial serialization function.
 void FeedCfgRec::Serialize(uint8_t * const aDataPtr) const {
 
-    memcpy(aDataPtr, &mRec, GetRecSize());
+    std::memcpy(aDataPtr, &mRec, GetRecSize());
 }
 
 
 // Trivial serialization function.
-void FeedCfgRec::Deserialize(uint8_t const *aDataPtr) {
+void FeedCfgRec::Deserialize(uint8_t const * const aDataPtr) {
 
-    memcpy(&mRec, aDataPtr, GetRecSize());
+    std::memcpy(&mRec, aDataPtr, GetRecSize());
 }
 
 
-void FeedCfgRec::UpdateCRC(void) {
+void FeedCfgRec::UpdateCRC() noexcept {
     mRec.mBase.mCRC = ComputeCRC(
         {
-            reinterpret_cast<uint8_t const * const>(&mRec.mBase.mMagic[0]),
+            reinterpret_cast<uint8_t const * const>(mRec.mBase.mMagic.data()),
             sizeof(struct RecData) - sizeof(struct BaseRec)
         }
     );

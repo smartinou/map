@@ -38,50 +38,53 @@
 class FeedCfgRec
     : public DBRec {
 protected:
-    class Token {};
     template<class T>
-    friend std::shared_ptr<T> DBRec::Create();
+    friend auto DBRec::Create() -> std::shared_ptr<T>;
 
 public:
-    explicit FeedCfgRec(Token /* Dummy */);
+    explicit FeedCfgRec(Token const aDummy) noexcept
+        : DBRec{aDummy} {}
 
     // DBRec interface.
-    bool IsSane(void) const override;
-    void ResetDflt(void) override;
+    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    void ResetDflt() noexcept override;
 
     // Extended object's interface.
-    uint8_t GetManualFeedWaitPeriod(void) const;
-    uint8_t GetManualFeedMaxFeedPeriod(void) const;
-    uint8_t GetTimedFeedPeriod(void) const;
-    bool IsManualFeedEnable(void) const;
-    bool IsTimedFeedEnable(void) const;
-    bool UseSystemTime(void) const;
+    [[nodiscard]] auto GetManualFeedWaitPeriod() const noexcept -> uint8_t;
+    [[nodiscard]] auto GetManualFeedMaxFeedPeriod() const noexcept -> uint8_t;
+    [[nodiscard]] auto GetTimedFeedPeriod() const noexcept -> uint8_t;
+    [[nodiscard]] auto IsManualFeedEnable() const noexcept -> bool;
+    [[nodiscard]] auto IsTimedFeedEnable() const noexcept -> bool;
+    [[nodiscard]] auto UseSystemTime() const noexcept -> bool;
 
-    void SetTimedFeedPeriod(uint8_t aPeriod);
-    void SetManualFeedEnabled(bool aIsEnabled);
-    void SetTimedFeedEnabled(bool aIsEnabled);
-    void SetUseSystemTime(bool aUseSystemTime);
+    void SetTimedFeedPeriod(uint8_t aPeriod) noexcept;
+    void SetManualFeedEnabled(bool aIsEnabled) noexcept;
+    void SetTimedFeedEnabled(bool aIsEnabled) noexcept;
+    void SetUseSystemTime(bool aUseSystemTime) noexcept;
 
 private:
     // DBRec interface.
-    size_t GetRecSize(void) const override;
-    void Serialize(uint8_t * const aDataPtr) const override;
-    void Deserialize(uint8_t const * const aDataPtr) override;
-    void UpdateCRC(void) override;
+    [[nodiscard]] auto GetRecSize() const noexcept -> size_t override;
+    void Serialize(uint8_t * aDataPtr) const override;
+    void Deserialize(uint8_t const * aDataPtr) override;
+    void UpdateCRC() noexcept override;
+
+    static constexpr DBRec::Magic sMagic{ 'C', 'F', 'G' };
+    static constexpr auto sDfltManualFeedWaitPeriod{2};
+    static constexpr auto sDfltManualFeedMaxFeedPeriod{5};
+    static constexpr auto sDfltTimedFeedPeriod{4};
 
     struct RecData {
-        struct BaseRec mBase;
-        uint8_t mManualFeedWaitPeriod;
-        uint8_t mManualFeedMaxFeedPeriod;
-        uint8_t mTimedFeedPeriod;
-        bool mIsManualFeedEnable;
-        bool mIsTimedFeedEnable;
-        bool mUseSystemTime;
+        struct BaseRec mBase{{}, {sMagic}};
+        uint8_t mManualFeedWaitPeriod{sDfltManualFeedWaitPeriod};
+        uint8_t mManualFeedMaxFeedPeriod{sDfltManualFeedMaxFeedPeriod};
+        uint8_t mTimedFeedPeriod{sDfltTimedFeedPeriod};
+        bool mIsManualFeedEnable{true};
+        bool mIsTimedFeedEnable{true};
+        bool mUseSystemTime{true};
     };
 
     struct RecData mRec;
-
-    static DBRec::Magic constexpr sMagic = { 'C', 'F', 'G' };
 };
 
 // ******************************************************************************

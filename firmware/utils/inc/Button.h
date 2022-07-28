@@ -62,13 +62,16 @@ private:
 };
 
 
-struct Button_s {
+// [MG] IS THIS A VARIANT TYPE OR NOT?
+// [MG] IF SO, THEN USE THE CLASS ABOVE.
+struct Button_s
+    : PortPin
+{
     enum State {
         IS_LOW = 0,
         IS_HIGH = 1
     };
 
-    PortPin mPortPin{};
     unsigned long mIntNbr{};
     unsigned int mID{};
 

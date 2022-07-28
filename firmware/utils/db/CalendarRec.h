@@ -46,71 +46,67 @@
 class CalendarRec
     : public DBRec {
 protected:
-    class Token {};
     template<class T>
-    friend std::shared_ptr<T> DBRec::Create();
+    friend auto DBRec::Create() -> std::shared_ptr<T>;
 
 public:
-    explicit CalendarRec(Token /* Dummy */);
+    explicit CalendarRec(Token const aDummy) noexcept
+        : DBRec{aDummy} {}
 
     // DBRec interface.
-    bool IsSane(void) const override;
-    void ResetDflt(void) override;
+    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    void ResetDflt() noexcept override;
 
     // Extended object's interface.
 
     // Sets/clears the entry for the specified time, rounded to quarter hour.
-    void SetEntry(Weekday const &aWeekday, Time const &aTime);
-    void SetEntry(unsigned int const aWeekday, Time const &aTime);
-    void ClrEntry(Weekday const &aWeekday, Time const &aTime);
-    void ClrEntry(unsigned int const aWeekday, Time const &aTime);
-    void SetTimeEntry(Time const &aTime);
-    void ClrAllEntries(void);
+    void SetEntry(Weekday const &aWeekday, Time const &aTime) noexcept;
+    void SetEntry(unsigned int aWeekday, Time const &aTime) noexcept;
+    void ClrEntry(Weekday const &aWeekday, Time const &aTime) noexcept;
+    void ClrEntry(unsigned int aWeekday, Time const &aTime) noexcept;
+    void SetTimeEntry(Time const &aTime) noexcept;
+    void ClrAllEntries() noexcept;
 
-    bool IsEntrySet(Time const &aTime);
+    auto IsEntrySet(Time const &aTime) noexcept -> bool;
 
     // Gets the next set entry from current time.
     struct TimeAndDate_s {
-        Time mTime;
-        Weekday mWeekday;
+        Time mTime{};
+        Weekday mWeekday{};
     };
 
     using TimeAndDate = struct TimeAndDate_s;
-    std::optional<std::pair<Time, Weekday>> GetNextEntry(
+    [[nodiscard]] auto GetNextEntry(
         Weekday const &aWeekday,
         Time const &aTime
-    );
+    ) const noexcept -> std::optional<std::pair<Time, Weekday>>;
 
-    std::optional<TimeAndDate> GetNextEntry(TimeAndDate const &aEntry);
+    [[nodiscard]] auto GetNextEntry(TimeAndDate const &aEntry) const noexcept -> std::optional<TimeAndDate>;
 
 private:
     // DBRec interface.
-    size_t GetRecSize(void) const override;
-    void Serialize(uint8_t * const aData) const override;
-    void Deserialize(uint8_t const * const aData) override;
-    void UpdateCRC(void) override;
+    [[nodiscard]] auto GetRecSize() const noexcept -> size_t override;
+    void Serialize(uint8_t * aData) const override;
+    void Deserialize(uint8_t const * aData) override;
+    void UpdateCRC() noexcept override;
 
-    unsigned int GetArrayIx(Time const &aTime);
-    unsigned int WeekdayToBitMask(Weekday const &aWeekday);
-    unsigned int BitMaskToWeekday(unsigned int aBitMask);
-
-    enum CalendarDimEnumTag {
-        HOUR_QTY          = 24,
-        SLOTS_PER_HOUR    = 4,
-        TIME_ENTRY_QTY    = HOUR_QTY * SLOTS_PER_HOUR,
-        WEEKDAY_ENTRY_QTY = 7
-    };
+    static auto GetArrayIx(Time const &aTime) noexcept -> unsigned int;
+    static auto WeekdayToBitMask(Weekday const &aWeekday) noexcept -> unsigned int;
+    static auto BitMaskToWeekday(unsigned int aBitMask) noexcept -> unsigned int ;
 
     enum BitMaskEnumTag { ALL_WEEK_BIT_MASK = (0x1 << 0) };
+    static constexpr auto sHoursQty{24};
+    static constexpr auto sSlotsPerHours{4};
+    static constexpr auto sTimeEntryQty{sHoursQty * sSlotsPerHours};
+    static constexpr auto sWeekdayEntryQty{7};
 
+    static DBRec::Magic constexpr sMagic{ 'C', 'A', 'L' };
     struct RecData {
-        BaseRec mBase;
-        std::array<uint8_t, TIME_ENTRY_QTY> mCalendarArray;
+        BaseRec mBase{{}, {sMagic}};
+        std::array<uint8_t, sTimeEntryQty> mCalendarArray{};
     };
 
     struct RecData mRec;
-
-    static DBRec::Magic constexpr sMagic = { 'C', 'A', 'L' };
 };
 
 // ******************************************************************************

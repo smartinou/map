@@ -38,48 +38,49 @@
 class NetIFRec
     : public DBRec {
 protected:
-    class Token {};
     template<class T>
-    friend std::shared_ptr<T> DBRec::Create();
+    friend auto DBRec::Create() -> std::shared_ptr<T>;
 
 public:
-    explicit NetIFRec(Token /* Dummy */);
+    explicit NetIFRec(Token const aDummy) noexcept
+        : DBRec{aDummy} {}
 
     // DBRec interface.
-    bool IsSane(void) const override;
-    void ResetDflt(void) override;
+    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    void ResetDflt() noexcept override;
 
     // Extended object's interface.
-    bool     UseDHCP(void) const;
-    uint32_t GetIPAddr(void) const;
-    uint32_t GetSubnetMask(void) const;
-    uint32_t GetGWAddr(void) const;
+    [[nodiscard]] auto UseDHCP() const noexcept -> bool;
+    [[nodiscard]] auto GetIPAddr() const noexcept -> uint32_t;
+    [[nodiscard]] auto GetSubnetMask() const noexcept -> uint32_t;
+    [[nodiscard]] auto GetGWAddr() const noexcept -> uint32_t;
 
-    void SetUseDHCP(bool aUseHDCP);
-    void SetIPAddr(uint32_t aIPAddr);
-    void SetSubnetMask(uint32_t aSubnetMask);
-    void SetGWAddr(uint32_t aGWAddr);
+    void SetUseDHCP(bool aUseDHCP) noexcept;
+    void SetIPAddr(uint32_t aIPAddr) noexcept;
+    void SetSubnetMask(uint32_t aSubnetMask) noexcept;
+    void SetGWAddr(uint32_t aGWAddr) noexcept;
 
 private:
     // DBRec interface.
-    unsigned int GetRecSize(void) const override;
-    void Serialize(uint8_t * const aDataPtr) const override;
-    void Deserialize(uint8_t const * const aDataPtr) override;
-    void UpdateCRC(void) override;
+    [[nodiscard]] auto GetRecSize() const noexcept -> size_t override;
+    void Serialize(uint8_t *aDataPtr) const override;
+    void Deserialize(uint8_t const *aDataPtr) override;
+    void UpdateCRC() noexcept override;
+
+    static constexpr DBRec::Magic sMagic{ 'N', 'E', 'T' };
 
     struct RecData {
-        BaseRec mBase;
-        uint8_t  mUseDHCP;
-        uint8_t  mUseIPv6;
-        uint32_t mIPAddr;
-        uint8_t  mIPv6Addr[16];
-        uint32_t mSubnetMask;
-        uint32_t mGWAddr;
+        struct BaseRec mBase{{}, {sMagic}};
+        // CONSIDER STORING bool's, IPAddress'es.
+        uint8_t mUseDHCP{1};
+        uint8_t mUseIPv6{0};
+        uint32_t mIPAddr{};
+        uint8_t mIPv6Addr[16]{};
+        uint32_t mSubnetMask{};
+        uint32_t mGWAddr{};
     };
 
     struct RecData mRec;
-
-    static DBRec::Magic constexpr sMagic = { 'N', 'E', 'T' };
 };
 
 // ******************************************************************************

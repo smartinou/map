@@ -2,13 +2,13 @@
 //
 // Project: Utilities.
 //
-// Module: Button.
+// Module: GPIO.
 //
 // *****************************************************************************
 
 //! \file
-//! \brief Button class.
-//! \ingroup utils_button
+//! \brief PortPin class.
+//! \ingroup utils_gpio
 
 // *****************************************************************************
 //
@@ -24,17 +24,15 @@
 // *****************************************************************************
 
 // This project.
-#include "inc/Button.h"
+#include "inc/PortPin.h"
 
 // Standard Libraries.
 #include <cstdint>
 
 // TI Library.
-#include <inc/hw_types.h>
 #include <inc/hw_memmap.h>
+#include <inc/hw_types.h>
 #include <driverlib/sysctl.h>
-#include <driverlib/gpio.h>
-#include <driverlib/interrupt.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
 
@@ -58,102 +56,33 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-Button::Button(
-    GPIO const &aGPIO,
-    unsigned long const aIntNbr,
-    unsigned int const aID
-) noexcept
-    : GPIO(aGPIO)
-    , mIntNbr(aIntNbr)
-    , mID(aID)
-{
-    // Make sure the peripheral clock is enabled or else the following calls will raise an exception.
-    GPIO::EnableSysCtlPeripheral(GetPort());
-
-    DisableInt();
-
-    // Set specified GPIO as edge triggered input.
-    // Don't enable interrupt just yet.
-    MAP_GPIOPinTypeGPIOInput(GetPort(), GetPin());
-    MAP_GPIOIntTypeSet(GetPort(), GetPin(), GPIO_BOTH_EDGES);
-    MAP_GPIOPadConfigSet(
-        GetPort(),
-        GetPin(),
-        GPIO_STRENGTH_2MA,
-        GPIO_PIN_TYPE_STD_WPU
-    );
-
-    // Enable the interrupt of the selected GPIO.
-    // Don't enable the interrupt globally yet.
-#ifdef USE_TIVAWARE
-    MAP_GPIOIntEnable(GetPort(), GetPin());
-    MAP_GPIOIntClear(GetPort(), GetPin());
-#elif defined (USE_STELLARISWARE)
-    MAP_GPIOPinIntEnable(GetPort(), GetPin());
-    MAP_GPIOPinIntClear(GetPort(), GetPin());
-#else
-#error Must either define USE_TIVAWARE or USE_STELLARISWARE.
-#endif
-}
-
-
-auto Button::GetGPIOPinState() const -> Button::State {
-
-    unsigned long const lGPIOPin = MAP_GPIOPinRead(GetPort(), GetPin());
-    if (lGPIOPin & GetPin()) {
-        return IS_HIGH;
+void PortPin::EnableSysCtlPeripheral(PortPin const &aPortPin) {
+    switch (aPortPin.mPort) {
+    case GPIO_PORTA_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTA_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA); break;
+    case GPIO_PORTB_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTB_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB); break;
+    case GPIO_PORTC_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTC_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC); break;
+    case GPIO_PORTD_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTD_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD); break;
+    case GPIO_PORTE_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTE_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE); break;
+    case GPIO_PORTF_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTF_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF); break;
+    case GPIO_PORTG_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTG_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOG); break;
+    case GPIO_PORTH_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTH_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOH); break;
+    case GPIO_PORTJ_AHB_BASE: [[fallthrough]];
+    case GPIO_PORTJ_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOJ); break;
+    case GPIO_PORTK_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK); break;
+    case GPIO_PORTL_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOL); break;
+    case GPIO_PORTM_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOM); break;
+    case GPIO_PORTN_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION); break;
+    case GPIO_PORTP_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOP); break;
+    case GPIO_PORTQ_BASE: MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOQ); break;
     }
-
-    return IS_LOW;
-}
-
-
-void Button::DisableInt() const {
-    MAP_IntDisable(mIntNbr);
-}
-
-
-void Button::EnableInt() const {
-    MAP_IntEnable(mIntNbr);
-}
-
-
-void Button::ClrInt() const {
-#ifdef USE_TIVAWARE
-    MAP_GPIOIntClear(GetPort(), GetPin());
-#elif defined (USE_STELLARISWARE)
-    MAP_GPIOPinIntClear(GetPort(), GetPin());
-#endif
-}
-
-
-auto Button_s::GetGPIOPinState() const -> Button_s::State {
-
-    unsigned long const lGPIOPin = MAP_GPIOPinRead(mPort, mPin);
-    if (lGPIOPin & mPin) {
-        return IS_HIGH;
-    }
-
-    return IS_LOW;
-}
-
-
-void Button_s::DisableInt() const {
-    MAP_IntDisable(mIntNbr);
-}
-
-
-void Button_s::EnableInt() const {
-    MAP_IntEnable(mIntNbr);
-}
-
-
-void Button_s::ClrInt() const {
-#ifdef USE_TIVAWARE
-    MAP_GPIOIntClear(mPort, mPin);
-#elif defined (USE_STELLARISWARE)
-    MAP_GPIOPinIntClear(mPort, mPin);
-#endif
 }
 
 // *****************************************************************************

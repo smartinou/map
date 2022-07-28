@@ -25,10 +25,10 @@
 // ******************************************************************************
 
 // Standard Library.
+#include <array>
 #include <memory>
 #include <span>
 #include <cstdint>
-#include <stdint.h>
 #include <vector>
 
 // ******************************************************************************
@@ -43,24 +43,25 @@
 //! Register each object of DBRec into vector on ctor.
 class DBRec {
 public:
-    bool IsDirty(void) const {return mIsDirty;}
+    virtual ~DBRec() = default;
 
-    virtual bool IsSane(void) const = 0;
-    virtual void ResetDflt(void) = 0;
+    [[nodiscard]] auto IsDirty() const -> bool {return mIsDirty;}
+    [[nodiscard]] virtual auto IsSane() const -> bool = 0;
+    virtual void ResetDflt() = 0;
 
     // DB static methods.
-    static bool IsDBSane(void);
-    static bool IsDBDirty(void);
-    static void ResetDBDflt(void);
-    static size_t GetDBSize(void);
-    static size_t GetDBRecCount(void) {return mRecList.size();}
+    static auto IsDBSane() -> bool;
+    static auto IsDBDirty() -> bool;
+    static void ResetDBDflt();
+    static auto GetDBSize() -> size_t;
+    static auto GetDBRecCount() -> size_t {return mRecList.size();}
     static void SerializeDB(uint8_t * aData);
     static void DeserializeDB(uint8_t const * aData);
-    static void StaticUpdateCRC(void);
-    static void ClearAllDB(void) {mRecList.clear();}
+    static void StaticUpdateCRC();
+    static void ClearAllDB() {mRecList.clear();}
 
     template <typename T>
-    [[nodiscard]] static std::shared_ptr<T> Create(void) {
+    [[nodiscard]] static auto Create() -> std::shared_ptr<T> {
         auto lRec = std::make_shared<T>(typename T::Token{});
         lRec->AddRec(lRec);
         return lRec;
@@ -68,31 +69,30 @@ public:
 
 protected:
     class Token {};
-    explicit DBRec(Token /* Dummy */);
-    virtual ~DBRec() = default;
+    explicit DBRec([[maybe_unused]] Token /* Dummy */) {}
 
     using Magic = std::array<char, 3>;
     struct BaseRec {
-        uint8_t mCRC;
-        Magic mMagic;
+        uint8_t mCRC{};
+        Magic mMagic{};
     };
 
     using Ptr = std::shared_ptr<DBRec>;
 
-    void AddRec(Ptr aDBRec);
-    void SetIsDirty(void) {mIsDirty = true;}
-    bool IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) const;
-    bool IsCRCGood(std::span<uint8_t const> const &aSpan) const;
-    uint8_t ComputeCRC(std::span<uint8_t const> const &aSpan) const;
+    static void AddRec(Ptr aDBRec);
+    void SetIsDirty() {mIsDirty = true;}
+    [[nodiscard]] static auto IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) -> bool;
+    [[nodiscard]] static auto IsCRCGood(std::span<uint8_t const> const &aSpan) -> bool;
+    [[nodiscard]] static auto ComputeCRC(std::span<uint8_t const> const &aSpan) -> uint8_t;
 
 private:
-    virtual size_t GetRecSize(void) const = 0;
-    virtual void Serialize(uint8_t * const aData) const = 0;
-    virtual void Deserialize(uint8_t const * const aData) = 0;
-    virtual void UpdateCRC(void) = 0;
+    [[nodiscard]] virtual auto GetRecSize() const -> size_t = 0;
+    virtual void Serialize(uint8_t * aData) const = 0;
+    virtual void Deserialize(uint8_t const * aData) = 0;
+    virtual void UpdateCRC() = 0;
 
     static std::vector<Ptr> mRecList;
-    bool mIsDirty;
+    bool mIsDirty{};
 };
 
 // ******************************************************************************
