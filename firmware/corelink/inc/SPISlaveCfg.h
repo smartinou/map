@@ -26,9 +26,6 @@
 
 #include "inc/GPIO.h"
 
-#include "ISPISlaveCfg.h"
-
-
 namespace CoreLink {
 
 // ******************************************************************************
@@ -39,41 +36,46 @@ namespace CoreLink {
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class SPISlaveCfg final
-    : public ISPISlaveCfg {
+class SPISlaveCfg final {
 public:
+    enum class PROTOCOL {
+        MOTO_0 = 0,
+        MOTO_1,
+        MOTO_2,
+        MOTO_3,
+        TI,
+        NMW
+    };
+
+    using protocol_t = enum class PROTOCOL;
     constexpr explicit SPISlaveCfg(
         GPIO const &aGPIO,
-        protocol_t const aProtocol = PROTOCOL::MOTO_0,
-        unsigned int const aBitRate = 0,
-        unsigned int const aDataWidth = 8
+        protocol_t const aProtocol,
+        unsigned int const aBitRate,
+        unsigned int const aDataWidth
     ) noexcept
         : mProtocol(aProtocol)
         , mBitRate(aBitRate)
         , mDataWidth(aDataWidth)
         , mCSnGPIO(aGPIO) {}
 
-    ~SPISlaveCfg() = default;
-
     // ISPISlaveCfg interface.
-    void SetBitRate(unsigned int const aBitRate) final {mBitRate = aBitRate;}
+    constexpr void SetBitRate(unsigned int const aBitRate) noexcept {mBitRate = aBitRate;}
 
-    constexpr protocol_t GetProtocol(void) const final {return mProtocol;}
-    constexpr unsigned int GetBitRate(void) const final {return mBitRate;}
-    constexpr unsigned int GetDataWidth(void) const final {return mDataWidth;}
+    constexpr protocol_t GetProtocol(void) const noexcept {return mProtocol;}
+    constexpr unsigned int GetBitRate(void) const noexcept {return mBitRate;}
+    constexpr unsigned int GetDataWidth(void) const noexcept {return mDataWidth;}
 
-    void AssertCSn(void) const final;
-    void DeassertCSn(void) const final;
+    void AssertCSn(void) const noexcept;
+    void DeassertCSn(void) const noexcept;
 
-    void InitCSnGPIO(void) const final;
+    void InitCSnGPIO(void) const noexcept;
 
 private:
-    SPISlaveCfg() = delete;
-
-    protocol_t const mProtocol;
-    unsigned long mBitRate;
-    unsigned long const mDataWidth;
-    GPIO const mCSnGPIO;
+    protocol_t mProtocol{protocol_t::MOTO_0};
+    unsigned long mBitRate{0};
+    unsigned long mDataWidth{8};
+    GPIO mCSnGPIO;
 };
 
 

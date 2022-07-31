@@ -25,6 +25,7 @@
 // ******************************************************************************
 
 // Standard Libraries.
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <optional>
@@ -38,97 +39,170 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-//! \brief Planner template class.
-// When template parameter is set to true, this produces a weekly planner (7 days).
-// When set to off, this produces a daily planner (24H).
-template <bool aIsWeeklyPlanner = true>
-class Planner {
+// PRISE 2.
+// ON PART D'UN DAILY PLANNER, SUR UN TYPE T.
+// UN HELPER DE VECTOR
+// ON PEUT INSTANTIER AVEC Time ou std::chrono::duration.
+template <typename T>
+class DailyPlanner {
 public:
-    Planner() = default;
-    ~Planner() = default;
-
-    using Time = std::chrono::hh_mm_ss<std::chrono::seconds>;
-    using Weekday = std::chrono::weekday;
-    struct Entry_s {
-        Time mTime;
-        Weekday mWeekday;
-        Entry_s(Time const &aTime, Weekday const &aWeekday = std::chrono::Sunday)
-            : mTime{aTime}, mWeekday{aWeekday} {}
-    };
-    using Entry = struct Entry_s;
-
-    // Sets/clears the entry for the specified time (opt weekday).
-    bool AddEntry(Entry const &aEntry) {
+    [[maybe_unused]] auto AddEntry(T const &aEntry) -> bool {
         auto const lFind = IsEntrySet(aEntry);
         if (!lFind) {
-            auto const lDuration = aEntry.mTime.to_duration();
-            auto &lHours = mWeekdays.at(aEntry.mWeekday.c_encoding());
-            lHours.push_back(lDuration);
-            std::sort(lHours.begin(), lHours.end());
-            //SetIsDirty();
+            mEntries.push_back(aEntry);
+            std::sort(mEntries.begin(), mEntries.end());
+            mIsDirty = true;
             return true;
         }
         return false;
     }
 
-    bool DeleteEntry(Entry const &aEntry) {
-        auto const lDuration = aEntry.mTime.to_duration();
-        auto lHours = mWeekdays.at(aEntry.mWeekday.c_encoding());
-        auto const lErased = std::erase(lHours, lDuration);
+    [[maybe_unused]] auto DeleteEntry(T const &aEntry) noexcept -> bool {
+        auto const lErased = std::erase(mEntries, aEntry);
         if (lErased > 0) {
-            //SetIsDirty();
-            return true;
-        }
-    }
-
-    void DeleteAllEntries(void) {
-        for (auto const &lWeekday : mWeekdays) lWeekday.clear();
-    }
-
-    bool IsEntrySet(Entry const &aEntry) {
-        auto const lDuration = aEntry.mTime.to_duration();
-        auto const lHours = mWeekdays.at(aEntry.mWeekday.c_encoding());
-        auto const lIt = std::find(
-            lHours.begin(),
-            lHours.end(),
-            lDuration
-        );
-        if (lIt != lHours.end()) {
+            mIsDirty = true;
             return true;
         }
         return false;
     }
 
-    // Gets the next set entry from current time.
-    std::optional<Entry> GetNextEntry(Entry const &aEntry) {
-        auto const lHours = mWeekdays.at(aEntry.mWeekday);
-        if (lHours.empty()) {
+    void DeleteAllEntries() noexcept { mEntries.clear(); mIsDirty = true;}
+
+    auto GetFirstEntry() const noexcept -> std::optional<T> {
+        if (mEntries.size()) {
+            return *mEntries.cbegin();
+        }
+
+        return std::nullopt;
+    }
+
+    auto GetNextEntry(
+        T const &aEntry,
+        bool const aWrapAround = true
+    ) const noexcept -> std::optional<T> {
+        if (mEntries.empty()) {
             return std::nullopt;
         }
 
-        auto const lDuration = aEntry.mTime.to_duration();
-        auto lIt = std::find_if(
-            lHours.begin(),
-            lHours.end(),
-            [&](auto const &aTime) {
-                return (lDuration > aTime);
+        // We must assume a request for an entry that doesn't exist.
+        // so we search for the 1st entry greater in value than requested.
+        auto const lIt = std::find_if(
+            mEntries.cbegin(),
+            mEntries.cend(),
+            [&](auto const &aVectorEntry) {
+                return (aEntry < aVectorEntry);
             }
         );
 
-        if (lIt != lHours.end()) {
+        if (lIt != mEntries.cend()) {
             // Return found value.
-            return Entry{*lIt};
+            return *lIt;
+        } else if (aWrapAround) {
+            // Return 1st entry in the vector.
+            return *mEntries.cbegin();
         }
-        // Return 1st entry in the vector.
-        return Entry{lHours.at(0)};
+
+        return std::nullopt;
+    }
+
+    [[nodiscard]] auto IsDirty() const noexcept -> bool {return mIsDirty;}
+    void ResetDirty() noexcept {mIsDirty = false;}
+    auto Size() const noexcept -> size_t {return mEntries.size();}
+
+private:
+    [[nodiscard]] auto IsEntrySet(T const &aEntry) noexcept -> bool {
+        auto const lIt = std::find(
+            mEntries.cbegin(),
+            mEntries.cend(),
+            aEntry
+        );
+        if (lIt != mEntries.cend()) {
+            return true;
+        }
+        return false;
+    }
+
+    std::vector<T> mEntries;
+    bool mIsDirty{false};
+};
+
+
+// Generates a weekly planner of type T.
+// Ex.: WeeklyPlanner<std::chrono::seconds> lPlanner;
+template <typename T>
+class WeeklyPlanner {
+public:
+    using TimeEntries = DailyPlanner<T>;
+    using Weekday = std::chrono::weekday;
+    struct DayAndTime {
+        Weekday mWeekday{};
+        T mTime{};
+    };
+
+    [[maybe_unused]] auto AddEntry(Weekday const &aWeekday, T const &aTimeEntry) -> bool {
+        auto &lDayEntry = mPlanner.at(aWeekday.c_encoding());
+        return lDayEntry.AddEntry(aTimeEntry);
+    }
+
+    [[maybe_unused]] auto DeleteEntry(Weekday const &aWeekday, T const &aTimeEntry) -> bool {
+        auto &lDayEntry = mPlanner.at(aWeekday.c_encoding());
+        return lDayEntry.DeleteEntry(aTimeEntry);
+    }
+
+    void DeleteAllEntries() noexcept {
+        for (auto &lDayEntry : mPlanner) {lDayEntry.DeleteAllEntries();}
+    }
+
+    auto GetNextEntry(
+        Weekday const &aWeekday,
+        T const &aTimeEntry
+    ) const noexcept -> std::optional<struct DayAndTime> {
+
+        // Look for next entry in current weekday.
+        auto const &lDayEntry = mPlanner.at(aWeekday.c_encoding());
+        auto const lRes = lDayEntry.GetNextEntry(aTimeEntry);
+        if (lRes) {
+            return DayAndTime{aWeekday, lRes.value()};
+        }
+
+        // Catch the first entry starting next following day.
+        static constexpr T lTimeEntry{};
+        Weekday lWeekday{(aWeekday.c_encoding() + 1) % sDaysPerWeek};
+        for (auto lIx{lWeekday.c_encoding()}; lIx < (lWeekday.c_encoding() + mPlanner.size()); ++lIx) {
+            auto const &lDayEntry = mPlanner.at(lIx % sDaysPerWeek);
+            // Both are working.
+            //auto const lRes = lDayEntry.GetNextEntry(lTimeEntry, false);
+            auto const lRes = lDayEntry.GetFirstEntry();
+            if (lRes) {
+                return DayAndTime{lWeekday, lRes.value()};
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    [[nodiscard]] auto IsDirty() const noexcept -> bool {
+        return std::any_of(
+            mPlanner.cbegin(),
+            mPlanner.cend(),
+            [](TimeEntries const &aEntry) {return aEntry->IsDirty();}
+        );
+    }
+
+    void ResetDirty() noexcept {
+        for (auto &lDayEntry : mPlanner) {lDayEntry.ResetDirty();}
+    }
+
+    auto Size() const noexcept -> size_t {
+        // Accumulate?
+        size_t lSize{0};
+        for (auto const &lDayEntry : mPlanner) {lSize += lDayEntry.Size();}
+        return lSize;
     }
 
 private:
-    // Dynamic vector of entries.
-    using TimeEntry = std::chrono::seconds;
-    using WeekdayEntry = std::vector<TimeEntry>;
-    WeekdayEntry mHours;
-    std::array<WeekdayEntry, aIsWeeklyPlanner ? 7 : 1> mWeekdays;
+    static constexpr auto sDaysPerWeek{7};
+    std::array<TimeEntries, sDaysPerWeek> mPlanner;
 };
 
 // ******************************************************************************

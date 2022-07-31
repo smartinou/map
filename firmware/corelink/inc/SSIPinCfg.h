@@ -42,7 +42,7 @@ public:
     virtual void SetPins(void) const = 0;
 
 private:
-    unsigned int const mID;
+    unsigned int mID;
 };
 
 

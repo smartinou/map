@@ -24,7 +24,7 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include "ISPISlaveCfg.h"
+#include "SPISlaveCfg.h"
 
 namespace CoreLink {
 
@@ -39,36 +39,36 @@ namespace CoreLink {
 //! \brief Interface for SPI devices.
 class ISPIMasterDev {
 public:
-    virtual ~ISPIMasterDev() {}
+    virtual ~ISPIMasterDev() = default;
 
     virtual void RdData(
         uint8_t const aAddr,
         uint8_t * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) = 0;
+        SPISlaveCfg const &aSPICfg
+    ) const = 0;
 
     virtual void RdData(
         uint8_t * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) = 0;
+        SPISlaveCfg const &aSPICfg
+    ) const = 0;
 
     virtual void WrData(
         uint8_t const aAddr,
         uint8_t const * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) = 0;
+        SPISlaveCfg const &aSPICfg
+    ) const = 0;
 
     virtual void WrData(
         uint8_t const * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) = 0;
+        SPISlaveCfg const &aSPICfg
+    ) const = 0;
 
-    virtual uint8_t PushPullByte(uint8_t const aByte) = 0;
-    virtual uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg const &aSPICfgRef) = 0;
+    virtual uint8_t PushPullByte(uint8_t const aByte) const = 0;
+    virtual uint8_t PushPullByte(uint8_t const aByte, SPISlaveCfg const &aSPICfg) const = 0;
 };
 
 

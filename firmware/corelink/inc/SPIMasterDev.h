@@ -26,7 +26,7 @@
 
 #include "CoreLinkPeripheralDev.h"
 #include "ISPIMasterDev.h"
-#include "ISPISlaveCfg.h"
+#include "SPISlaveCfg.h"
 #include "SSIPinCfg.h"
 
 namespace CoreLink {
@@ -46,49 +46,61 @@ class SPIMasterDev
     , public PeripheralDev {
 
 public:
+    struct SSIGPIO {
+        uint32_t mClkPinCfg;
+        uint32_t mDat0PinCfg;
+        uint32_t mDat1PinCfg;
+        unsigned long mPort;
+        unsigned int mClkPin;
+        unsigned int mRxPin;
+        unsigned int mTxPin;
+    };
+
     explicit SPIMasterDev(
         uint32_t const aBaseAddr,
         uint32_t const aClkRate,
-        SSIPinCfg const &aSPIMasterPinCfgRef
+        SSIGPIO const &aSSIGPIO
     ) noexcept;
-    ~SPIMasterDev() = default;
-
     // ISPIMasterDev interface.
     void RdData(
         uint8_t const aAddr,
         uint8_t * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) final;
+        SPISlaveCfg const &aSPICfg
+    ) const final;
 
     void RdData(
         uint8_t * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) final;
+        SPISlaveCfg const &aSPICfg
+    ) const final;
 
     void WrData(
         uint8_t const aAddr,
         uint8_t const * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) final;
+        SPISlaveCfg const &aSPICfg
+    ) const final;
 
     void WrData(
         uint8_t const * const aData,
         std::size_t aLen,
-        ISPISlaveCfg const &aSPICfgRef
-    ) final;
+        SPISlaveCfg const &aSPICfg
+    ) const final;
 
-    [[maybe_unused]] uint8_t PushPullByte(uint8_t const aByte) final;
-    [[maybe_unused]] uint8_t PushPullByte(uint8_t const aByte, ISPISlaveCfg const &aSPICfgRef) final;
+    [[maybe_unused]] uint8_t PushPullByte(uint8_t const aByte) const final;
+    [[maybe_unused]] uint8_t PushPullByte(uint8_t const aByte, SPISlaveCfg const &aSPICfg) const final;
 
 private:
-    void SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef);
+    void SetPins(SSIGPIO const &aSSIGPIO) const;
+    void SetCfg(SPISlaveCfg const &aSPISlaveCfg) const;
 
-    static unsigned int ToNativeProtocol(ISPISlaveCfg::PROTOCOL const aProtocol);
+    static unsigned int ToNativeProtocol(
+        SPISlaveCfg::protocol_t const aProtocol
+    );
 
-    ISPISlaveCfg const *mLastSPICfgPtr;
+    // Non-owning pointer acting as cached last pointer.
+    mutable SPISlaveCfg const *mLastSPICfg = nullptr;
 };
 
 

@@ -161,7 +161,7 @@ auto CalendarRec::GetNextEntry(
     auto lHourIx = GetArrayIx(aTime) + 1;
     lHourIx %= sTimeEntryQty;
     auto lNextWeekdayMask = WeekdayToBitMask(aWeekday);
-    for (auto lTotArrayIx = 0;
+    for (auto lTotArrayIx{0};
         lTotArrayIx < (sTimeEntryQty * sWeekdayEntryQty);
         ++lTotArrayIx)
     {

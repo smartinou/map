@@ -283,20 +283,20 @@ private:
     uint8_t GetCtrl(void);
     uint8_t GetStatus(void);
 
-    unsigned int const mBaseYear;
-    unsigned int mCentury = 0;
+    unsigned int const mBaseYear{2000};
+    unsigned int mCentury{0};
 
     std::shared_ptr<CoreLink::ISPIMasterDev> const mSPIMasterDev;
     CoreLink::SPISlaveCfg const mSPISlaveCfg;
 
     unsigned long const mInterruptNumber;
-    GPIO const &mInterruptGPIO;
+    GPIO const mInterruptGPIO;
 
-    rtcc_reg_map_t mRegMap = {0};
+    rtcc_reg_map_t mRegMap{0};
 
-    bool mIsImpure = true;
+    bool mIsImpure{true};
 
-    static unsigned int const mNVMemSize = 256;
+    static unsigned int const mNVMemSize{256};
 };
 
 // ******************************************************************************

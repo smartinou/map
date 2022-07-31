@@ -101,7 +101,7 @@ DS3234::DS3234(
     , mSPIMasterDev(aSPIMasterDev)
     , mSPISlaveCfg(
         aCSnPin,
-        CoreLink::ISPISlaveCfg::PROTOCOL::MOTO_1,
+        CoreLink::SPISlaveCfg::PROTOCOL::MOTO_1,
         4000000,
         8
     )

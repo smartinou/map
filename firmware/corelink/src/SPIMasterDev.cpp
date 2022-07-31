@@ -61,13 +61,11 @@
 CoreLink::SPIMasterDev::SPIMasterDev(
     uint32_t const aBaseAddr,
     uint32_t const aClkRate,
-    SSIPinCfg const &aSPIMasterPinCfgRef
-)
-    : PeripheralDev(aBaseAddr, aClkRate)
-    , mLastSPICfgPtr(nullptr)
+    SSIGPIO const &aSSIPinCfg
+) : PeripheralDev(aBaseAddr, aClkRate)
 {
     MAP_SSIDisable(aBaseAddr);
-        aSPIMasterPinCfgRef.SetPins();
+        SetPins(aSSIPinCfg);
     MAP_SSIEnable(aBaseAddr);
 }
 
@@ -76,8 +74,8 @@ void CoreLink::SPIMasterDev::RdData(
     uint8_t const aAddr,
     uint8_t * const aData,
     std::size_t aLen,
-    CoreLink::ISPISlaveCfg const &aSPICfgRef
-) {
+    CoreLink::SPISlaveCfg const &aSPICfgRef
+) const {
 
     SetCfg(aSPICfgRef);
 
@@ -103,8 +101,8 @@ void CoreLink::SPIMasterDev::RdData(
 void CoreLink::SPIMasterDev::RdData(
     uint8_t * const aData,
     std::size_t aLen,
-    CoreLink::ISPISlaveCfg const &aSPICfgRef
-) {
+    CoreLink::SPISlaveCfg const &aSPICfgRef
+) const {
 
     SetCfg(aSPICfgRef);
 
@@ -129,8 +127,8 @@ void CoreLink::SPIMasterDev::WrData(
     uint8_t const aAddr,
     uint8_t const * const aData,
     std::size_t aLen,
-    CoreLink::ISPISlaveCfg const &aSPICfgRef
-) {
+    CoreLink::SPISlaveCfg const &aSPICfgRef
+) const {
 
     SetCfg(aSPICfgRef);
 
@@ -159,8 +157,8 @@ void CoreLink::SPIMasterDev::WrData(
 void CoreLink::SPIMasterDev::WrData(
     uint8_t const * const aData,
     std::size_t aLen,
-    CoreLink::ISPISlaveCfg const &aSPICfgRef
-) {
+    CoreLink::SPISlaveCfg const &aSPICfgRef
+) const {
 
     SetCfg(aSPICfgRef);
 
@@ -183,10 +181,10 @@ void CoreLink::SPIMasterDev::WrData(
 }
 
 
-uint8_t CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) {
+uint8_t CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) const {
 
     unsigned int const lBaseAddr = GetBaseAddr();
-    unsigned long lRxData = 0UL;
+    unsigned long lRxData{0UL};
     MAP_SSIDataPut(lBaseAddr, aByte);
     MAP_SSIDataGet(lBaseAddr, &lRxData);
 
@@ -196,8 +194,8 @@ uint8_t CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) {
 
 uint8_t CoreLink::SPIMasterDev::PushPullByte(
     uint8_t const aByte,
-    CoreLink::ISPISlaveCfg const &aSPICfgRef
-) {
+    CoreLink::SPISlaveCfg const &aSPICfgRef
+) const {
 
     SetCfg(aSPICfgRef);
     return PushPullByte(aByte);
@@ -207,9 +205,36 @@ uint8_t CoreLink::SPIMasterDev::PushPullByte(
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void CoreLink::SPIMasterDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
+void CoreLink::SPIMasterDev::SetPins(SSIGPIO const &aSSIGPIO) const {
+    GPIO::EnableSysCtlPeripheral(aSSIGPIO.mPort);
+    MAP_GPIOPinConfigure(aSSIGPIO.mClkPinCfg);
+    MAP_GPIOPinConfigure(aSSIGPIO.mDat0PinCfg);
+    MAP_GPIOPinConfigure(aSSIGPIO.mDat1PinCfg);
+    MAP_GPIOPinTypeSSI(
+        aSSIGPIO.mPort,
+        aSSIGPIO.mClkPin | aSSIGPIO.mRxPin | aSSIGPIO.mTxPin
+    );
 
-    if (mLastSPICfgPtr != &aSPISlaveCfgRef) {
+    // Set a weak pull-up on MISO pin for SD Card's proper operation.
+    MAP_GPIOPadConfigSet(
+        aSSIGPIO.mPort,
+        aSSIGPIO.mRxPin,
+        GPIO_STRENGTH_2MA,
+        GPIO_PIN_TYPE_STD_WPU
+    );
+
+    MAP_GPIOPadConfigSet(
+        aSSIGPIO.mPort,
+        aSSIGPIO.mClkPin | aSSIGPIO.mTxPin,
+        GPIO_STRENGTH_2MA,
+        GPIO_PIN_TYPE_STD
+    );
+}
+
+
+void CoreLink::SPIMasterDev::SetCfg(SPISlaveCfg const &aSPISlaveCfg) const {
+
+    if (mLastSPICfg != &aSPISlaveCfg) {
         // The config changed since the last SPI call.
         // Reconfigure with the newly specified config.
         // Set the new SPI config as the new one.
@@ -217,20 +242,20 @@ void CoreLink::SPIMasterDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
         MAP_SSIDisable(lBaseAddr);
 
         // Could check that data width is in range [4, 16].
-        ISPISlaveCfg::PROTOCOL const lProtocol = aSPISlaveCfgRef.GetProtocol();
+        SPISlaveCfg::PROTOCOL const lProtocol = aSPISlaveCfg.GetProtocol();
         unsigned int const lNativeProtocol = ToNativeProtocol(lProtocol);
         MAP_SSIConfigSetExpClk(
             lBaseAddr,
             GetClkRate(),
             lNativeProtocol,
             SSI_MODE_MASTER,
-            aSPISlaveCfgRef.GetBitRate(),
-            aSPISlaveCfgRef.GetDataWidth()
+            aSPISlaveCfg.GetBitRate(),
+            aSPISlaveCfg.GetDataWidth()
         );
 
         // Make this the "new" slave configuration and
         // enable SPI operations.
-        mLastSPICfgPtr = &aSPISlaveCfgRef;
+        mLastSPICfg = &aSPISlaveCfg;
         MAP_SSIEnable(lBaseAddr);
     }
     return;
@@ -238,20 +263,18 @@ void CoreLink::SPIMasterDev::SetCfg(ISPISlaveCfg const &aSPISlaveCfgRef) {
 
 
 unsigned int CoreLink::SPIMasterDev::ToNativeProtocol(
-    ISPISlaveCfg::PROTOCOL const aProtocol
+    SPISlaveCfg::protocol_t const aProtocol
 ) {
 
     switch (aProtocol) {
-    case ISPISlaveCfg::PROTOCOL::MOTO_0: return SSI_FRF_MOTO_MODE_0;
-    case ISPISlaveCfg::PROTOCOL::MOTO_1: return SSI_FRF_MOTO_MODE_1;
-    case ISPISlaveCfg::PROTOCOL::MOTO_2: return SSI_FRF_MOTO_MODE_2;
-    case ISPISlaveCfg::PROTOCOL::MOTO_3: return SSI_FRF_MOTO_MODE_3;
-    case ISPISlaveCfg::PROTOCOL::TI:     return SSI_FRF_TI;
-    case ISPISlaveCfg::PROTOCOL::NMW:    return SSI_FRF_NMW;
+    default:
+    case SPISlaveCfg::PROTOCOL::MOTO_0: return SSI_FRF_MOTO_MODE_0;
+    case SPISlaveCfg::PROTOCOL::MOTO_1: return SSI_FRF_MOTO_MODE_1;
+    case SPISlaveCfg::PROTOCOL::MOTO_2: return SSI_FRF_MOTO_MODE_2;
+    case SPISlaveCfg::PROTOCOL::MOTO_3: return SSI_FRF_MOTO_MODE_3;
+    case SPISlaveCfg::PROTOCOL::TI:     return SSI_FRF_TI;
+    case SPISlaveCfg::PROTOCOL::NMW:    return SSI_FRF_NMW;
     }
-
-    // Should never get here.
-    return SSI_FRF_MOTO_MODE_0;
 }
 
 // *****************************************************************************
