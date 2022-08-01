@@ -62,19 +62,21 @@ public:
     // ISPISlaveCfg interface.
     constexpr void SetBitRate(unsigned int const aBitRate) noexcept {mBitRate = aBitRate;}
 
-    constexpr protocol_t GetProtocol(void) const noexcept {return mProtocol;}
-    constexpr unsigned int GetBitRate(void) const noexcept {return mBitRate;}
-    constexpr unsigned int GetDataWidth(void) const noexcept {return mDataWidth;}
+    [[nodiscard]] constexpr auto GetProtocol() const noexcept -> protocol_t {return mProtocol;}
+    [[nodiscard]] constexpr auto GetBitRate() const noexcept -> unsigned int {return mBitRate;}
+    [[nodiscard]] constexpr auto GetDataWidth() const noexcept -> unsigned int {return mDataWidth;}
 
-    void AssertCSn(void) const noexcept;
-    void DeassertCSn(void) const noexcept;
+    void AssertCSn() const noexcept;
+    void DeassertCSn() const noexcept;
 
-    void InitCSnGPIO(void) const noexcept;
+    void InitCSnGPIO() const noexcept;
 
 private:
     protocol_t mProtocol{protocol_t::MOTO_0};
     unsigned long mBitRate{0};
-    unsigned long mDataWidth{8};
+
+    static constexpr auto sDfltDataWidth{8};
+    unsigned long mDataWidth{sDfltDataWidth};
     GPIO mCSnGPIO;
 };
 

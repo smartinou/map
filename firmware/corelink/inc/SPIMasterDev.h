@@ -27,7 +27,7 @@
 #include "CoreLinkPeripheralDev.h"
 #include "ISPIMasterDev.h"
 #include "SPISlaveCfg.h"
-#include "SSIPinCfg.h"
+//#include "SSIPinCfg.h"
 
 namespace CoreLink {
 
@@ -57,47 +57,51 @@ public:
     };
 
     explicit SPIMasterDev(
-        uint32_t const aBaseAddr,
-        uint32_t const aClkRate,
+        uint32_t aBaseAddr,
+        uint32_t aClkRate,
         SSIGPIO const &aSSIGPIO
     ) noexcept;
+
     // ISPIMasterDev interface.
     void RdData(
-        uint8_t const aAddr,
-        uint8_t * const aData,
-        std::size_t aLen,
+        uint8_t aAddr,
+        uint8_t * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const final;
 
     void RdData(
-        uint8_t * const aData,
-        std::size_t aLen,
+        uint8_t * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const final;
 
     void WrData(
-        uint8_t const aAddr,
-        uint8_t const * const aData,
-        std::size_t aLen,
+        uint8_t aAddr,
+        uint8_t const * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const final;
 
     void WrData(
-        uint8_t const * const aData,
-        std::size_t aLen,
+        uint8_t const * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const final;
 
-    [[maybe_unused]] uint8_t PushPullByte(uint8_t const aByte) const final;
-    [[maybe_unused]] uint8_t PushPullByte(uint8_t const aByte, SPISlaveCfg const &aSPICfg) const final;
+    [[maybe_unused]] auto PushPullByte(uint8_t aByte) const -> uint8_t final;
+    [[maybe_unused]] auto PushPullByte(
+        uint8_t aByte,
+        SPISlaveCfg const &aSPICfg
+    ) const -> uint8_t final;
 
 private:
-    void SetPins(SSIGPIO const &aSSIGPIO) const;
+    static void SetPins(SSIGPIO const &aSSIGPIO);
     void SetCfg(SPISlaveCfg const &aSPISlaveCfg) const;
 
-    static unsigned int ToNativeProtocol(
+    static auto ToNativeProtocol(
         SPISlaveCfg::protocol_t const aProtocol
-    );
+    ) -> unsigned int;
 
     // Non-owning pointer acting as cached last pointer.
     mutable SPISlaveCfg const *mLastSPICfg = nullptr;

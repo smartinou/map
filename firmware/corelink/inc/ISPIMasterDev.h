@@ -26,6 +26,8 @@
 
 #include "SPISlaveCfg.h"
 
+#include <cstddef>
+
 namespace CoreLink {
 
 // ******************************************************************************
@@ -42,33 +44,36 @@ public:
     virtual ~ISPIMasterDev() = default;
 
     virtual void RdData(
-        uint8_t const aAddr,
-        uint8_t * const aData,
-        std::size_t aLen,
+        uint8_t aAddr,
+        uint8_t * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const = 0;
 
     virtual void RdData(
-        uint8_t * const aData,
-        std::size_t aLen,
+        uint8_t * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const = 0;
 
     virtual void WrData(
-        uint8_t const aAddr,
-        uint8_t const * const aData,
-        std::size_t aLen,
+        uint8_t aAddr,
+        uint8_t const * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const = 0;
 
     virtual void WrData(
-        uint8_t const * const aData,
-        std::size_t aLen,
+        uint8_t const * aData,
+        size_t aLen,
         SPISlaveCfg const &aSPICfg
     ) const = 0;
 
-    virtual uint8_t PushPullByte(uint8_t const aByte) const = 0;
-    virtual uint8_t PushPullByte(uint8_t const aByte, SPISlaveCfg const &aSPICfg) const = 0;
+    [[maybe_unused]] virtual auto PushPullByte(uint8_t aByte) const -> uint8_t = 0;
+    [[maybe_unused]] virtual auto PushPullByte(
+        uint8_t aByte,
+        SPISlaveCfg const &aSPICfg
+    ) const -> uint8_t = 0;
 };
 
 

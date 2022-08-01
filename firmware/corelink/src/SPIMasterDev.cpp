@@ -61,11 +61,12 @@
 CoreLink::SPIMasterDev::SPIMasterDev(
     uint32_t const aBaseAddr,
     uint32_t const aClkRate,
-    SSIGPIO const &aSSIPinCfg
-) : PeripheralDev(aBaseAddr, aClkRate)
+    SSIGPIO const &aSSIGPIO
+) noexcept
+    : PeripheralDev(aBaseAddr, aClkRate)
 {
     MAP_SSIDisable(aBaseAddr);
-        SetPins(aSSIPinCfg);
+        SetPins(aSSIGPIO);
     MAP_SSIEnable(aBaseAddr);
 }
 
@@ -73,7 +74,7 @@ CoreLink::SPIMasterDev::SPIMasterDev(
 void CoreLink::SPIMasterDev::RdData(
     uint8_t const aAddr,
     uint8_t * const aData,
-    std::size_t aLen,
+    size_t aLen,
     CoreLink::SPISlaveCfg const &aSPICfgRef
 ) const {
 
@@ -88,19 +89,18 @@ void CoreLink::SPIMasterDev::RdData(
     uint8_t *lPtr = aData;
     while (aLen > 0) {
         *lPtr = PushPullByte(0);
-        lPtr++;
-        aLen--;
+        ++lPtr;
+        --aLen;
     }
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
-    return;
 }
 
 
 void CoreLink::SPIMasterDev::RdData(
     uint8_t * const aData,
-    std::size_t aLen,
+    size_t aLen,
     CoreLink::SPISlaveCfg const &aSPICfgRef
 ) const {
 
@@ -113,20 +113,19 @@ void CoreLink::SPIMasterDev::RdData(
     uint8_t *lPtr = aData;
     while (aLen > 0) {
         *lPtr = PushPullByte(0);
-        lPtr++;
-        aLen--;
+        ++lPtr;
+        --aLen;
     }
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
-    return;
 }
 
 
 void CoreLink::SPIMasterDev::WrData(
     uint8_t const aAddr,
     uint8_t const * const aData,
-    std::size_t aLen,
+    size_t aLen,
     CoreLink::SPISlaveCfg const &aSPICfgRef
 ) const {
 
@@ -144,19 +143,18 @@ void CoreLink::SPIMasterDev::WrData(
     uint8_t const *lPtr = aData;
     while (aLen > 0) {
         PushPullByte(*lPtr);
-        lPtr++;
-        aLen--;
+        ++lPtr;
+        --aLen;
     }
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
-    return;
 }
 
 
 void CoreLink::SPIMasterDev::WrData(
     uint8_t const * const aData,
-    std::size_t aLen,
+    size_t aLen,
     CoreLink::SPISlaveCfg const &aSPICfgRef
 ) const {
 
@@ -171,20 +169,19 @@ void CoreLink::SPIMasterDev::WrData(
     uint8_t const *lPtr = aData;
     while (aLen > 0) {
         PushPullByte(*lPtr);
-        lPtr++;
-        aLen--;
+        ++lPtr;
+        --aLen;
     }
 
     // Deassert the assigned CSn pin.
     aSPICfgRef.DeassertCSn();
-    return;
 }
 
 
-uint8_t CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) const {
+auto CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) const -> uint8_t {
 
     unsigned int const lBaseAddr = GetBaseAddr();
-    unsigned long lRxData{0UL};
+    uint32_t lRxData{0UL};
     MAP_SSIDataPut(lBaseAddr, aByte);
     MAP_SSIDataGet(lBaseAddr, &lRxData);
 
@@ -192,10 +189,10 @@ uint8_t CoreLink::SPIMasterDev::PushPullByte(uint8_t const aByte) const {
 }
 
 
-uint8_t CoreLink::SPIMasterDev::PushPullByte(
+auto CoreLink::SPIMasterDev::PushPullByte(
     uint8_t const aByte,
     CoreLink::SPISlaveCfg const &aSPICfgRef
-) const {
+) const -> uint8_t {
 
     SetCfg(aSPICfgRef);
     return PushPullByte(aByte);
@@ -205,7 +202,7 @@ uint8_t CoreLink::SPIMasterDev::PushPullByte(
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-void CoreLink::SPIMasterDev::SetPins(SSIGPIO const &aSSIGPIO) const {
+void CoreLink::SPIMasterDev::SetPins(SSIGPIO const &aSSIGPIO) {
     GPIO::EnableSysCtlPeripheral(aSSIGPIO.mPort);
     MAP_GPIOPinConfigure(aSSIGPIO.mClkPinCfg);
     MAP_GPIOPinConfigure(aSSIGPIO.mDat0PinCfg);
@@ -258,13 +255,12 @@ void CoreLink::SPIMasterDev::SetCfg(SPISlaveCfg const &aSPISlaveCfg) const {
         mLastSPICfg = &aSPISlaveCfg;
         MAP_SSIEnable(lBaseAddr);
     }
-    return;
 }
 
 
-unsigned int CoreLink::SPIMasterDev::ToNativeProtocol(
+auto CoreLink::SPIMasterDev::ToNativeProtocol(
     SPISlaveCfg::protocol_t const aProtocol
-) {
+) -> unsigned int {
 
     switch (aProtocol) {
     default:

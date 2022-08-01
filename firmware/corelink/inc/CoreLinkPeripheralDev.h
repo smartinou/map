@@ -54,7 +54,7 @@ protected:
         , mPeripheralID{
             [&]() -> uint32_t {
                 id_reg_map_t const * const lIDRegMapPtr =
-                    reinterpret_cast<id_reg_map_t const * const>(aBaseAddr + 0x0FE0);
+                    reinterpret_cast<id_reg_map_t const *>(aBaseAddr + 0x0FE0);
                 uint32_t lID = (lIDRegMapPtr->mPeripheralID[0] <<  0);
                 lID |= (lIDRegMapPtr->mPeripheralID[1] <<  8);
                 lID |= (lIDRegMapPtr->mPeripheralID[2] << 16);
@@ -65,7 +65,7 @@ protected:
         , mPrimeCellID(
             [&]() -> uint32_t {
                 id_reg_map_t const * const lIDRegMapPtr =
-                    reinterpret_cast<id_reg_map_t const * const>(aBaseAddr + 0x0FE0);
+                    reinterpret_cast<id_reg_map_t const *>(aBaseAddr + 0x0FE0);
                 uint32_t lID = (lIDRegMapPtr->mPrimeCellID[0] <<  0);
                 lID |= (lIDRegMapPtr->mPrimeCellID[1] <<  8);
                 lID |= (lIDRegMapPtr->mPrimeCellID[2] << 16);

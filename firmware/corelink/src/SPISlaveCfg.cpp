@@ -23,6 +23,10 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+// This project.
+#include "SPISlaveCfg.h"
+
+// Standard Libraries.
 #include <cstdint>
 
 // TI Library.
@@ -31,8 +35,6 @@
 #include <driverlib/gpio.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
-
-#include "SPISlaveCfg.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -54,7 +56,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-void CoreLink::SPISlaveCfg::InitCSnGPIO(void) const {
+void CoreLink::SPISlaveCfg::InitCSnGPIO() const noexcept {
 
     // Enable and configures the GPIO pin used for CSn.
     // The proper GPIO peripheral must be enabled using
@@ -73,13 +75,13 @@ void CoreLink::SPISlaveCfg::InitCSnGPIO(void) const {
 }
 
 
-void CoreLink::SPISlaveCfg::AssertCSn(void) const {
+void CoreLink::SPISlaveCfg::AssertCSn() const noexcept {
 
     MAP_GPIOPinWrite(mCSnGPIO.GetPort(), mCSnGPIO.GetPin(), 0);
 }
 
 
-void CoreLink::SPISlaveCfg::DeassertCSn(void) const {
+void CoreLink::SPISlaveCfg::DeassertCSn() const noexcept {
 
     MAP_GPIOPinWrite(mCSnGPIO.GetPort(), mCSnGPIO.GetPin(), mCSnGPIO.GetPin());
 }
