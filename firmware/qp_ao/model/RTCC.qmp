@@ -165,7 +165,8 @@ if (lNextEntry) {
    </operation>
    <statechart properties="0x02">
     <initial target="../1">
-     <action brief="Init();">mRTCC-&gt;Init();
+     <action brief="Init();">static_cast&lt;void&gt;(e);
+mRTCC-&gt;Init();
 
 // Subscribe to signals if any.
 subscribe(RTCC_INTERRUPT_SIG);
@@ -198,7 +199,7 @@ stop();</action>
      </tran>
      <tran trig="RTCC_SET_TIME">
       <action brief="SetTime(aTime);">//LOG_INFO(&amp;sLogCategory[0], &quot;New time set.&quot;);
-RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const *&gt;(e);
 mRTCC-&gt;WrTime(lSetTimeEvent-&gt;mTime);
 mRTCC-&gt;GetTimeAndDate(mTime, mDate);
 
@@ -210,7 +211,7 @@ SetNextCalendarEvent();
      </tran>
      <tran trig="RTCC_SET_DATE">
       <action brief="SetDate(aDate);">//LOG_INFO(&amp;sLogCategory[0], &quot;New date set.&quot;);
-RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+RTCC::Event::TimeAndDate const * const lSetEventDate = static_cast&lt;RTCC::Event::TimeAndDate const *&gt;(e);
 mRTCC-&gt;WrDate(lSetEventDate-&gt;mDate);
 mRTCC-&gt;GetTimeAndDate(mTime, mDate);
 
@@ -264,7 +265,7 @@ SetNextCalendarEvent();
       </tran_glyph>
      </tran>
      <tran trig="RTCC_SAVE_TO_NV_MEMORY">
-      <action>RTCC::Event::SaveToRAM const * const lSaveEvent = static_cast&lt;RTCC::Event::SaveToRAM const * const&gt;(e);
+      <action>RTCC::Event::SaveToRAM const * const lSaveEvent = static_cast&lt;RTCC::Event::SaveToRAM const *&gt;(e);
 </action>
       <choice>
        <guard brief="CalendarChanged == true">lSaveEvent-&gt;mIsDataImpure</guard>
@@ -281,7 +282,7 @@ SetNextCalendarEvent();
       </tran_glyph>
      </tran>
      <tran trig="RTCC_SET_TIME_AND_DATE">
-      <action brief="SetTimeAndDate(aTime, aDate)">RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+      <action brief="SetTimeAndDate(aTime, aDate)">RTCC::Event::TimeAndDate const * const lSetTimeEvent = static_cast&lt;RTCC::Event::TimeAndDate const *&gt;(e);
 mRTCC-&gt;WrTimeAndDate(lSetTimeEvent-&gt;mTime, lSetTimeEvent-&gt;mDate);
 mRTCC-&gt;GetTimeAndDate(mTime, mDate);
 
@@ -355,8 +356,8 @@ SetNextCalendarEvent();
 Pass QP::QEvt::StaticEvt::STATIC_EVT for aStatic parameter.</documentation>
     <parameter name="aSignal" type="QP::QSignal const"/>
     <parameter name="aIsDataImpure" type="bool const"/>
-    <parameter name="aStaticEvt" type="QP::QEvt::StaticEvt const"/>
-    <code>    : QP::QEvt(aSignal, QP::QEvt::StaticEvt::STATIC_EVT)
+    <parameter name="aStaticEvtFlag" type="QP::QEvt::StaticEvt const"/>
+    <code>    : QP::QEvt(aSignal, aStaticEvtFlag)
     , mIsDataImpure(aIsDataImpure)
 // Ctor left empty.</code>
    </operation>

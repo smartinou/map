@@ -81,7 +81,7 @@ static_cast&lt;void&gt;(lLen);
     <documentation>A logging sink AO.
 Listen to logging signal of monitored log categories, and log events to file.</documentation>
     <initial target="../1">
-     <action brief="OpenFile();">Logging::Event::Init const * const lInitEvent = static_cast&lt;Logging::Event::Init const * const&gt;(e);
+     <action brief="OpenFile();">Logging::Event::Init const * const lInitEvent = static_cast&lt;Logging::Event::Init const *&gt;(e);
 
 // At this stage, the FS must be initialized.
 FRESULT lResult = f_open(&amp;mFile, &quot;Log.txt&quot;, FA_OPEN_APPEND | FA_WRITE | FA_READ);
@@ -120,7 +120,7 @@ f_close(&amp;mFile);</exit>
       </tran_glyph>
      </tran>
      <tran trig="LOG_EVENT">
-      <action brief="ParseEvent();">Logging::Event::LogEntry const * const lLogEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);
+      <action brief="ParseEvent();">Logging::Event::LogEntry const * const lLogEvent = static_cast&lt;Logging::Event::LogEntry const *&gt;(e);
 
 auto lCategory = mCategories.find(lLogEvent-&gt;mCategoryStr);</action>
       <choice>
@@ -150,7 +150,7 @@ f_sync(&amp;mFile);</action>
       </tran_glyph>
      </tran>
      <tran trig="RTCC_TIME_TICK_ALARM? 0">
-      <action brief="StoreDate();">RTCC::Event::TimeAndDate const * const lEvt = reinterpret_cast&lt;RTCC::Event::TimeAndDate const * const&gt;(e);
+      <action brief="StoreDate();">RTCC::Event::TimeAndDate const * const lEvt = reinterpret_cast&lt;RTCC::Event::TimeAndDate const *&gt;(e);
 
 mTime = lEvt-&gt;mTime;</action>
       <choice>

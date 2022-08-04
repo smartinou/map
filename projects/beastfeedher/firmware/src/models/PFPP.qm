@@ -143,7 +143,8 @@ static_cast&lt;void&gt;(lLen);</code>
     </operation>
     <statechart properties="0x02">
      <initial target="../1">
-      <action brief="Init();">StopFeeder();
+      <action brief="Init();">static_cast&lt;void&gt;(e);
+StopFeeder();
 
 // Initialize the QF queue for deferred feed requests.
 mDeferredEventQueue.init(mDeferredEventQueueSto, Q_DIM(mDeferredEventQueueSto));
@@ -194,7 +195,7 @@ QP::QF::PUBLISH(lFrameEvent, this);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_MANUAL_FEED_CMD">
-       <action brief="GetState();">PFPP::Event::Mgr::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::Mgr::ManualFeedCmd const * const&gt;(e);
+       <action brief="GetState();">PFPP::Event::Mgr::ManualFeedCmd const * const lEvent = static_cast&lt;PFPP::Event::Mgr::ManualFeedCmd const *&gt;(e);
 </action>
        <choice target="../../11">
         <guard brief="(IsAllowed == true) &amp;&amp; (State == On)">(IsManualFeedAllowed()) &amp;&amp; (lEvent-&gt;mIsActive == true)</guard>
@@ -224,7 +225,7 @@ QP::QF::PUBLISH(lFrameEvent, this);
        </tran_glyph>
       </tran>
       <tran trig="RTCC_TIME_TICK_ALARM">
-       <action brief="^DISPLAY_TEXT(Time, Date)">RTCC::Event::TimeAndDate const * const lEvent = static_cast&lt;RTCC::Event::TimeAndDate const * const&gt;( e );
+       <action brief="^DISPLAY_TEXT(Time, Date)">RTCC::Event::TimeAndDate const * const lEvent = static_cast&lt;RTCC::Event::TimeAndDate const *&gt;( e );
 mDate = lEvent-&gt;mDate;
 mTime = lEvent-&gt;mTime;
 
@@ -254,7 +255,7 @@ QP::QF::PUBLISH(lTimeChangedEvent, this);</action>
        </tran_glyph>
       </tran>
       <tran trig="LWIP_IP_CHANGED">
-       <action brief="^DISPLAY_TEXT(IPAddress), ^LOG_ENTRY;">LwIP::Event::IPAddressChanged const * const lEvent = static_cast&lt;LwIP::Event::IPAddressChanged const * const&gt;( e );
+       <action brief="^DISPLAY_TEXT(IPAddress), ^LOG_ENTRY;">LwIP::Event::IPAddressChanged const * const lEvent = static_cast&lt;LwIP::Event::IPAddressChanged const *&gt;( e );
 char lIPAddressStr[32]{0};
 // Erase previous IP address, in case this one is longer.
 memset(&amp;lIPAddressStr[0], ' ', 15);
@@ -292,7 +293,7 @@ stop();</action>
        </tran_glyph>
       </tran>
       <tran trig="LWIP_SYSTEM_TIME_UPDATE">
-       <action>LwIP::Event::SystemTimeUpdate const * const lEvent = static_cast&lt;LwIP::Event::SystemTimeUpdate const * const&gt;(e);
+       <action>LwIP::Event::SystemTimeUpdate const * const lEvent = static_cast&lt;LwIP::Event::SystemTimeUpdate const *&gt;(e);
 </action>
        <choice>
         <guard brief="UseSystemType == true">mFeedCfgRec-&gt;UseSystemTime() == true</guard>
@@ -321,7 +322,7 @@ QP::QF::PUBLISH(lEvtPtr, this);
        </tran_glyph>
       </tran>
       <tran trig="FEED_MGR_LOG?def USE_RTT">
-       <action brief="ParseEvent();">Logging::Event::LogEntry const * const lEvent = static_cast&lt;Logging::Event::LogEntry const * const&gt;(e);
+       <action brief="ParseEvent();">Logging::Event::LogEntry const * const lEvent = static_cast&lt;Logging::Event::LogEntry const *&gt;(e);
 </action>
        <choice>
         <guard brief="Level &lt;= Threshold">lEvent-&gt;mLogLevel &lt;= mLogThreshold</guard>
@@ -505,6 +506,18 @@ stop();</action>
 
 // Ctor body left empty.</code>
      </operation>
+     <operation name="ManualFeedCmd" type="explicit constexpr" visibility="0x00" properties="0x02">
+      <specifiers>noexcept</specifiers>
+      <documentation>Ctor (overload for static events).
+
+Pass QP::QEvt::StaticEvt::STATIC_EVT for aStatic parameter.</documentation>
+      <parameter name="aSignal" type="QP::QSignal const"/>
+      <parameter name="aIsActive" type="bool const"/>
+      <parameter name="aStaticEvtFlag" type="QP::QEvt::StaticEvt const"/>
+      <code>    : QP::QEvt(aSignal, aStaticEvtFlag)
+    , mIsActive(aIsActive)
+// Ctor left empty.</code>
+     </operation>
     </class>
     <class name="TimedFeedCmd" superclass="qpcpp::QEvt">
      <documentation>An event for timed feed commands.</documentation>
@@ -516,6 +529,19 @@ stop();</action>
       <parameter name="aSig" type="QP::QSignal"/>
       <parameter name="aDuration" type="QP::QTimeEvtCtr"/>
       <code>    : QP::QEvt(aSig)
+    , mDuration(aDuration)
+
+// Ctor body left empty.</code>
+     </operation>
+     <operation name="TimedFeedCmd" type="explicit constexpr" visibility="0x00" properties="0x02">
+      <specifiers>noexcept</specifiers>
+      <documentation>Ctor (overload for static events).
+
+Pass QP::QEvt::StaticEvt::STATIC_EVT for aStatic parameter.</documentation>
+      <parameter name="aSignal" type="QP::QSignal const"/>
+      <parameter name="aDuration" type="QP::QTimeEvtCtr const"/>
+      <parameter name="aStaticEvtFlag" type="QP::QEvt::StaticEvt"/>
+      <code>    : QP::QEvt(aSignal, aStaticEvtFlag)
     , mDuration(aDuration)
 
 // Ctor body left empty.</code>
