@@ -55,7 +55,7 @@ auto CalendarRec::IsSane() const noexcept -> bool {
     if (lIsMagicGood) {
         return IsCRCGood(
             {
-                reinterpret_cast<uint8_t const * const>(&mRec),
+                reinterpret_cast<uint8_t const *>(&mRec),
                 sizeof(struct RecData)
             }
         );
@@ -244,7 +244,7 @@ void CalendarRec::Deserialize(uint8_t const * const aDataPtr) {
 void CalendarRec::UpdateCRC() noexcept {
     mRec.mBase.mCRC = ComputeCRC(
         {
-            reinterpret_cast<uint8_t const * const>(mRec.mBase.mMagic.data()),
+            reinterpret_cast<uint8_t const *>(mRec.mBase.mMagic.data()),
             sizeof(struct RecData) - 1
         }
     );

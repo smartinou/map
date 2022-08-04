@@ -38,9 +38,9 @@ public:
     virtual ~IMotorControl() = default;
 
     // Sets/clears the entry for the specified time, rounded to quarter hour.
-    virtual void TurnOnCW(unsigned int const aDutyCycle = 100) const = 0;
-    virtual void TurnOnCCW(unsigned int const aDutyCycle = 100) const = 0;
-    virtual void TurnOff(void) const = 0;
+    virtual void TurnOnCW(unsigned int aDutyCycle = 100) const = 0;
+    virtual void TurnOnCCW(unsigned int aDutyCycle = 100) const = 0;
+    virtual void TurnOff() const = 0;
 };
 
 // ******************************************************************************

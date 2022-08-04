@@ -38,11 +38,11 @@
 class FeedCfgRec
     : public DBRec {
 protected:
-    template<class T>
-    friend auto DBRec::Create() -> std::shared_ptr<T>;
+    template<class T, typename...Args>
+    friend auto DBRec::Create(Args&&... aArgs) -> std::shared_ptr<T>;
 
 public:
-    explicit FeedCfgRec(Token const aDummy) noexcept
+    explicit FeedCfgRec(UseCreateFunc const aDummy) noexcept
         : DBRec{aDummy} {}
 
     // DBRec interface.

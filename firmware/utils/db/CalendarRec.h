@@ -46,11 +46,11 @@
 class CalendarRec
     : public DBRec {
 protected:
-    template<class T>
-    friend auto DBRec::Create() -> std::shared_ptr<T>;
+    template<class T, typename...Args>
+    friend auto DBRec::Create(Args&&... aArgs) -> std::shared_ptr<T>;
 
 public:
-    explicit CalendarRec(Token const aDummy) noexcept
+    explicit CalendarRec(UseCreateFunc const aDummy) noexcept
         : DBRec{aDummy} {}
 
     // DBRec interface.

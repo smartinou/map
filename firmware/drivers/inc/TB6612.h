@@ -42,18 +42,17 @@ class TB6612 final
     : public IMotorControl {
 
 public:
-    TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM);
-    ~TB6612() = default;
+    explicit TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM) noexcept;
 
     // IMotorController interface.
-    void TurnOnCW(unsigned int const aDutyCycle = 100) const override;
-    void TurnOnCCW(unsigned int const aDutyCycle = 100) const override;
-    void TurnOff(void) const override;
+    void TurnOnCW(unsigned int aDutyCycle = 100) const noexcept override;
+    void TurnOnCCW(unsigned int aDutyCycle = 100) const noexcept override;
+    void TurnOff() const noexcept override;
 
  private:
-    GPIO const mIn1;
-    GPIO const mIn2;
-    GPIO const mPWM;
+    GPIO mIn1;
+    GPIO mIn2;
+    GPIO mPWM;
 };
 
 // ******************************************************************************

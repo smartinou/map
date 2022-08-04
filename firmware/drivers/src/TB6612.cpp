@@ -23,6 +23,10 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+// This project.
+#include "TB6612.h"
+
+// Statndard Libraries.
 #include <cstdint>
 
 // TI Library.
@@ -30,9 +34,6 @@
 #include <driverlib/gpio.h>
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
-
-// This project.
-#include "TB6612.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -53,75 +54,11 @@
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
-#if 0
-TB6612::TB6612(unsigned long aIn1GPIOPort,
-               unsigned int  aIn1GPIOPin,
-               unsigned long aIn2GPIOPort,
-               unsigned int  aIn2GPIOPin,
-               unsigned long aPWMGPIOPort,
-               unsigned int  aPWMGPIOPin):
-    mIn1GPIOPort(aIn1GPIOPort),
-    mIn2GPIOPort(aIn2GPIOPort),
-    mPWMGPIOPort(aPWMGPIOPort),
-    mIn1GPIOPin(aIn1GPIOPin),
-    mIn2GPIOPin(aIn2GPIOPin),
-    mPWMGPIOPin(aPWMGPIOPin) {
 
-    // In1.
-    MAP_GPIOPinTypeGPIOOutput(mIn1GPIOPort, mIn1GPIOPin);
-    MAP_GPIOPadConfigSet(
-        mIn1GPIOPort,
-        mIn1GPIOPin,
-        GPIO_STRENGTH_4MA,
-        GPIO_PIN_TYPE_STD);
-
-    // In2.
-    MAP_GPIOPinTypeGPIOOutput(mIn2GPIOPort, mIn2GPIOPin);
-    MAP_GPIOPadConfigSet(
-        mIn2GPIOPort,
-        mIn2GPIOPin,
-        GPIO_STRENGTH_4MA,
-        GPIO_PIN_TYPE_STD);
-
-    // PWM.
-    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM);
-    MAP_GPIOPinTypePWM(mPWMGPIOPort, mPWMGPIOPin);
-    MAP_GPIOPadConfigSet(
-        mPWMGPIOPort,
-        mPWMGPIOPin,
-        GPIO_STRENGTH_4MA,
-        GPIO_PIN_TYPE_STD);
-
-    MAP_PWMGenConfigure(
-        PWM_BASE,
-        PWM_GEN_1,
-        PWM_GEN_MODE_DOWN |
-        PWM_GEN_MODE_NO_SYNC |
-        PWM_GEN_MODE_DBG_STOP |
-        PWM_GEN_MODE_GEN_NO_SYNC |
-        PWM_GEN_MODE_DB_NO_SYNC);
-
-    // 8MHz SysClk = 125ns period.
-    // 125ns * 400 = 50us = 20KHz PWM period.
-    MAP_PWMGenPeriodSet(
-        PWM_BASE,
-        PWM_GEN_1,
-        (400 - 1)); //ulPeriod);
-    MAP_PWMPulseWidthSet(
-        PWM_BASE,
-        PWM_GEN_1,
-        (320 - 1)); //ulWidth);
-    //MAP_PWMGenEnable(PWM_BASE, PWM_GEN_1);
-    MAP_PWMOutputState(PWM_BASE,
-                 PWM_OUT_2_BIT,
-                 true);
-}
-#endif
-
-TB6612::TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM)
-    : mIn1(aIn1)
-    , mIn2(aIn2)
-    , mPWM(aPWM)
+TB6612::TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM) noexcept
+    : mIn1{aIn1}
+    , mIn2{aIn2}
+    , mPWM{aPWM}
 {
 
     // In1.
@@ -153,7 +90,7 @@ TB6612::TB6612(GPIO const &aIn1, GPIO const &aIn2, GPIO const &aPWM)
 }
 
 
-void TB6612::TurnOnCW(unsigned int const aDutyCycle) const {
+void TB6612::TurnOnCW([[maybe_unused]] unsigned int const aDutyCycle) const noexcept {
 
     // PWM: H
     // In1: H
@@ -165,7 +102,7 @@ void TB6612::TurnOnCW(unsigned int const aDutyCycle) const {
 }
 
 
-void TB6612::TurnOnCCW(unsigned int const aDutyCycle) const {
+void TB6612::TurnOnCCW([[maybe_unused]] unsigned int const aDutyCycle) const noexcept {
 
     // PWM: H
     // In1: L
@@ -177,7 +114,7 @@ void TB6612::TurnOnCCW(unsigned int const aDutyCycle) const {
 }
 
 
-void TB6612::TurnOff(void) const {
+void TB6612::TurnOff() const noexcept {
 
     // PWM: H
     // In1: L

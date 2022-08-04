@@ -41,7 +41,8 @@
 
 //! \brief Base database class.
 //! Register each object of DBRec into vector on ctor.
-class DBRec {
+class DBRec
+    : public std::enable_shared_from_this<DBRec> {
 public:
     virtual ~DBRec() = default;
 
@@ -60,16 +61,22 @@ public:
     static void StaticUpdateCRC();
     static void ClearAllDB() {mRecList.clear();}
 
-    template <typename T>
-    [[nodiscard]] static auto Create() -> std::shared_ptr<T> {
-        auto lRec = std::make_shared<T>(typename T::Token{});
-        lRec->AddRec(lRec);
+    template <typename T, typename...Args>
+    [[nodiscard]] static auto Create(Args&&... aArgs) -> std::shared_ptr<T> {
+        auto lRec = std::make_shared<T>(
+            typename T::UseCreateFunc{},
+            std::forward<Args>(aArgs)...
+        );
+        lRec->AddRec(lRec->shared_from_this());
         return lRec;
     }
 
 protected:
-    class Token {};
-    explicit DBRec([[maybe_unused]] Token /* Dummy */) {}
+    struct UseCreateFunc {
+        explicit UseCreateFunc() = default;
+    };
+    explicit DBRec([[maybe_unused]] UseCreateFunc /* Dummy */) {}
+    DBRec(DBRec const &) = delete;
 
     using Magic = std::array<char, 3>;
     struct BaseRec {
