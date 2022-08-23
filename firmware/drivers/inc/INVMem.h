@@ -37,7 +37,7 @@
 class INVMem {
 public:
     virtual ~INVMem() = default;
-    virtual unsigned int GetNVMemSize(void) const = 0;
+    virtual std::size_t GetNVMemSize(void) const = 0;
     virtual void RdFromNVMem(
         uint8_t * const aDataPtr,
         std::size_t const aOffset,

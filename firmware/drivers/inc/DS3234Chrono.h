@@ -58,27 +58,27 @@ class DS3234
     , public ITemperature {
 
  public:
-    DS3234(
-        int const aBaseYear,
-        unsigned long const aInterruptNumber,
+    explicit DS3234(
+        int aBaseYear,
+        unsigned long aInterruptNumber,
         PortPin const &aInterruptPin,
-        std::shared_ptr<CoreLink::ISPIMasterDev> const aSPIMasterDev,
+        std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         PortPin const &aCSnPin
-    );
+    ) noexcept;
 
     // RTCC Interface.
-    void Init(void) override;
+    void Init() override;
     void SetInterrupt(bool const aEnable) override;
-    void AckInterrupt(void) override;
-    void SetImpure(void) override { mIsImpure = true; }
+    void AckInterrupt() override;
+    void SetImpure() override { mIsImpure = true; }
 
     // Polled API.
     //void RdTime(Time &aTime) override;
     //void RdDate(Date &aDate) override;
     //void RdTimeAndDate(Time &aTime, Date &aDate) override;
-    Time RdTime(void) override;
-    Date RdDate(void) override;
-    TimeAndDate RdTimeAndDate(void) override;
+    auto RdTime() -> Time override;
+    auto RdDate() -> Date override;
+    auto RdTimeAndDate() -> TimeAndDate override;
 
     //void WrTime(Time const &aTime) override;
     //void WrDate(Date const &aDate) override;
@@ -89,31 +89,31 @@ class DS3234
     //void WrTimeAndDate(TimeAndDate const &aTimeAndDate) override;
     void WrTimeAndDate(Time const &aTime, Date const &aDate) override;
     // TBD QUOI FAIRE AVEC GetTimeAndDate().
-    TimeAndDate GetCachedTimeAndDate(void) override;
+    auto GetCachedTimeAndDate() -> TimeAndDate override;
 
     //bool WrAlarm(Time const &aTime, Date const &aDate) override;
     //bool WrAlarm(Time const &aTime, Weekday const &aWeekday) override;
     void WrAlarm(Time const &aTime, Date const &aDate) override;
     void WrAlarm(Time const &aTime, Weekday const &aWeekday) override;
-    bool IsAlarmOn(void) override;
-    void DisableAlarm(void) override;
-    void ClrAlarmFlag(void) override;
+    auto IsAlarmOn() -> bool override;
+    void DisableAlarm() override;
+    void ClrAlarmFlag() override;
 
     // INVMem Interface.
-    std::size_t GetNVMemSize(void) const override { return mNVMemSize; }
+    auto GetNVMemSize() const -> std::size_t override { return mNVMemSize; }
     void RdFromNVMem(
-        uint8_t * const aDataPtr,
-        std::size_t const aOffset,
-        std::size_t const aSize
+        uint8_t * aDataPtr,
+        std::size_t aOffset,
+        std::size_t aSize
     ) override;
     void WrToNVMem(
-        uint8_t const * const aDataPtr,
-        std::size_t const aOffset,
-        std::size_t const aSize
+        uint8_t const * aDataPtr,
+        std::size_t aOffset,
+        std::size_t aSize
     ) override;
 
     // ITemperature Interface.
-    float GetTemperature(void) override;
+    auto GetTemperature() -> float override;
 
 private:
     enum class ALARM_ID {
@@ -149,65 +149,65 @@ private:
     using rtcc_reg_t = std::byte;
 
     struct L_TIME_STRUCT_TAG {
-        rtcc_reg_t mSeconds;
-        rtcc_reg_t mMinutes;
-        rtcc_reg_t mHours;
+        rtcc_reg_t mSeconds{};
+        rtcc_reg_t mMinutes{};
+        rtcc_reg_t mHours{};
     };
 
 
     struct L_DATE_STRUCT_TAG {
-        rtcc_reg_t mWeekday;
-        rtcc_reg_t mDate;
-        rtcc_reg_t mMonth;
-        rtcc_reg_t mYear;
+        rtcc_reg_t mWeekday{};
+        rtcc_reg_t mDate{};
+        rtcc_reg_t mMonth{};
+        rtcc_reg_t mYear{};
     };
 
-    using time2_t = struct L_TIME_STRUCT_TAG;
+    using time_t = struct L_TIME_STRUCT_TAG;
     using date_t = struct L_DATE_STRUCT_TAG;
 
     struct L_ALARM_STRUCT_TAG {
-        rtcc_reg_t mMinutes;
-        rtcc_reg_t mHours;
-        rtcc_reg_t mDayDate_n;
+        rtcc_reg_t mMinutes{};
+        rtcc_reg_t mHours{};
+        rtcc_reg_t mDayDate_n{};
     };
 
     using rtcc_alarm_t = struct L_ALARM_STRUCT_TAG;
 
 
     struct L_ADDR_MAP_STRUCT_TAG {
-        time2_t      mTime;
-        date_t       mDate;
-        rtcc_reg_t   mAlarm1Seconds;
-        rtcc_alarm_t mAlarm1;
-        rtcc_alarm_t mAlarm2;
-        rtcc_reg_t   mCtrl;
-        rtcc_reg_t   mStatus;
-        rtcc_reg_t   mAgingOffset;
-        rtcc_reg_t   mTempMSB;
-        rtcc_reg_t   mTempLSB;
-        rtcc_reg_t   mDisableTemp;
-        rtcc_reg_t   mReserved[4];
-        rtcc_reg_t   mSRAMAddr;
-        rtcc_reg_t   mSRAMData;
+        time_t      mTime{};
+        date_t       mDate{};
+        rtcc_reg_t   mAlarm1Seconds{};
+        rtcc_alarm_t mAlarm1{};
+        rtcc_alarm_t mAlarm2{};
+        rtcc_reg_t   mCtrl{};
+        rtcc_reg_t   mStatus{};
+        rtcc_reg_t   mAgingOffset{};
+        rtcc_reg_t   mTempMSB{};
+        rtcc_reg_t   mTempLSB{};
+        rtcc_reg_t   mDisableTemp{};
+        rtcc_reg_t   mReserved[4]{};
+        rtcc_reg_t   mSRAMAddr{};
+        rtcc_reg_t   mSRAMData{};
     };
 
     using rtcc_reg_map_t = struct L_ADDR_MAP_STRUCT_TAG;
 
-    enum class HoursFields {
+    enum class HoursFields : uint8_t {
         H12_24_n = (0x1 << 6),
         PM_AM_n  = (0x1 << 5),
     };
 
-    enum class MonthFields {
+    enum class MonthFields : uint8_t {
         CENTURY = (0x1 << 7),
     };
 
-    enum class DayDateFields {
+    enum class DayDateFields : uint8_t {
         DAY_DATE_n = (0x1 << 6),
         AnMx       = (0x1 << 7)
     };
 
-    enum Addr : unsigned int {
+    enum Addr : uint8_t {
         WR_BASE_ADDR = 0x80
     };
 
@@ -225,7 +225,7 @@ private:
      AEI2    ---- --x-   Alarm 2 Interrupt Enable.
      AEI1    ---- ---x   Alarm 1 Interrupt Enable.
      ------------------------------------------------------------------------- */
-    enum class Ctrl {
+    enum class Ctrl : uint8_t {
         AEI1  = (0x1 << 0),
         AEI2  = (0x1 << 1),
         INTCn = (0x1 << 2),
@@ -249,7 +249,7 @@ private:
      AF2     ---- --x-   Alarm 2 Flag.
      AF1     ---- ---x   Alarm 1 Flag.
      ------------------------------------------------------------------------- */
-    enum class Status {
+    enum class Status : uint8_t {
         AF1    = (0x1 << 0),
         AF2    = (0x1 << 1),
         BSY    = (0x1 << 2),
@@ -261,43 +261,56 @@ private:
     };
 
 private:
-    void UpdateCachedVal(void);
-    Time UpdateTime(void);
-    Date UpdateDate(void) const;
-    bool IsImpure(void) const { return mIsImpure; }
+    void UpdateCachedVal();
+    auto UpdateTime() const noexcept -> Time;
+    auto UpdateDate() const noexcept -> Date;
+    auto IsImpure() const noexcept -> bool { return mIsImpure; }
 
-    void FillTimeStruct(Time const &aTime);
-    void FillDateStruct(Date const &aDate);
-    rtcc_alarm_t FillAlarmStruct(Time const &aTime, Date const &aDate);
-    rtcc_alarm_t FillAlarmStruct(Time const &aTime, Weekday const &aWeekday);
-    rtcc_alarm_t FillAlarmModeStruct(rtcc_alarm_t const &aAlarmStruct, alarm_mode_t const aAlarmMode);
-    void TxAlarmStruct(alarm_id_t const aAlarmID);
+    void FillTimeStruct(Time const &aTime) noexcept;
+    void FillDateStruct(Date const &aDate) noexcept;
+    static auto FillAlarmStruct(Time const &aTime, Date const &aDate) noexcept -> rtcc_alarm_t;
+    static auto FillAlarmStruct(Time const &aTime, Weekday const &aWeekday) noexcept -> rtcc_alarm_t;
+    static auto FillAlarmModeStruct(
+        rtcc_alarm_t const &aAlarmStruct,
+        alarm_mode_t aAlarmMode
+    ) -> rtcc_alarm_t;
+    void TxAlarmStruct(alarm_id_t aAlarmID);
 
-    void SetAlarm(alarm_id_t const aAlarmID);
-    void ClrAlarmFlag(alarm_id_t const aAlarmID);
+    void SetAlarm(alarm_id_t aAlarmID);
+    void ClrAlarmFlag(alarm_id_t aAlarmID);
     void WrAlarm(
-        alarm_id_t const aAlarmID,
+        alarm_id_t aAlarmID,
         Time const &aTime,
         Date const &aDate,
-        enum ALARM_MODE const aAlarmMode
+        enum ALARM_MODE aAlarmMode
     );
 
-    rtcc_reg_t GetCtrl(void);
-    rtcc_reg_t GetStatus(void);
+    rtcc_reg_t GetCtrl();
+    rtcc_reg_t GetStatus();
 
     int const mBaseYear{2000};
 
-    std::shared_ptr<CoreLink::ISPIMasterDev> const mSPIMasterDev;
-    CoreLink::SPISlaveCfg const mSPISlaveCfg;
+    std::shared_ptr<CoreLink::ISPIMasterDev> mSPIMasterDev;
+    CoreLink::SPISlaveCfg mSPISlaveCfg;
 
-    unsigned long const mInterruptNumber;
-    PortPin const mInterruptGPIO;
+    unsigned long mInterruptNumber;
+    PortPin mInterruptGPIO;
 
-    rtcc_reg_map_t mRegMap{std::byte{0}};
+    rtcc_reg_map_t mRegMap{};
 
     bool mIsImpure{true};
 
-    static unsigned int const mNVMemSize{256};
+    static constexpr auto mNVMemSize{256};
+    static constexpr uint8_t sTimeAddr{0x00};
+    static constexpr uint8_t sDateAddr{0x03};
+    static constexpr uint8_t sAlarm1Addr{0x07};
+    static constexpr uint8_t sAlarm2Addr{0x0B};
+    static constexpr uint8_t sCtrlAddr{0x0E};
+    static constexpr uint8_t sStatusAddr{0x0F};
+    static constexpr uint8_t sSRAMAddrAddr{0x18};
+    static constexpr uint8_t sSRAMDataAddr{0x19};
+
+    constexpr uint8_t ToWrAddr(uint8_t aAddr) {return aAddr | 0x80;}
 };
 
 // ******************************************************************************

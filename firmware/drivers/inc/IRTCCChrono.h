@@ -41,6 +41,8 @@ namespace WithChrono {
 //! \brief RTCC interface.
 class IRTCCChrono {
 public:
+    virtual ~IRTCCChrono();
+
     using Time = std::chrono::hh_mm_ss<std::chrono::seconds>;
     using Date = std::chrono::year_month_day;
     using Weekday = std::chrono::weekday;
@@ -50,25 +52,25 @@ public:
     };
     using TimeAndDate = struct Entry_s;
 
-    virtual void Init(void) = 0;
-    virtual void SetInterrupt(bool const aEnable) = 0;
-    virtual void AckInterrupt(void) = 0;
-    virtual void SetImpure(void) = 0;
+    virtual void Init() = 0;
+    virtual void SetInterrupt(bool aEnable) = 0;
+    virtual void AckInterrupt() = 0;
+    virtual void SetImpure() = 0;
 
-    virtual Time RdTime(void) = 0;
-    virtual Date RdDate(void) = 0;
-    virtual TimeAndDate RdTimeAndDate(void) = 0;
+    virtual auto RdTime() -> Time = 0;
+    virtual auto RdDate() -> Date = 0;
+    virtual auto RdTimeAndDate() -> TimeAndDate = 0;
 
-    virtual void WrTime(Time const &aTimeRef) = 0;
-    virtual void WrDate(Date const &aDateRef) = 0;
-    virtual void WrTimeAndDate(Time const &aTimeRef, Date const &aDateRef) = 0;
-    virtual TimeAndDate GetCachedTimeAndDate(void) = 0;
+    virtual void WrTime(Time const &aTime) = 0;
+    virtual void WrDate(Date const &aDate) = 0;
+    virtual void WrTimeAndDate(Time const &aTime, Date const &aDate) = 0;
+    virtual auto GetCachedTimeAndDate() -> TimeAndDate = 0;
 
-    virtual void WrAlarm(Time const &aTimeRef, Date const &aDateRef) = 0;
-    virtual void WrAlarm(Time const &aTimeRef, Weekday const &aWeekdayRef) = 0;
-    virtual bool IsAlarmOn(void) = 0;
-    virtual void DisableAlarm(void) = 0;
-    virtual void ClrAlarmFlag(void) = 0;
+    virtual void WrAlarm(Time const &aTime, Date const &aDate) = 0;
+    virtual void WrAlarm(Time const &aTime, Weekday const &aWeekday) = 0;
+    virtual auto IsAlarmOn() -> bool = 0;
+    virtual void DisableAlarm() = 0;
+    virtual void ClrAlarmFlag() = 0;
 };
 
 

@@ -24,6 +24,8 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+#include "DBRec.h"
+
 // Standard Libraries.
 #include <algorithm>
 #include <array>
@@ -43,8 +45,10 @@
 // ON PART D'UN DAILY PLANNER, SUR UN TYPE T.
 // UN HELPER DE VECTOR
 // ON PEUT INSTANTIER AVEC Time ou std::chrono::duration.
+// SHOULD ALSO DERIVE FROM DBRec AT SOME POINT.
 template <typename T>
-class DailyPlanner {
+class DailyPlanner
+    : public DBRec {
 public:
     [[maybe_unused]] auto AddEntry(T const &aEntry) -> bool {
         auto const lFind = IsEntrySet(aEntry);
@@ -99,6 +103,7 @@ public:
             return *lIt;
         } else if (aWrapAround) {
             // Return 1st entry in the vector.
+            // [MG] CONSIDER std::optional<T>(std::in_place{})
             return *mEntries.cbegin();
         }
 
@@ -108,6 +113,10 @@ public:
     [[nodiscard]] auto IsDirty() const noexcept -> bool {return mIsDirty;}
     void ResetDirty() noexcept {mIsDirty = false;}
     auto Size() const noexcept -> size_t {return mEntries.size();}
+
+    // DBRec Interface.
+    [[nodiscard]] virtual auto IsSane() const -> bool;
+    virtual void ResetDflt();
 
 private:
     [[nodiscard]] auto IsEntrySet(T const &aEntry) noexcept -> bool {
@@ -125,6 +134,37 @@ private:
     std::vector<T> mEntries;
     bool mIsDirty{false};
 };
+
+
+// Attempt at using the single-day template as a DB record.
+class DailyPlannerRec final
+    : public Planner<std::chrono::seconds> // std::chrono::duration
+    , public DBRec
+{
+protected:
+    template<class T, typename...Args>
+    friend auto DBRec::Create(Args&&... aArgs) -> std::shared_ptr<T>;
+
+public:
+    explicit DailyPlannerRec(UseCreateFunc const aDummy) noexcept
+        : DBRec{aDummy} {}
+
+    // DBRec Interface.
+    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    virtual void ResetDflt() noexcept override;
+
+private:
+    [[nodiscard]] auto GetRecSize() const noexcept -> size_t override;
+    void Serialize(uint8_t * aData) const override;
+    void Deserialize(uint8_t const * aData) override;
+    void UpdateCRC() noexcept override;
+
+    static constexpr DBRec::Magic sMagic{ 'P', ' ', 'R' };
+
+    // The remaining of the record is represented by the vector<T>
+    // in the base template.
+    struct BaseRec mBase{{}, {sMagic}};
+}
 
 
 // Generates a weekly planner of type T.
@@ -190,18 +230,28 @@ public:
     }
 
     void ResetDirty() noexcept {
-        for (auto &lDayEntry : mPlanner) {lDayEntry.ResetDirty();}
+        for (auto &lDayEntry : mPlanner) {
+            lDayEntry.ResetDirty();
+        }
     }
 
     auto Size() const noexcept -> size_t {
         // Accumulate?
         size_t lSize{0};
-        for (auto const &lDayEntry : mPlanner) {lSize += lDayEntry.Size();}
+        for (auto const &lDayEntry : mPlanner) {
+            lSize += lDayEntry.Size();
+        }
         return lSize;
     }
 
 private:
     static constexpr auto sDaysPerWeek{7};
+    // [MG] ALTERNATIVE: INSTEAD OF TREATING THIS LIKE AN ARRAY OF DailyPlanner,
+    // [MG] TREAT THIS AS AN ARRAY OR DailyPlannerRec.
+    // [MG] THE OVERRIDES OF DBRec WILL LOOP IN THE ARRAY.
+    // [MG] TRY TO MAKE THIS A TEMPLATE:
+    // [MG] std::array<DailyPlanner<T>, ...>
+    // [MG] std::array<DailerPlannerRec<T>, ...>
     std::array<TimeEntries, sDaysPerWeek> mPlanner;
 };
 

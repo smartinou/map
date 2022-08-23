@@ -23,7 +23,7 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
-#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 
 // TI Library.
@@ -43,12 +43,6 @@ using namespace std::chrono_literals;
 //                      DEFINED CONSTANTS AND MACROS
 // *****************************************************************************
 
-#define L_RD_ADDR(m) \
-    static_cast<uint8_t>(offsetof(rtcc_reg_map_t, m))
-
-#define L_WR_ADDR(m) \
-    static_cast<uint8_t>(offsetof(rtcc_reg_map_t, m) + WR_BASE_ADDR)
-
 // *****************************************************************************
 //                         TYPEDEFS AND STRUCTURES
 // *****************************************************************************
@@ -60,6 +54,9 @@ using namespace std::chrono_literals;
 // *****************************************************************************
 //                             GLOBAL VARIABLES
 // *****************************************************************************
+
+static constexpr auto sSPIClk{4000000};
+static constexpr auto sSPIBits{8};
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -75,23 +72,23 @@ DS3234::DS3234(
     PortPin const &aInterruptPin,
     std::shared_ptr<CoreLink::ISPIMasterDev> const aSPIMasterDev,
     PortPin const &aCSnPin
-)
-    : mBaseYear(aBaseYear)
-    , mSPIMasterDev(aSPIMasterDev)
-    , mSPISlaveCfg(
+) noexcept
+    : mBaseYear{aBaseYear}
+    , mSPIMasterDev{std::move(aSPIMasterDev)}
+    , mSPISlaveCfg{
         GPIO{aCSnPin.mPort, aCSnPin.mPin},
         CoreLink::SPISlaveCfg::PROTOCOL::MOTO_1,
-        4000000,
-        8
-    )
-    , mInterruptNumber(aInterruptNumber)
-    , mInterruptGPIO(aInterruptPin)
+        sSPIClk,
+        sSPIBits
+    }
+    , mInterruptNumber{aInterruptNumber}
+    , mInterruptGPIO{aInterruptPin}
 {
     mSPISlaveCfg.InitCSnGPIO();
 }
 
 
-void DS3234::Init(void) {
+void DS3234::Init() {
 
     // Configure the RTC to desired state:
     //   -Oscillator enabled.
@@ -103,27 +100,27 @@ void DS3234::Init(void) {
     // Disable all and clear all flags in status register.
     mRegMap.mStatus = std::byte{0x00};
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mCtrl),
-        reinterpret_cast<uint8_t * const>(&mRegMap.mCtrl),
+        ToWrAddr(sCtrlAddr),
+        reinterpret_cast<uint8_t *>(&mRegMap.mCtrl),
         2 * sizeof(rtcc_reg_t),
         mSPISlaveCfg
     );
 
     // Force set time to 24H mode if set to 12H.
-    time2_t lTime;
+    time_t lTime;
     mSPIMasterDev->RdData(
-        L_RD_ADDR(mTime),
+        sTimeAddr,
         reinterpret_cast<uint8_t *>(&lTime),
-        sizeof(time2_t),
+        sizeof(time_t),
         mSPISlaveCfg
     );
 
     if (std::to_integer<bool>(lTime.mHours & std::byte{DayDateFields::DAY_DATE_n})) {
         lTime.mHours &= ~std::byte{DayDateFields::DAY_DATE_n};
         mSPIMasterDev->WrData(
-            L_WR_ADDR(mTime),
+            ToWrAddr(sTimeAddr),
             reinterpret_cast<uint8_t *>(&lTime),
-            sizeof(time2_t),
+            sizeof(time_t),
             mSPISlaveCfg
         );
     }
@@ -158,8 +155,8 @@ void DS3234::SetInterrupt(bool const aEnable) {
         MAP_IntEnable(mInterruptNumber);
 
         // Alarm1 is dedicated to periodic interrupt.
-        constexpr Time lTime{};
-        constexpr Date lDate{};
+        static constexpr Time lTime{};
+        static constexpr Date lDate{};
         WrAlarm(
             ALARM_ID::ALARM_ID_1,
             lTime,
@@ -172,7 +169,7 @@ void DS3234::SetInterrupt(bool const aEnable) {
 }
 
 
-void DS3234::AckInterrupt(void) {
+void DS3234::AckInterrupt() {
     // It is assumed that all interrupts where serviced at this point.
     // Clear all flags.
     ClrAlarmFlag(ALARM_ID::ALARM_ID_1);
@@ -180,7 +177,7 @@ void DS3234::AckInterrupt(void) {
 }
 
 
-void DS3234::UpdateCachedVal(void) {
+void DS3234::UpdateCachedVal() {
 
     if (IsImpure()) {
         // Read the whole RTC.
@@ -195,26 +192,26 @@ void DS3234::UpdateCachedVal(void) {
 }
 
 
-DS3234::Time DS3234::RdTime(void) {
+auto DS3234::RdTime() -> DS3234::Time {
 
     // Read the Time portion of the RTC.
     // Update time ref.
     mSPIMasterDev->RdData(
-        L_RD_ADDR(mTime),
+        sTimeAddr,
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
-        sizeof(time2_t),
+        sizeof(time_t),
         mSPISlaveCfg
     );
     return UpdateTime();
 }
 
 
-DS3234::Date DS3234::RdDate(void) {
+auto DS3234::RdDate() -> DS3234::Date {
 
     // Read the date portion out of RTC.
     // Update date ref.
     mSPIMasterDev->RdData(
-        L_RD_ADDR(mDate),
+        sDateAddr,
         reinterpret_cast<uint8_t *>(&mRegMap.mDate),
         sizeof(date_t),
         mSPISlaveCfg
@@ -223,15 +220,15 @@ DS3234::Date DS3234::RdDate(void) {
 }
 
 
-DS3234::TimeAndDate DS3234::RdTimeAndDate(void) {
+auto DS3234::RdTimeAndDate() -> DS3234::TimeAndDate {
 
     // Read the whole RTC into register map structure.
     // Update time ref.
     // Update date ref.
     mSPIMasterDev->RdData(
-        L_RD_ADDR(mTime),
+        sTimeAddr,
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
-        sizeof(time2_t) + sizeof(date_t),
+        sizeof(time_t) + sizeof(date_t),
         mSPISlaveCfg
     );
 
@@ -247,9 +244,9 @@ void DS3234::WrTime(DS3234::Time const &aTime) {
     // Send only the time portion of the structure to RTC.
     FillTimeStruct(aTime);
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mTime),
+        ToWrAddr(sTimeAddr),
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
-        sizeof(time2_t),
+        sizeof(time_t),
         mSPISlaveCfg
     );
 }
@@ -261,7 +258,7 @@ void DS3234::WrDate(DS3234::Date const &aDate) {
     // Send only the date portion of the structure to RTC.
     FillDateStruct(aDate);
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mDate),
+        ToWrAddr(sDateAddr),
         reinterpret_cast<uint8_t *>(&mRegMap.mDate),
         sizeof(date_t),
         mSPISlaveCfg
@@ -277,15 +274,15 @@ void DS3234::WrTimeAndDate(DS3234::Time const &aTime, DS3234::Date const &aDate)
     FillTimeStruct(aTime);
     FillDateStruct(aDate);
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mTime),
+        ToWrAddr(sTimeAddr),
         reinterpret_cast<uint8_t *>(&mRegMap.mTime),
-        sizeof(time2_t) + sizeof(date_t),
+        sizeof(time_t) + sizeof(date_t),
         mSPISlaveCfg
     );
 }
 
 
-DS3234::TimeAndDate DS3234::GetCachedTimeAndDate(void) {
+auto DS3234::GetCachedTimeAndDate() -> DS3234::TimeAndDate {
 
     // Update date ref.
     UpdateCachedVal();
@@ -295,12 +292,12 @@ DS3234::TimeAndDate DS3234::GetCachedTimeAndDate(void) {
 }
 
 
-float DS3234::GetTemperature(void) {
+auto DS3234::GetTemperature() -> float {
 
     // Return temperature field.
     // Convert temperature MSB and LSB to float.
     UpdateCachedVal();
-    float const lTempFloat = (0.25f * std::to_integer<unsigned>(mRegMap.mTempLSB >> 6))
+    float const lTempFloat = (0.25F * static_cast<float>(std::to_integer<uint8_t>(mRegMap.mTempLSB >> 6)))
         + static_cast<float>(mRegMap.mTempMSB);
     return lTempFloat;
 }
@@ -334,47 +331,18 @@ void DS3234::WrAlarm(DS3234::Time const &aTime, DS3234::Weekday const &aWeekday)
 }
 
 
-bool DS3234::IsAlarmOn(void) {
+auto DS3234::IsAlarmOn() -> bool {
 
-    // Hard-coded to use alarm2, but provides template for use with any alarm.
-    alarm_id_t constexpr sAlarmID{ALARM_ID::ALARM_ID_2};
-    switch (sAlarmID) {
-    case ALARM_ID::ALARM_ID_1:
-        if (std::to_integer<bool>(std::byte{Status::AF1} & GetStatus())
-            && std::to_integer<bool>(std::byte{Ctrl::AEI1} & GetCtrl())) {
-            return true;
-        }
-    return false;
-
-    case ALARM_ID::ALARM_ID_2:
-        if (std::to_integer<bool>(std::byte{Status::AF2} & GetStatus())
-            && std::to_integer<bool>(std::byte{Ctrl::AEI2} & GetCtrl()))
-        {
-            return true;
-        }
-    [[fallthrough]];
-    default:
-        break;
-    }
-
-    return false;
+    return (std::to_integer<bool>(std::byte{Status::AF2} & GetStatus())
+        && std::to_integer<bool>(std::byte{Ctrl::AEI2} & GetCtrl()));
 }
 
 
-void DS3234::DisableAlarm(void) {
+void DS3234::DisableAlarm() {
 
-    // Hard-coded to use alarm2, but provides template for use with any alarm.
-    alarm_id_t constexpr sAlarmID{ALARM_ID::ALARM_ID_2};
-    // Only clear interrupt.
-    // We don't care if the Alarm fields are set,
-    // as long as the interrupt is not generated.
-    switch (sAlarmID) {
-    case ALARM_ID::ALARM_ID_1: mRegMap.mCtrl &= ~std::byte{Ctrl::AEI1}; break;
-    case ALARM_ID::ALARM_ID_2: mRegMap.mCtrl &= ~std::byte{Ctrl::AEI2}; break;
-    }
-
+    mRegMap.mCtrl &= ~std::byte{Ctrl::AEI2};
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mCtrl),
+        ToWrAddr(sCtrlAddr),
         reinterpret_cast<uint8_t const *>(&mRegMap.mCtrl),
         sizeof(rtcc_reg_t),
         mSPISlaveCfg
@@ -382,7 +350,7 @@ void DS3234::DisableAlarm(void) {
 }
 
 
-void DS3234::ClrAlarmFlag(void) {
+void DS3234::ClrAlarmFlag() {
 
     ClrAlarmFlag(ALARM_ID::ALARM_ID_2);
 }
@@ -398,7 +366,7 @@ void DS3234::RdFromNVMem(
     // Cap size.
     // Loop into data register.
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mSRAMAddr),
+        ToWrAddr(sSRAMAddrAddr),
         reinterpret_cast<uint8_t *>(aOffset),
         sizeof(rtcc_reg_t),
         mSPISlaveCfg
@@ -411,7 +379,7 @@ void DS3234::RdFromNVMem(
     }
 
     mSPIMasterDev->RdData(
-        L_RD_ADDR(mSRAMData),
+        sSRAMDataAddr,
         reinterpret_cast<uint8_t *>(aDataPtr),
         lSize * sizeof(rtcc_reg_t),
         mSPISlaveCfg
@@ -429,7 +397,7 @@ void DS3234::WrToNVMem(
     // Cap size.
     // Loop into data register.
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mSRAMAddr),
+        ToWrAddr(sSRAMAddrAddr),
         reinterpret_cast<uint8_t *>(aOffset),
         sizeof(rtcc_reg_t),
         mSPISlaveCfg
@@ -442,7 +410,7 @@ void DS3234::WrToNVMem(
     }
 
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mSRAMData),
+        ToWrAddr(sSRAMDataAddr),
         reinterpret_cast<uint8_t const *>(aDataPtr),
         lSize * sizeof(rtcc_reg_t),
         mSPISlaveCfg
@@ -453,7 +421,7 @@ void DS3234::WrToNVMem(
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-DS3234::Time DS3234::UpdateTime(void) {
+auto DS3234::UpdateTime() const noexcept -> DS3234::Time {
 
     // Apply proper mask and convert where needed.
     auto const lSeconds = DS3234Helper::BCDToBinary(mRegMap.mTime.mSeconds);
@@ -473,15 +441,15 @@ DS3234::Time DS3234::UpdateTime(void) {
     }
 
     // "Return" via copy ctor.
-    return Time(
+    return Time{
         std::chrono::hours(lHours) 
         + std::chrono::minutes(lMinutes)
         + std::chrono::seconds(lSeconds)
-    );
+    };
 }
 
 
-DS3234::Date DS3234::UpdateDate(void) const {
+auto DS3234::UpdateDate() const noexcept -> DS3234::Date {
 
     //auto const lWeekday = BCDToBinary(mRegMap.mDate.mWeekday);
     std::chrono::day const lDay {DS3234Helper::BCDToBinary(mRegMap.mDate.mDate)};
@@ -489,20 +457,20 @@ DS3234::Date DS3234::UpdateDate(void) const {
     std::chrono::year const lYear {DS3234Helper::BCDToBinary(mRegMap.mDate.mYear) + mBaseYear};
 
     // Should check for a valid date here. If not, construct one.
-    return Date(lYear, lMonth, lDay);
+    return {lYear, lMonth, lDay};
 }
 
 
-void DS3234::FillTimeStruct(DS3234::Time const &aTime) {
+void DS3234::FillTimeStruct(DS3234::Time const &aTime) noexcept {
 
-    mRegMap.mTime.mSeconds = DS3234Helper::BinaryToBCD(aTime.seconds().count());;
+    mRegMap.mTime.mSeconds = DS3234Helper::BinaryToBCD(aTime.seconds().count());
     mRegMap.mTime.mMinutes = DS3234Helper::BinaryToBCD(aTime.minutes().count());
     // Time is always stored as 24H.
     mRegMap.mTime.mHours = DS3234Helper::BinaryToBCD(aTime.hours().count());
 }
 
 
-void DS3234::FillDateStruct(DS3234::Date const &aDate) {
+void DS3234::FillDateStruct(DS3234::Date const &aDate) noexcept {
 
     std::chrono::weekday const lWeekday{std::chrono::sys_days{aDate}};
     mRegMap.mDate.mWeekday = std::byte{static_cast<unsigned char>(lWeekday.iso_encoding())};
@@ -515,9 +483,10 @@ void DS3234::FillDateStruct(DS3234::Date const &aDate) {
 }
 
 
-DS3234::rtcc_alarm_t DS3234::FillAlarmStruct(
+auto DS3234::FillAlarmStruct(
     DS3234::Time const &aTime,
-    DS3234::Date const &aDate)
+    DS3234::Date const &aDate
+) noexcept -> DS3234::rtcc_alarm_t
 {
     auto const lHours = DS3234Helper::BinaryToBCD(aTime.hours().count());
     auto const lMinutes = DS3234Helper::BinaryToBCD(aTime.minutes().count());
@@ -531,8 +500,11 @@ DS3234::rtcc_alarm_t DS3234::FillAlarmStruct(
 }
 
 
-DS3234::rtcc_alarm_t DS3234::FillAlarmStruct(DS3234::Time const &aTime, DS3234::Weekday const &aWeekday) {
-
+auto DS3234::FillAlarmStruct(
+    DS3234::Time const &aTime,
+    DS3234::Weekday const &aWeekday
+) noexcept -> DS3234::rtcc_alarm_t
+{
     auto const lHours = DS3234Helper::BinaryToBCD(aTime.hours().count());
     auto const lMinutes = DS3234Helper::BinaryToBCD(aTime.minutes().count());
     auto const lWeekday = static_cast<unsigned char>(aWeekday.iso_encoding());
@@ -541,18 +513,18 @@ DS3234::rtcc_alarm_t DS3234::FillAlarmStruct(DS3234::Time const &aTime, DS3234::
 }
 
 
-DS3234::rtcc_alarm_t DS3234::FillAlarmModeStruct(
+auto DS3234::FillAlarmModeStruct(
     rtcc_alarm_t const &aAlarmStruct,
     alarm_mode_t const aAlarmMode
-) {
-
+) -> DS3234::rtcc_alarm_t
+{
     rtcc_alarm_t lAlarmStruct{aAlarmStruct};
 
     // Assumes the AxMy bit was cleared on previous operation.
     // This should be performed by BinaryToBCD().
     switch (aAlarmMode) {
     case ALARM_MODE::ONCE_PER_SEC:
-        mRegMap.mAlarm1Seconds |= std::byte{DayDateFields::AnMx};
+        //mRegMap.mAlarm1Seconds |= std::byte{DayDateFields::AnMx};
         [[fallthrough]];
 
     case ALARM_MODE::WHEN_SECS_MATCH:
@@ -566,7 +538,7 @@ DS3234::rtcc_alarm_t DS3234::FillAlarmModeStruct(
     case ALARM_MODE::WHEN_HOURS_MINS_SECS_MATCH:
         lAlarmStruct.mDayDate_n |= std::byte{DayDateFields::AnMx};
         // Don't care about DY/DATEn bit.
-    break;
+        break;
 
     case ALARM_MODE::WHEN_DAY_HOURS_MINS_SECS_MATCH:
         lAlarmStruct.mDayDate_n |= std::byte{DayDateFields::DAY_DATE_n};
@@ -588,7 +560,7 @@ void DS3234::TxAlarmStruct(alarm_id_t const aAlarmID) {
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1:
         mSPIMasterDev->WrData(
-            L_WR_ADDR(mAlarm1Seconds),
+            ToWrAddr(sAlarm1Addr),
             reinterpret_cast<uint8_t const *>(&mRegMap.mAlarm1Seconds),
             sizeof(rtcc_reg_t) + sizeof(rtcc_alarm_t),
             mSPISlaveCfg
@@ -596,7 +568,7 @@ void DS3234::TxAlarmStruct(alarm_id_t const aAlarmID) {
 
         // Control register needs to be written after alarm 1 registers.
         mSPIMasterDev->WrData(
-            L_WR_ADDR(mCtrl),
+            ToWrAddr(sCtrlAddr),
             reinterpret_cast<uint8_t const *>(&mRegMap.mCtrl),
             sizeof(rtcc_reg_t),
             mSPISlaveCfg
@@ -606,7 +578,7 @@ void DS3234::TxAlarmStruct(alarm_id_t const aAlarmID) {
     case ALARM_ID::ALARM_ID_2:
         // Control register follows alarm 2 registers.
         mSPIMasterDev->WrData(
-            L_WR_ADDR(mAlarm2),
+            ToWrAddr(sAlarm2Addr),
             reinterpret_cast<uint8_t const *>(&mRegMap.mAlarm2),
             sizeof(rtcc_alarm_t) + sizeof(rtcc_reg_t),
             mSPISlaveCfg
@@ -636,7 +608,7 @@ void DS3234::ClrAlarmFlag(alarm_id_t const aAlarmID) {
     }
 
     mSPIMasterDev->WrData(
-        L_WR_ADDR(mStatus),
+        ToWrAddr(sStatusAddr),
         reinterpret_cast<uint8_t const *>(&mRegMap.mStatus),
         sizeof(rtcc_reg_t),
         mSPISlaveCfg
@@ -654,7 +626,8 @@ void DS3234::WrAlarm(
     // Fill alarm structure to write to RTC.
     switch (aAlarmID) {
     case ALARM_ID::ALARM_ID_1: {
-        mRegMap.mAlarm1Seconds = DS3234Helper::BinaryToBCD(aTime.seconds().count());;
+        mRegMap.mAlarm1Seconds = DS3234Helper::BinaryToBCD(aTime.seconds().count())
+            | ((aAlarmMode == ALARM_MODE::ONCE_PER_SEC) ? std::byte{DayDateFields::AnMx} : std::byte{});
         mRegMap.mAlarm1 = FillAlarmStruct(aTime, aDate);
         mRegMap.mAlarm1 = FillAlarmModeStruct(mRegMap.mAlarm1, aAlarmMode);
         break;
@@ -672,7 +645,7 @@ void DS3234::WrAlarm(
 }
 
 
-DS3234::rtcc_reg_t DS3234::GetCtrl(void) {
+auto DS3234::GetCtrl() -> DS3234::rtcc_reg_t {
 
     // Return status field.
     UpdateCachedVal();
@@ -680,7 +653,7 @@ DS3234::rtcc_reg_t DS3234::GetCtrl(void) {
 }
 
 
-DS3234::rtcc_reg_t DS3234::GetStatus(void) {
+auto DS3234::GetStatus() -> DS3234::rtcc_reg_t {
 
     // Return status field.
     UpdateCachedVal();

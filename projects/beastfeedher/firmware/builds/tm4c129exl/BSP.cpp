@@ -152,57 +152,6 @@ static constexpr size_t sUARTTxFIFODepth{16U};
 namespace BSP {
 
 
-struct SSIGPIO {
-    uint32_t mClkPinCfg;
-    uint32_t mDat0PinCfg;
-    uint32_t mDat1PinCfg;
-    unsigned long mPort;
-    unsigned int mClkPin;
-    unsigned int mRxPin;
-    unsigned int mTxPin;
-};
-
-
-class SSIPinCfg final
-    : public CoreLink::SSIPinCfg {
-public:
-    explicit constexpr SSIPinCfg(
-        unsigned int const aSSIID,
-        struct SSIGPIO const &aSSIGPIO
-    ) noexcept
-        : CoreLink::SSIPinCfg(aSSIID), mSSIGPIO{aSSIGPIO} {}
-
-    void SetPins(void) const override {
-        GPIO::EnableSysCtlPeripheral(mSSIGPIO.mPort);
-        MAP_GPIOPinConfigure(mSSIGPIO.mClkPinCfg);
-        MAP_GPIOPinConfigure(mSSIGPIO.mDat0PinCfg);
-        MAP_GPIOPinConfigure(mSSIGPIO.mDat1PinCfg);
-        MAP_GPIOPinTypeSSI(
-            mSSIGPIO.mPort,
-            mSSIGPIO.mClkPin | mSSIGPIO.mRxPin | mSSIGPIO.mTxPin
-        );
-
-        // Set a weak pull-up on MISO pin for SD Card's proper operation.
-        MAP_GPIOPadConfigSet(
-            mSSIGPIO.mPort,
-            mSSIGPIO.mRxPin,
-            GPIO_STRENGTH_2MA,
-            GPIO_PIN_TYPE_STD_WPU
-        );
-
-        MAP_GPIOPadConfigSet(
-            mSSIGPIO.mPort,
-            mSSIGPIO.mClkPin | mSSIGPIO.mTxPin,
-            GPIO_STRENGTH_2MA,
-            GPIO_PIN_TYPE_STD
-        );
-    }
-
-private:
-    struct SSIGPIO mSSIGPIO;
-};
-
-
 class Factory final
     : public IBSPFactory {
 
@@ -230,12 +179,12 @@ public:
 
 
     // IBSPFactory Interface.
-    std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(
+    auto StartRTCCAO(
         std::shared_ptr<CalendarRec> const &aCalendarRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
-    ) final {
+    ) -> std::shared_ptr<RTCC::AO::RTCC_AO> final {
         if (mRTCCAO == nullptr) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
@@ -248,7 +197,7 @@ public:
     }
 
 
-    unsigned int CreateDisks(void) {
+    auto CreateDisks() -> unsigned int {
         // This BSP has one or two SDC devices.
         if (mSDCDefault == nullptr) {
             // Drive index 0 is the default drive.
@@ -281,7 +230,7 @@ public:
     }
 
 
-    [[maybe_unused]] bool MountFS(void) final {
+    [[maybe_unused]] auto MountFS() -> bool final {
         // Create SDC instance to use in FS stubs.
         // WARNING: if SD card disks exist, they should be mounted before calling
         // any other device triggering SPI bus activity.
@@ -304,16 +253,16 @@ public:
     }
 
 
-    [[maybe_unused]] bool StartFileSinkAO(
+    [[maybe_unused]] auto StartFileSinkAO(
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
-    ) final {
+    ) -> bool final {
         // FS mounted on default disk: add log sink.
         if (mFileLogSinkAO == nullptr) {
             mFileLogSinkAO = std::make_unique<Logging::AO::FileSink_AO>(10 * 60 * BSP::TICKS_PER_SEC);
             if (mFileLogSinkAO != nullptr) {
-                reinterpret_cast<Logging::AO::FileSink_AO * const>(
+                reinterpret_cast<Logging::AO::FileSink_AO *>(
                     mFileLogSinkAO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
 
                 std::unordered_set<std::string> const lCategories{"PFPP"};
@@ -333,12 +282,12 @@ public:
     }
 
 
-    [[maybe_unused]] bool StartPFPPAO(
+    [[maybe_unused]] auto StartPFPPAO(
         std::shared_ptr<FeedCfgRec> const &aFeedCfgRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
-    ) final {
+    ) -> bool final {
         if (mPFPPAO == nullptr) {
             // Create motor controller and pass ownership to Mgr_AO.
             auto lMotorControl = CreateMotorControl();
@@ -355,11 +304,11 @@ public:
     }
 
 
-    [[maybe_unused]] bool StartDisplayMgrAO(
+    [[maybe_unused]] auto StartDisplayMgrAO(
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
-    ) final {
+    ) -> bool final {
         if (mDisplayMgrAO == nullptr) {
             // TODO: CREATE AN ACTUAL OBJECT WHEN AVAILABLE.
             mDisplayMgrAO = std::unique_ptr<Display::AO::Mgr_AO>(nullptr);
@@ -372,12 +321,12 @@ public:
     }
 
 
-    [[maybe_unused]] bool StartLwIPMgrAO(
+    [[maybe_unused]] auto StartLwIPMgrAO(
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen,
         QP::QEvt const * const aInitEvt
-    ) final {
+    ) -> bool final {
         if (mLwIPMgrAO == nullptr) {
             // Create all Ethernet drivers required before the AO.
             // LwIP::AO::Mgr doesn't use any local references to LwIPDrv.
@@ -393,20 +342,20 @@ public:
     }
 
 
-    std::shared_ptr<QP::QActive> CreateBLEAO(void) final {
+    auto CreateBLEAO() -> std::shared_ptr<QP::QActive> final {
         return nullptr;//std::make_shared<QP::QActive>(nullptr);//std::shared_ptr<PFPP::AO::BLE_AO>(nullptr);
     }
 
 
     // Local interface.
-    static constexpr struct PortPin GetRTCCInterruptPin(void) { return mRTCCInterruptPin; }
-    //static GPIO const &GetBLEInterruptPin(void) { return mBLEInterruptPin; }
+    static constexpr auto GetRTCCInterruptPin() { return mRTCCInterruptPin; }
+    //static GPIO const &GetBLEInterruptPin() { return mBLEInterruptPin; }
 
     static uint8_t const sSysTick_Handler;
     static uint8_t const sGPIOPortP3_IRQHandler;
 
 private:
-    void Init(void) {
+    void Init() {
         // NOTE: SystemInit() already called from the startup code,
         // where clock already set (CLOCK_SETUP in lm3s_config.h)
         // SystemCoreClockUpdate() also called from there.
@@ -526,44 +475,38 @@ private:
             // Create pin configuration.
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI2);
-            static constexpr SSIPinCfg lSSIPinCfg{
-                2,
-                {
-                    GPIO_PD3_SSI2CLK,
-                    GPIO_PD1_SSI2XDAT0,
-                    GPIO_PD0_SSI2XDAT1,
-                    GPIOD_AHB_BASE,
-                    GPIO_PIN_3, // Clk.
-                    GPIO_PIN_0, // Rx.
-                    GPIO_PIN_1  // Tx.
-                }
+            static constexpr CoreLink::SPIMasterDev::SSIGPIO lSSIGPIO {
+                GPIO_PD3_SSI2CLK,
+                GPIO_PD1_SSI2XDAT0,
+                GPIO_PD0_SSI2XDAT1,
+                GPIOD_AHB_BASE,
+                GPIO_PIN_3, // Clk.
+                GPIO_PIN_0, // Rx.
+                GPIO_PIN_1  // Tx.
             };
             mSPI2Dev = std::make_shared<CoreLink::SPIMasterDev>(
                 SSI2_BASE,
                 mClkRate,
-                lSSIPinCfg
+                lSSIGPIO
             );
         } break;
         case 3: {
             // Create pin configuration.
             // Initialize SPI Master.
             SysCtlPeripheralEnable(SYSCTL_PERIPH_SSI3);
-            static constexpr SSIPinCfg lSSIPinCfg{
-                3,
-                {
-                    GPIO_PQ0_SSI3CLK,
-                    GPIO_PQ2_SSI3XDAT0,
-                    GPIO_PQ3_SSI3XDAT1,
-                    GPIOQ_BASE,
-                    GPIO_PIN_0, // Clk.
-                    GPIO_PIN_3, // Rx.
-                    GPIO_PIN_2  // Tx.
-                }
+            static constexpr CoreLink::SPIMasterDev::SSIGPIO lSSIGPIO {
+                GPIO_PQ0_SSI3CLK,
+                GPIO_PQ2_SSI3XDAT0,
+                GPIO_PQ3_SSI3XDAT1,
+                GPIOQ_BASE,
+                GPIO_PIN_0, // Clk.
+                GPIO_PIN_3, // Rx.
+                GPIO_PIN_2  // Tx.
             };
             mSPI3Dev = std::make_shared<CoreLink::SPIMasterDev>(
                 SSI3_BASE,
                 mClkRate,
-                lSSIPinCfg
+                lSSIGPIO
             );
         } break;
         case 0: [[fallthrough]];
@@ -574,7 +517,7 @@ private:
     }
 
 
-    std::shared_ptr<DS3234> CreateRTCC(void) {
+    auto CreateRTCC() -> std::shared_ptr<DS3234> {
         // Creates a DS3234 RTCC.
         // Reset input pin.
         [[maybe_unused]] static constexpr struct PortPin sResetPin{
@@ -585,8 +528,9 @@ private:
         // with specified CSn pin.
         static constexpr unsigned long sInterruptNumber{INT_GPIOP3};
         static constexpr struct PortPin sCSnPin{GPIOQ_BASE, GPIO_PIN_1};
+        static constexpr auto sBaseYear = 2000;
         auto lRTCC = std::make_shared<DS3234>(
-            2000,
+            sBaseYear,
             sInterruptNumber,
             GPIO{mRTCCInterruptPin.mPort, mRTCCInterruptPin.mPin},
             mSPI3Dev,
@@ -597,7 +541,7 @@ private:
     }
 
 
-    std::unique_ptr<IMotorControl> CreateMotorControl(void) {
+    auto CreateMotorControl() -> std::unique_ptr<IMotorControl> {
         static constexpr struct PortPin lIn1{GPIOB_AHB_BASE, GPIO_PIN_6};
         static constexpr struct PortPin lIn2{GPIOB_AHB_BASE, GPIO_PIN_5};
         static constexpr struct PortPin lPWM{GPIOB_AHB_BASE, GPIO_PIN_0};
@@ -611,9 +555,9 @@ private:
     }
 
 
-    void CreateEthDrv(void) {
+    void CreateEthDrv() {
         static constexpr unsigned int sMyNetIFIndex{0};
-        EthernetAddress const lMAC = GetMACAddress();
+        auto const lMAC = GetMACAddress();
         static constexpr unsigned int sPBufQueueSize{8};
         mEthDrv = std::make_unique<EthDrv>(
             sMyNetIFIndex,
@@ -625,7 +569,7 @@ private:
 
 
 #if 0
-    std::unique_ptr<BLE::BLE> CreateBLE(void) {
+    std::unique_ptr<BLE::BLE> CreateBLE() {
         unsigned long lInterruptNumber = INT_GPIOB;
         static constexpr GPIO lCSnPin(GPIOB_AHB_BASE, GPIO_PIN_4);
         auto lBLE = std::make_unique<BLE::BLE>(
@@ -640,7 +584,7 @@ private:
 #endif
 
 
-    EthernetAddress GetMACAddress(void) {
+    auto GetMACAddress() -> EthernetAddress {
         // For the Stellaris Eval Kits, the MAC address will be stored in the
         // non-volatile USER0 and USER1 registers. These registers can be read
         // using the FlashUserGet function, as illustrated below.
@@ -649,14 +593,14 @@ private:
         FlashUserGet(&lUser0, &lUser1);
 
         // Convert the 24/24 split MAC address from NV ram into a 32/16 split MAC address.
-        EthernetAddress const lMAC(
+        EthernetAddress const lMAC{
             static_cast<uint8_t>((lUser0 & 0x000000FFL) >>  0),
             static_cast<uint8_t>((lUser0 & 0x0000FF00L) >>  8),
             static_cast<uint8_t>((lUser0 & 0x00FF0000L) >> 16),
             static_cast<uint8_t>((lUser1 & 0x000000FFL) >>  0),
             static_cast<uint8_t>((lUser1 & 0x0000FF00L) >>  8),
             static_cast<uint8_t>((lUser1 & 0x00FF0000L) >> 16)
-        );
+        };
 
         if (lMAC.IsValid()) {
             return lMAC;
@@ -668,25 +612,25 @@ private:
         return sDefaultMAC;
     }
 
-    uint32_t mClkRate;
-    std::shared_ptr<CoreLink::SPIMasterDev> mSPI2Dev;
-    std::shared_ptr<CoreLink::SPIMasterDev> mSPI3Dev;
-    std::shared_ptr<DS3234> mRTCC;
-    std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO;
-    std::unique_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO;
-    std::unique_ptr<PFPP::AO::Mgr_AO> mPFPPAO;
-    std::unique_ptr<Display::AO::Mgr_AO> mDisplayMgrAO;
-    std::unique_ptr<SDC> mSDCDefault;
-    std::unique_ptr<SDC> mSDCBoosterPack;
-    std::unique_ptr<EthDrv> mEthDrv;
-    std::unique_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO;
-    //std::unique_ptr<BLE::BLE> mBLE;
-    //std::shared_ptr<PFPP::AO::BLE_AO> mBLEAO;
+    uint32_t mClkRate{};
+    std::shared_ptr<CoreLink::SPIMasterDev> mSPI2Dev{};
+    std::shared_ptr<CoreLink::SPIMasterDev> mSPI3Dev{};
+    std::shared_ptr<DS3234> mRTCC{};
+    std::shared_ptr<RTCC::AO::RTCC_AO> mRTCCAO{};
+    std::unique_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO{};
+    std::unique_ptr<PFPP::AO::Mgr_AO> mPFPPAO{};
+    std::unique_ptr<Display::AO::Mgr_AO> mDisplayMgrAO{};
+    std::unique_ptr<SDC> mSDCDefault{};
+    std::unique_ptr<SDC> mSDCBoosterPack{};
+    std::unique_ptr<EthDrv> mEthDrv{};
+    std::unique_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO{};
+    //std::unique_ptr<BLE::BLE> mBLE{};
+    //std::shared_ptr<PFPP::AO::BLE_AO> mBLEAO{};
 
     static constexpr struct PortPin mRTCCInterruptPin{GPIOP_BASE, GPIO_PIN_3};
     //static constexpr GPIO mBLEInterruptPin{GPIOB_AHB_BASE, GPIO_PIN_1};
 
-    FATFS mFatFS{0};
+    FATFS mFatFS{};
 };
 
 
@@ -697,14 +641,13 @@ private:
 // *****************************************************************************
 
 namespace BSP {
-static void InitEtherLED(void);
+static void InitEtherLED();
 static void InitUserLED(struct PortPin const &aUserLEDPortPin);
-static void SetUserLED(struct PortPin const &aUserLEDPortPin);
-static void ClrUserLED(struct PortPin const &aUserLEDPortPin);
+static void SetUserLED(struct PortPin const &aUserLEDPortPin, bool aState);
 } // namespace BSP
 
 #ifdef Q_SPY
-static void TxData(void);
+static void TxData();
 #endif // Q_SPY
 
 // *****************************************************************************
@@ -734,9 +677,6 @@ uint8_t constexpr Factory::sGPIOPortP3_IRQHandler{0U};
 namespace BSP {
 
 // Those variables are used locally in various stubs and IRQ handlers.
-static constexpr Button_s mManualFeedButton{GPIOJ_AHB_BASE, GPIO_PIN_0, INT_GPIOJ, 0};
-static constexpr Button_s mTimedFeedButton{GPIOJ_AHB_BASE, GPIO_PIN_1, INT_GPIOJ, 0};
-
 static constexpr PortPin sUserLED1PortPin{GPION_BASE, GPIO_PIN_1};
 static constexpr PortPin sUserLED2PortPin{GPION_BASE, GPIO_PIN_0};
 } // namespace BSP
@@ -747,7 +687,7 @@ static constexpr PortPin sUserLED2PortPin{GPION_BASE, GPIO_PIN_0};
 
 namespace BSP {
 
-std::unique_ptr<IBSPFactory> Create(void) {
+std::unique_ptr<IBSPFactory> Create() {
     return std::make_unique<Factory>();
 }
 
@@ -761,32 +701,18 @@ std::unique_ptr<IBSPFactory> Create(void) {
 namespace BSP {
 
 
-static void InitEtherLED(void) {
+static void InitEtherLED() {
 
     // GPIO for Ethernet LEDs.
     static constexpr PortPin lLinkLEDPortPin{GPIOF_AHB_BASE, GPIO_PIN_4};
-    MAP_GPIOPinTypeGPIOOutput(lLinkLEDPortPin.mPort, lLinkLEDPortPin.mPin);
-    MAP_GPIOPadConfigSet(
-        lLinkLEDPortPin.mPort,
-        lLinkLEDPortPin.mPin,
-        GPIO_STRENGTH_2MA,
-        GPIO_PIN_TYPE_STD
-    );
+    InitUserLED(lLinkLEDPortPin);
     MAP_GPIOPinConfigure(GPIO_PF4_EN0LED1);
     MAP_GPIOPinTypeEthernetLED(lLinkLEDPortPin.mPort, lLinkLEDPortPin.mPin);
 
     static constexpr PortPin lActivityLEDPortPin{GPIOF_AHB_BASE, GPIO_PIN_0};
-    MAP_GPIOPinTypeGPIOOutput(lActivityLEDPortPin.mPort, lActivityLEDPortPin.mPin);
-    MAP_GPIOPadConfigSet(
-        lActivityLEDPortPin.mPort,
-        lActivityLEDPortPin.mPin,
-        GPIO_STRENGTH_2MA,
-        GPIO_PIN_TYPE_STD
-    );
+    InitUserLED(lActivityLEDPortPin);
     MAP_GPIOPinConfigure(GPIO_PF0_EN0LED0);
     MAP_GPIOPinTypeEthernetLED(lActivityLEDPortPin.mPort, lActivityLEDPortPin.mPin);
-
-    MAP_IntEnable(INT_EMAC0);
 }
 
 
@@ -802,30 +728,21 @@ static void InitUserLED(struct PortPin const &aUserLEDPortPin) {
 }
 
 
-static void SetUserLED(struct PortPin const &aUserLEDPortPin) {
+static void SetUserLED(struct PortPin const &aUserLEDPortPin, bool const aState) {
 
     MAP_GPIOPinWrite(
         aUserLEDPortPin.mPort,
         aUserLEDPortPin.mPin,
-        aUserLEDPortPin.mPin
+        aState ? aUserLEDPortPin.mPin : 0
     );
 }
 
-
-static void ClrUserLED(struct PortPin const &aUserLEDPortPin) {
-
-    MAP_GPIOPinWrite(
-        aUserLEDPortPin.mPort,
-        aUserLEDPortPin.mPin,
-        0
-    );
-}
 
 } // namespace BSP
 
 
 // QF callbacks ==============================================================
-void QP::QF::onStartup(void) {
+void QP::QF::onStartup() {
 
     // Set up the SysTick timer to fire at BSP_TICKS_PER_SEC rate
     // !!! SysCtlClockGet can not be used for tm4c129 !!!
@@ -853,6 +770,8 @@ void QP::QF::onStartup(void) {
     BSP::InitUserLED(BSP::sUserLED2PortPin);
     BSP::InitEtherLED();
 
+    MAP_IntEnable(INT_EMAC0);
+
 #if defined(Q_SPY) && defined(USE_UART0)
     // UART0 interrupt used for QS-RX.
     NVIC_SetPriority(UART0_IRQn, UART0_PRIO);
@@ -863,11 +782,11 @@ void QP::QF::onStartup(void) {
 
 //............................................................................
 // called with interrupts disabled, see NOTE01
-void QP::QV::onIdle(void) {
+void QP::QV::onIdle() {
 
     // Toggle LED for visual effect.
-    BSP::SetUserLED(BSP::sUserLED1PortPin);
-    BSP::ClrUserLED(BSP::sUserLED1PortPin);
+    BSP::SetUserLED(BSP::sUserLED1PortPin, true);
+    BSP::SetUserLED(BSP::sUserLED1PortPin, false);
 
 #ifdef Q_SPY
     QF_INT_ENABLE();
@@ -909,16 +828,17 @@ extern "C" void Q_onAssert(char const *module, int loc) {
     //
     static_cast<void>(module);
     static_cast<void>(loc);
-    QS_ASSERTION(module, loc, static_cast<uint32_t>(10000U));
+    static constexpr auto sDelay{10000U};
+    QS_ASSERTION(module, loc, sDelay);
     NVIC_SystemReset();
 
     // noreturn: loop forever.
-    while(1);
+    while (true) {}
 }
 
 
 #ifdef QF_ACTIVE_STOP
-void QP::QActive::stop(void) {
+void QP::QActive::stop() {
     // Unsubscribe from all events.
     // Remove this object from QF.
     QP::QActive::unsubscribeAll();
@@ -965,14 +885,14 @@ bool QP::QS::onStartup(void const * const aArgs) {
 
 
 //............................................................................
-void QP::QS::onCleanup(void) {
+void QP::QS::onCleanup() {
     // Used for QUTest only.
 }
 
 
 //............................................................................
 // NOTE: invoked with interrupts DISABLED.
-QP::QSTimeCtr QP::QS::onGetTime(void) {
+QP::QSTimeCtr QP::QS::onGetTime() {
 
     // Not set?
     // TODO: Check if can be done via API call.
@@ -988,7 +908,7 @@ QP::QSTimeCtr QP::QS::onGetTime(void) {
 
 
 //............................................................................
-void QP::QS::onFlush(void) {
+void QP::QS::onFlush() {
 #ifdef USE_UART0
 
     // Tx FIFO depth.
@@ -1041,7 +961,7 @@ void QP::QS::onFlush(void) {
 
 //............................................................................
 //! callback function to reset the target (to be implemented in the BSP)
-void QP::QS::onReset(void) {
+void QP::QS::onReset() {
     //NVIC_SystemReset();
 }
 
@@ -1058,7 +978,7 @@ void QP::QS::onCommand(uint8_t aCmdId, uint32_t aParam1, uint32_t aParam2, uint3
 }
 
 
-static void TxData(void) {
+static void TxData() {
 #ifdef USE_UART0
     // TX done?
     if (MAP_UARTSpaceAvail(UART0_BASE)) {
@@ -1131,20 +1051,37 @@ void sntp_set_system_time(time_t const aTime) {
     QP::QF::PUBLISH(lEvent, &sSNTPSetSystemTime);
 }
 
-static void DebounceSwitches(void) {
+
+static void DebounceSwitches() {
+
+    // [MG] LOOKS LIKE THIS IS USED ONLY TO SETUP THE GPIO PIN STATE.
+    static constexpr struct Button_s sManualFeedButton{
+        GPIOJ_AHB_BASE,
+        GPIO_PIN_0,
+        INT_GPIOJ,
+        0
+    };
+    static constexpr struct Button_s sTimedFeedButton{
+        GPIOJ_AHB_BASE,
+        GPIO_PIN_1,
+        INT_GPIOJ,
+        0
+    };
 
     static constexpr std::size_t sStateDepth{5};
     static std::array<int32_t, sStateDepth> sPinsState{0};
     static int32_t sPreviousDebounce{0};
     static std::size_t lStateIx{0};
-    sPinsState[lStateIx] = ~MAP_GPIOPinRead(GPIOJ_AHB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    sPinsState.at(lStateIx) = ~MAP_GPIOPinRead(
+        GPIOJ_AHB_BASE,
+        sManualFeedButton.mPin | sTimedFeedButton.mPin);
     lStateIx++;
     if (lStateIx >= sStateDepth) {
         lStateIx = 0;
     }
 
     // Bitwise-AND all last current pin states.
-    int32_t lCurrentDebounce{GPIO_PIN_0 | GPIO_PIN_1};
+    int32_t lCurrentDebounce{sManualFeedButton.mPin | sTimedFeedButton.mPin};
     for (auto const lPinState : sPinsState) {
         lCurrentDebounce &= lPinState;
     }
@@ -1154,18 +1091,20 @@ static void DebounceSwitches(void) {
 #endif // Q_SPY
     // What changed now? Look for pressed states.
     if ((!sPreviousDebounce) & lCurrentDebounce) {
-        if (lCurrentDebounce & GPIO_PIN_0) {
-            BSP::SetUserLED(BSP::sUserLED2PortPin);
-            static PFPP::Event::Mgr::ManualFeedCmd const sOnEvent(
+        if (lCurrentDebounce & sManualFeedButton.mPin) {
+            BSP::SetUserLED(BSP::sUserLED2PortPin, true);
+            static PFPP::Event::Mgr::ManualFeedCmd constexpr sOnEvent(
                 FEED_MGR_MANUAL_FEED_CMD_SIG,
-                true
+                true,
+                QP::QEvt::StaticEvt::STATIC_EVT
             );
             QP::QF::PUBLISH(&sOnEvent, &sSysTick_Handler);
         }
-        if (lCurrentDebounce & GPIO_PIN_1) {
-            static PFPP::Event::Mgr::TimedFeedCmd const sOnEvent(
+        if (lCurrentDebounce & sTimedFeedButton.mPin) {
+            static PFPP::Event::Mgr::TimedFeedCmd constexpr sOnEvent(
                 FEED_MGR_TIMED_FEED_CMD_SIG,
-                true
+                true,
+                QP::QEvt::StaticEvt::STATIC_EVT
             );
             QP::QF::PUBLISH(&sOnEvent, &sSysTick_Handler);
         }
@@ -1173,11 +1112,12 @@ static void DebounceSwitches(void) {
 
     // Look for released states.
     if (sPreviousDebounce & !lCurrentDebounce) {
-        if (!lCurrentDebounce & GPIO_PIN_0) {
-            BSP::ClrUserLED(BSP::sUserLED2PortPin);
-            static PFPP::Event::Mgr::ManualFeedCmd const sOffEvent(
+        if ((!lCurrentDebounce) & sManualFeedButton.mPin) {
+            BSP::SetUserLED(BSP::sUserLED2PortPin, false);
+            static PFPP::Event::Mgr::ManualFeedCmd constexpr sOffEvent(
                 FEED_MGR_MANUAL_FEED_CMD_SIG,
-                false
+                false,
+                QP::QEvt::StaticEvt::STATIC_EVT
             );
             QP::QF::PUBLISH(&sOffEvent, &sSysTick_Handler);
         }
@@ -1187,8 +1127,8 @@ static void DebounceSwitches(void) {
 }
 
 
-void SysTick_Handler(void);
-void SysTick_Handler(void) {
+void SysTick_Handler();
+void SysTick_Handler() {
 
 #ifdef Q_SPY
     {
@@ -1204,28 +1144,28 @@ void SysTick_Handler(void) {
     QP::QF::TICK_X(0U, &BSP::Factory::sSysTick_Handler);
 
     // Uncomment those lines if need to publish every single tick.
+#if 0
     // Process time events for rate 0.
     // Publish to subscribers.
-    //static constexpr QP::QEvt sTickEvent{
-    //    TIME_TICK_SIG,
-    //    QP::QEvt::StaticEvt::STATIC_EVT
-    //};
-    //QP::QF::PUBLISH(&sTickEvent, &sSysTick_Handler);
-
+    static constexpr QP::QEvt sTickEvent{
+        TIME_TICK_SIG,
+        QP::QEvt::StaticEvt::STATIC_EVT
+    };
+    QP::QF::PUBLISH(&sTickEvent, &sSysTick_Handler);
+#endif
     DebounceSwitches();
 }
 
 
 // GPIO port P interrupt handler.
-void GPIOPortP3_IRQHandler(void);
-void GPIOPortP3_IRQHandler(void) {
+void GPIOPortP3_IRQHandler();
+void GPIOPortP3_IRQHandler() {
 
     // Get the state of the GPIO and issue the corresponding event.
     static constexpr bool sIsMasked{true};
     constexpr struct PortPin lRTCCInterruptPin = BSP::Factory::GetRTCCInterruptPin();
-    unsigned long lIntStatus = MAP_GPIOIntStatus(lRTCCInterruptPin.mPort, sIsMasked);
-    //constexpr unsigned long lPort = lRTCCInterruptPin.mPort;
-    constexpr unsigned int lPin = lRTCCInterruptPin.mPin;
+    auto const lIntStatus = MAP_GPIOIntStatus(lRTCCInterruptPin.mPort, sIsMasked);
+    constexpr auto lPin = lRTCCInterruptPin.mPin;
     if (lPin & lIntStatus) {
         MAP_GPIOIntClear(lRTCCInterruptPin.mPort, lPin);
 
@@ -1246,8 +1186,8 @@ void GPIOPortP3_IRQHandler(void) {
 
 // GPIO port B interrupt handler.
 #if 0
-void GPIOPortB_IRQHandler(void);
-void GPIOPortB_IRQHandler(void) {
+void GPIOPortB_IRQHandler();
+void GPIOPortB_IRQHandler() {
     // Get the state of the GPIO and issue the corresponding event.
     static const bool lIsMasked{true};
     unsigned long lIntStatus = MAP_GPIOIntStatus(GPIOB_AHB_BASE, lIsMasked);
@@ -1265,28 +1205,28 @@ void GPIOPortB_IRQHandler(void) {
 
 #if 0
 // GPIO port J interrupt handler.
-void GPIOPortJ_IRQHandler(void);
-void GPIOPortJ_IRQHandler(void) {
+void GPIOPortJ_IRQHandler();
+void GPIOPortJ_IRQHandler() {
 }
 
 
 // GPIO port D interrupt handler.
-void GPIOPortD_IRQHandler(void);
-void GPIOPortD_IRQHandler(void) {
+void GPIOPortD_IRQHandler();
+void GPIOPortD_IRQHandler() {
 
 }
 #endif
 
 
 #if defined(Q_SPY) && defined (USE_UART0)
-void UART0_IRQHandler(void);
+void UART0_IRQHandler();
 // ISR for receiving bytes from the QSPY Back-End
 // NOTE: This ISR is "QF-unaware" meaning that it does not interact with
 // the QF/QK and is not disabled.
 // Such ISRs don't need to call QK_ISR_ENTRY/QK_ISR_EXIT
 // and they cannot post or publish events.
 //
-void UART0_IRQHandler(void) {
+void UART0_IRQHandler() {
     // Get the raw interrupt status.
     // Clear the asserted interrupts.
     unsigned long lStatus = MAP_UARTIntStatus(UART0_BASE, true);
@@ -1295,7 +1235,7 @@ void UART0_IRQHandler(void) {
     // While RX FIFO NOT empty.
     while (MAP_UARTCharsAvail(UART0_BASE)) {
         unsigned long lLongByte = MAP_UARTCharGet(UART0_BASE);
-        uint8_t lByte = static_cast<uint8_t>(lLongByte);
+        uint8_t lByte{static_cast<uint8_t>(lLongByte)};
         QP::QS::rxPut(lByte);
     }
 }
@@ -1305,8 +1245,8 @@ void UART0_IRQHandler(void) {
 
 
 // TODO: make this conditional to Ethernet support.
-void EMAC0_IRQHandler(void);
-void EMAC0_IRQHandler(void) {
+void EMAC0_IRQHandler();
+void EMAC0_IRQHandler() {
     LwIPDrv::StaticISR(0);
 }
 

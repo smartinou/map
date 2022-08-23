@@ -71,7 +71,7 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO(nullptr);
+std::shared_ptr<RTCC::AO::RTCC_AO> App::sRTCC_AO{nullptr};
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
@@ -178,7 +178,7 @@ bool App::Init(std::unique_ptr<IBSPFactory> aFactory) {
 // *****************************************************************************
 
 void App::NetInitCallback(void * const aParam) {
-    [[maybe_unused]] auto const lApp{reinterpret_cast<App * const>(aParam)};
+    [[maybe_unused]] App const * const lApp{reinterpret_cast<App const *>(aParam)};
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(
         sRTCC_AO,

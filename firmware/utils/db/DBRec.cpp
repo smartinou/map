@@ -52,7 +52,7 @@ std::vector<DBRec::Ptr> DBRec::mRecList;
 // *****************************************************************************
 
 // DB static methods.
-auto DBRec::IsDBSane() -> bool {
+auto DBRec::IsDBSane() noexcept -> bool {
     return std::all_of(
         mRecList.cbegin(),
         mRecList.cend(),
@@ -61,7 +61,7 @@ auto DBRec::IsDBSane() -> bool {
 }
 
 
-auto DBRec::IsDBDirty() -> bool {
+auto DBRec::IsDBDirty() noexcept -> bool {
     return std::any_of(
         mRecList.cbegin(),
         mRecList.cend(),
@@ -70,14 +70,14 @@ auto DBRec::IsDBDirty() -> bool {
 }
 
 
-void DBRec::ResetDBDflt() {
+void DBRec::ResetDBDflt() noexcept {
     for (const auto& lRec : mRecList) {
         lRec->ResetDflt();
     }
 }
 
 
-auto DBRec::GetDBSize() -> size_t {
+auto DBRec::GetDBSize() noexcept -> size_t {
 
     size_t lDBSize = 0;
     for (const auto& lRec : mRecList) {
@@ -106,7 +106,7 @@ void DBRec::DeserializeDB(uint8_t const * aData) {
 }
 
 
-void DBRec::StaticUpdateCRC() {
+void DBRec::StaticUpdateCRC() noexcept {
     for (const auto& lRec : mRecList) {
         lRec->UpdateCRC();
     }
@@ -121,7 +121,7 @@ void DBRec::AddRec(DBRec::Ptr aDBRec) {
 }
 
 
-auto DBRec::ComputeCRC(std::span<uint8_t const> const &aSpan) -> uint8_t {
+auto DBRec::ComputeCRC(std::span<uint8_t const> const &aSpan) noexcept -> uint8_t {
 
     uint8_t lCRC = 0;
     for (auto const lByte : aSpan) {
@@ -134,13 +134,13 @@ auto DBRec::ComputeCRC(std::span<uint8_t const> const &aSpan) -> uint8_t {
 auto DBRec::IsMagicGood(
     struct BaseRec const &aBaseRec,
     Magic const &aMagic
-) -> bool
+) noexcept -> bool
 {
     return (aMagic == aBaseRec.mMagic);
 }
 
 
-auto DBRec::IsCRCGood(std::span<uint8_t const> const &aSpan) -> bool {
+auto DBRec::IsCRCGood(std::span<uint8_t const> const &aSpan) noexcept -> bool {
     // Span contains full record, including computed CRC.
     // Result should be 0x00.
     auto const lComputedCRC = ComputeCRC(aSpan);

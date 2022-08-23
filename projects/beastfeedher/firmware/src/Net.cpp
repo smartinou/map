@@ -27,7 +27,7 @@
 #include "qpcpp.h"
 
 // Standard Library.
-#include <string.h>
+#include <cstring>
 
 // Common Library.
 #include <db/CalendarRec.h>
@@ -162,42 +162,49 @@ enum {
 namespace Net {
 
 #if LWIP_HTTPD_SSI
-static uint16_t SSIHandler(int aTagIx, char *aInsertStr, int aInsertStrLen);
+static uint16_t SSIHandler(
+    int const aTagIx,
+    char * const aInsertStr,
+    int const aInsertStrLen
+);
 
 static int SSIRadioButtonHandler(
-    int                aTagIx,
-    char       * const aInsertStr,
-    int                aInsertStrLen,
+    int const aTagIx,
+    char * const aInsertStr,
+    int const aInsertStrLen,
     char const * const aNameValStr,
-    bool               aIsChecked
+    bool const IsChecked
 );
 
 static int SSICalendarHandler(
-    int          aTagIx,
+    int const aTagIx,
     char * const aInsertStr,
-    int          aInsertStrLen,
-    unsigned int aHour
+    int const aInsertStrLen,
+    unsigned int const aHour
 );
 
-static int FullIPAddressHandler(char * const aInsertStr, IPAddress const &aAddress);
+static int FullIPAddressHandler(
+    char * const aInsertStr,
+    IPAddress const &aAddress
+);
 
 static int SSINetworkHandler(
-    int                aTagIx,
-    char       * const aInsertStr,
-    int                aInsertStrLen,
+    int const aTagIx,
+    char * const aInsertStr,
+    int const aInsertStrLen,
     char const * const aTagNameStr,
-    uint8_t aValue
+    uint8_t const aValue
 );
 
 static int SSIStatsHandler(
-    int          aTagIx,
+    int const aTagIx,
     char * const aInsertStr,
-    int          aInsertStrLen
+    int const aInsertStrLen
 );
 
 static char const *FindTagVal(
     char const * const aTagNameStr,
-    int                aParamsQty,
+    int const aParamsQty,
     char const * const aParamsVec[],
     char const * const aValsVec[]
 );
@@ -205,22 +212,22 @@ static char const *FindTagVal(
 
 #if LWIP_HTTPD_CGI
 static char const *DispIndex(
-    int   aIx,
-    int   aParamsQty,
+    int const aIx,
+    int const aParamsQty,
     char *aParamsVec[],
     char *aValsVec[]
 );
 
 static char const *DispCfg(
-    int   aIx,
-    int   aParamsQty,
+    int const aIx,
+    int const aParamsQty,
     char *aParamsVec[],
     char *aValsVec[]
 );
 
 static char const *DispNet(
-    int   aIx,
-    int   aParamsQty,
+    int const aIx,
+    int const aParamsQty,
     char *aParamsVec[],
     char *aValsVec[]
 );
@@ -236,12 +243,12 @@ namespace Net {
 
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
 // QP AOs.
-static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO(nullptr);
+static std::shared_ptr<RTCC::AO::RTCC_AO> sRTCC_AO{nullptr};
 #endif
 
 #if LWIP_HTTPD_SSI
 // Server-Side Include (SSI) demo.
-static char const * sSSITags[] = {
+static constexpr std::array<const char *, 59> sSSITags{
     // Common/misc. tags.
     "_zero",     // SSI_TAG_IX_ZERO
     "_empty",    // SSI_TAG_IX_EMPTY
@@ -317,17 +324,27 @@ static char const * sSSITags[] = {
 
 
 #if LWIP_HTTPD_CGI
-static tCGI const sCGIEntries[] = {
-    {"/index.cgi",  DispIndex},
-    {"/config.cgi", DispCfg},
-    {"/network.cgi", DispNet}
+static constexpr std::array<tCGI, 3> sCGIEntries{
+    {
+        {"/index.cgi",  DispIndex},
+        {"/config.cgi", DispCfg},
+        {"/network.cgi", DispNet}
+    }
 };
 
-static std::shared_ptr<CalendarRec> sCalendarRec = nullptr;
-static std::shared_ptr<NetIFRec> sNetIFRec = nullptr;
-static std::shared_ptr<FeedCfgRec> sFeedCfgRec = nullptr;
+// Owning DB records.
+static std::shared_ptr<CalendarRec> sCalendarRec{nullptr};
+static std::shared_ptr<NetIFRec> sNetIFRec{nullptr};
+static std::shared_ptr<FeedCfgRec> sFeedCfgRec{nullptr};
 
 #endif // LWIP_HTTPD_CGI
+
+static constexpr bool sIsDataImpure{true};
+static constexpr RTCC::Event::SaveToRAM sSaveEvt{
+    RTCC_SAVE_TO_NV_MEMORY_SIG,
+    sIsDataImpure,
+    QP::QEvt::StaticEvt::STATIC_EVT
+};
 
 } // namespace Net
 
@@ -349,15 +366,15 @@ void InitCallback(
 #if LWIP_HTTPD_SSI
     http_set_ssi_handler(
         SSIHandler,
-        Net::sSSITags,
-        sizeof(Net::sSSITags)
+        const_cast<char const **>(Net::sSSITags.data()),
+        Net::sSSITags.size()
     );
 #endif // LWIP_HTTPD_SSI
 
 #if LWIP_HTTPD_CGI
     http_set_cgi_handlers(
-        Net::sCGIEntries,
-        Q_DIM(Net::sCGIEntries)
+        Net::sCGIEntries.data(),
+        Net::sCGIEntries.size()
     );
 #endif // LWIP_HTTPD_CGI
 
@@ -386,12 +403,12 @@ namespace Net {
 // HTTPD customizations.
 // Server-Side Include (SSI) handler.
 static uint16_t SSIHandler(
-    int   aTagIx,
-    char *aInsertStr,
-    int   aInsertStrLen
+    int const aTagIx,
+    char * const aInsertStr,
+    int const aInsertStrLen
 ) {
 
-    static constexpr size_t sDefaultNetIF = 0;
+    static constexpr size_t sDefaultNetIF{0};
 
     switch (aTagIx) {
     case SSI_TAG_IX_ZERO:
@@ -450,7 +467,7 @@ static uint16_t SSIHandler(
     } break;
     case SSI_TAG_IX_INFO_RTCC_TEMP: {
         // [MG] REPLACE WITH CALL TO ITemperature INTERFACE.
-        float lTemperature = sRTCC_AO->GetTemperature();
+        float const lTemperature = sRTCC_AO->GetTemperature();
         return snprintf(
             aInsertStr,
             LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -605,77 +622,77 @@ static uint16_t SSIHandler(
     } break;
 
     case SSI_TAG_IX_NET_STATIC_IPV4_ADD_0: {
-        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
-        IPAddress lTempIPAddress(lIPAddress);
-        uint8_t lByte = lTempIPAddress.GetByte(0);
+        uint32_t const lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress const lTempIPAddress(lIPAddress);
+        uint8_t const lByte = lTempIPAddress.GetByte(0);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_0", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_IPV4_ADD_1: {
-        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
-        IPAddress lTempIPAddress(lIPAddress);
+        uint32_t const lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress const lTempIPAddress(lIPAddress);
         uint8_t lByte = lTempIPAddress.GetByte(1);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_1", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_IPV4_ADD_2: {
-        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
-        IPAddress lTempIPAddress(lIPAddress);
-        uint8_t lByte = lTempIPAddress.GetByte(2);
+        uint32_t const lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress const lTempIPAddress(lIPAddress);
+        uint8_t const lByte = lTempIPAddress.GetByte(2);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_2", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_IPV4_ADD_3: {
-        uint32_t lIPAddress = sNetIFRec->GetIPAddr();
-        IPAddress lTempIPAddress(lIPAddress);
-        uint8_t lByte = lTempIPAddress.GetByte(3);
+        uint32_t const lIPAddress = sNetIFRec->GetIPAddr();
+        IPAddress const lTempIPAddress(lIPAddress);
+        uint8_t const lByte = lTempIPAddress.GetByte(3);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipaddr_3", lByte);
     } break;
 
     case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_0: {
         uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
         IPAddress lTempSubnetMask(lSubnetMask);
-        uint8_t lByte = lTempSubnetMask.GetByte(0);
+        uint8_t const lByte = lTempSubnetMask.GetByte(0);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_0", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_1: {
-        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
-        IPAddress lTempSubnetMask(lSubnetMask);
-        uint8_t lByte = lTempSubnetMask.GetByte(1);
+        uint32_t const lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress const lTempSubnetMask(lSubnetMask);
+        uint8_t const lByte = lTempSubnetMask.GetByte(1);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_1", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_2: {
-        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
-        IPAddress lTempSubnetMask(lSubnetMask);
-        uint8_t lByte = lTempSubnetMask.GetByte(2);
+        uint32_t const lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress const lTempSubnetMask(lSubnetMask);
+        uint8_t const lByte = lTempSubnetMask.GetByte(2);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_2", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_SUBNET_MASK_3: {
-        uint32_t lSubnetMask = sNetIFRec->GetSubnetMask();
-        IPAddress lTempSubnetMask(lSubnetMask);
-        uint8_t lByte = lTempSubnetMask.GetByte(3);
+        uint32_t const lSubnetMask = sNetIFRec->GetSubnetMask();
+        IPAddress const lTempSubnetMask(lSubnetMask);
+        uint8_t const lByte = lTempSubnetMask.GetByte(3);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipmask_3", lByte);
     } break;
 
     case SSI_TAG_IX_NET_STATIC_GW_ADD_0: {
-        uint32_t lGateway = sNetIFRec->GetGWAddr();
-        IPAddress lTempGateway(lGateway);
-        uint8_t lByte = lTempGateway.GetByte(0);
+        uint32_t const lGateway = sNetIFRec->GetGWAddr();
+        IPAddress const lTempGateway(lGateway);
+        uint8_t const lByte = lTempGateway.GetByte(0);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_0", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_GW_ADD_1: {
-        uint32_t lGateway = sNetIFRec->GetGWAddr();
-        IPAddress lTempGateway(lGateway);
-        uint8_t lByte = lTempGateway.GetByte(1);
+        uint32_t const lGateway = sNetIFRec->GetGWAddr();
+        IPAddress const lTempGateway(lGateway);
+        uint8_t const lByte = lTempGateway.GetByte(1);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_1", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_GW_ADD_2: {
-        uint32_t lGateway = sNetIFRec->GetGWAddr();
-        IPAddress lTempGateway(lGateway);
-        uint8_t lByte = lTempGateway.GetByte(2);
+        uint32_t const lGateway = sNetIFRec->GetGWAddr();
+        IPAddress const lTempGateway(lGateway);
+        uint8_t const lByte = lTempGateway.GetByte(2);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_2", lByte);
     } break;
     case SSI_TAG_IX_NET_STATIC_GW_ADD_3: {
-        uint32_t lGateway = sNetIFRec->GetGWAddr();
-        IPAddress lTempGateway(lGateway);
-        uint8_t lByte = lTempGateway.GetByte(3);
+        uint32_t const lGateway = sNetIFRec->GetGWAddr();
+        IPAddress const lTempGateway(lGateway);
+        uint8_t const lByte = lTempGateway.GetByte(3);
         return SSINetworkHandler(aTagIx, aInsertStr, aInsertStrLen, "ipgw_3", lByte);
     } break;
 
@@ -691,7 +708,7 @@ static uint16_t SSIHandler(
     case SSI_TAG_IX_STATS_OPT_ERR:
     case SSI_TAG_IX_STATS_ERR: {
         // Sub-handler for network stats.
-        STAT_COUNTER lVal = SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
+        STAT_COUNTER const lVal = SSIStatsHandler(aTagIx, aInsertStr, aInsertStrLen);
         return snprintf(aInsertStr, LWIP_HTTPD_MAX_TAG_NAME_LEN, "%u", lVal);
     } break;
 
@@ -702,14 +719,13 @@ static uint16_t SSIHandler(
 
 
 static int SSIRadioButtonHandler(
-    int                aTagIx,
-    char       * const aInsertStr,
-    int                aInsertStrLen,
+    [[maybe_unused]] int const aTagIx,
+    char * const aInsertStr,
+    [[maybe_unused]] int const aInsertStrLen,
     char const * const aNameValStr,
-    bool               aIsChecked
+    bool const aIsChecked
 ) {
-
-    static constexpr auto sInputRadioStr = "<input type=\"radio\" name=\"";
+    static constexpr auto sInputRadioStr{"<input type=\"radio\" name=\""};
     if (aIsChecked) {
         return snprintf(
             aInsertStr,
@@ -731,16 +747,17 @@ static int SSIRadioButtonHandler(
 
 
 static int SSICalendarHandler(
-    int          aTagIx,
+    [[maybe_unused]] int const aTagIx,
     char * const aInsertStr,
-    int          aInsertStrLen,
-    unsigned int aHour
+    [[maybe_unused]] int const aInsertStrLen,
+    unsigned int const aHour
 ) {
 
-    static constexpr auto sFeedingCalStr =
-        "<input type=\"checkbox\" name=\"feed_time\" value=\"";
+    static constexpr auto sFeedingCalStr{
+        "<input type=\"checkbox\" name=\"feed_time\" value=\""
+    };
 
-    const Time lTime(aHour, 0, 0, true, false);
+    const Time lTime{aHour, 0, 0, true, false};
     if (Net::sCalendarRec->IsEntrySet(lTime)) {
         return snprintf(
             aInsertStr,
@@ -776,16 +793,17 @@ static int FullIPAddressHandler(char * const aInsertStr, IPAddress const &aAddre
 
 
 static int SSINetworkHandler(
-    int                aTagIx,
-    char       * const aInsertStr,
-    int                aInsertStrLen,
+    [[maybe_unused]] int const aTagIx,
+    char * const aInsertStr,
+    [[maybe_unused]] int const aInsertStrLen,
     char const * const aTagNameStr,
-    uint8_t            aValue
+    uint8_t const aValue
 ) {
 
-    static constexpr auto sInputTagStr = "<input name=\"";
-    static constexpr auto sInputValueStr =
-        "\" type=\"text\" size=\"2\" maxlength=\"3\" value=\"";
+    static constexpr auto sInputTagStr{"<input name=\""};
+    static constexpr auto sInputValueStr{
+        "\" type=\"text\" size=\"2\" maxlength=\"3\" value=\""
+    };
     return snprintf(
         aInsertStr,
         LWIP_HTTPD_MAX_TAG_INSERT_LEN,
@@ -799,12 +817,12 @@ static int SSINetworkHandler(
 
 
 static int SSIStatsHandler(
-    int          aTagIx,
-    char * const aInsertStr,
-    int          aInsertStrLen
+    int const aTagIx,
+    [[maybe_unused]] char * const aInsertStr,
+    [[maybe_unused]] int const aInsertStrLen
 ) {
 
-    struct stats_proto *lStatsPtr = &lwip_stats.link;
+    struct stats_proto const * const lStatsPtr{&lwip_stats.link};
 
     switch (aTagIx) {
     case SSI_TAG_IX_STATS_TX:      return lStatsPtr->xmit;
@@ -818,7 +836,7 @@ static int SSIStatsHandler(
     case SSI_TAG_IX_STATS_PRO_ERR: return lStatsPtr->proterr;
     case SSI_TAG_IX_STATS_OPT_ERR: return lStatsPtr->opterr;
     case SSI_TAG_IX_STATS_ERR:     return lStatsPtr->err;
-    default:                       return 0;
+    default: break;
     }
 
     return 0;
@@ -831,18 +849,18 @@ static int SSIStatsHandler(
 // HTTPD customizations.
 // CGI handlers.
 static char const *DispIndex(
-    int   aCGIIx,
-    int   aParamsQty,
-    char *aParamsVec[],
-    char *aValsVec[]
+    [[maybe_unused]] int const aCGIIx,
+    [[maybe_unused]] int const aParamsQty,
+    char * aParamsVec[],
+    char * aValsVec[]
 ) {
 
     if (0 == strcmp(aParamsVec[0], "timed_feed")) {
         // Param found.
         // Send event with value as parameter.
-        unsigned int lTime = 0;
+        unsigned int lTime{0};
         sscanf(aValsVec[0], "%u", &lTime);
-        PFPP::Event::Mgr::TimedFeedCmd *lEvtPtr = Q_NEW(
+        PFPP::Event::Mgr::TimedFeedCmd * const lFeedEvt = Q_NEW(
             PFPP::Event::Mgr::TimedFeedCmd,
             FEED_MGR_TIMED_FEED_CMD_SIG,
             lTime
@@ -850,11 +868,11 @@ static char const *DispIndex(
 
         // Could use QF_Publish() to decouple from active object.
         // Here, there's only this well-known recipient.
-        //BFHMgr_AO::AOInstance().POST(lEvtPtr, 0);
+        //BFHMgr_AO::AOInstance().POST(lFeedEvt, 0);
 #ifdef Q_SPY
-        static QP::QSpyId const sNetDispIndex = {0U};
+        static QP::QSpyId const sNetDispIndex{0U};
 #endif // Q_SPY
-        QP::QF::PUBLISH(lEvtPtr, &sNetDispIndex);
+        QP::QF::PUBLISH(lFeedEvt, &sNetDispIndex);
 
         // Return where we're coming from.
         return "/index.shtml";
@@ -865,29 +883,29 @@ static char const *DispIndex(
 
 
 static char const *DispCfg(
-    int   aCGIIx,
-    int   aParamsQty,
+    [[maybe_unused]] int const aCGIIx,
+    int const aParamsQty,
     char *aParamsVec[],
     char *aValsVec[]
 ) {
 
     // Try to find the Time and Date apply button.
-    char const *lSubmitVal = FindTagVal(
+    char const * const lSubmitTimeVal = FindTagVal(
         "set_time",
         aParamsQty,
         aParamsVec,
         aValsVec
     );
-    if (0 == strcmp(lSubmitVal, "Apply")) {
+    if (0 == strcmp(lSubmitTimeVal, "Apply")) {
         // There's only time & date widgets here.
-        char const *lDateVal = FindTagVal(
+        char const * const lDateVal = FindTagVal(
             "date",
             aParamsQty,
             aParamsVec,
             aValsVec
         );
 
-        char const *lTimeVal = FindTagVal(
+        char const * const lTimeVal = FindTagVal(
             "time",
             aParamsQty,
             aParamsVec,
@@ -895,27 +913,27 @@ static char const *DispCfg(
         );
 
         if ((lDateVal != nullptr) && (lTimeVal != nullptr)) {
-            unsigned int lYear  = 0;
-            unsigned int lMonth = 0;
-            unsigned int lDayDate  = 0;
+            unsigned int lYear{0};
+            unsigned int lMonth{0};
+            unsigned int lDayDate{0};
             sscanf(lDateVal, "%u-%u-%u", &lYear, &lMonth, &lDayDate);
-            const Date lDate(lYear, Month::UIToName(lMonth), lDayDate);
+            const Date lDate{lYear, Month::UIToName(lMonth), lDayDate};
 
-            unsigned int lHours   = 0;
-            unsigned int lMinutes = 0;
-            static constexpr unsigned int sSeconds = 0;
+            unsigned int lHours{0};
+            unsigned int lMinutes{0};
+            static constexpr unsigned int sSeconds{0};
             sscanf(lTimeVal, "%u%%3A%u", &lHours, &lMinutes);
-            const Time lTime(lHours, lMinutes, sSeconds);
+            const Time lTime{lHours, lMinutes, sSeconds};
 
             // Send event to write new time.
             // Send event to write new date.
-            RTCC::Event::TimeAndDate *lEvtPtr = Q_NEW(
+            RTCC::Event::TimeAndDate * const lTimeAndDateEvt = Q_NEW(
                 RTCC::Event::TimeAndDate,
                 RTCC_SET_TIME_AND_DATE_SIG,
                 lTime,
                 lDate
             );
-            sRTCC_AO->POST(lEvtPtr, 0);
+            sRTCC_AO->POST(lTimeAndDateEvt, 0);
         }
 
         // Return where we're coming from.
@@ -923,13 +941,13 @@ static char const *DispCfg(
     }
 
     // Try to find the Config and Calendar apply button.
-    lSubmitVal = FindTagVal(
+    char const * const lSubmitCfgVal = FindTagVal(
         "set_cfg",
         aParamsQty,
         aParamsVec,
         aValsVec
     );
-    if (0 == strcmp(lSubmitVal, "Apply")) {
+    if (0 == strcmp(lSubmitCfgVal, "Apply")) {
         // Make sure the calendar is cleared before setting new entries.
         // Must be done only once!
         Net::sCalendarRec->ClrAllEntries();
@@ -941,13 +959,13 @@ static char const *DispCfg(
                     Net::sFeedCfgRec->SetTimedFeedEnabled(false);
                 }
             } else if (0 == strcmp(aParamsVec[lIx], "feeding_time_sec")) {
-                unsigned int lFeedingTime = 0;
+                unsigned int lFeedingTime{0};
                 sscanf(aValsVec[lIx], "%u", &lFeedingTime);
                 Net::sFeedCfgRec->SetTimedFeedPeriod(static_cast<uint8_t>(lFeedingTime));
             } else if (0 == strcmp(aParamsVec[lIx], "feed_time")) {
-                unsigned int lHour = 0;
+                unsigned int lHour{0};
                 sscanf(aValsVec[lIx], "%u", &lHour);
-                const Time lTime(lHour, 0, 0);
+                const Time lTime{lHour, 0, 0};
                 Net::sCalendarRec->SetTimeEntry(lTime);
             }
         }
@@ -955,13 +973,7 @@ static char const *DispCfg(
         // Send event to trigger updated DB writing.
         // [MG] DECOUPLE ALL THIS FROM RTCC:
         // [MG] SHOULD CALL GENERIC INVMem Event AND PUBLISH().
-        static constexpr bool sIsDataImpure = true;
-        RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
-            RTCC::Event::SaveToRAM,
-            RTCC_SAVE_TO_NV_MEMORY_SIG,
-            sIsDataImpure
-        );
-        sRTCC_AO->POST(lSaveEvtPtr, 0);
+        sRTCC_AO->POST(&sSaveEvt, 0);
     }
 
     // Return where we're coming from.
@@ -970,8 +982,8 @@ static char const *DispCfg(
 
 
 static char const *DispNet(
-    int   aCGIIx,
-    int   aParamsQty,
+    [[maybe_unused]] int const aCGIIx,
+    int const aParamsQty,
     char *aParamsVec[],
     char *aValsVec[]
 ) {
@@ -995,8 +1007,8 @@ static char const *DispNet(
         IPAddress lNewGWAddress(lGWAddress);
 
         for (int lIx = 0; lIx < aParamsQty; ++lIx) {
-            size_t lByteIx = 0;
-            uint8_t lByteValue = 0;
+            size_t lByteIx{0};
+            uint8_t lByteValue{0};
             if (0 == strcmp(aParamsVec[lIx], "use_dhcp")) {
                 if ('y' == *aValsVec[lIx]) {
                     sNetIFRec->SetUseDHCP(true);
@@ -1021,13 +1033,7 @@ static char const *DispNet(
         // Send event to trigger updated DB writing.
         // [MG] DECOUPLE ALL THIS FROM RTCC:
         // [MG] SHOULD CALL GENERIC INVMem Event AND PUBLISH().
-        static constexpr bool sIsDataImpure = true;
-        RTCC::Event::SaveToRAM * const lSaveEvtPtr = Q_NEW(
-            RTCC::Event::SaveToRAM,
-            RTCC_SAVE_TO_NV_MEMORY_SIG,
-            sIsDataImpure
-        );
-        sRTCC_AO->POST(lSaveEvtPtr, 0);
+        sRTCC_AO->POST(&sSaveEvt, 0);
     }
 
     // Return where we're coming from.
@@ -1037,12 +1043,12 @@ static char const *DispNet(
 
 static char const *FindTagVal(
     char const * const aTagNameStr,
-    int                aParamsQty,
+    int const aParamsQty,
     char const * const aParamsVec[],
     char const * const aValsVec[]
 ) {
 
-    for (int lIx = 0; lIx < aParamsQty; lIx++) {
+    for (int lIx = 0; lIx < aParamsQty; ++lIx) {
         if (0 == strcmp(aParamsVec[lIx], aTagNameStr)) {
             return aValsVec[lIx];
         }

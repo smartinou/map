@@ -29,11 +29,10 @@
    <operation name="DisplayText" type="void" visibility="0x02" properties="0x00">
     <documentation>Displays text on screen.</documentation>
     <parameter name="e" type="QP::QEvt const * const"/>
-    <code>Display::Event::DisplayText const * const lTextEvent = static_cast&lt;Display::Event::DisplayText const * const&gt;(e);
+    <code>Display::Event::DisplayText const * const lTextEvent = static_cast&lt;Display::Event::DisplayText const *&gt;(e);
 mLCD.DrawStr(
     &amp;lTextEvent-&gt;mStr[0],
-    lTextEvent-&gt;mPosX,
-    lTextEvent-&gt;mPosY,
+    {lTextEvent-&gt;mPosX, lTextEvent-&gt;mPosY},
     lTextEvent-&gt;mGreyLevel
 );
 if (lTextEvent-&gt;mIsDisplayOn) {
@@ -64,9 +63,9 @@ if (!mIsOn) {
    </operation>
    <statechart properties="0x02">
     <initial target="../1">
-     <action brief="Init();">//DisplayMgrInitEvt const * const lInitEvtPtr = static_cast&lt;DisplayMgrInitEvt const * const&gt;(e);
-
+     <action brief="Init();">//DisplayMgrInitEvt const * const lInitEvtPtr = static_cast&lt;DisplayMgrInitEvt const *&gt;(e);
 //mOnTime = lInitEvtPtr-&gt;mDisplayTime;
+static_cast&lt;void&gt;(e);
 
 // Subscribe to signals if any.
 subscribe(DISPLAY_TEXT_SIG);

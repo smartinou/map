@@ -51,15 +51,15 @@ public:
     virtual void ResetDflt() = 0;
 
     // DB static methods.
-    static auto IsDBSane() -> bool;
-    static auto IsDBDirty() -> bool;
-    static void ResetDBDflt();
-    static auto GetDBSize() -> size_t;
-    static auto GetDBRecCount() -> size_t {return mRecList.size();}
+    static auto IsDBSane() noexcept -> bool;
+    static auto IsDBDirty() noexcept -> bool;
+    static void ResetDBDflt() noexcept;
+    static auto GetDBSize() noexcept -> size_t;
+    static auto GetDBRecCount() noexcept -> size_t {return mRecList.size();}
     static void SerializeDB(uint8_t * aData);
     static void DeserializeDB(uint8_t const * aData);
-    static void StaticUpdateCRC();
-    static void ClearAllDB() {mRecList.clear();}
+    static void StaticUpdateCRC() noexcept;
+    static void ClearAllDB() noexcept {mRecList.clear();}
 
     template <typename T, typename...Args>
     [[nodiscard]] static auto Create(Args&&... aArgs) -> std::shared_ptr<T> {
@@ -75,7 +75,7 @@ protected:
     struct UseCreateFunc {
         explicit UseCreateFunc() = default;
     };
-    explicit DBRec([[maybe_unused]] UseCreateFunc /* Dummy */) {}
+    explicit DBRec([[maybe_unused]] UseCreateFunc /* Dummy */) noexcept {}
     DBRec(DBRec const &) = delete;
 
     using Magic = std::array<char, 3>;
@@ -87,10 +87,10 @@ protected:
     using Ptr = std::shared_ptr<DBRec>;
 
     static void AddRec(Ptr aDBRec);
-    void SetIsDirty() {mIsDirty = true;}
-    [[nodiscard]] static auto IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) -> bool;
-    [[nodiscard]] static auto IsCRCGood(std::span<uint8_t const> const &aSpan) -> bool;
-    [[nodiscard]] static auto ComputeCRC(std::span<uint8_t const> const &aSpan) -> uint8_t;
+    void SetIsDirty() noexcept {mIsDirty = true;}
+    [[nodiscard]] static auto IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) noexcept -> bool;
+    [[nodiscard]] static auto IsCRCGood(std::span<uint8_t const> const &aSpan) noexcept -> bool;
+    [[nodiscard]] static auto ComputeCRC(std::span<uint8_t const> const &aSpan) noexcept -> uint8_t;
 
 private:
     [[nodiscard]] virtual auto GetRecSize() const -> size_t = 0;
