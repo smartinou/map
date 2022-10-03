@@ -190,6 +190,7 @@ CPP_SRCS := \
     DBRec.cpp \
     Display_AOs.cpp \
     DS3234.cpp \
+    DS3234Chrono.cpp \
     EthernetAddress.cpp \
     EthDrv.cpp \
     FatFSDisk.cpp \
@@ -198,22 +199,24 @@ CPP_SRCS := \
     IPAddress.cpp \
     Logging_AOs.cpp \
     Logger2.cpp \
-    LogLevel.cpp \
     LwIP_AOs.cpp \
     LwIPDrv.cpp \
     Net.cpp \
     NetIFRec.cpp \
     PFPP_AOs.cpp \
+    PortPin.cpp \
     IRTCC.cpp \
     RTCC_AOs.cpp \
     RxDescriptor.cpp \
     SDC.cpp \
     SPIMasterDev.cpp \
     SPISlaveCfg.cpp \
+    SSD1329.cpp \
     TB6612.cpp \
     Time.cpp \
     TxDescriptor.cpp
 
+#    LogLevel.cpp \
 
 QP_SRCS := \
     qep_hsm.cpp \
@@ -326,15 +329,15 @@ BIN_DIR := rel
 ASFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
-    -mthumb -Wall \
+    -mthumb -Wall -Wextra -Wpedantic -Wconversion \
     -ffunction-sections -fdata-sections \
-    -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+    -O3 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 CPPFLAGS = $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
-    -mthumb -Wall \
+    -mthumb -Wall -Wextra -Wpedantic -Wconversion \
     -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
     -std=c++20 -Wno-register \
-    -O2 $(INCLUDES) $(DEFINES) -DNDEBUG
+    -O3 $(INCLUDES) $(DEFINES) -DNDEBUG
 
 else
 # Default Debug configuration.
@@ -345,12 +348,12 @@ CPP_SRCS += $(QS_SRCS)
 ASFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(ASM_CPU) $(ASM_FPU)
 
 CFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
-    -mthumb -Wall \
+    -mthumb -Wall -Wextra -Wpedantic -Wconversion \
     -ffunction-sections -fdata-sections \
     -O $(INCLUDES) $(DEFINES) -DQ_SPY
 
 CPPFLAGS = -g $(ARM_CPU) $(ARM_ARCH) $(ARM_FPU) $(FLOAT_ABI) \
-    -mthumb -Wall -Wno-volatile -Wno-psabi \
+    -mthumb -Wall -Wextra -Wpedantic -Wno-psabi -Wno-volatile \
     -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions \
     -std=c++20 -Wno-register \
     -O $(INCLUDES) $(DEFINES) -DQ_SPY -DUSE_RTT

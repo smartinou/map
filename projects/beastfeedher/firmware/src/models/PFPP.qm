@@ -31,7 +31,7 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mLogCategory" type="char const *" visibility="0x02" properties="0x00">
      <documentation>The string representing the log categories from this AO.</documentation>
     </attribute>
-    <attribute name="mLogThreshold" type="LogLevel" visibility="0x02" properties="0x00">
+    <attribute name="mLogThreshold" type="LogLevel::prio" visibility="0x02" properties="0x00">
      <documentation>The threshold under which events are displayed.</documentation>
     </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
@@ -125,12 +125,12 @@ QP::QF::PUBLISH(lTextEvent, this);
      <code>auto const lDateStr = mDate.ToStr();
 auto const lTimeStr = mTime.ToStr();
 static constexpr unsigned int sBufferIndex = 0;
-int lLen = SEGGER_RTT_printf(
+int const lLen = SEGGER_RTT_printf(
     sBufferIndex,
     &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
     lDateStr.c_str(),
     lTimeStr.c_str(),
-    LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
+    LogLevel::ToStr(aLogEvent.mLogLevel),
     aLogEvent.mFileStr,
     aLogEvent.mFunctionStr,
     aLogEvent.mLine,
@@ -280,7 +280,13 @@ Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
 );
 QP::QF::PUBLISH(lLwIPChangedEvent, this);
 
-LOG_INFO(mLogCategory, mDate, mTime, &amp;lIPAddressStr[0]);</action>
+//LOG_DEBUG(mLogCategory, &amp;lIPAddressStr[0]);
+Logger::Log(
+    LogLevel::prio::DEBUG,
+    mLogCategory,
+    std::source_location::current(),
+    &amp;lIPAddressStr[0]
+);</action>
        <tran_glyph conn="4,110,3,-1,50">
         <action box="0,-2,50,2"/>
        </tran_glyph>
@@ -386,7 +392,13 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
         <entry brief="StartTimer(MaxFeedTime); StartFeeder();">QP::QTimeEvtCtr lManualMaxFeedPeriod = GetManualMaxFeedPeriod();
 StartTimedFeed(lManualMaxFeedPeriod);</entry>
         <exit brief="DisplayFeedTime();">DisplayFeedTime();
-LOG_INFO(mLogCategory, mDate, mTime, &quot;Manual feed.&quot;);</exit>
+//LOG_DEBUG(mLogCategory, &quot;Manual feed.&quot;);
+Logger::Log(
+    LogLevel::prio::DEBUG,
+    mLogCategory,
+    std::source_location::current(),
+    &quot;Manual feed.&quot;
+);</exit>
         <state_glyph node="42,58,30,8">
          <entry box="1,2,25,4"/>
          <exit box="1,6,25,2"/>
@@ -402,7 +414,12 @@ LOG_INFO(mLogCategory, mDate, mTime, &quot;Manual feed.&quot;);</exit>
 StartTimedFeed(lTimedFeedPeriod);</entry>
        <exit brief="StopFeeder(); StopTimer(); DisplayFeedTime();">StopTimedFeed();
 DisplayFeedTime();
-LOG_INFO(mLogCategory, mDate, mTime, &quot;Timed feed.&quot;);</exit>
+Logger::Log(
+    LogLevel::prio::DEBUG,
+    mLogCategory,
+    std::source_location::current(),
+    &quot;Timed feed.&quot;
+);</exit>
        <tran trig="RTCC_CALENDAR_EVENT_ALARM">
         <action brief="Log(); defer();">if (defer(&amp;mDeferredEventQueue, e)) {
     // Event deferred: log event.

@@ -135,46 +135,46 @@ private:
     typedef uint8_t volatile rtcc_reg_t;
 
     struct L_TIME_STRUCT_TAG {
-        rtcc_reg_t mSeconds;
-        rtcc_reg_t mMinutes;
-        rtcc_reg_t mHours;
+        rtcc_reg_t mSeconds{};
+        rtcc_reg_t mMinutes{};
+        rtcc_reg_t mHours{};
     };
 
 
     struct L_DATE_STRUCT_TAG {
-        rtcc_reg_t mWeekday;
-        rtcc_reg_t mDate;
-        rtcc_reg_t mMonth;
-        rtcc_reg_t mYear;
+        rtcc_reg_t mWeekday{};
+        rtcc_reg_t mDate{};
+        rtcc_reg_t mMonth{};
+        rtcc_reg_t mYear{};
     };
 
     typedef struct L_TIME_STRUCT_TAG time2_t;
     typedef struct L_DATE_STRUCT_TAG date_t;
 
     struct L_ALARM_STRUCT_TAG {
-        rtcc_reg_t mMinutes;
-        rtcc_reg_t mHours;
-        rtcc_reg_t mDayDate;
+        rtcc_reg_t mMinutes{};
+        rtcc_reg_t mHours{};
+        rtcc_reg_t mDayDate{};
     };
 
     typedef struct L_ALARM_STRUCT_TAG rtcc_alarm_t;
 
 
     struct L_ADDR_MAP_STRUCT_TAG {
-        time2_t      mTime;
-        date_t       mDate;
-        rtcc_reg_t   mAlarm1Seconds;
-        rtcc_alarm_t mAlarm1;
-        rtcc_alarm_t mAlarm2;
-        rtcc_reg_t   mCtrl;
-        rtcc_reg_t   mStatus;
-        rtcc_reg_t   mAgingOffset;
-        rtcc_reg_t   mTempMSB;
-        rtcc_reg_t   mTempLSB;
-        rtcc_reg_t   mDisableTemp;
-        rtcc_reg_t   mReserved[4];
-        rtcc_reg_t   mSRAMAddr;
-        rtcc_reg_t   mSRAMData;
+        time2_t      mTime{};
+        date_t       mDate{};
+        rtcc_reg_t   mAlarm1Seconds{};
+        rtcc_alarm_t mAlarm1{};
+        rtcc_alarm_t mAlarm2{};
+        rtcc_reg_t   mCtrl{};
+        rtcc_reg_t   mStatus{};
+        rtcc_reg_t   mAgingOffset{};
+        rtcc_reg_t   mTempMSB{};
+        rtcc_reg_t   mTempLSB{};
+        rtcc_reg_t   mDisableTemp{};
+        rtcc_reg_t   mReserved[4]{};
+        rtcc_reg_t   mSRAMAddr{};
+        rtcc_reg_t   mSRAMData{};
     };
 
     typedef struct L_ADDR_MAP_STRUCT_TAG rtcc_reg_map_t;

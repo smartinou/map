@@ -6,10 +6,10 @@
    <attribute name="mTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
     <documentation>Timer for flushing queue of log events.</documentation>
    </attribute>
-   <attribute name="mSyncLogLevel" type="LogLevel" visibility="0x02" properties="0x00">
+   <attribute name="mSyncLogLevel" type="LogLevel::prio" visibility="0x02" properties="0x00">
     <documentation>Log level threshold/filter.</documentation>
    </attribute>
-   <attribute name="mBufLogLevel" type="LogLevel" visibility="0x02" properties="0x00">
+   <attribute name="mBufLogLevel" type="LogLevel::prio" visibility="0x02" properties="0x00">
     <documentation>The log level required to write the log entry to the file.
 The file is sync'ed right away.</documentation>
    </attribute>
@@ -47,12 +47,12 @@ The file is sync'ed right away.</documentation>
    </operation>
    <operation name="SetSyncLogLevel" type="void" visibility="0x00" properties="0x00">
     <documentation>Sets the new log level threshold to filter log events.</documentation>
-    <parameter name="aLogLevelThreshold" type="LogLevel"/>
+    <parameter name="aLogLevelThreshold" type="LogLevel::prio"/>
     <code>mSyncLogLevel = aLogLevelThreshold;</code>
    </operation>
    <operation name="SetBufLogLevel" type="void" visibility="0x00" properties="0x00">
     <documentation>Sets the new log level threshold to filter log events.</documentation>
-    <parameter name="aLogLevelThreshold" type="LogLevel"/>
+    <parameter name="aLogLevelThreshold" type="LogLevel::prio"/>
     <code>mBufLogLevel = aLogLevelThreshold;</code>
    </operation>
    <operation name="WrEvent" type="void" visibility="0x02" properties="0x00">
@@ -60,12 +60,12 @@ The file is sync'ed right away.</documentation>
     <parameter name="aLogEvent" type="Logging::Event::LogEntry const &amp;"/>
     <code>auto const lDateStr = aLogEvent.mDate.ToStr();
 auto const lTimeStr = aLogEvent.mTime.ToStr();
-int lLen = f_printf(
+int const lLen = f_printf(
     &amp;mFile,
     &quot;%s @%s: %s in file %s, function %s at line %d. %s::%s\n&quot;,
     lDateStr.c_str(),
     lTimeStr.c_str(),
-    LogLevel::ToStr(aLogEvent.mLogLevel.GetLevel()),
+    LogLevel::ToStr(aLogEvent.mLogLevel),
     aLogEvent.mFileStr,
     aLogEvent.mFunctionStr,
     aLogEvent.mLine,
@@ -192,7 +192,7 @@ stop();</action>
  <package name="Events" stereotype="0x01" namespace="Event::">
   <class name="LogEntry" superclass="qpcpp::QEvt">
    <documentation>Event used to generate a log entry.</documentation>
-   <attribute name="mLogLevel" type="LogLevel" visibility="0x00" properties="0x00"/>
+   <attribute name="mLogLevel" type="LogLevel::prio" visibility="0x00" properties="0x00"/>
    <attribute name="mDate" type="Date const" visibility="0x00" properties="0x00">
     <documentation>Date of the event.</documentation>
    </attribute>
@@ -220,7 +220,7 @@ Usually mapped to macro __FUNCTION__</documentation>
    <operation name="LogEntry" type="" visibility="0x00" properties="0x02">
     <documentation>Ctor.</documentation>
     <parameter name="aSig" type="QP::QSignal const"/>
-    <parameter name="aLogLevel" type="LogLevel const"/>
+    <parameter name="aLogLevel" type="LogLevel::prio const"/>
     <parameter name="aDate" type="Date const &amp;"/>
     <parameter name="aTime" type="Time const &amp;"/>
     <parameter name="aFileStr" type="char const * const"/>
@@ -242,6 +242,28 @@ Usually mapped to macro __FUNCTION__</documentation>
    <operation name="~LogEntry" type="" visibility="0x02" properties="0x00">
     <documentation>Dtor.</documentation>
     <code>// Dtor body.</code>
+   </operation>
+  </class>
+  <class name="LogMsg" superclass="qpcpp::QEvt">
+   <documentation>A simplified Log entry event, that only contains a message.</documentation>
+   <attribute name="mLogLevel" type="LogLevel::prio" visibility="0x00" properties="0x00"/>
+   <attribute name="mCategoryStr" type="std::string" visibility="0x00" properties="0x00">
+    <documentation>A string representing the category of the event.</documentation>
+   </attribute>
+   <attribute name="mMsg" type="std::string" visibility="0x00" properties="0x00">
+    <documentation>Holder for the message string.</documentation>
+   </attribute>
+   <operation name="LogMsg" type="" visibility="0x00" properties="0x02">
+    <documentation>Ctor.</documentation>
+    <parameter name="aSig" type="QP::QSignal const"/>
+    <parameter name="aLogLevel" type="LogLevel::prio const"/>
+    <parameter name="aCategoryStr" type="std::string const"/>
+    <code>    : QP::QEvt{aSig}
+    , mLogLevel{aLogLevel}
+    , mCategoryStr{aCategoryStr}
+    , mMsg{0}
+
+// Ctor body.</code>
    </operation>
   </class>
   <class name="Init" superclass="qpcpp::QEvt">
@@ -280,6 +302,7 @@ Usually mapped to macro __FUNCTION__</documentation>
 
 
 $declare${Logging::Events::LogEntry}
+$declare${Logging::Events::LogMsg}
 $declare${Logging::Events::Init}
 </text>
   </file>
@@ -315,6 +338,7 @@ $declare${Logging::AOs::FileSink_AO}
  <directory name="../inc">
   <file name="Logger.h" properties="external"/>
   <file name="Logger2.h" properties="external"/>
+  <file name="LogLevel.h" properties="external"/>
  </directory>
  <directory name="../src">
   <file name="Logger.cpp" properties="external"/>

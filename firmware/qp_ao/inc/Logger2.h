@@ -22,7 +22,7 @@
 //
 // Project: Logging.
 //
-// Module: Logger::
+// Module: Logger.
 //
 // *******************************************************************************
 
@@ -32,7 +32,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2021, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2022, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -40,25 +40,30 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+// QP Library.
 #include <qpcpp.h>
 
+// This module.
 #include "LogLevel.h"
 #include "Logging_Events.h"
+
+// Standard Libraries.
+#include <optional>
+#include <source_location>
+#include <string>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
 // ******************************************************************************
-
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#if 1
+#define LOG_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 // TODO: Verify that release builds with gcc define NDEBUG.
 #if defined(_DEBUG) || !defined(NDEBUG)
-#define LOG_DEBUG(aCategory, aDate, aTime, ...); \
+#define LOG_DEBUG(aCategory, ...)  \
 {                                  \
     Logger::Log(                   \
         LogLevel::prio::DEBUG,     \
-        aDate,                     \
-        aTime,                     \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -67,16 +72,14 @@
     );                             \
 }
 #else
-#define LOG_DEBUG(aCategory, aDate, aTime, ...)
+#define LOG_DEBUG(aCategory, ...)
 #endif
 
 #define LOG_INFO(aCategory, aDate, aTime, ...); \
 {                                 \
     Logger::Log(                  \
         LogLevel::prio::INFO,     \
-        aDate,                    \
-        aTime,                    \
-        __FILENAME__,             \
+        LOG_FILENAME,             \
         __LINE__,                 \
         __FUNCTION__,             \
         aCategory,                \
@@ -88,8 +91,6 @@
 {                                    \
     Logger::Log(                     \
         LogLevel::prio::WARNING,     \
-        aDate,                       \
-        aTime,                       \
         __FILE__,                    \
         __LINE__,                    \
         __FUNCTION__,                \
@@ -101,9 +102,7 @@
 #define LOG_ERROR(aCategory, aDate, aTime, ...); \
 {                                  \
     Logger::Log(                   \
-        LogLevel::prio::ERR,       \
-        aDate,                     \
-        aTime,                     \
+        LogLevel::prio::ERROR,     \
         __FILE__,                  \
         __LINE__,                  \
         __FUNCTION__,              \
@@ -115,9 +114,7 @@
 #define LOG_CRITICAL(aCategory, aDate, aTime, ...); \
 {                                     \
     Logger::Log(                      \
-        PRI_CRIT,                     \
-        aDate,                        \
-        aTime,                        \
+        LogLevel::prio::CRITICAL,     \
         __FILE__,                     \
         __LINE__,                     \
         __FUNCTION__,                 \
@@ -125,6 +122,7 @@
         __VA_ARGS__                   \
     );                                \
 }
+#endif
 
 // ******************************************************************************
 //                         TYPEDEFS AND STRUCTURES
@@ -144,30 +142,114 @@
 
 namespace Logger {
 
+static constexpr auto sLineSize{1024};
 
-bool AddCategory(
-    char const * const aCategoryStr,
-    unsigned int const aEventSignal,
-    LogLevel::prio const aMaxLevel = LogLevel::prio::ERROR
-);
-LogLevel GetMaxLevel(char const * const aCategoryStr);
-unsigned int GetEventSignal(char const * const aCategoryName);
 
-bool Log(
-    LogLevel const aLevel,
-    Date const &aDate,
-    Time const &aTime,
-    char const * const aFileStr,
-    unsigned int const aLine,
-    char const * const aFunctionStr,
-    char const * const aCategoryStr,
-    char const * const aFormatStr,
+auto AddCategory(
+    char const * aCategoryStr,
+    QP::QSignal aEventSignal,
+    LogLevel::prio aMaxLevel = LogLevel::prio::ERROR
+) noexcept -> bool;
+
+
+auto Log(
+    LogLevel::prio aLevel,
+    char const * aFileStr,
+    unsigned int aLine,
+    char const * aFunctionStr,
+    char const * aCategoryStr,
+    char const * aFormatStr,
     ...
-);
+) -> bool;
 
-void AddSink(char const * const aCategoryStr, QP::QActive * const aAO);
 
-} // Logger
+[[nodiscard]] auto GetCategory(std::string const &aCategoryStr) noexcept
+    -> std::optional<std::pair<QP::QSignal, LogLevel::prio>>;
+
+
+template <typename... Args>
+auto Log(
+    LogLevel::prio const aLevel,
+    std::string const aCategoryName,
+    std::source_location const aLocation,// = std::source_location::current(),
+    std::string const aFormatStr,
+    Args&&... aArgs
+) -> bool
+{
+
+    // Check for log level threshold (global and per category).
+    auto const lCategory = GetCategory(aCategoryName);
+    if (!lCategory) {
+        return false;
+    }
+    // Category is active: check if requested level w/r to max threshold.
+    auto const [lEventSig, lPrio] = lCategory.value();
+    if (aLevel > lPrio) {
+        return false;
+    }
+
+    auto const lLogMsg = Q_NEW(
+        Logging::Event::LogMsg,
+        lEventSig,
+        aLevel,
+        aCategoryName
+    );
+
+    if (nullptr != lLogMsg) {
+#if 0
+        std::string const lPreludeStr{
+            std::format(
+                "file: {}({}:{}) `{}`: ",
+                aLocation.file_name(),
+                aLocation.line(),
+                aLocation.column(),
+                aLocation.function_name()
+            )
+        };
+        std::string lMsg{std::format(aMsg, aArgs)};
+        std::string lStr{lPreludeStr + lMsg};
+
+        auto lResult = snprintf(&lLogMsg.mMsg[0], sLineSize, "%s", lStr.c_str());
+#else
+        std::array<char, 256> lFormatStr;
+        auto const lOffset = snprintf(
+            lFormatStr.data(),
+            lFormatStr.size(),
+            "file: %s(%lu:%lu) `%s`: %s",
+            aLocation.file_name(),
+            aLocation.line(),
+            aLocation.column(),
+            aLocation.function_name(),
+            aFormatStr.c_str()
+        );
+
+        std::array<char, 256> lStr;
+        auto lResult = snprintf(
+            lStr.data() + lOffset,
+            lStr.size() - lOffset,
+            lFormatStr.data(),
+            aArgs...
+        );
+#endif
+
+        if (lResult > 0) {
+            lLogMsg->mMsg = lStr.data();
+#ifdef Q_SPY
+            static QP::QSpyId const sLog{0U};
+#endif // Q_SPY
+            QP::QF::PUBLISH(lLogMsg, &sLog);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+void AddSink(char const * aCategoryStr, QP::QActive const * aAO) noexcept;
+
+
+} // namespace Logger
 
 // ******************************************************************************
 //                                END OF FILE

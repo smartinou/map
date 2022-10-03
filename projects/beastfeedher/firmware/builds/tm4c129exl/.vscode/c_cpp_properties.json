@@ -4,8 +4,8 @@
         // via the standard environment variable syntax: ${<var>} or ${env:<var>}.
         "myDefaultIncludePath": [],
         "myCompilerPath": ""
-      },
-      "configurations": [
+    },
+    "configurations": [
         {
             "name": "CrossARM",
             "includePath": [
@@ -36,7 +36,6 @@
                 "Q_EVT_CTOR",
                 "QF_ACTIVE_STOP"
             ],
-
             //"forcedInclude": ["${workspaceFolder}/src/IncludeMcuLibConfig.h"],
             "compilerPath": "\"C:\\apps\\GNU Arm Embedded Toolchain\\10 2021.10\\bin\\arm-none-eabi-gcc.exe\"",
             "cStandard": "c17",
@@ -62,10 +61,11 @@
                     "${workspaceFolder}/../../../../../firmware/3rdparty/qp/qpcpp_6_9_4rc3",
                     "${workspaceFolder}/../../../../../firmware/3rdparty/segger_rtt_v758",
                     "${workspaceFolder}/../../../../../firmware/3rdparty/TivaWare_C_Series-2.2.0.295"
-                        ],
+                ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
-              }
+            },
+            "configurationProvider": "nrf-connect"
         }
     ],
     "version": 4

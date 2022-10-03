@@ -12,7 +12,7 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2015-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2015-2022, Martin Garon, All rights reserved.
 //
 // *****************************************************************************
 
@@ -121,7 +121,7 @@ void LwIPDrv::DNSFoundCallback(
         aIPAddr
     );
 
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aArgs);
+    auto const lThis {static_cast<LwIPDrv *>(aArgs)};
     lThis->GetAO().POST(lEvent, lThis);
 }
 
@@ -131,7 +131,7 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
     // Check the current state of the network interface.
     // We end up here as a result to call to either:
     // netif_set_up(), netif_set_down(), netif_set_ipaddr().
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     lThis->StatusCallback(aNetIF);
 }
 #endif // LWIP_NETIF_STATUS_CALLBACK
@@ -141,7 +141,7 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
 void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
     // We end up here as a result of call to either:
     // netif_set_link_up(), netif_set_link_down().
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     lThis->LinkCallback(aNetIF);
 }
 #endif // LWIP_NETIF_LINK_CALLBACK
@@ -153,7 +153,7 @@ void LwIPDrv::StaticExtCallback(
     netif_nsc_reason_t const aReason,
     netif_ext_callback_args_t const *aArgs) {
     // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     lThis->ExtCallback(aReason, aArgs);
 }
 
@@ -380,13 +380,13 @@ void LwIPDrv::DrvInit(
 // Low-level init.
 // Will be called by LwIP at init stage, everytime a netif is added.
 err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     return lThis->EtherIFInit(aNetIF);
 }
 
 
 err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
-    LwIPDrv * const lThis = static_cast<LwIPDrv * const>(aNetIF->state);
+    auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     return lThis->EtherIFOut(aPBuf);
 }
 

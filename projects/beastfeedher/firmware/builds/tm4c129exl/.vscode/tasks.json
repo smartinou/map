@@ -16,6 +16,22 @@
                 "cwd": "${workspaceFolder}/qv/gcc"
             },
             "problemMatcher": {
+                "base": "$gcc",
+                "fileLocation": ["relative", "${workspaceFolder}/qv/gcc"]
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "label": "build tm4c129exl RELEASE",
+            "type": "shell",
+            "command": "make all CONF=rel",
+            "options": {
+                "cwd": "${workspaceFolder}/qv/gcc"
+            },
+            "problemMatcher": {
                 "base": "$gcc", 
                 "fileLocation": ["relative", "${workspaceFolder}/qv/gcc"]
             },
