@@ -157,16 +157,7 @@ class Factory final
 
 public:
     explicit Factory(uint32_t const aClkRate = sClkRate)
-        : mClkRate(aClkRate)
-        , mSPI2Dev(nullptr)
-        , mSPI3Dev(nullptr)
-        , mRTCC(nullptr)
-        , mRTCCAO(nullptr)
-        , mFileLogSinkAO(nullptr)
-        , mPFPPAO(nullptr)
-        , mDisplayMgrAO(nullptr)
-        , mSDCDefault(nullptr)
-        , mSDCBoosterPack(nullptr)
+        : mClkRate{aClkRate}
     {
         // Ctor.
         Init();
@@ -180,16 +171,21 @@ public:
 
     // IBSPFactory Interface.
     auto StartRTCCAO(
-        std::shared_ptr<CalendarRec> const &aCalendarRec,
+        std::shared_ptr<CalendarRec> aCalendarRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
     ) -> std::shared_ptr<RTCC::AO::RTCC_AO> final {
-        if (mRTCCAO == nullptr) {
+        if (!mRTCCAO) {
             mRTCC = CreateRTCC();
             // RTCC also implements both ITemperature and INVMem interfaces.
-            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(mRTCC, mRTCC, mRTCC, aCalendarRec);
-            if (mRTCCAO != nullptr) {
+            mRTCCAO = std::make_shared<RTCC::AO::RTCC_AO>(
+                mRTCC,
+                mRTCC,
+                mRTCC,
+                std::move(aCalendarRec)
+            );
+            if (mRTCCAO) {
                 mRTCCAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
             }
         }
@@ -199,7 +195,7 @@ public:
 
     auto CreateDisks() -> unsigned int {
         // This BSP has one or two SDC devices.
-        if (mSDCDefault == nullptr) {
+        if (!mSDCDefault) {
             // Drive index 0 is the default drive.
             static constexpr auto sDriveIndex{0};
             static constexpr struct PortPin sCSnPin{GPIOD_AHB_BASE, GPIO_PIN_4};
@@ -212,7 +208,7 @@ public:
             );
         }
 
-        if (mSDCBoosterPack == nullptr) {
+        if (!mSDCBoosterPack) {
             // Sharp 128x128 memory LCD & microSD card BoosterPack.
             // Card detect line requires 0Ohm resistor.
             static constexpr auto sDriveIndex{1};
@@ -259,9 +255,9 @@ public:
         uint32_t const aQLen
     ) -> bool final {
         // FS mounted on default disk: add log sink.
-        if (mFileLogSinkAO == nullptr) {
+        if (!mFileLogSinkAO) {
             mFileLogSinkAO = std::make_unique<Logging::AO::FileSink_AO>(10 * 60 * BSP::TICKS_PER_SEC);
-            if (mFileLogSinkAO != nullptr) {
+            if (mFileLogSinkAO) {
                 reinterpret_cast<Logging::AO::FileSink_AO *>(
                     mFileLogSinkAO.get())->SetSyncLogLevel(LogLevel::prio::INFO);
 
@@ -283,19 +279,21 @@ public:
 
 
     [[maybe_unused]] auto StartPFPPAO(
-        std::shared_ptr<FeedCfgRec> const &aFeedCfgRec,
+        std::shared_ptr<FeedCfgRec> aFeedCfgRec,
         uint8_t const aPrio,
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
     ) -> bool final {
-        if (mPFPPAO == nullptr) {
+        if (!mPFPPAO) {
             // Create motor controller and pass ownership to Mgr_AO.
             auto lMotorControl = CreateMotorControl();
+            auto lLogger = std::make_unique<Logger>();
             mPFPPAO = std::make_unique<PFPP::AO::Mgr_AO>(
                 std::move(lMotorControl),
-                aFeedCfgRec
+                std::move(aFeedCfgRec),
+                std::move(lLogger)
             );
-            if (mPFPPAO != nullptr) {
+            if (mPFPPAO) {
                 mPFPPAO->start(aPrio, aQSto, aQLen, nullptr, 0U);
                 return true;
             }
@@ -309,7 +307,7 @@ public:
         QP::QEvt const * aQSto[],
         uint32_t const aQLen
     ) -> bool final {
-        if (mDisplayMgrAO == nullptr) {
+        if (!mDisplayMgrAO) {
             // TODO: CREATE AN ACTUAL OBJECT WHEN AVAILABLE.
             mDisplayMgrAO = std::unique_ptr<Display::AO::Mgr_AO>(nullptr);
             if (mDisplayMgrAO != nullptr) {
@@ -327,13 +325,13 @@ public:
         uint32_t const aQLen,
         QP::QEvt const * const aInitEvt
     ) -> bool final {
-        if (mLwIPMgrAO == nullptr) {
+        if (!mLwIPMgrAO) {
             // Create all Ethernet drivers required before the AO.
             // LwIP::AO::Mgr doesn't use any local references to LwIPDrv.
             // They are referenced via LwIPDrv static functions.
             CreateEthDrv();
             mLwIPMgrAO = std::make_unique<LwIP::AO::Mgr_AO>();
-            if (mLwIPMgrAO != nullptr) {
+            if (mLwIPMgrAO) {
                 mLwIPMgrAO->start(aPrio, aQSto, aQLen, nullptr, 0U, aInitEvt);
                 return true;
             }
@@ -408,12 +406,12 @@ private:
     // Leave here until RTT has other use than QSPY.
     SEGGER_RTT_Init();
     static constexpr auto sRTTUpBufferName{"RTTUpBuffer"};
-    static uint8_t sRTTUpBuffer[sRTTUpBufferSize]{0};
+    static std::array<uint8_t, sRTTUpBufferSize> sRTTUpBuffer{0};
     int lResult = SEGGER_RTT_ConfigUpBuffer(
         sRTTBufferIndex,
         sRTTUpBufferName,
-        &sRTTUpBuffer[0],
-        sizeof(sRTTUpBufferSize),
+        sRTTUpBuffer.data(),
+        sRTTUpBuffer.size(),
         SEGGER_RTT_MODE_NO_BLOCK_SKIP
     );
 
@@ -424,12 +422,12 @@ private:
 
     static constexpr auto sRTTDownBufferName{"RTTDownBuffer"};
     static constexpr size_t sRTTDownBufferSize{64};
-    static uint8_t sRTTDownBuffer[sRTTDownBufferSize]{0};
+    static std::array<uint8_t, sRTTDownBufferSize> sRTTDownBuffer{0};
     lResult = SEGGER_RTT_ConfigDownBuffer(
         sRTTBufferIndex,
         sRTTDownBufferName,
-        &sRTTDownBuffer[0],
-        sizeof(sRTTDownBufferSize),
+        sRTTDownBuffer.data(),
+        sRTTDownBuffer.size(),
         SEGGER_RTT_MODE_NO_BLOCK_SKIP
     );
 
@@ -822,7 +820,7 @@ void QP::QV::onIdle() {
 
 
 //............................................................................
-extern "C" void Q_onAssert(char const *module, int loc) {
+extern "C" void Q_onAssert(char const * const module, int const loc) {
     //
     // NOTE: add here your application-specific error handling
     //
@@ -855,12 +853,12 @@ bool QP::QS::onStartup(void const * const aArgs) {
     static_cast<void>(aArgs);
 
     // Buffer for Quantum Spy.
-    // Buffer for QS receive channel.
-    static uint8_t sQSTxBuf[2 * 1024];
-    static uint8_t sQSRxBuf[100];
+    static std::array<uint8_t, 2 * 1024> sQSTxBuf{};
+    initBuf(sQSTxBuf.data(), sQSTxBuf.size());
 
-    initBuf(sQSTxBuf, sizeof(sQSTxBuf));
-    rxInitBuf(sQSRxBuf, sizeof(sQSRxBuf));
+    // Buffer for QS receive channel.
+    static std::array<uint8_t, 100> sQSRxBuf{};
+    rxInitBuf(sQSRxBuf.data(), sQSRxBuf.size());
 
     // To start timestamp at zero.
     uint32_t volatile lTmp{SysTick->CTRL};
@@ -945,7 +943,7 @@ void QP::QS::onFlush() {
         //}
 
         //SEGGER_RTT_SetTerminal(sRTTQSPYTerminal);
-        unsigned int lLen = SEGGER_RTT_Write(sRTTBufferIndex, lBlockPtr, lFIFOLen);
+        unsigned int const lLen = SEGGER_RTT_Write(sRTTBufferIndex, lBlockPtr, lFIFOLen);
         //SEGGER_RTT_SetTerminal(0);
         // TODO: do something with len.
         static_cast<void>(lLen);
@@ -968,7 +966,12 @@ void QP::QS::onReset() {
 
 //............................................................................
 //! callback function to execute a user command (to be implemented in BSP)
-void QP::QS::onCommand(uint8_t aCmdId, uint32_t aParam1, uint32_t aParam2, uint32_t aParam3) {
+void QP::QS::onCommand(
+    uint8_t const aCmdId,
+    uint32_t const aParam1,
+    uint32_t const aParam2,
+    uint32_t const aParam3
+) {
     static_cast<void>(aCmdId);
     static_cast<void>(aParam1);
     static_cast<void>(aParam2);
@@ -1163,7 +1166,7 @@ void GPIOPortP3_IRQHandler() {
 
     // Get the state of the GPIO and issue the corresponding event.
     static constexpr bool sIsMasked{true};
-    constexpr struct PortPin lRTCCInterruptPin = BSP::Factory::GetRTCCInterruptPin();
+    static constexpr struct PortPin lRTCCInterruptPin = BSP::Factory::GetRTCCInterruptPin();
     auto const lIntStatus = MAP_GPIOIntStatus(lRTCCInterruptPin.mPort, sIsMasked);
     constexpr auto lPin = lRTCCInterruptPin.mPin;
     if (lPin & lIntStatus) {
@@ -1229,12 +1232,12 @@ void UART0_IRQHandler();
 void UART0_IRQHandler() {
     // Get the raw interrupt status.
     // Clear the asserted interrupts.
-    unsigned long lStatus = MAP_UARTIntStatus(UART0_BASE, true);
+    unsigned long const lStatus = MAP_UARTIntStatus(UART0_BASE, true);
     MAP_UARTIntStatus(UART0_BASE, lStatus);
 
     // While RX FIFO NOT empty.
     while (MAP_UARTCharsAvail(UART0_BASE)) {
-        unsigned long lLongByte = MAP_UARTCharGet(UART0_BASE);
+        unsigned long const lLongByte = MAP_UARTCharGet(UART0_BASE);
         uint8_t lByte{static_cast<uint8_t>(lLongByte)};
         QP::QS::rxPut(lByte);
     }

@@ -45,40 +45,40 @@ namespace QP {
 class IBSPFactory {
 public:
     virtual ~IBSPFactory() = default;
-    virtual std::shared_ptr<QP::QActive> CreateBLEAO(void) = 0;
+    virtual std::shared_ptr<QP::QActive> CreateBLEAO() = 0;
 
     virtual std::shared_ptr<RTCC::AO::RTCC_AO> StartRTCCAO(
-        const std::shared_ptr<CalendarRec> &aCalendarRec,
-        uint8_t const aPrio,
+        std::shared_ptr<CalendarRec> aCalendarRec,
+        uint8_t aPrio,
         QP::QEvt const * aQSto[],
-        uint32_t const aQLen
+        uint32_t aQLen
     ) = 0;
 
-    virtual bool MountFS(void) = 0;
+    virtual bool MountFS() = 0;
     virtual bool StartFileSinkAO(
-        uint8_t const aPrio,
+        uint8_t aPrio,
         QP::QEvt const * aQSto[],
-        uint32_t const aQLen
+        uint32_t aQLen
     ) = 0;
 
     virtual bool StartPFPPAO(
-        const std::shared_ptr<FeedCfgRec> &aFeedCfgRec,
-        uint8_t const aPrio,
+        std::shared_ptr<FeedCfgRec> aFeedCfgRec,
+        uint8_t aPrio,
         QP::QEvt const * aQSto[],
-        uint32_t const aQLen
+        uint32_t aQLen
     ) = 0;
 
     virtual bool StartLwIPMgrAO(
-        uint8_t const aPrio,
+        uint8_t aPrio,
         QP::QEvt const * aQSto[],
-        uint32_t const aQLen,
-        QP::QEvt const * const aInitEvt
+        uint32_t aQLen,
+        QP::QEvt const * aInitEvt
     ) = 0;
 
     virtual bool StartDisplayMgrAO(
-        uint8_t const aPrio,
+        uint8_t aPrio,
         QP::QEvt const * aQSto[],
-        uint32_t const aQLen
+        uint32_t aQLen
     ) = 0;
 };
 

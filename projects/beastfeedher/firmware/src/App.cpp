@@ -90,7 +90,7 @@ bool App::Init(std::unique_ptr<IBSPFactory> aFactory) {
 
     // Create all AOs.
     // RTCC AO + FileLogSink.
-    if (auto const lIsFSMounted = aFactory->MountFS(); lIsFSMounted) {
+    if (aFactory->MountFS()) {
         aFactory->StartFileSinkAO(
             2U,
             mFileLogSinkEventQueue,
@@ -109,11 +109,11 @@ bool App::Init(std::unique_ptr<IBSPFactory> aFactory) {
         return false;
     }
 
-    if (bool const lRes = aFactory->StartPFPPAO(
+    if (!aFactory->StartPFPPAO(
         mFeedCfgRec,
         3U,
         mPFPPMgrEventQueue,
-        Q_DIM(mPFPPMgrEventQueue) ); !lRes)
+        Q_DIM(mPFPPMgrEventQueue)))
     {
         return false;
     }
@@ -178,7 +178,7 @@ bool App::Init(std::unique_ptr<IBSPFactory> aFactory) {
 // *****************************************************************************
 
 void App::NetInitCallback(void * const aParam) {
-    [[maybe_unused]] App const * const lApp{reinterpret_cast<App const *>(aParam)};
+    [[maybe_unused]] auto const lApp{reinterpret_cast<App const *>(aParam)};
 #if LWIP_HTTPD_SSI || LWIP_HTTPD_CGI
     Net::InitCallback(
         sRTCC_AO,
@@ -200,30 +200,40 @@ extern "C" {
 // Consider moving this to BSP.cpp file.
 //
 
-DSTATUS disk_initialize(BYTE aDriveIndex) {
+DSTATUS disk_initialize(BYTE const aDriveIndex) {
     return FatFSDisk::StaticInitDisk(aDriveIndex);
 }
 
 
-DSTATUS disk_status(BYTE aDriveIndex) {
+DSTATUS disk_status(BYTE const aDriveIndex) {
     return FatFSDisk::StaticGetDiskStatus(aDriveIndex);
 }
 
 
-DRESULT disk_read(BYTE aDriveIndex, BYTE *aBuffer, DWORD aSectorStart, UINT aCount) {
+DRESULT disk_read(
+    BYTE const aDriveIndex,
+    BYTE * const  aBuffer,
+    DWORD const aSectorStart,
+    UINT const aCount
+) {
     return FatFSDisk::StaticRdDisk(aDriveIndex, aBuffer, aSectorStart, aCount);
 }
 
 
 #if (FF_FS_READONLY == 0)
-DRESULT disk_write(BYTE aDriveIndex, const BYTE *aBuffer, DWORD aSectorStart, UINT aCount) {
+DRESULT disk_write(
+    BYTE const aDriveIndex,
+    BYTE const * const aBuffer,
+    DWORD const aSectorStart,
+    UINT const aCount
+) {
     return FatFSDisk::StaticWrDisk(aDriveIndex, aBuffer, aSectorStart, aCount);
 }
 #endif // FF_FS_READONLY
 
 
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
-DRESULT disk_ioctl(BYTE aDriveIndex, BYTE aCmd, void *aBuffer) {
+DRESULT disk_ioctl(BYTE const aDriveIndex, BYTE const aCmd, void * const aBuffer) {
     return FatFSDisk::StaticIOCTL(aDriveIndex, aCmd, aBuffer);
 }
 #endif // FF_FS_READONLY

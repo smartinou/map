@@ -31,7 +31,7 @@
 
 // ******************************************************************************
 //
-//        Copyright (c) 2018-2021, Pleora Technologies, All rights reserved.
+//        Copyright (c) 2018-2022, Pleora Technologies, All rights reserved.
 //
 // ******************************************************************************
 
@@ -41,11 +41,6 @@
 
 // This module.
 #include "Logger2.h"
-
-// Standard Libraries.
-//#include <format>
-#include <map>
-#include <cstdarg>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -59,116 +54,28 @@
 //                            FUNCTION PROTOTYPES
 // ******************************************************************************
 
-namespace Logger {
-
 // ******************************************************************************
 //                             GLOBAL VARIABLES
 // ******************************************************************************
-
-static std::map<std::string, std::pair<QP::QSignal, LogLevel::prio>> sCategories;
 
 // ******************************************************************************
 //                            EXPORTED FUNCTIONS
 // ******************************************************************************
 
-auto AddCategory(
-    char const * const aCategoryStr,
+auto Logger::AddCategory(
+    std::string const &aCategoryStr,
     QP::QSignal const aEventSignal,
     LogLevel::prio const aMaxLevel
 ) noexcept -> bool
 {
     auto const lPair = std::make_pair(aEventSignal, aMaxLevel);
-    auto const lResult = sCategories.insert_or_assign(aCategoryStr, lPair);
+    auto const lResult = mCategories.insert_or_assign(aCategoryStr, lPair);
 
     return lResult.second;
 }
 
 
-auto Log(
-    LogLevel::prio const aLevel,
-    char const * const aFileStr,
-    unsigned int const aLine,
-    char const * const aFunctionStr,
-    char const * const aCategoryStr,
-    char const * const aFormatStr,
-    ...
-) -> bool
-{
-
-    // Check for log level threshold (global and per category).
-    auto const lCategory = GetCategory(aCategoryStr);
-    if (!lCategory) {
-        return false;
-    }
-    // Category is active: check if requested level w/r to max threshold.
-    auto const [lEventSig, lPrio] = lCategory.value();
-    if (aLevel > lPrio) {
-        return false;
-    }
-
-    // Create the Log event and publish it to QP framework!
-    auto const lLogEvent = Q_NEW(
-        Logging::Event::LogMsg,
-        lEventSig,
-        aLevel,
-        aCategoryStr
-    );
-
-    if (nullptr != lLogEvent) {
-        // "file: <file_name>(line:column) `<function_name>`: <format_string>"
-#if 0
-        std::stringstream lSS{};
-        lSS << "file: ";
-        lSS << aFileStr;
-        lSS << "(";
-        lSS << aLine;
-        lSS << ":";
-        lSS << 0;
-        lSS << ") `";
-        lSS << aFunctionStr;
-        lSS << "`: ";
-        lSS << aFormatStr;
-
-        // Concatenate variadics if any.
-        std::va_list lArgs;
-        va_start(lArgs, aFormatStr);
-        auto lResult = vsnprintf(lStr.data(), lStr.size(), aFormatStr/*lSS.str().c_str()*/, lArgs);
-        va_end(lArgs);
-#else
-        std::array<char, sLineSize> lFormatStr{};
-        auto const lOffset = snprintf(
-            lFormatStr.data(),
-            lFormatStr.size(),
-            "file: %s(%u:%u) `%s`: %s",
-            aFileStr,
-            aLine,
-            0,
-            aFunctionStr,
-            aFormatStr
-        );
-
-        std::va_list lArgs{};
-        va_start(lArgs, aFormatStr);
-        std::array<char, sLineSize> lStr{};
-        auto lResult = vsnprintf(lStr.data() + lOffset, lStr.size() - lOffset, lFormatStr.data(), lArgs);
-        va_end(lArgs);
-#endif
-
-        if (lResult > 0) {
-            lLogEvent->mMsg = lStr.data();
-#ifdef Q_SPY
-            static QP::QSpyId const sLog{0U};
-#endif // Q_SPY
-            QP::QF::PUBLISH(lLogEvent, &sLog);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
-void AddSink(char const * const aCategoryStr, QP::QActive const * const aAO) noexcept {
+void Logger::AddSink(std::string const &aCategoryStr, QP::QActive const * const aAO) noexcept {
     // Make the AO listener subscribe to the category.
     auto const lCategory = GetCategory(aCategoryStr);
     if (lCategory) {
@@ -181,19 +88,16 @@ void AddSink(char const * const aCategoryStr, QP::QActive const * const aAO) noe
 //                              LOCAL FUNCTIONS
 // ******************************************************************************
 
-auto GetCategory(std::string const &aCategoryStr) noexcept
-    -> std::optional<std::pair<QP::QSignal, LogLevel::prio>>
+auto Logger::GetCategory(std::string const &aCategoryStr) noexcept
+    -> std::optional<CategoryEntry>
 {
-    auto const lSearch = sCategories.find(aCategoryStr);
-    if (lSearch != sCategories.cend()) {
+    auto const lSearch = mCategories.find(aCategoryStr);
+    if (lSearch != mCategories.cend()) {
         return lSearch->second;
     }
 
     return std::nullopt;
 }
-
-
-} // namespace Logger
 
 // ******************************************************************************
 //                                END OF FILE

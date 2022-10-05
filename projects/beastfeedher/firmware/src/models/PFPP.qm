@@ -7,10 +7,10 @@
     <documentation>The top manager AO for the project.
 
 This is where all the feeding actions are taken, based on calendar events and input buttons.</documentation>
-    <attribute name="mDeferredEventQueueSto[4]" type="QP::QEvt const *" visibility="0x02" properties="0x00">
+    <attribute name="mDeferredEventQueueSto[4] {}" type="QP::QEvt const *" visibility="0x02" properties="0x00">
      <documentation>Queue of deferred events.</documentation>
     </attribute>
-    <attribute name="mDeferredEventQueue" type="QP::QEQueue" visibility="0x02" properties="0x00">
+    <attribute name="mDeferredEventQueue {}" type="QP::QEQueue" visibility="0x02" properties="0x00">
      <documentation>The queue of deferred events.</documentation>
     </attribute>
     <attribute name="mFeedTimer" type="QP::QTimeEvt" visibility="0x02" properties="0x00">
@@ -22,34 +22,35 @@ This is where all the feeding actions are taken, based on calendar events and in
     <attribute name="mFeedCfgRec" type="const std::shared_ptr&lt;FeedCfgRec&gt;" visibility="0x02" properties="0x00">
      <documentation>A pointer to the Feeder configuration record.</documentation>
     </attribute>
-    <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
+    <attribute name="mDate {}" type="Date" visibility="0x02" properties="0x00">
      <documentation>A local copy of current date from periodic tick.</documentation>
     </attribute>
-    <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
+    <attribute name="mTime {}" type="Time" visibility="0x02" properties="0x00">
      <documentation>A local copy of current time from periodic tick.</documentation>
     </attribute>
-    <attribute name="mLogCategory" type="char const *" visibility="0x02" properties="0x00">
+    <attribute name="mLogCategory {&quot;PFPP&quot;}" type="char const *" visibility="0x02" properties="0x00">
      <documentation>The string representing the log categories from this AO.</documentation>
     </attribute>
-    <attribute name="mLogThreshold" type="LogLevel::prio" visibility="0x02" properties="0x00">
+    <attribute name="mLogThreshold {LogLevel::prio::INFO}" type="LogLevel::prio" visibility="0x02" properties="0x00">
      <documentation>The threshold under which events are displayed.</documentation>
+    </attribute>
+    <attribute name="mLogger" type="std::shared_ptr&lt;Logger&gt;" visibility="0x02" properties="0x00">
+     <documentation>The logger source object.</documentation>
     </attribute>
     <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
      <documentation>Ctor</documentation>
      <parameter name="aMotorControl" type="std::unique_ptr&lt;IMotorControl&gt;"/>
-     <parameter name="aFeedCfgRec" type="const std::shared_ptr&lt;FeedCfgRec&gt; &amp;"/>
+     <parameter name="aFeedCfgRec" type="std::shared_ptr&lt;FeedCfgRec&gt;"/>
+     <parameter name="aLogger" type="std::shared_ptr&lt;Logger&gt;"/>
      <code>    : QP::QActive(Q_STATE_CAST(&amp;PFPP::AO::Mgr_AO::initial))
-    , mDeferredEventQueueSto{nullptr}
-    , mDeferredEventQueue()
-    , mFeedTimer(this, FEED_MGR_TIMEOUT_SIG, 0U)
-    , mMotorControl(std::move(aMotorControl))
-    , mFeedCfgRec(aFeedCfgRec)
-    , mDate()
-    , mTime()
-    , mLogCategory(&quot;PFPP&quot;)
-    , mLogThreshold(LogLevel::prio::INFO)
+    , mFeedTimer{this, FEED_MGR_TIMEOUT_SIG, 0U}
+    , mMotorControl{std::move(aMotorControl)}
+    , mFeedCfgRec{std::move(aFeedCfgRec)}
+    , mLogger{std::move(aLogger)}
 
-// Ctor body left empty.</code>
+// Ctor body.
+mLogger-&gt;AddCategory(mLogCategory, LOG_EVENT_SIG, mLogThreshold);
+mLogger-&gt;AddSink(mLogCategory, this);</code>
     </operation>
     <operation name="StartTimedFeed" type="void" visibility="0x02" properties="0x00">
      <documentation>Starts a timed feeding period.</documentation>
@@ -63,11 +64,13 @@ StartFeeder();</code>
 mFeedTimer.disarm();</code>
     </operation>
     <operation name="StartFeeder" type="void" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Start whatever mechanism used to distribute food.</documentation>
      <code>// Start motor.
 mMotorControl-&gt;TurnOnCW();</code>
     </operation>
     <operation name="StopFeeder" type="void" visibility="0x02" properties="0x00">
+     <specifiers>const</specifiers>
      <documentation>Stops whatever mechanism is used to distribute food.</documentation>
      <code>// Stop feeder.
 mMotorControl-&gt;TurnOff();</code>
@@ -104,7 +107,7 @@ mMotorControl-&gt;TurnOff();</code>
     </operation>
     <operation name="DisplayFeedTime" type="void" visibility="0x02" properties="0x00">
      <documentation>Sends a &quot;Display Text&quot; signal to show last feeding time.</documentation>
-     <code>auto const lDate = mDate.ToStr();
+     <code>auto const lDate{mDate.ToStr()};
 auto const lTime = mTime.ToStr();
 auto const lTimeAndDate = lDate + ' ' + lTime;
 Display::Event::DisplayText * const lTextEvent = Q_NEW(
@@ -156,11 +159,6 @@ subscribe(FEED_MGR_MANUAL_FEED_CMD_SIG);
 subscribe(FEED_MGR_TIMED_FEED_CMD_SIG);
 subscribe(LWIP_IP_CHANGED_SIG);
 subscribe(LWIP_SYSTEM_TIME_UPDATE_SIG);
-
-// Set logging category.
-// Add self to logging sink.
-Logger::AddCategory(mLogCategory, LOG_EVENT_SIG, LogLevel::prio::INFO);
-Logger::AddSink(mLogCategory, this);
 </action>
       <initial_glyph conn="4,6,5,0,8,6">
        <action box="0,-2,10,2"/>
@@ -281,7 +279,7 @@ Display::Event::DisplayText * const lLwIPChangedEvent = Q_NEW(
 QP::QF::PUBLISH(lLwIPChangedEvent, this);
 
 //LOG_DEBUG(mLogCategory, &amp;lIPAddressStr[0]);
-Logger::Log(
+mLogger-&gt;Log(
     LogLevel::prio::DEBUG,
     mLogCategory,
     std::source_location::current(),
@@ -393,7 +391,7 @@ Has a time limit to avoid over-feeding and emptying the feeder.</documentation>
 StartTimedFeed(lManualMaxFeedPeriod);</entry>
         <exit brief="DisplayFeedTime();">DisplayFeedTime();
 //LOG_DEBUG(mLogCategory, &quot;Manual feed.&quot;);
-Logger::Log(
+mLogger-&gt;Log(
     LogLevel::prio::DEBUG,
     mLogCategory,
     std::source_location::current(),
@@ -414,7 +412,7 @@ Logger::Log(
 StartTimedFeed(lTimedFeedPeriod);</entry>
        <exit brief="StopFeeder(); StopTimer(); DisplayFeedTime();">StopTimedFeed();
 DisplayFeedTime();
-Logger::Log(
+mLogger-&gt;Log(
     LogLevel::prio::DEBUG,
     mLogCategory,
     std::source_location::current(),
@@ -614,6 +612,7 @@ $declare${project::Events::Mgr::TimedFeedCmd}
 
 #include &lt;db/FeedCfgRec.h&gt;
 #include &lt;IMotorControl.h&gt;
+#include &lt;Logger2.h&gt;
 
 
 $declare${project::AOs::Mgr_AO}
@@ -635,7 +634,6 @@ $declare${project::AOs::Mgr_AO}
 #include &quot;Display_Events.h&quot;
 #include &quot;LwIP_Events.h&quot;
 #include &quot;RTCC_Events.h&quot;
-#include &quot;Logger2.h&quot;
 
 #include &quot;PFPP_AOs.h&quot;
 #include &quot;PFPP_Events.h&quot;

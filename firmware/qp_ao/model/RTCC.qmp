@@ -7,68 +7,64 @@ Uses signals from an RTCC component to maintain date and time.
 
 Can perform various other tasks like saving to Non-Volatile memory and read temperature (if so equipped).
 </documentation>
-   <attribute name="mTime" type="Time" visibility="0x02" properties="0x00">
+   <attribute name="mTime {}" type="Time" visibility="0x02" properties="0x00">
     <documentation>Holder for RTCC time.
 </documentation>
    </attribute>
-   <attribute name="mDate" type="Date" visibility="0x02" properties="0x00">
+   <attribute name="mDate {}" type="Date" visibility="0x02" properties="0x00">
     <documentation>Holder for RTCC date.
 </documentation>
    </attribute>
-   <attribute name="mTemperature" type="float" visibility="0x02" properties="0x00">
+   <attribute name="mTemperature {-1000.0}" type="float" visibility="0x02" properties="0x00">
     <documentation>Holder for RTCC temperature.
 </documentation>
    </attribute>
-   <attribute name="mRTCC" type="std::shared_ptr&lt;IRTCC&gt; const" visibility="0x02" properties="0x00">
+   <attribute name="mRTCC {}" type="std::shared_ptr&lt;IRTCC&gt;" visibility="0x02" properties="0x00">
     <documentation>Reference to a IRTCC-compatible interface.
 </documentation>
    </attribute>
-   <attribute name="mITemperature" type="std::shared_ptr&lt;ITemperature&gt; const" visibility="0x02" properties="0x00">
+   <attribute name="mITemperature {}" type="std::shared_ptr&lt;ITemperature&gt;" visibility="0x02" properties="0x00">
     <documentation>Reference to a ITemperature-compatible interface.</documentation>
    </attribute>
-   <attribute name="mNVMem" type="std::shared_ptr&lt;INVMem&gt; const" visibility="0x02" properties="0x00">
+   <attribute name="mNVMem {}" type="std::shared_ptr&lt;INVMem&gt;" visibility="0x02" properties="0x00">
     <documentation>Reference to object implementing INVMem interface.</documentation>
    </attribute>
-   <attribute name="mCalendarRec" type="std::shared_ptr&lt;CalendarRec&gt; const" visibility="0x02" properties="0x00">
+   <attribute name="mCalendarRec {}" type="std::shared_ptr&lt;CalendarRec&gt;" visibility="0x02" properties="0x00">
     <documentation>Pointer to CalendarRec object.
 </documentation>
    </attribute>
-   <attribute name="mNVMemBuf" type="uint8_t *" visibility="0x02" properties="0x00">
+   <attribute name="mNVMemBuf {}" type="uint8_t *" visibility="0x02" properties="0x00">
     <documentation>Pointer to the non-volatile memory buffer.</documentation>
    </attribute>
    <operation name="RTCC_AO" type="" visibility="0x00" properties="0x00">
     <documentation>Ctor.
 </documentation>
-    <parameter name="aRTCC" type="std::shared_ptr&lt;IRTCC&gt; const &amp;"/>
-    <parameter name="aTemperature" type="std::shared_ptr&lt;ITemperature&gt; const &amp;"/>
-    <parameter name="aNVMem" type="std::shared_ptr&lt;INVMem&gt; const &amp;"/>
-    <parameter name="aCalendarRec" type="std::shared_ptr&lt;CalendarRec&gt; const &amp;"/>
+    <parameter name="aRTCC" type="std::shared_ptr&lt;IRTCC&gt;"/>
+    <parameter name="aTemperature" type="std::shared_ptr&lt;ITemperature&gt;"/>
+    <parameter name="aNVMem" type="std::shared_ptr&lt;INVMem&gt;"/>
+    <parameter name="aCalendarRec" type="std::shared_ptr&lt;CalendarRec&gt;"/>
     <code>    : QP::QActive(Q_STATE_CAST(&amp;RTCC::AO::RTCC_AO::initial))
-    , mTime()
-    , mDate()
-    , mTemperature(-1000.0)
-    , mRTCC(aRTCC)
-    , mITemperature(aTemperature)
-    , mNVMem(aNVMem)
-    , mCalendarRec(aCalendarRec)
-    , mNVMemBuf(nullptr)
+    , mRTCC{std::move(aRTCC)}
+    , mITemperature{std::move(aTemperature)}
+    , mNVMem{std::move(aNVMem)}
+    , mCalendarRec{std::move(aCalendarRec)}
 
 // Ctor body left empty.</code>
    </operation>
-   <operation name="GetTemperature" type="float" visibility="0x00" properties="0x00">
+   <operation name="GetTemperature" type="float" visibility="0x00" properties="0x02">
     <specifiers>const</specifiers>
     <documentation>Returns the last snapshot of temperature if available.
 If not returns 0.0.
 </documentation>
     <code>return mTemperature;</code>
    </operation>
-   <operation name="GetTime" type="Time const &amp;" visibility="0x00" properties="0x00">
+   <operation name="GetTime" type="Time const &amp;" visibility="0x00" properties="0x02">
     <specifiers>const</specifiers>
     <documentation>Returns the last snapshot of Time readout.
 </documentation>
     <code>return mTime;</code>
    </operation>
-   <operation name="GetDate" type="Date const &amp;" visibility="0x00" properties="0x00">
+   <operation name="GetDate" type="Date const &amp;" visibility="0x00" properties="0x02">
     <specifiers>const</specifiers>
     <documentation>Returns the last snapshot of Date readout.
 </documentation>
@@ -76,11 +72,11 @@ If not returns 0.0.
    </operation>
    <operation name="InitDB" type="void" visibility="0x02" properties="0x00">
     <documentation>Initializes the DB, from NV memory if available, or to default if not.</documentation>
-    <code>unsigned int lNVMemSize = mNVMem-&gt;GetNVMemSize();
+    <code>auto const lNVMemSize{mNVMem-&gt;GetNVMemSize()};
 
 if (lNVMemSize) {
     mNVMemBuf = new uint8_t [lNVMemSize];
-    unsigned int lDBSize = DBRec::GetDBSize();
+    auto const lDBSize = DBRec::GetDBSize();
     mNVMem-&gt;RdFromNVMem(mNVMemBuf, 0, lDBSize);
     DBRec::DeserializeDB(mNVMemBuf);
     if (!DBRec::IsDBSane()) {
@@ -122,7 +118,7 @@ SetNextCalendarEvent();
    <operation name="WrToNVMem" type="void" visibility="0x02" properties="0x00">
     <documentation>Write buffer to NV memory.</documentation>
     <code>if (DBRec::IsDBDirty()) {
-    unsigned int lDBSize = DBRec::GetDBSize();
+    auto const lDBSize{DBRec::GetDBSize()};
     DBRec::StaticUpdateCRC();
     DBRec::SerializeDB(mNVMemBuf);
     mNVMem-&gt;WrToNVMem(mNVMemBuf, 0, lDBSize);
@@ -130,7 +126,7 @@ SetNextCalendarEvent();
 </code>
    </operation>
    <operation name="SetNextCalendarEvent" type="void" visibility="0x02" properties="0x00">
-    <code>Weekday lCurrentWeekday(mDate.GetWeekdayName());
+    <code>Weekday lCurrentWeekday{mDate.GetWeekdayName()};
 
 #ifdef RTCC_CALENDAR_DBG
 lAlarmTime = mTime;
@@ -148,10 +144,9 @@ lAlarmTime.SetHours(lHours);
 mCalendarPtr-&gt;SetEntry(lCurrentWeekday, lAlarmTime);
 #endif // RTCC_CALENDAR_DBG
 
-auto const lNextEntry = mCalendarRec-&gt;GetNextEntry(
-    lCurrentWeekday,
-    mTime
-);
+auto const lNextEntry{
+    mCalendarRec-&gt;GetNextEntry(lCurrentWeekday, mTime)
+};
 
 if (lNextEntry) {
     // Entry found: set alarm.
