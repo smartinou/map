@@ -25,6 +25,7 @@
 // ******************************************************************************
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 // FatFS.
@@ -41,60 +42,81 @@
 
 class FatFSDisk {
 public:
-    static DSTATUS StaticGetDiskStatus(unsigned int aDriveIndex);
-    static DSTATUS StaticInitDisk(unsigned int aDriveIndex);
-    static FRESULT StaticMountDisk(unsigned int aDriveIndex, FATFS * const aFatFS);
-    static DRESULT StaticRdDisk(
+    virtual ~FatFSDisk() = default;
+
+    template <typename T, typename...Args>
+    static void Create(Args&&... aArgs) {
+        sDrives.emplace_back(
+            std::make_unique<T>(
+                typename T::UseCreateFunc{},
+                std::forward<Args>(aArgs)...
+            )
+        );
+    }
+
+    static auto StaticGetDiskStatus(unsigned int aDriveIndex) -> DSTATUS;
+    static auto StaticInitDisk(unsigned int aDriveIndex) -> DSTATUS;
+    static auto StaticMountDisk(unsigned int aDriveIndex, FATFS * aFatFS) -> FRESULT;
+    static auto StaticRdDisk(
         unsigned int aDriveIndex,
-        uint8_t * const aBuffer,
+        uint8_t * aBuffer,
         uint32_t aStartSector,
         unsigned int aSectorCount
-    );
+    ) -> DRESULT;
 #if (FF_FS_READONLY == 0)
-    static DRESULT StaticWrDisk(
+    static auto StaticWrDisk(
         unsigned int aDriveIndex,
-        uint8_t const * const aBuffer,
+        uint8_t const * aBuffer,
         uint32_t aStartSector,
         unsigned int aSectorCount
-    );
+    ) -> DRESULT;
 #endif
 
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
-    static DRESULT StaticIOCTL(unsigned int aDriveIndex, uint8_t aCmd, void * const aBufPtr);
+    static auto StaticIOCTL(
+        unsigned int aDriveIndex,
+        uint8_t aCmd,
+        void * aBufPtr
+    ) -> DRESULT;
 #endif
 
-    static unsigned int GetDiskQty(void) { return mVector.size(); }
+    static auto GetDiskQty() noexcept -> unsigned int { return sDrives.size(); }
+    auto GetDiskIndex() const noexcept -> unsigned int { return mDriveIndex; }
 
 protected:
-     FatFSDisk();
+    struct UseCreateFunc {
+        explicit UseCreateFunc() = default;
+    };
+    explicit FatFSDisk([[maybe_unused]] UseCreateFunc /* Dummy */, unsigned int aDriveIndex) noexcept
+        : mDriveIndex{aDriveIndex} {}
+    FatFSDisk(FatFSDisk const &) = delete;
+    FatFSDisk &operator=(FatFSDisk const &) = delete;
 
 private:
-     FatFSDisk(FatFSDisk const &) = delete;
-     FatFSDisk &operator=(FatFSDisk const &) = delete;
-
-     virtual DSTATUS GetDiskStatus(void) = 0;
-     virtual DSTATUS InitDisk(void) = 0;
-     virtual DRESULT RdDisk(
-         uint8_t * const aBuffer,
-         uint32_t aStartSector,
-         unsigned int aSectorCount
-     ) = 0;
+    virtual auto GetDiskStatus() -> DSTATUS = 0;
+    virtual auto InitDisk() -> DSTATUS = 0;
+    virtual auto RdDisk(
+        uint8_t * aBuffer,
+        uint32_t aStartSector,
+        unsigned int aSectorCount
+    ) -> DRESULT = 0;
 #if (FF_FS_READONLY == 0)
-     virtual DRESULT WrDisk(
-         uint8_t const * const aBuffer,
-         uint32_t aStartSector,
-         unsigned int aSectorCount
-     ) = 0;
+    virtual auto WrDisk(
+        uint8_t const * aBuffer,
+        uint32_t aStartSector,
+        unsigned int aSectorCount
+    ) -> DRESULT = 0;
 #endif
 
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
-     virtual DRESULT IOCTL(uint8_t aCmd, void * const aBuffer) = 0;
+    virtual auto IOCTL(uint8_t aCmd, void * aBuffer) -> DRESULT = 0;
 #endif
 
-     unsigned int mDriveIndex = 0;
+    unsigned int mDriveIndex{};
 
-     static std::vector<FatFSDisk *> mVector;
-     static unsigned int mMountedDiskIndex;
+    using Ptr = std::unique_ptr<FatFSDisk>;
+    static std::vector<Ptr> sDrives;
+    static unsigned int mMountedDiskIndex;
 };
 
 // ******************************************************************************

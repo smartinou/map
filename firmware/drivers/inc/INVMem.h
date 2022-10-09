@@ -37,16 +37,16 @@
 class INVMem {
 public:
     virtual ~INVMem() = default;
-    virtual std::size_t GetNVMemSize(void) const = 0;
+    virtual std::size_t GetNVMemSize() const = 0;
     virtual void RdFromNVMem(
-        uint8_t * const aDataPtr,
-        std::size_t const aOffset,
-        std::size_t const aSize
+        uint8_t * aDataPtr,
+        std::size_t aOffset,
+        std::size_t aSize
     ) = 0;
     virtual void WrToNVMem(
-        uint8_t const * const aDataPtr,
-        std::size_t const aOffset,
-        std::size_t const aSize
+        uint8_t const * aDataPtr,
+        std::size_t aOffset,
+        std::size_t aSize
     ) = 0;
 };
 

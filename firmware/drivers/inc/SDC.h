@@ -47,35 +47,40 @@ namespace CoreLink {
 
 
 //! \brief MicroSD card driver class.
-class SDC
+class SDC final
     : public FatFSDisk {
- public:
+protected:
+    template<class T, typename...Args>
+    friend void FatFSDisk::Create(Args&&... aArgs);
+
+public:
     explicit SDC(
-        unsigned int const aDriveIx,
+        UseCreateFunc const aDummy,
+        unsigned int aDriveIx,
         std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         GPIO const &aCSnPin,
         GPIO const &aDetectPin,
-        unsigned int const aSPIBitRate = 4000000UL
+        unsigned int aSPIBitRate = 4000000UL
     );
 
     // FatFSDisk interface.
-    DSTATUS GetDiskStatus(void) override;
-    DSTATUS InitDisk(void) override;
-    DRESULT RdDisk(
-        uint8_t * const aBuffer,
+    auto GetDiskStatus() -> DSTATUS final;
+    auto InitDisk() -> DSTATUS final;
+    auto RdDisk(
+        uint8_t * aBuffer,
         uint32_t aStartSector,
         unsigned int aSectorCount
-    ) override;
+    ) -> DRESULT final;
 #if (FF_FS_READONLY == 0)
-    DRESULT WrDisk(
-        uint8_t const * const aBuffer,
+    auto WrDisk(
+        uint8_t const * aBuffer,
         uint32_t aStartSector,
         unsigned int aSectorCount
-    ) override;
+    ) -> DRESULT final;
 #endif
 
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
-    DRESULT IOCTL(uint8_t aCmd, void * const aBuffer) override;
+    auto IOCTL(uint8_t aCmd, void * aBuffer) -> DRESULT final;
 #endif
 
  private:
@@ -88,60 +93,60 @@ class SDC
         CT_BLOCK = 0x08  // Block addressing.
     };
 
-    typedef uint8_t R1_RESPONSE_PKT;
-    typedef uint8_t R1B_RESPONSE_PKT;
+    using R1_RESPONSE_PKT = uint8_t;
+    using R1B_RESPONSE_PKT = uint8_t;
 
     // CID, CSD register.
     struct R2_RESPONSE_PKT_STRUCT_TAG {
-        R1_RESPONSE_PKT mR1;
-        uint8_t mR2;
+        R1_RESPONSE_PKT mR1{};
+        uint8_t mR2{};
     };
 
     // OCR register.
     struct R3_RESPONSE_PKT_STRUCT_TAG {
-        R1_RESPONSE_PKT mR1;
-        uint32_t mOCR;
+        R1_RESPONSE_PKT mR1{};
+        uint32_t mOCR{};
     };
 
     // Card interface condition.
     struct R7_RESPONSE_PKT_STRUCT_TAG {
-        R1_RESPONSE_PKT mR1;
-        uint32_t mIFCond;
+        R1_RESPONSE_PKT mR1{};
+        uint32_t mIFCond{};
     };
 
-    typedef struct R2_RESPONSE_PKT_STRUCT_TAG R2_RESPONSE_PKT;
-    typedef struct R3_RESPONSE_PKT_STRUCT_TAG R3_RESPONSE_PKT;
-    typedef struct R7_RESPONSE_PKT_STRUCT_TAG R7_RESPONSE_PKT;
+    using R2_RESPONSE_PKT = struct R2_RESPONSE_PKT_STRUCT_TAG;
+    using R3_RESPONSE_PKT = struct R3_RESPONSE_PKT_STRUCT_TAG ;
+    using R7_RESPONSE_PKT = struct R7_RESPONSE_PKT_STRUCT_TAG;
 
-    bool Select(void);
-    void Deselect(void);
-    void WaitReady(void);
-    void PowerOn(void);
-    void PowerOff(void);
+    bool Select();
+    void Deselect();
+    void WaitReady();
+    void PowerOn();
+    void PowerOff();
 
     bool RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen);
 #if (FF_FS_READONLY == 0)
     bool TxDataBlock(uint8_t const *aBuffer, uint8_t aToken);
 #endif // FF_FS_READONLY
 
-    R1_RESPONSE_PKT SendCmd(
+    auto SendCmd(
         uint8_t aCmd,
         uint32_t aArg,
         uint8_t *aRegPtr = nullptr,
         unsigned int aRegLen = 0
-    );
-    bool IsExpectedVoltageRange(void);
+    ) -> R1_RESPONSE_PKT;
+    bool IsExpectedVoltageRange();
 
     std::shared_ptr<CoreLink::ISPIMasterDev> mSPIMasterDev;
     CoreLink::SPISlaveCfg mSPISlaveCfg;
-    GPIO const mDetectPin;
-    unsigned int const mSPIBitRate;
+    GPIO mDetectPin{ {}, {} };
+    unsigned int mSPIBitRate{};
 
-    DSTATUS mStatus = STA_NOINIT;
-    uint8_t mCardType = 0;
+    DSTATUS mStatus{STA_NOINIT};
+    uint8_t mCardType{0};
 
-    static unsigned int constexpr sSectorSize = 512;
-    static uint8_t constexpr sDummyByte = 0xFF;
+    static constexpr unsigned int sSectorSize{512};
+    static constexpr uint8_t sDummyByte{0xFF};
 };
 
 // ******************************************************************************

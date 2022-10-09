@@ -195,27 +195,25 @@ public:
 
     auto CreateDisks() -> unsigned int {
         // This BSP has one or two SDC devices.
-        if (!mSDCDefault) {
+        {
             // Drive index 0 is the default drive.
-            static constexpr auto sDriveIndex{0};
             static constexpr struct PortPin sCSnPin{GPIOD_AHB_BASE, GPIO_PIN_4};
             static constexpr struct PortPin sDetectPin{GPIOF_AHB_BASE, GPIO_PIN_7};
-            mSDCDefault = std::make_unique<SDC>(
-                sDriveIndex,
+            SDC::Create<SDC>(
+                sDefaultDiskIndex,
                 mSPI3Dev,
                 GPIO{sCSnPin.mPort, sCSnPin.mPin},
                 GPIO{sDetectPin.mPort, sDetectPin.mPin}
             );
         }
 
-        if (!mSDCBoosterPack) {
+        {
             // Sharp 128x128 memory LCD & microSD card BoosterPack.
             // Card detect line requires 0Ohm resistor.
-            static constexpr auto sDriveIndex{1};
             static constexpr struct PortPin sCSnPin{GPIOC_AHB_BASE, GPIO_PIN_7};
             static constexpr struct PortPin sDetectPin{GPIOP_BASE, GPIO_PIN_2};
-            mSDCBoosterPack = std::make_unique<SDC>(
-                sDriveIndex,
+            SDC::Create<SDC>(
+                sBoosterPackDiskIndex,
                 mSPI2Dev,
                 GPIO{sCSnPin.mPort, sCSnPin.mPin},
                 GPIO{sDetectPin.mPort, sDetectPin.mPin}
@@ -237,9 +235,12 @@ public:
         unsigned int const lDiskQty = CreateDisks();
         if (0 != lDiskQty) {
             // Disks found: mount the default drive.
-            static constexpr auto sDefaultDiskIndex{0};
-            FRESULT const lResult = FatFSDisk::StaticMountDisk(sDefaultDiskIndex, &mFatFS);
-            if (FR_OK == lResult) {
+            if (FRESULT const lResult =
+                FatFSDisk::StaticMountDisk(
+                    sDefaultDiskIndex,
+                    &mFatFS
+                ); FR_OK == lResult)
+            {
                 return true;
             }
         }
@@ -618,12 +619,13 @@ private:
     std::unique_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO{};
     std::unique_ptr<PFPP::AO::Mgr_AO> mPFPPAO{};
     std::unique_ptr<Display::AO::Mgr_AO> mDisplayMgrAO{};
-    std::unique_ptr<SDC> mSDCDefault{};
-    std::unique_ptr<SDC> mSDCBoosterPack{};
     std::unique_ptr<EthDrv> mEthDrv{};
     std::unique_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO{};
     //std::unique_ptr<BLE::BLE> mBLE{};
     //std::shared_ptr<PFPP::AO::BLE_AO> mBLEAO{};
+
+    static constexpr auto sDefaultDiskIndex{0};
+    static constexpr auto sBoosterPackDiskIndex{1};
 
     static constexpr struct PortPin mRTCCInterruptPin{GPIOP_BASE, GPIO_PIN_3};
     //static constexpr GPIO mBLEInterruptPin{GPIOB_AHB_BASE, GPIO_PIN_1};

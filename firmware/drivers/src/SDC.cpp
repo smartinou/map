@@ -111,8 +111,8 @@ enum L_OCR_MASK_ENUM_TAG {
 #define CMD55   (55)            // APP_CMD
 #define CMD58   (58)            // READ_OCR
 
-static uint8_t constexpr sStartBlock = 0xFE;
-static uint8_t constexpr sStopBlock = 0xFD;
+static uint8_t constexpr sStartBlock{0xFE};
+static uint8_t constexpr sStopBlock{0xFD};
 
 #define REG32TOH(num)         \
     (((num>>24)&0x000000ff) | \
@@ -137,32 +137,35 @@ static uint8_t constexpr sStopBlock = 0xFD;
 // ******************************************************************************
 
 SDC::SDC(
-    unsigned int const aDriveIx,
+    UseCreateFunc const aDummy,
+    unsigned int aDriveIx,
     std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
     GPIO const &aCSnPin,
     GPIO const &aDetectPin,
     unsigned int const aSPIBitRate
 )
-    : mSPIMasterDev(aSPIMasterDev)
-    , mSPISlaveCfg(
+    : FatFSDisk(aDummy, aDriveIx) // [MG] CONSIDER EXPLICIT PASSING OF DRIVE INDEX.
+    , mSPIMasterDev{aSPIMasterDev}
+    , mSPISlaveCfg{
         aCSnPin,
         CoreLink::SPISlaveCfg::PROTOCOL::MOTO_0,
         400000,
         8
-    )
-    , mDetectPin(aDetectPin)
-    , mSPIBitRate(aSPIBitRate)
+    }
+    , mDetectPin{aDetectPin}
+    , mSPIBitRate{aSPIBitRate}
 {
     mSPISlaveCfg.InitCSnGPIO();
 }
 
 
-DSTATUS SDC::GetDiskStatus(void) {
+DSTATUS SDC::GetDiskStatus() {
     return mStatus;
 }
 
 
-DSTATUS SDC::InitDisk(void) {
+// [MG] REWORK: THIS IS WAAAYYY TO LARGE.
+DSTATUS SDC::InitDisk() {
 
     PowerOn();
     if (mStatus & STA_NODISK) {
@@ -170,19 +173,19 @@ DSTATUS SDC::InitDisk(void) {
     }
 
     // Set clock to Clock Frequency Identification Mode Max (400KHz).
-    static unsigned int constexpr sClkFreqIDMode = 400000;
+    static unsigned int constexpr sClkFreqIDMode{400000};
     mSPISlaveCfg.SetBitRate(sClkFreqIDMode);
 
     // Send 80 dummy clocks, CSn de-asserted.
     mSPISlaveCfg.DeassertCSn();
-    for (unsigned int lByteIx = 0; lByteIx < (80/8); lByteIx++) {
+    for (auto lByteIx{0}; lByteIx < (80/8); ++lByteIx) {
         mSPIMasterDev->PushPullByte(sDummyByte);
     }
 
     // Put the card in SPI mode.
-    R1_RESPONSE_PKT lR1 = SendCmd(CMD0, L_CMD0_PARAM);
+    R1_RESPONSE_PKT lR1{SendCmd(CMD0, L_CMD0_PARAM)};
     if (L_R1_MASK_IN_IDLE_STATE == lR1) {
-        R7_RESPONSE_PKT lR7 = {0};
+        R7_RESPONSE_PKT lR7{0};
         lR7.mR1 = SendCmd(
             CMD8,
             L_CMD8_PARAM,
@@ -195,7 +198,7 @@ DSTATUS SDC::InitDisk(void) {
             if (L_R7_RESPONSE == REG32TOH(lR7.mIFCond)) {
                 // Compatible voltage range and check pattern correct.
                 // Read OCR.
-                R3_RESPONSE_PKT lR3 = {0};
+                R3_RESPONSE_PKT lR3{0};
                 lR3.mR1 = SendCmd(
                     CMD58,
                     L_CMD58_PARAM,
@@ -243,7 +246,7 @@ DSTATUS SDC::InitDisk(void) {
             // Ver1.X SD memory card, or not SD memory card.
 
             // Read OCR.
-            R3_RESPONSE_PKT lR3 = {0};
+            R3_RESPONSE_PKT lR3{0};
             lR3.mR1 = SendCmd(
                 CMD58,
                 L_CMD58_PARAM,
@@ -254,7 +257,7 @@ DSTATUS SDC::InitDisk(void) {
                 // Compare with expected voltage range.
                 if (IsExpectedVoltageRange()) {
 
-                    uint8_t lCmd = ACMD41;
+                    uint8_t lCmd{ACMD41};
                     lR1 = SendCmd(ACMD41, L_ACMD41_PARAM);
                     mCardType = CT_SD1;
                     if ((0x00 != lR1) && (L_R1_MASK_IN_IDLE_STATE != lR1)) {
@@ -268,7 +271,7 @@ DSTATUS SDC::InitDisk(void) {
                         lR1 = SendCmd(lCmd, 0x00000000);
                     } while (0 != lR1); // && !Timeout);
 
-                    unsigned int Timeout = 1;
+                    unsigned int Timeout{1};
                     if (!Timeout) {
                         // Force block size to 512 bytes to work with FatFS.
                         lR1 = SendCmd(CMD16, 512);
@@ -298,8 +301,8 @@ DSTATUS SDC::InitDisk(void) {
 
 
 DRESULT SDC::RdDisk(
-    uint8_t     *aBuffer,
-    uint32_t     aStartSector,
+    uint8_t * aBuffer,
+    uint32_t aStartSector,
     unsigned int aSectorCount
 ) {
 
@@ -321,7 +324,7 @@ DRESULT SDC::RdDisk(
     if (aSectorCount == 1) {
         // Single sector read.
         // READ_SINGLE_BLOCK.
-        R1_RESPONSE_PKT lR1 = SendCmd(CMD17, aStartSector);
+        R1_RESPONSE_PKT lR1{SendCmd(CMD17, aStartSector)};
         if (lR1 == 0) {
             if (RxDataBlock(aBuffer, SDC::sSectorSize)) {
                 aSectorCount = 0;
@@ -329,7 +332,7 @@ DRESULT SDC::RdDisk(
         }
     } else {
         // Multiple sector read.
-        R1_RESPONSE_PKT lR1 = SendCmd(CMD18, aStartSector);
+        R1_RESPONSE_PKT lR1{SendCmd(CMD18, aStartSector)};
         if (lR1 == 0) {
             // READ_MULTIPLE_BLOCK.
             do {
@@ -356,17 +359,17 @@ DRESULT SDC::RdDisk(
 #if (FF_FS_READONLY == 0)
 DRESULT SDC::WrDisk(
     uint8_t const *aBuffer,
-    uint32_t       aStartSector,
-    unsigned int   aSectorCount
+    uint32_t aStartSector,
+    unsigned int aSectorCount
 ) {
 
+    // Check drive status.
     if (mStatus & STA_NOINIT) {
-        // Check drive status.
         return RES_NOTRDY;
     }
 
+    // Check write protect.
     if (mStatus & STA_PROTECT) {
-        // Check write protect.
         return RES_WRPRT;
     }
 
@@ -378,7 +381,7 @@ DRESULT SDC::WrDisk(
     if (aSectorCount == 1) {
         // Single sector write.
         // WRITE_BLOCK.
-        R1_RESPONSE_PKT lR1 = SendCmd(CMD24, aStartSector);
+        R1_RESPONSE_PKT lR1{SendCmd(CMD24, aStartSector)};
         if (lR1 == 0) {
             // Need at least 8 clock cycles after receiving command response.
             mSPIMasterDev->PushPullByte(sDummyByte);
@@ -394,7 +397,7 @@ DRESULT SDC::WrDisk(
         }
 
         // WRITE_MULTIPLE_BLOCK.
-        R1_RESPONSE_PKT lR1 = SendCmd(CMD25, aStartSector);
+        R1_RESPONSE_PKT lR1{SendCmd(CMD25, aStartSector)};
         if (lR1 == 0) {
             // Need at least 8 clock cycles after receiving command response.
             mSPIMasterDev->PushPullByte(sDummyByte);
@@ -424,8 +427,12 @@ DRESULT SDC::WrDisk(
 
 
 #if (FF_FS_READONLY == 0) || (FF_MAX_SS == FF_MIN_SS)
-DRESULT SDC::IOCTL(uint8_t aCmd, void * const aBuffer) {
+DRESULT SDC::IOCTL(
+    [[maybe_unused]] uint8_t const aCmd,
+    [[maybe_unused]] void * const aBuffer) {
     // No ioctl commands implemented.
+    //static_cast<void>(aCmd);
+    //static_cast<void>(aBuffer);
     return RES_OK;
 }
 #endif
@@ -434,7 +441,7 @@ DRESULT SDC::IOCTL(uint8_t aCmd, void * const aBuffer) {
 //                              LOCAL FUNCTIONS
 // ******************************************************************************
 
-bool SDC::Select(void) {
+bool SDC::Select() {
 
     // Assert CSn.
     // Dummy clock: force DO enabled.
@@ -455,7 +462,7 @@ bool SDC::Select(void) {
 }
 
 
-void SDC::Deselect(void) {
+void SDC::Deselect() {
     // Deassert CSn.
     // Dummy clock: force DO high-Z for multiple slave SPI.
     mSPISlaveCfg.DeassertCSn();
@@ -463,22 +470,22 @@ void SDC::Deselect(void) {
 }
 
 
-void SDC::WaitReady(void) {
+void SDC::WaitReady() {
 
     // Wait until busy to deassert (DO going '1').
-    uint8_t lVal = 0;
+    uint8_t lVal{0};
     do {
         lVal = mSPIMasterDev->PushPullByte(sDummyByte);
     } while (lVal != sDummyByte);
 }
 
 
-void SDC::PowerOn(void) {
+void SDC::PowerOn() {
     // Turn power on.
 }
 
 
-void SDC::PowerOff(void) {
+void SDC::PowerOff() {
     // Turn power off.
 }
 
@@ -486,8 +493,8 @@ void SDC::PowerOff(void) {
 bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
 
     // Wait for Start Block token in timeout of 200ms.
-    uint8_t lToken = 0x00;
-    unsigned int lRetryCount = 200;
+    uint8_t lToken{0x00};
+    unsigned int lRetryCount{200};
     do {
         lToken = mSPIMasterDev->PushPullByte(sDummyByte);
     } while ((lToken == sDummyByte) && lRetryCount--);
@@ -501,8 +508,8 @@ bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
     // Data. Can't use mSPIMasterDev->RdData() since it asserts/deasserts CSn.
     while (aBlockLen > 0) {
         *aBuffer = mSPIMasterDev->PushPullByte(0);
-        aBuffer++;
-        aBlockLen--;
+        ++aBuffer;
+        --aBlockLen;
     }
 
     // Discard CRC.
@@ -514,7 +521,7 @@ bool SDC::RxDataBlock(uint8_t *aBuffer, unsigned int aBlockLen) {
 
 
 #if (FF_FS_READONLY == 0)
-bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
+bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t const aToken) {
 
     // Send token byte.
     mSPIMasterDev->PushPullByte(aToken);
@@ -525,8 +532,8 @@ bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
         unsigned int lLen = SDC::sSectorSize;
         while (lLen > 0) {
             mSPIMasterDev->PushPullByte(*aBuffer);
-            aBuffer++;
-            lLen--;
+            ++aBuffer;
+            --lLen;
         }
 
         // Dummy CRC.
@@ -534,8 +541,8 @@ bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
         mSPIMasterDev->PushPullByte(sDummyByte);
 
         // Receive data response token.
-        uint8_t lVal = mSPIMasterDev->PushPullByte(sDummyByte);
-        static uint8_t constexpr sDataAccepted = 0x05;
+        uint8_t lVal{mSPIMasterDev->PushPullByte(sDummyByte)};
+        static uint8_t constexpr sDataAccepted{0x05};
         if ((lVal & 0x1F) != sDataAccepted) {
             // Function fails if the data packet was not accepted.
             return false;
@@ -543,7 +550,7 @@ bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
     }
 
     // Busy wait: Get R1 1st (discard), then get busy signal.
-    R1_RESPONSE_PKT lR1b = mSPIMasterDev->PushPullByte(sDummyByte);
+    R1_RESPONSE_PKT lR1b{mSPIMasterDev->PushPullByte(sDummyByte)};
     lR1b = 0x00;
     while (!lR1b) {
         lR1b = mSPIMasterDev->PushPullByte(sDummyByte);
@@ -555,15 +562,16 @@ bool SDC::TxDataBlock(uint8_t const *aBuffer, uint8_t aToken) {
 
 
 SDC::R1_RESPONSE_PKT SDC::SendCmd(
-    uint8_t      aCmd,
-    uint32_t     aArg,
-    uint8_t     *aRegPtr,
-    unsigned int aRegLen) {
+    uint8_t aCmd,
+    uint32_t aArg,
+    uint8_t *aRegPtr,
+    unsigned int aRegLen
+) {
 
     // Send a CMD55 prior to ACMD<n>.
     if (aCmd & 0x80) {
         aCmd &= 0x7F;
-        R1_RESPONSE_PKT lR1 = SendCmd(CMD55, 0x00000000);
+        R1_RESPONSE_PKT lR1{SendCmd(CMD55, 0x00000000)};
         // Return if there's an error.
         if (lR1 != L_R1_MASK_IN_IDLE_STATE) {
             return lR1;
@@ -578,7 +586,7 @@ SDC::R1_RESPONSE_PKT SDC::SendCmd(
 
 
     // Send command packet: start + command.
-    static uint8_t constexpr sTransmitBit = 0x40;
+    static uint8_t constexpr sTransmitBit{0x40};
     mSPIMasterDev->PushPullByte(aCmd | sTransmitBit, mSPISlaveCfg);
     mSPIMasterDev->PushPullByte(static_cast<uint8_t>(aArg >> 24));
     mSPIMasterDev->PushPullByte(static_cast<uint8_t>(aArg >> 16));
@@ -598,8 +606,8 @@ SDC::R1_RESPONSE_PKT SDC::SendCmd(
     }
 
     // Wait for response (10 bytes max).
-    unsigned int lWaitCycles = 10;
-    R1_RESPONSE_PKT lR1 = 0;
+    unsigned int lWaitCycles{10};
+    R1_RESPONSE_PKT lR1{0};
     do {
         lR1 = mSPIMasterDev->PushPullByte(sDummyByte);
     } while ((lR1 & L_R1_MASK_BUSY) && (lWaitCycles--));
@@ -607,8 +615,8 @@ SDC::R1_RESPONSE_PKT SDC::SendCmd(
     // Pull data back into output pointer.
     while (aRegLen > 0) {
         *(static_cast<uint8_t *>(aRegPtr)) = mSPIMasterDev->PushPullByte(sDummyByte);
-        aRegPtr++;
-        aRegLen--;
+        ++aRegPtr;
+        --aRegLen;
     }
 
     // SPI transaction is deasserted by calling function.
@@ -616,7 +624,7 @@ SDC::R1_RESPONSE_PKT SDC::SendCmd(
 }
 
 
-bool SDC::IsExpectedVoltageRange(void) {
+bool SDC::IsExpectedVoltageRange() {
     return true;
 }
 
