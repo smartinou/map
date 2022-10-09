@@ -33,7 +33,7 @@ Can perform various other tasks like saving to Non-Volatile memory and read temp
     <documentation>Pointer to CalendarRec object.
 </documentation>
    </attribute>
-   <attribute name="mNVMemBuf {}" type="uint8_t *" visibility="0x02" properties="0x00">
+   <attribute name="mNVMemBuf {}" type="std::unique_ptr&lt;uint8_t []&gt;" visibility="0x02" properties="0x00">
     <documentation>Pointer to the non-volatile memory buffer.</documentation>
    </attribute>
    <operation name="RTCC_AO" type="" visibility="0x00" properties="0x00">
@@ -72,13 +72,11 @@ If not returns 0.0.
    </operation>
    <operation name="InitDB" type="void" visibility="0x02" properties="0x00">
     <documentation>Initializes the DB, from NV memory if available, or to default if not.</documentation>
-    <code>auto const lNVMemSize{mNVMem-&gt;GetNVMemSize()};
-
-if (lNVMemSize) {
-    mNVMemBuf = new uint8_t [lNVMemSize];
+    <code>if (auto const lNVMemSize{mNVMem-&gt;GetNVMemSize()}; lNVMemSize) {
+    mNVMemBuf = std::make_unique&lt;uint8_t []&gt;(lNVMemSize);
     auto const lDBSize = DBRec::GetDBSize();
-    mNVMem-&gt;RdFromNVMem(mNVMemBuf, 0, lDBSize);
-    DBRec::DeserializeDB(mNVMemBuf);
+    mNVMem-&gt;RdFromNVMem(mNVMemBuf.get(), 0, lDBSize);
+    DBRec::DeserializeDB(mNVMemBuf.get());
     if (!DBRec::IsDBSane()) {
         // Reset defaults and write back to NV mem.
         DBRec::ResetDBDflt();
@@ -120,8 +118,8 @@ SetNextCalendarEvent();
     <code>if (DBRec::IsDBDirty()) {
     auto const lDBSize{DBRec::GetDBSize()};
     DBRec::StaticUpdateCRC();
-    DBRec::SerializeDB(mNVMemBuf);
-    mNVMem-&gt;WrToNVMem(mNVMemBuf, 0, lDBSize);
+    DBRec::SerializeDB(mNVMemBuf.get());
+    mNVMem-&gt;WrToNVMem(mNVMemBuf.get(), 0, lDBSize);
 }
 </code>
    </operation>
@@ -375,6 +373,8 @@ $declare${RTCC::Events::SaveToRAM}
   </file>
   <file name="RTCC_AOs.h">
    <text>#include &quot;qpcpp.h&quot;
+
+#include &lt;memory&gt;
 
 // Forward declaration.
 class IRTCC;
