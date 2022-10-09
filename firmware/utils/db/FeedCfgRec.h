@@ -35,7 +35,7 @@
 // ******************************************************************************
 
 //! \brief Feeding configuration database.
-class FeedCfgRec
+class FeedCfgRec final
     : public DBRec {
 protected:
     template<class T, typename...Args>
@@ -46,16 +46,16 @@ public:
         : DBRec{aDummy} {}
 
     // DBRec interface.
-    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    [[nodiscard]] bool IsSane() const noexcept override;
     void ResetDflt() noexcept override;
 
     // Extended object's interface.
     [[nodiscard]] auto GetManualFeedWaitPeriod() const noexcept -> uint8_t;
     [[nodiscard]] auto GetManualFeedMaxFeedPeriod() const noexcept -> uint8_t;
     [[nodiscard]] auto GetTimedFeedPeriod() const noexcept -> uint8_t;
-    [[nodiscard]] auto IsManualFeedEnable() const noexcept -> bool;
-    [[nodiscard]] auto IsTimedFeedEnable() const noexcept -> bool;
-    [[nodiscard]] auto UseSystemTime() const noexcept -> bool;
+    [[nodiscard]] bool IsManualFeedEnable() const noexcept;
+    [[nodiscard]] bool IsTimedFeedEnable() const noexcept;
+    [[nodiscard]] bool UseSystemTime() const noexcept;
 
     void SetTimedFeedPeriod(uint8_t aPeriod) noexcept;
     void SetManualFeedEnabled(bool aIsEnabled) noexcept;

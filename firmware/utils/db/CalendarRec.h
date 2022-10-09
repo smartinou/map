@@ -43,7 +43,7 @@
 
 
 //! \brief Feeding calendar database class.
-class CalendarRec
+class CalendarRec final
     : public DBRec {
 protected:
     template<class T, typename...Args>
@@ -54,7 +54,7 @@ public:
         : DBRec{aDummy} {}
 
     // DBRec interface.
-    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    [[nodiscard]] bool IsSane() const noexcept override;
     void ResetDflt() noexcept override;
 
     // Extended object's interface.
@@ -67,7 +67,7 @@ public:
     void SetTimeEntry(Time const &aTime) noexcept;
     void ClrAllEntries() noexcept;
 
-    auto IsEntrySet(Time const &aTime) noexcept -> bool;
+    bool IsEntrySet(Time const &aTime) noexcept;
 
     // Gets the next set entry from current time.
     struct TimeAndDate_s {
@@ -90,9 +90,9 @@ private:
     void Deserialize(uint8_t const * aData) override;
     void UpdateCRC() noexcept override;
 
-    static auto GetArrayIx(Time const &aTime) noexcept -> unsigned int;
-    static auto WeekdayToBitMask(Weekday const &aWeekday) noexcept -> unsigned int;
-    static auto BitMaskToWeekday(unsigned int aBitMask) noexcept -> unsigned int ;
+    [[nodiscard]] static auto GetArrayIx(Time const &aTime) noexcept -> unsigned int;
+    [[nodiscard]] static auto WeekdayToBitMask(Weekday const &aWeekday) noexcept -> unsigned int;
+    [[nodiscard]] static auto BitMaskToWeekday(unsigned int aBitMask) noexcept -> unsigned int ;
 
     enum BitMaskEnumTag { ALL_WEEK_BIT_MASK = (0x1 << 0) };
     static constexpr auto sHoursQty{24};

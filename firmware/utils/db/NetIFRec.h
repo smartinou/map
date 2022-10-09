@@ -35,7 +35,7 @@
 // ******************************************************************************
 
 //! \brief Network configuration database.
-class NetIFRec
+class NetIFRec final
     : public DBRec {
 protected:
     template<class T, typename...Args>
@@ -46,11 +46,11 @@ public:
         : DBRec{aDummy} {}
 
     // DBRec interface.
-    [[nodiscard]] auto IsSane() const noexcept -> bool override;
+    [[nodiscard]] bool IsSane() const noexcept override;
     void ResetDflt() noexcept override;
 
     // Extended object's interface.
-    [[nodiscard]] auto UseDHCP() const noexcept -> bool;
+    [[nodiscard]] bool UseDHCP() const noexcept;
     [[nodiscard]] auto GetIPAddr() const noexcept -> uint32_t;
     [[nodiscard]] auto GetSubnetMask() const noexcept -> uint32_t;
     [[nodiscard]] auto GetGWAddr() const noexcept -> uint32_t;

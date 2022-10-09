@@ -45,33 +45,33 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::vector<DBRec::Ptr> DBRec::mRecList;
+std::vector<DBRec::Ptr> DBRec::sRecList;
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 // DB static methods.
-auto DBRec::IsDBSane() noexcept -> bool {
+bool DBRec::IsDBSane() noexcept {
     return std::all_of(
-        mRecList.cbegin(),
-        mRecList.cend(),
-        [](const auto& aRec) {return aRec->IsSane();}
+        sRecList.cbegin(),
+        sRecList.cend(),
+        [](auto const & aRec) {return aRec->IsSane();}
     );
 }
 
 
-auto DBRec::IsDBDirty() noexcept -> bool {
+bool DBRec::IsDBDirty() noexcept {
     return std::any_of(
-        mRecList.cbegin(),
-        mRecList.cend(),
-        [](const auto& aRec) {return aRec->IsDirty();}
+        sRecList.cbegin(),
+        sRecList.cend(),
+        [](auto const & aRec) {return aRec->IsDirty();}
     );
 }
 
 
 void DBRec::ResetDBDflt() noexcept {
-    for (const auto& lRec : mRecList) {
+    for (auto const& lRec : sRecList) {
         lRec->ResetDflt();
     }
 }
@@ -79,8 +79,8 @@ void DBRec::ResetDBDflt() noexcept {
 
 auto DBRec::GetDBSize() noexcept -> size_t {
 
-    size_t lDBSize = 0;
-    for (const auto& lRec : mRecList) {
+    size_t lDBSize{0};
+    for (auto const & lRec : sRecList) {
         lDBSize += lRec->GetRecSize();
     }
 
@@ -89,25 +89,25 @@ auto DBRec::GetDBSize() noexcept -> size_t {
 
 
 void DBRec::SerializeDB(uint8_t * aData) {
-    for (const auto& lRec : mRecList) {
+    for (auto const & lRec : sRecList) {
         lRec->Serialize(aData);
-        unsigned int lSize = lRec->GetRecSize();
+        auto const lSize = lRec->GetRecSize();
         aData += lSize;
     }
 }
 
 
 void DBRec::DeserializeDB(uint8_t const * aData) {
-    for (const auto& lRec : mRecList) {
+    for (auto const & lRec : sRecList) {
         lRec->Deserialize(aData);
-        unsigned int lSize = lRec->GetRecSize();
+        auto const lSize = lRec->GetRecSize();
         aData += lSize;
     }
 }
 
 
 void DBRec::StaticUpdateCRC() noexcept {
-    for (const auto& lRec : mRecList) {
+    for (auto const & lRec : sRecList) {
         lRec->UpdateCRC();
     }
 }
@@ -117,13 +117,13 @@ void DBRec::StaticUpdateCRC() noexcept {
 // *****************************************************************************
 
 void DBRec::AddRec(DBRec::Ptr aDBRec) {
-    mRecList.push_back(aDBRec);
+    sRecList.push_back(std::move(aDBRec));
 }
 
 
 auto DBRec::ComputeCRC(std::span<uint8_t const> const &aSpan) noexcept -> uint8_t {
 
-    uint8_t lCRC = 0;
+    uint8_t lCRC{0};
     for (auto const lByte : aSpan) {
         lCRC += lByte;
     }
@@ -131,19 +131,19 @@ auto DBRec::ComputeCRC(std::span<uint8_t const> const &aSpan) noexcept -> uint8_
 }
 
 
-auto DBRec::IsMagicGood(
+bool DBRec::IsMagicGood(
     struct BaseRec const &aBaseRec,
     Magic const &aMagic
-) noexcept -> bool
+) noexcept
 {
     return (aMagic == aBaseRec.mMagic);
 }
 
 
-auto DBRec::IsCRCGood(std::span<uint8_t const> const &aSpan) noexcept -> bool {
+bool DBRec::IsCRCGood(std::span<uint8_t const> const &aSpan) noexcept {
     // Span contains full record, including computed CRC.
     // Result should be 0x00.
-    auto const lComputedCRC = ComputeCRC(aSpan);
+    auto const lComputedCRC{ComputeCRC(aSpan)};
     return (lComputedCRC == 0);
 }
 

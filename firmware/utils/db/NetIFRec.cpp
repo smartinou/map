@@ -53,7 +53,7 @@
 // Start of IDBRec interface.
 //
 
-auto NetIFRec::IsSane() const noexcept -> bool {
+bool NetIFRec::IsSane() const noexcept {
 
     bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
     if (lIsMagicGood) {
@@ -118,7 +118,7 @@ void NetIFRec::UpdateCRC() noexcept {
 // Start of child methods.
 //
 
-auto NetIFRec::UseDHCP() const noexcept -> bool {
+bool NetIFRec::UseDHCP() const noexcept {
     return static_cast<bool>(mRec.mUseDHCP);
 }
 

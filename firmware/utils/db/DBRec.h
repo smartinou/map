@@ -46,20 +46,20 @@ class DBRec
 public:
     virtual ~DBRec() = default;
 
-    [[nodiscard]] auto IsDirty() const -> bool {return mIsDirty;}
-    [[nodiscard]] virtual auto IsSane() const -> bool = 0;
+    [[nodiscard]] bool IsDirty() const noexcept {return mIsDirty;}
+    [[nodiscard]] virtual bool IsSane() const = 0;
     virtual void ResetDflt() = 0;
 
     // DB static methods.
-    static auto IsDBSane() noexcept -> bool;
-    static auto IsDBDirty() noexcept -> bool;
+    [[nodiscard]] static bool IsDBSane() noexcept;
+    [[nodiscard]] static bool IsDBDirty() noexcept;
     static void ResetDBDflt() noexcept;
-    static auto GetDBSize() noexcept -> size_t;
-    static auto GetDBRecCount() noexcept -> size_t {return mRecList.size();}
+    [[nodiscard]] static auto GetDBSize() noexcept -> size_t;
+    [[nodiscard]] static auto GetDBRecCount() noexcept -> size_t {return sRecList.size();}
     static void SerializeDB(uint8_t * aData);
     static void DeserializeDB(uint8_t const * aData);
     static void StaticUpdateCRC() noexcept;
-    static void ClearAllDB() noexcept {mRecList.clear();}
+    static void ClearAllDB() noexcept {sRecList.clear();}
 
     template <typename T, typename...Args>
     [[nodiscard]] static auto Create(Args&&... aArgs) -> std::shared_ptr<T> {
@@ -77,6 +77,7 @@ protected:
     };
     explicit DBRec([[maybe_unused]] UseCreateFunc /* Dummy */) noexcept {}
     DBRec(DBRec const &) = delete;
+    DBRec &operator=(DBRec const &) = delete;
 
     using Magic = std::array<char, 3>;
     struct BaseRec {
@@ -88,8 +89,8 @@ protected:
 
     static void AddRec(Ptr aDBRec);
     void SetIsDirty() noexcept {mIsDirty = true;}
-    [[nodiscard]] static auto IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) noexcept -> bool;
-    [[nodiscard]] static auto IsCRCGood(std::span<uint8_t const> const &aSpan) noexcept -> bool;
+    [[nodiscard]] static bool IsMagicGood(struct BaseRec const &aBaseRec, Magic const &aMagic) noexcept;
+    [[nodiscard]] static bool IsCRCGood(std::span<uint8_t const> const &aSpan) noexcept;
     [[nodiscard]] static auto ComputeCRC(std::span<uint8_t const> const &aSpan) noexcept -> uint8_t;
 
 private:
@@ -98,7 +99,7 @@ private:
     virtual void Deserialize(uint8_t const * aData) = 0;
     virtual void UpdateCRC() = 0;
 
-    static std::vector<Ptr> mRecList;
+    static std::vector<Ptr> sRecList;
     bool mIsDirty{};
 };
 

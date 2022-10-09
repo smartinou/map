@@ -49,7 +49,7 @@
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
-auto CalendarRec::IsSane() const noexcept -> bool {
+bool CalendarRec::IsSane() const noexcept {
 
     bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
     if (lIsMagicGood) {
@@ -94,7 +94,7 @@ void CalendarRec::ClrAllEntries() noexcept {
 }
 
 
-auto CalendarRec::IsEntrySet(Time const &aTime) noexcept -> bool {
+bool CalendarRec::IsEntrySet(Time const &aTime) noexcept  {
 
     auto const lArrayIx = GetArrayIx(aTime);
     return static_cast<bool>(mRec.mCalendarArray.at(lArrayIx));

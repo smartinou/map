@@ -53,7 +53,7 @@
 // Start of DBRec interface.
 //
 
-auto FeedCfgRec::IsSane() const noexcept -> bool {
+bool FeedCfgRec::IsSane() const noexcept {
 
     bool const lIsMagicGood = IsMagicGood(mRec.mBase, sMagic);
     if (lIsMagicGood) {
@@ -99,17 +99,17 @@ auto FeedCfgRec::GetTimedFeedPeriod() const noexcept -> uint8_t {
 }
 
 
-auto FeedCfgRec::IsManualFeedEnable() const noexcept -> bool {
+bool FeedCfgRec::IsManualFeedEnable() const noexcept {
     return mRec.mIsManualFeedEnable;
 }
 
 
-auto FeedCfgRec::IsTimedFeedEnable() const noexcept -> bool {
+bool FeedCfgRec::IsTimedFeedEnable() const noexcept {
     return mRec.mIsTimedFeedEnable;
 }
 
 
-auto FeedCfgRec::UseSystemTime() const noexcept -> bool {
+bool FeedCfgRec::UseSystemTime() const noexcept {
     return mRec.mUseSystemTime;
 }
 
