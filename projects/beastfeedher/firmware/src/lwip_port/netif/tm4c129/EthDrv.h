@@ -41,36 +41,41 @@
 //                         TYPEDEFS AND STRUCTURES
 // ******************************************************************************
 
-class EthDrv
+class EthDrv final
     : public LwIPDrv {
+protected:
+    template<class T, typename...Args>
+    friend void LwIPDrv::Create(Args&&... aArgs);
+
 public:
-    EthDrv(
+    explicit EthDrv(
+        UseCreateFunc aDummy,
         unsigned int aIndex,
         EthernetAddress const &aEthernetAddress,
-        unsigned int aBufQueueSize,
+        unsigned int aRingBufSize,
         uint32_t aSysClk
-    );
-    ~EthDrv() {}
+    ) noexcept;
 
-    void Rd(void) override;
-    void Wr(void) override {}
-    void PHYISR(void) override;
-    void DisableAllInt(void) override;
-    void EnableAllInt(void) override;
+    void Rd() override;
+    void Wr() override {}
+    void PHYISR() override;
+    void DisableAllInt() override;
+    void EnableAllInt() override;
 
 private:
     // LwIP Interface.
-    err_t EtherIFOut(struct pbuf * const aPBuf) override;
-    err_t EtherIFInit(struct netif * const aNetIF) override;
-    void ISR(void) override;
+    err_t EtherIFOut(struct pbuf * aPBuf) override;
+    err_t EtherIFInit(struct netif * aNetIF) override;
+    void ISR() override;
 
     // Local interface.
-    struct pbuf *LowLevelRx(RxDescriptor * const aDescriptor, size_t aCumulatedLen = 0);
+    struct pbuf *LowLevelRx(RxDescriptor * aDescriptor, size_t aCumulatedLen = 0);
 
-    RxDescriptorChain mRxRingBuf;
-    TxRingBuf mTxRingBuf;
-    uint32_t const mSysClk;
-    uint8_t const mPHYAddr = EMAC_PHY_ADDR;
+    RxDescriptorChain mRxRingBuf{};
+    TxRingBuf mTxRingBuf{};
+    unsigned int mRingBufSize{8};
+    uint32_t mSysClk{};
+    uint8_t mPHYAddr{};
 };
 
 // ******************************************************************************

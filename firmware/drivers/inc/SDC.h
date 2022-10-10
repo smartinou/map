@@ -24,13 +24,15 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <cstdint>
-#include <memory>
-
+// This module.
 #include "FatFSDisk.h"
 
 #include "inc/GPIO.h"
 #include "SPISlaveCfg.h"
+
+// Standard Libraries.
+#include <cstdint>
+#include <memory>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -51,12 +53,11 @@ class SDC final
     : public FatFSDisk {
 protected:
     template<class T, typename...Args>
-    friend void FatFSDisk::Create(Args&&... aArgs);
+    friend void FatFSDisk::Create(unsigned int aDriveIndex, Args&&... aArgs);
 
 public:
     explicit SDC(
-        UseCreateFunc const aDummy,
-        unsigned int aDriveIx,
+        UseCreateFunc aDummy,
         std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
         GPIO const &aCSnPin,
         GPIO const &aDetectPin,

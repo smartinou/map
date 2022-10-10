@@ -61,13 +61,14 @@
 //                             GLOBAL VARIABLES
 // *****************************************************************************
 
-std::vector<LwIPDrv *> LwIPDrv::sVector({nullptr});
+std::vector<LwIPDrv::Ptr> LwIPDrv::sNetDrives{};
 
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
 
 void LwIPDrv::StaticInit(
+    // [MG] CONSIDER shared_ptr<QP::QActive>
     QP::QActive * const aAO,
     bool const aUseDHCP,
     IPAddress const aIPAddress,
@@ -77,34 +78,34 @@ void LwIPDrv::StaticInit(
     // Go through all registered network drivers and call their Init() function.
     // For now, this forces to have the same IP address scheme, but for now it's fine.
     // Could at least increment IP address?
-    for (auto &lNetDrv : sVector) {
+    for (auto &lNetDrv : sNetDrives) {
         lNetDrv->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
     }
 }
 
 
 void LwIPDrv::StaticISR(unsigned int const aIndex) {
-    sVector.at(aIndex)->ISR();
+    sNetDrives.at(aIndex)->ISR();
 }
 
 
 EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int const aIndex) {
-    return sVector.at(aIndex)->GetMACAddress();
+    return sNetDrives.at(aIndex)->GetMACAddress();
 }
 
 
 IPAddress LwIPDrv::StaticGetIPAddress(unsigned int const aIndex) {
-    return sVector.at(aIndex)->GetIPAddress();
+    return sNetDrives.at(aIndex)->GetIPAddress();
 }
 
 
 IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int const aIndex) {
-    return sVector.at(aIndex)->GetSubnetMask();
+    return sNetDrives.at(aIndex)->GetSubnetMask();
 }
 
 
 IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int const aIndex) {
-    return sVector.at(aIndex)->GetDefaultGW();
+    return sNetDrives.at(aIndex)->GetDefaultGW();
 }
 
 
@@ -245,18 +246,16 @@ void LwIPDrv::StartIPCfg(void) {
 // *****************************************************************************
 
 LwIPDrv::LwIPDrv(
+    [[maybe_unused]] UseCreateFunc /* Dummy */,
     unsigned int const aIndex,
     EthernetAddress const &aEthernetAddress
-)
-    : mMyIndex(aIndex)
-    , mEthernetAddress(aEthernetAddress)
-    , mNetIF{0}
-    , mExtCallback{0}
-    , mUseDHCP(false)
+) noexcept
+    : mMyIndex{aIndex}
+    , mEthernetAddress{aEthernetAddress}
+    //, mNetIF{0}
+    //, mExtCallback{0}
+    //, mUseDHCP(false)
 {
-    // Associate this <struct netif *, LwIPDrv>.
-    LwIPDrv::sVector[aIndex] = this;
-
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
     aEthernetAddress.GetData(&GetNetIF().hwaddr[0]);
@@ -264,6 +263,7 @@ LwIPDrv::LwIPDrv(
 
 
 void LwIPDrv::DrvInit(
+    // [MG] CONSIDER shared_ptr<QP::QActive>
     QP::QActive * const aAO,
     bool const aUseDHCP,
     IPAddress const aIPAddr,

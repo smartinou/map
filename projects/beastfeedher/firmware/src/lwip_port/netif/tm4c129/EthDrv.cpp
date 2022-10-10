@@ -24,6 +24,10 @@
 //                              INCLUDE FILES
 // *****************************************************************************
 
+// This module.
+#include "EthDrv.h"
+#include "netif/etharp.h"
+
 // Standard Libraries.
 #include <string.h>
 
@@ -44,9 +48,6 @@
 #include <driverlib/rom.h>
 #include <driverlib/rom_map.h>
 #include <driverlib/sysctl.h>
-
-#include "netif/etharp.h"
-#include "EthDrv.h"
 
 // *****************************************************************************
 //                      DEFINED CONSTANTS AND MACROS
@@ -84,20 +85,24 @@ void lwIPHostGetTime(u32_t *time_s, u32_t *time_ns);
 // *****************************************************************************
 
 EthDrv::EthDrv(
+    UseCreateFunc const aDummy,
     unsigned int aIndex,
     EthernetAddress const &aEthernetAddress,
-    unsigned int aBufQueueSize,
-    uint32_t aSysClk
-)   : LwIPDrv(aIndex, aEthernetAddress)
-    , mRxRingBuf()
-    , mTxRingBuf()
-    , mSysClk(aSysClk) {
-
+    unsigned int const aRingBufSize,
+    uint32_t const aSysClk
+) noexcept
+    : LwIPDrv{aDummy, aIndex, aEthernetAddress}
+    //, mRxRingBuf{}
+    //, mTxRingBuf{}
+    , mRingBufSize{aRingBufSize}
+    , mSysClk{aSysClk}
+    , mPHYAddr{EMAC_PHY_ADDR}
+{
     // Ctor body.
 }
 
 
-void EthDrv::Rd(void) {
+void EthDrv::Rd() {
     // New packet received into the pbuf?
     // Get a free descriptor from the ring buffer.
     RxDescriptor *lDescriptor = mRxRingBuf.GetNext();
@@ -122,7 +127,7 @@ void EthDrv::Rd(void) {
 }
 
 
-void EthDrv::PHYISR(void) {
+void EthDrv::PHYISR() {
     // This PHYISR handler is called in normal "task" context.
     // EthDrv::ISR() makes call to read and clear interrupt status.
 
@@ -168,12 +173,12 @@ void EthDrv::PHYISR(void) {
 }
 
 
-void EthDrv::DisableAllInt(void) {
+void EthDrv::DisableAllInt() {
     MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
 }
 
 
-void EthDrv::EnableAllInt(void) {
+void EthDrv::EnableAllInt() {
     // Enable Ethernet TX and RX Packet Interrupts.
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
 
@@ -319,11 +324,10 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     );
 
     // Initialize the Ethernet DMA descriptors.
-    static constexpr unsigned int sDescriptorQty = 8;
     static constexpr size_t sBufferSize = 540;
-    tEMACDMADescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, sDescriptorQty, sBufferSize);
+    tEMACDMADescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, mRingBufSize, sBufferSize);
     MAP_EMACRxDMADescriptorListSet(EMAC0_BASE, lRxList);
-    tEMACDMADescriptor * const lTxList = mTxRingBuf.Create(sDescriptorQty);
+    tEMACDMADescriptor * const lTxList = mTxRingBuf.Create(mRingBufSize);
     MAP_EMACTxDMADescriptorListSet(EMAC0_BASE, lTxList);
 
     // Enable the Ethernet MAC transmitter and receiver.
@@ -333,7 +337,7 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 }
 
 
-void EthDrv::ISR(void) {
+void EthDrv::ISR() {
     // Get and clear the interrupt sources.
     static constexpr bool sIsMasked = true;
     uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, sIsMasked);

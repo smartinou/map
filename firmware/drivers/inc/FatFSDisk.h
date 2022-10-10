@@ -24,13 +24,14 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
-#include <cstdint>
-#include <memory>
-#include <vector>
-
 // FatFS.
 #include "diskio.h"
 #include "ff.h"
+
+// Standard Libraries.
+#include <cstdint>
+#include <map>
+#include <memory>
 
 // ******************************************************************************
 //                       DEFINED CONSTANTS AND MACROS
@@ -42,11 +43,14 @@
 
 class FatFSDisk {
 public:
+    FatFSDisk(FatFSDisk const &) = delete;
+    FatFSDisk &operator=(FatFSDisk const &) = delete;
     virtual ~FatFSDisk() = default;
 
     template <typename T, typename...Args>
-    static void Create(Args&&... aArgs) {
-        sDrives.emplace_back(
+    static void Create(unsigned int aDriveIndex, Args&&... aArgs) {
+        sDrives.try_emplace(
+            aDriveIndex,
             std::make_unique<T>(
                 typename T::UseCreateFunc{},
                 std::forward<Args>(aArgs)...
@@ -81,16 +85,13 @@ public:
 #endif
 
     static auto GetDiskQty() noexcept -> unsigned int { return sDrives.size(); }
-    auto GetDiskIndex() const noexcept -> unsigned int { return mDriveIndex; }
+    static void ClearAllDisk() noexcept { sDrives.clear(); }
 
 protected:
     struct UseCreateFunc {
         explicit UseCreateFunc() = default;
     };
-    explicit FatFSDisk([[maybe_unused]] UseCreateFunc /* Dummy */, unsigned int aDriveIndex) noexcept
-        : mDriveIndex{aDriveIndex} {}
-    FatFSDisk(FatFSDisk const &) = delete;
-    FatFSDisk &operator=(FatFSDisk const &) = delete;
+    explicit FatFSDisk(UseCreateFunc /* Dummy */) noexcept {}
 
 private:
     virtual auto GetDiskStatus() -> DSTATUS = 0;
@@ -112,10 +113,8 @@ private:
     virtual auto IOCTL(uint8_t aCmd, void * aBuffer) -> DRESULT = 0;
 #endif
 
-    unsigned int mDriveIndex{};
-
     using Ptr = std::unique_ptr<FatFSDisk>;
-    static std::vector<Ptr> sDrives;
+    static std::map<unsigned int, Ptr> sDrives;
     static unsigned int mMountedDiskIndex;
 };
 

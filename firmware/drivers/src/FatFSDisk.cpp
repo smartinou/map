@@ -47,7 +47,7 @@
 //                             GLOBAL VARIABLES
 // ******************************************************************************
 
-std::vector<FatFSDisk::Ptr> FatFSDisk::sDrives;
+std::map<unsigned int, FatFSDisk::Ptr> FatFSDisk::sDrives;
 unsigned int FatFSDisk::mMountedDiskIndex{std::numeric_limits<unsigned int>::max()};
 
 // ******************************************************************************

@@ -557,11 +557,11 @@ private:
     void CreateEthDrv() {
         static constexpr unsigned int sMyNetIFIndex{0};
         auto const lMAC = GetMACAddress();
-        static constexpr unsigned int sPBufQueueSize{8};
-        mEthDrv = std::make_unique<EthDrv>(
+        static constexpr unsigned int sRingBufSize{8};
+        EthDrv::Create<EthDrv>(
             sMyNetIFIndex,
             lMAC,
-            sPBufQueueSize,
+            sRingBufSize,
             mClkRate
         );
     }
@@ -619,7 +619,6 @@ private:
     std::unique_ptr<Logging::AO::FileSink_AO> mFileLogSinkAO{};
     std::unique_ptr<PFPP::AO::Mgr_AO> mPFPPAO{};
     std::unique_ptr<Display::AO::Mgr_AO> mDisplayMgrAO{};
-    std::unique_ptr<EthDrv> mEthDrv{};
     std::unique_ptr<LwIP::AO::Mgr_AO> mLwIPMgrAO{};
     //std::unique_ptr<BLE::BLE> mBLE{};
     //std::shared_ptr<PFPP::AO::BLE_AO> mBLEAO{};

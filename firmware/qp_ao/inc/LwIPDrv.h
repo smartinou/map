@@ -27,6 +27,7 @@
 #include "lwip/err.h"
 #include "lwip/netif.h"
 
+#include <memory>
 #include <vector>
 
 // ******************************************************************************
@@ -45,23 +46,35 @@ namespace QP {
 
 class LwIPDrv {
 public:
+    LwIPDrv(LwIPDrv const &) = delete;
+    LwIPDrv &operator=(LwIPDrv const &) = delete;
     virtual ~LwIPDrv() = default;
 
-    static void StaticInit(
-        QP::QActive * const aAO,
-        bool const aUseDHCP,
-        IPAddress const aIPAddress,
-        IPAddress const aSubnetMask,
-        IPAddress const aGWAddress
-    );
-    static void StaticISR(unsigned int const aIndex);
-    virtual void Rd(void) = 0;
-    virtual void Wr(void) = 0;
+    template <typename T, typename...Args>
+    static void Create(Args&&... aArgs) {
+        sNetDrives.emplace_back(
+            std::make_unique<T>(
+                typename T::UseCreateFunc{},
+                std::forward<Args>(aArgs)...
+            )
+        );
+    }
 
-    static EthernetAddress const &StaticGetMACAddress(unsigned int const aIndex);
-    static IPAddress StaticGetIPAddress(unsigned int const aIndex);
-    static IPAddress StaticGetSubnetMask(unsigned int const aIndex);
-    static IPAddress StaticGetDefaultGW(unsigned int const aIndex);
+    static void StaticInit(
+        QP::QActive * aAO,
+        bool aUseDHCP,
+        IPAddress aIPAddress,
+        IPAddress aSubnetMask,
+        IPAddress aGWAddress
+    );
+    static void StaticISR(unsigned int aIndex);
+    virtual void Rd() = 0;
+    virtual void Wr() = 0;
+
+    static EthernetAddress const &StaticGetMACAddress(unsigned int aIndex);
+    static IPAddress StaticGetIPAddress(unsigned int aIndex);
+    static IPAddress StaticGetSubnetMask(unsigned int aIndex);
+    static IPAddress StaticGetDefaultGW(unsigned int aIndex);
 
     static void DNSFoundCallback(
         const char *aName,
@@ -69,60 +82,69 @@ public:
         void *aArgs
     );
 
-    EthernetAddress const &GetMACAddress(void) const;
-    IPAddress GetIPAddress(void) const;
-    IPAddress GetSubnetMask(void) const;
-    IPAddress GetDefaultGW(void) const;
-    void StartIPCfg(void);
+    EthernetAddress const &GetMACAddress() const;
+    IPAddress GetIPAddress() const;
+    IPAddress GetSubnetMask() const;
+    IPAddress GetDefaultGW() const;
+    void StartIPCfg();
 
-    virtual void PHYISR(void) {/*DoNothing();*/}
-    virtual void DisableAllInt(void) = 0;
-    virtual void EnableAllInt(void) = 0;
+    virtual void PHYISR() {/*DoNothing();*/}
+    virtual void DisableAllInt() = 0;
+    virtual void EnableAllInt() = 0;
 
 protected:
-    LwIPDrv(unsigned int const aIndex, EthernetAddress const &aEthernetAddress);
+    struct UseCreateFunc {
+        explicit UseCreateFunc() = default;
+    };
+    explicit LwIPDrv(
+        UseCreateFunc /* Dummy */,
+        unsigned int aIndex,
+        EthernetAddress const &aEthernetAddress
+    ) noexcept;
 
-    void PostRxEvent(void);
-    void PostTxEvent(void);
-    void PostOverrunEvent(void);
-    void PostNetIFChangedEvent(bool const aIsUp);
-    void PostLinkChangedEvent(bool const aIsUp);
-    void PostPHYInterruptEvent(void);
+    void PostRxEvent();
+    void PostTxEvent();
+    void PostOverrunEvent();
+    void PostNetIFChangedEvent(bool aIsUp);
+    void PostLinkChangedEvent(bool aIsUp);
+    void PostPHYInterruptEvent();
 
-    unsigned int GetIndex(void) const {return mMyIndex;}
-    struct netif &GetNetIF(void) {return mNetIF;}
-    QP::QActive &GetAO(void) const {return *mAO;}
-    bool IsUsingDHCP(void) const{return mUseDHCP;}
+    unsigned int GetIndex() const {return mMyIndex;}
+    struct netif &GetNetIF() {return mNetIF;}
+    QP::QActive &GetAO() const {return *mAO;}
+    bool IsUsingDHCP() const {return mUseDHCP;}
+    // [MG] IS THIS REQUIRED?
     void SetAO(QP::QActive * const aAO) {mAO = aAO;}
-    void UseDHCP(bool aUseDHCP) {mUseDHCP = aUseDHCP;}
+    void UseDHCP(bool const aUseDHCP) {mUseDHCP = aUseDHCP;}
 
 private:
     void DrvInit(
-        QP::QActive * const aAO,
-        bool const aUseDHCP,
-        IPAddress const aIPAddress,
-        IPAddress const aSubnetMask,
-        IPAddress const aGWAddress
+        //[MG] CONSIDER shared_ptr<QP::QActive>
+        QP::QActive * aAO,
+        bool aUseDHCP,
+        IPAddress aIPAddress,
+        IPAddress aSubnetMask,
+        IPAddress aGWAddress
     );
 
     // Static functions to hook to 'C' code.
     // Specific to an Ethernet IF.
-    static err_t StaticEtherIFInit(struct netif * const aNetIF);
-    static err_t StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf);
+    static err_t StaticEtherIFInit(struct netif * aNetIF);
+    static err_t StaticEtherIFOut(struct netif * aNetIF, struct pbuf * aPBuf);
 
 #if LWIP_NETIF_STATUS_CALLBACK
-    static void StaticStatusCallback(struct netif * const aNetIF);
-    virtual void StatusCallback(struct netif * const aNetIF) {static_cast<void>(aNetIF);}
+    static void StaticStatusCallback(struct netif * aNetIF);
+    virtual void StatusCallback(struct netif * aNetIF) {static_cast<void>(aNetIF);}
 #endif // LWIP_NETIF_STATUS_CALLBACK
 
 #if LWIP_NETIF_LINK_CALLBACK
-    static void StaticLinkCallback(struct netif * const aNetIF);
-    virtual void LinkCallback(struct netif * const aNetIF) { static_cast<void>(aNetIF);}
+    static void StaticLinkCallback(struct netif * aNetIF);
+    virtual void LinkCallback(struct netif * aNetIF) { static_cast<void>(aNetIF);}
 #endif // LWIP_NETIF_LINK_CALLBACK
 
 #if LWIP_NETIF_EXT_STATUS_CALLBACK
     static void StaticExtCallback(
-        struct netif * const aNetIF,
+        struct netif * aNetIF,
         netif_nsc_reason_t const aReason,
         netif_ext_callback_args_t const *aArgs
     );
@@ -132,22 +154,21 @@ private:
     );
 #endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
-    virtual err_t EtherIFOut(struct pbuf * const aPBuf) = 0;
+    virtual err_t EtherIFOut(struct pbuf * aPBuf) = 0;
 
-    virtual err_t EtherIFInit(struct netif * const aNetIF) = 0;
-    virtual void ISR(void) = 0;
+    virtual err_t EtherIFInit(struct netif * aNetIF) = 0;
+    virtual void ISR() = 0;
 
-    LwIPDrv(LwIPDrv const &) = delete;
-    LwIPDrv const &operator=(LwIPDrv const &) = delete;
+    using Ptr = std::unique_ptr<LwIPDrv>;
+    static std::vector<Ptr> sNetDrives;
 
-    static std::vector<LwIPDrv *> sVector;
-
-    unsigned int const mMyIndex;
-    EthernetAddress mEthernetAddress;
-    struct netif mNetIF;
-    netif_ext_callback_t mExtCallback;
-    bool mUseDHCP;
-    QP::QActive *mAO = nullptr;
+    unsigned int mMyIndex{};
+    EthernetAddress mEthernetAddress{};
+    struct netif mNetIF{};
+    netif_ext_callback_t mExtCallback{};
+    bool mUseDHCP{false};
+    // [MG] CONSIDER shared_ptr OR weak_prt HERE.
+    QP::QActive *mAO{nullptr};
 };
 
 // ******************************************************************************

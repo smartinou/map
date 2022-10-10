@@ -138,13 +138,12 @@ static uint8_t constexpr sStopBlock{0xFD};
 
 SDC::SDC(
     UseCreateFunc const aDummy,
-    unsigned int aDriveIx,
     std::shared_ptr<CoreLink::ISPIMasterDev> aSPIMasterDev,
     GPIO const &aCSnPin,
     GPIO const &aDetectPin,
     unsigned int const aSPIBitRate
 )
-    : FatFSDisk(aDummy, aDriveIx) // [MG] CONSIDER EXPLICIT PASSING OF DRIVE INDEX.
+    : FatFSDisk(aDummy)
     , mSPIMasterDev{aSPIMasterDev}
     , mSPISlaveCfg{
         aCSnPin,
