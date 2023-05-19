@@ -12,7 +12,10 @@
 
 // *****************************************************************************
 //
-//        Copyright (c) 2016-2021, Martin Garon, All rights reserved.
+//        Copyright (c) 2016-2022, Martin Garon, All rights reserved.
+//
+// This source code is licensed under the GPL-3.0-style license found in the
+// LICENSE file in the root directory of this source tree.
 //
 // *****************************************************************************
 
@@ -59,6 +62,7 @@ uint8_t IPAddress::GetByte(size_t aIndex) const {
 
 void IPAddress::SetByte(size_t aIndex, uint8_t aByte) noexcept {
     reinterpret_cast<uint8_t * const>(&mValue)[aIndex] = aByte;
+    return;
 }
 
 
@@ -82,6 +86,7 @@ void IPAddress::GetEthernetAddress(EthernetAddress * const aOut) const
     } else {
         *aOut = EthernetAddress::sBroadcast;
     }
+    return;
 }
 
 
@@ -94,6 +99,7 @@ void IPAddress::GetEthernetAddress(EthernetAddress * const aOut) const
 void IPAddress::GetString(char * aOut) const {
 
 	for (unsigned int lIndex = 0; lIndex < sSize; lIndex++) {
+    //for (auto const lByte : mValue) {
 		unsigned short lByte = GetByte(lIndex);
 		if (lByte >= 100) {
 			*aOut = static_cast<char>('0' + (lByte / 100)); aOut++;
@@ -114,6 +120,7 @@ void IPAddress::GetString(char * aOut) const {
 
 	aOut--;
 	*aOut = '\0';
+    return;
 }
 
 
@@ -121,7 +128,7 @@ void IPAddress::GetString(char * aOut) const {
 /// \brief Returns a PtUtilsLib::String representation of the IP address.
 ///
 
-std::string IPAddress::GetString() const {
+std::string IPAddress::GetString(void) const {
 #if 0
     const uint8_t * const lData = reinterpret_cast<const uint8_t *>(&mValue);
 
@@ -146,7 +153,7 @@ std::string IPAddress::GetString() const {
 /// \brief Checks if the IP address is in the multicast range.
 ///
 
-bool IPAddress::IsMulticast() const {
+bool IPAddress::IsMulticast(void) const {
     return false; // ((PtH2LE32(mValue) & 0x000000F0) == 0x000000E0);
 }
 
@@ -155,7 +162,7 @@ bool IPAddress::IsMulticast() const {
 /// \brief Returns true if the IP address contains a valid subnet mask
 ///
 
-bool IPAddress::IsValidMask() const {
+bool IPAddress::IsValidMask(void) const {
 	// Convert mask to BE, if it is not already
     uint32_t lMask = 0xFFFFFFFF; // PtH2N32(mValue);
 
@@ -188,6 +195,7 @@ bool IPAddress::IsValidMask() const {
 void IPAddress::SetAny(bool aEnable) {
     mIsAny = true;
     mValue = 0;
+    return;
 }
 
 // *****************************************************************************

@@ -68,59 +68,59 @@ std::vector<LwIPDrv::Ptr> LwIPDrv::sNetDrives{};
 // *****************************************************************************
 
 void LwIPDrv::StaticInit(
-    // [MG] CONSIDER shared_ptr<QP::QActive>
-    QP::QActive * const aAO,
     bool const aUseDHCP,
     IPAddress const aIPAddress,
     IPAddress const aSubnetMask,
     IPAddress const aGWAddress
-) {
+) noexcept {
     // Go through all registered network drivers and call their Init() function.
     // For now, this forces to have the same IP address scheme, but for now it's fine.
     // Could at least increment IP address?
     for (auto &lNetDrv : sNetDrives) {
-        lNetDrv->DrvInit(aAO, aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
+        lNetDrv->DrvInit(aUseDHCP, aIPAddress, aSubnetMask, aGWAddress);
     }
 }
 
 
-void LwIPDrv::StaticISR(unsigned int const aIndex) {
+void LwIPDrv::StaticISR(unsigned int const aIndex) noexcept {
     sNetDrives.at(aIndex)->ISR();
 }
 
 
-EthernetAddress const &LwIPDrv::StaticGetMACAddress(unsigned int const aIndex) {
+auto LwIPDrv::StaticGetMACAddress(unsigned int const aIndex) noexcept -> EthernetAddress const & {
     return sNetDrives.at(aIndex)->GetMACAddress();
 }
 
 
-IPAddress LwIPDrv::StaticGetIPAddress(unsigned int const aIndex) {
+auto LwIPDrv::StaticGetIPAddress(unsigned int const aIndex) noexcept -> IPAddress {
     return sNetDrives.at(aIndex)->GetIPAddress();
 }
 
 
-IPAddress LwIPDrv::StaticGetSubnetMask(unsigned int const aIndex) {
+auto LwIPDrv::StaticGetSubnetMask(unsigned int const aIndex) noexcept -> IPAddress {
     return sNetDrives.at(aIndex)->GetSubnetMask();
 }
 
 
-IPAddress LwIPDrv::StaticGetDefaultGW(unsigned int const aIndex) {
+auto LwIPDrv::StaticGetDefaultGW(unsigned int const aIndex) noexcept -> IPAddress {
     return sNetDrives.at(aIndex)->GetDefaultGW();
 }
 
 
 void LwIPDrv::DNSFoundCallback(
-    const char *aName,
-    const ip_addr_t *aIPAddr,
-    void *aArgs
-) {
+    char const * const aName,
+    ip_addr_t const * const aIPAddr,
+    void * const aArgs
+) noexcept {
     // DNS found a matching IP address.
-    LwIP::Event::HostNameFound * const lEvent = Q_NEW(
-        LwIP::Event::HostNameFound,
-        LWIP_HOST_NAME_FOUND_SIG,
-        aName,
-        aIPAddr
-    );
+    LwIP::Event::HostNameFound * const lEvent{
+        Q_NEW(
+            LwIP::Event::HostNameFound,
+            LWIP_HOST_NAME_FOUND_SIG,
+            aName,
+            aIPAddr
+        )
+    };
 
     auto const lThis {static_cast<LwIPDrv *>(aArgs)};
     lThis->GetAO().POST(lEvent, lThis);
@@ -128,7 +128,7 @@ void LwIPDrv::DNSFoundCallback(
 
 
 #if LWIP_NETIF_STATUS_CALLBACK
-void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
+void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) noexcept {
     // Check the current state of the network interface.
     // We end up here as a result to call to either:
     // netif_set_up(), netif_set_down(), netif_set_ipaddr().
@@ -139,7 +139,7 @@ void LwIPDrv::StaticStatusCallback(struct netif * const aNetIF) {
 
 
 #if LWIP_NETIF_LINK_CALLBACK
-void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
+void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) noexcept {
     // We end up here as a result of call to either:
     // netif_set_link_up(), netif_set_link_down().
     auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
@@ -152,7 +152,8 @@ void LwIPDrv::StaticLinkCallback(struct netif * const aNetIF) {
 void LwIPDrv::StaticExtCallback(
     struct netif * const aNetIF,
     netif_nsc_reason_t const aReason,
-    netif_ext_callback_args_t const *aArgs) {
+    netif_ext_callback_args_t const * const aArgs
+) noexcept {
     // We end up here as a result of call to either: LWIP_NSC_* (see netif.h)
     auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     lThis->ExtCallback(aReason, aArgs);
@@ -161,9 +162,9 @@ void LwIPDrv::StaticExtCallback(
 
 void LwIPDrv::ExtCallback(
     netif_nsc_reason_t const aReason,
-    netif_ext_callback_args_t const *aArgs
-) {
-    static_cast<void>(aArgs);
+    [[maybe_unused]] netif_ext_callback_args_t const * const aArgs
+) noexcept {
+    //static_cast<void>(aArgs);
 
 #if LWIP_NETIF_STATUS_CALLBACK
     if (aReason | LWIP_NSC_STATUS_CHANGED) {
@@ -182,15 +183,17 @@ void LwIPDrv::ExtCallback(
     ) {
         // Some components of IP address changed.
         // Could cast aArgs to ipv4_changed* for old addresses.
-        LwIP::Event::IPAddressChanged * const lEvent = Q_NEW(
-            LwIP::Event::IPAddressChanged,
-            LWIP_IP_CHANGED_SIG,
-            IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF))),
-            IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF))),
-            IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)))
-        );
+        LwIP::Event::IPAddressChanged * const lEvent{
+            Q_NEW(
+                LwIP::Event::IPAddressChanged,
+                LWIP_IP_CHANGED_SIG,
+                IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF))),
+                IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF))),
+                IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)))
+            )
+        };
 #ifdef Q_SPY
-        static QP::QSpyId const sLwIPDrvExtCallback = {0U};
+        static constexpr QP::QSpyId sLwIPDrvExtCallback {0U};
 #endif // Q_SPY
         QP::QF::PUBLISH(lEvent, &sLwIPDrvExtCallback);
     } else {
@@ -201,27 +204,27 @@ void LwIPDrv::ExtCallback(
 #endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
 
-EthernetAddress const &LwIPDrv::GetMACAddress(void) const {
+auto LwIPDrv::GetMACAddress() const noexcept -> EthernetAddress const & {
     return mEthernetAddress;
 }
 
 
-IPAddress LwIPDrv::GetIPAddress(void) const {
+auto LwIPDrv::GetIPAddress() const noexcept -> IPAddress {
     return IPAddress(ip4_addr_get_u32(netif_ip_addr4(&mNetIF)));
 }
 
 
-IPAddress LwIPDrv::GetSubnetMask(void) const {
+auto LwIPDrv::GetSubnetMask() const noexcept -> IPAddress {
     return IPAddress(ip4_addr_get_u32(netif_ip_netmask4(&mNetIF)));
 }
 
 
-IPAddress LwIPDrv::GetDefaultGW(void) const {
+auto LwIPDrv::GetDefaultGW() const noexcept -> IPAddress {
     return IPAddress(ip4_addr_get_u32(netif_ip_gw4(&mNetIF)));
 }
 
 
-void LwIPDrv::StartIPCfg(void) {
+void LwIPDrv::StartIPCfg() noexcept {
     if ((mNetIF.ip_addr.addr & mNetIF.netmask.addr) == 0) {
         // No IP address configured: set it automatically.
         if (IsUsingDHCP()) {
@@ -248,13 +251,15 @@ void LwIPDrv::StartIPCfg(void) {
 LwIPDrv::LwIPDrv(
     [[maybe_unused]] UseCreateFunc /* Dummy */,
     unsigned int const aIndex,
-    EthernetAddress const &aEthernetAddress
+    EthernetAddress const &aEthernetAddress,
+    std::weak_ptr<QP::QActive> aAO
 ) noexcept
     : mMyIndex{aIndex}
     , mEthernetAddress{aEthernetAddress}
     //, mNetIF{0}
     //, mExtCallback{0}
     //, mUseDHCP(false)
+    , mAO{std::move(aAO)}
 {
     // Set MAC address in the network interface...
     GetNetIF().hwaddr_len = NETIF_MAX_HWADDR_LEN;
@@ -263,20 +268,19 @@ LwIPDrv::LwIPDrv(
 
 
 void LwIPDrv::DrvInit(
-    // [MG] CONSIDER shared_ptr<QP::QActive>
-    QP::QActive * const aAO,
     bool const aUseDHCP,
     IPAddress const aIPAddr,
     IPAddress const aSubnetMask,
     IPAddress const aGWAddr
-) {
-    // Save the active object associated with this driver.
-    SetAO(aAO);
+) noexcept {
+
     UseDHCP(aUseDHCP);
 
-    ip_addr_t lIPAddr;
-    ip_addr_t lSubnetMask;
-    ip_addr_t lGWAddr;
+    // [MG] CE BOUTE DE FONCTION LA M'ECOEURE.
+    // [MG] LAMBDA?
+    ip_addr_t lIPAddr{};
+    ip_addr_t lSubnetMask{};
+    ip_addr_t lGWAddr{};
 
     if (aUseDHCP) {
         ip4_addr_set_zero(&lIPAddr);
@@ -379,40 +383,43 @@ void LwIPDrv::DrvInit(
 
 // Low-level init.
 // Will be called by LwIP at init stage, everytime a netif is added.
-err_t LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) {
+auto LwIPDrv::StaticEtherIFInit(struct netif * const aNetIF) noexcept -> err_t {
     auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     return lThis->EtherIFInit(aNetIF);
 }
 
 
-err_t LwIPDrv::StaticEtherIFOut(struct netif * const aNetIF, struct pbuf * const aPBuf) {
+auto LwIPDrv::StaticEtherIFOut(
+    struct netif * const aNetIF,
+    struct pbuf * const aPBuf
+) noexcept -> err_t {
     auto const lThis {static_cast<LwIPDrv *>(aNetIF->state)};
     return lThis->EtherIFOut(aPBuf);
 }
 
 
-void LwIPDrv::PostRxEvent(void) {
+void LwIPDrv::PostRxEvent() noexcept {
     static LwIP::Event::Interrupt const sRxEvent(LWIP_RX_READY_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sRxEvent, this);
 }
 
 
-void LwIPDrv::PostTxEvent(void) {
+void LwIPDrv::PostTxEvent() noexcept {
     static LwIP::Event::Interrupt const sTxEvent(LWIP_TX_READY_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sTxEvent, this);
 }
 
 
-void LwIPDrv::PostOverrunEvent(void) {
+void LwIPDrv::PostOverrunEvent() noexcept {
     static LwIP::Event::Interrupt const sOverrunEvent(LWIP_RX_OVERRUN_SIG, &GetNetIF());
     // Send to the AO.
     GetAO().POST(&sOverrunEvent, this);
 }
 
 
-void LwIPDrv::PostNetIFChangedEvent(bool const aIsUp) {
+void LwIPDrv::PostNetIFChangedEvent(bool const aIsUp) noexcept {
     if (aIsUp) {
         static const LwIP::Event::NetStatusChanged sEvent(LWIP_NETIF_CHANGED_SIG, &GetNetIF(), true);
         GetAO().POST(&sEvent, this);
@@ -423,19 +430,19 @@ void LwIPDrv::PostNetIFChangedEvent(bool const aIsUp) {
 }
 
 
-void LwIPDrv::PostLinkChangedEvent(bool const aIsUp) {
+void LwIPDrv::PostLinkChangedEvent(bool const aIsUp) noexcept {
     if (aIsUp) {
-        static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), true);
+        static const LwIP::Event::NetStatusChanged sEvent{LWIP_LINK_CHANGED_SIG, &GetNetIF(), true};
         GetAO().POST(&sEvent, this);
     } else {
-        static const LwIP::Event::NetStatusChanged sEvent(LWIP_LINK_CHANGED_SIG, &GetNetIF(), false);
+        static const LwIP::Event::NetStatusChanged sEvent{LWIP_LINK_CHANGED_SIG, &GetNetIF(), false};
         GetAO().POST(&sEvent, this);
     }
 }
 
 
-void LwIPDrv::PostPHYInterruptEvent(void) {
-    static LwIP::Event::Interrupt const sEvent(LWIP_PHY_INT_SIG, &GetNetIF());
+void LwIPDrv::PostPHYInterruptEvent() noexcept {
+    static LwIP::Event::Interrupt const sEvent{LWIP_PHY_INT_SIG, &GetNetIF()};
     GetAO().POST(&sEvent, this);
 }
 

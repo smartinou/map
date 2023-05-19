@@ -44,24 +44,6 @@
 
 // Ctor body.</code>
    </operation>
-   <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
-    <specifiers>= default</specifiers>
-    <documentation>// Default copy Ctor (disabled).</documentation>
-    <parameter name="" type="Mgr_AO const &amp;"/>
-   </operation>
-   <operation name="Mgr_AO" type="" visibility="0x00" properties="0x00">
-    <specifiers>= default</specifiers>
-    <parameter name="" type="Mgr_AO &amp;&amp;"/>
-   </operation>
-   <operation name="~Mgr_AO" type="" visibility="0x00" properties="0x00">
-    <documentation>// Dtor.</documentation>
-    <code>// What to do here?</code>
-   </operation>
-   <operation name="operator=" type="Mgr_AO &amp;" visibility="0x00" properties="0x02">
-    <specifiers>= default</specifiers>
-    <documentation>// Default assignment operator (disabled).</documentation>
-    <parameter name="" type="Mgr_AO &amp;&amp;"/>
-   </operation>
    <operation name="InitSNTP" type="void" visibility="0x02" properties="0x00">
     <documentation>Initialize SNTP.</documentation>
     <parameter name="aIPV4" type="ip_addr_t const * const"/>
@@ -71,10 +53,6 @@ sntp_setoperatingmode(SNTP_OPMODE_POLL);
 sntp_setserver(0, aIPV4);
 sntp_init();
 </code>
-   </operation>
-   <operation name="operator=" type="Mgr_AO &amp;" visibility="0x00" properties="0x00">
-    <specifiers>= default</specifiers>
-    <parameter name="" type="Mgr_AO const &amp;"/>
    </operation>
    <statechart properties="0x02">
     <initial target="../1">
@@ -100,7 +78,7 @@ if (nullptr != e) {
 lwip_init();
 
 LwIPDrv::StaticInit(
-    (QP::QActive *)this,
+    //(QP::QActive *)this,
     lUseDHCP,
     lIPAddr,
     lSubnetMask,
@@ -455,6 +433,8 @@ ip_addr_copy(mIPV4, *aIPV4);</code>
 
 // LwIP stack.
 #include &quot;lwip/ip_addr.h&quot;
+
+#include &lt;memory&gt;
 
 // Forward declaration.
 class LwIPDrv;

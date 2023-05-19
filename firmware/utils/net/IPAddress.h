@@ -49,7 +49,7 @@ public:
 
     constexpr explicit IPAddress(uint32_t aIn) noexcept : mValue(aIn), mIsAny(false) {}
 	constexpr explicit IPAddress(const void * const aIn) noexcept
-        : mValue(*reinterpret_cast<const uint32_t * const>(aIn)), mIsAny(false) {}
+        : mValue(*reinterpret_cast<const uint32_t *>(aIn)), mIsAny(false) {}
 
 	uint8_t GetByte(size_t aIndex) const noexcept;
     void SetByte(size_t aIndex, uint8_t aByte) noexcept;
