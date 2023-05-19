@@ -61,85 +61,80 @@ public:
     }
 
     static void StaticInit(
-        QP::QActive * aAO,
         bool aUseDHCP,
         IPAddress aIPAddress,
         IPAddress aSubnetMask,
         IPAddress aGWAddress
-    );
-    static void StaticISR(unsigned int aIndex);
-    virtual void Rd() = 0;
-    virtual void Wr() = 0;
+    ) noexcept;
+    static void StaticISR(unsigned int aIndex) noexcept;
+    virtual void Rd() noexcept = 0;
+    virtual void Wr() noexcept = 0;
 
-    static EthernetAddress const &StaticGetMACAddress(unsigned int aIndex);
-    static IPAddress StaticGetIPAddress(unsigned int aIndex);
-    static IPAddress StaticGetSubnetMask(unsigned int aIndex);
-    static IPAddress StaticGetDefaultGW(unsigned int aIndex);
+    [[nodiscard]] static auto StaticGetMACAddress(unsigned int aIndex) noexcept -> EthernetAddress const &;
+    [[nodiscard]] static auto StaticGetIPAddress(unsigned int aIndex) noexcept -> IPAddress;
+    [[nodiscard]] static auto StaticGetSubnetMask(unsigned int aIndex) noexcept -> IPAddress;
+    [[nodiscard]] static auto StaticGetDefaultGW(unsigned int aIndex) noexcept -> IPAddress;
 
     static void DNSFoundCallback(
         const char *aName,
         const ip_addr_t *aIPAddr,
         void *aArgs
-    );
+    ) noexcept;
 
-    EthernetAddress const &GetMACAddress() const;
-    IPAddress GetIPAddress() const;
-    IPAddress GetSubnetMask() const;
-    IPAddress GetDefaultGW() const;
-    void StartIPCfg();
+    auto GetMACAddress() const noexcept -> EthernetAddress const &;
+    auto GetIPAddress() const noexcept -> IPAddress;
+    auto GetSubnetMask() const noexcept -> IPAddress;
+    auto GetDefaultGW() const noexcept -> IPAddress;
+    void StartIPCfg() noexcept;
 
-    virtual void PHYISR() {/*DoNothing();*/}
-    virtual void DisableAllInt() = 0;
-    virtual void EnableAllInt() = 0;
+    virtual void PHYISR() noexcept {/*DoNothing();*/}
+    virtual void DisableAllInt() noexcept = 0;
+    virtual void EnableAllInt() noexcept = 0;
 
 protected:
     struct UseCreateFunc {
-        explicit UseCreateFunc() = default;
+        explicit UseCreateFunc() noexcept = default;
     };
     explicit LwIPDrv(
         UseCreateFunc /* Dummy */,
         unsigned int aIndex,
-        EthernetAddress const &aEthernetAddress
+        EthernetAddress const &aEthernetAddress,
+        std::weak_ptr<QP::QActive> aAO
     ) noexcept;
 
-    void PostRxEvent();
-    void PostTxEvent();
-    void PostOverrunEvent();
-    void PostNetIFChangedEvent(bool aIsUp);
-    void PostLinkChangedEvent(bool aIsUp);
-    void PostPHYInterruptEvent();
+    void PostRxEvent() noexcept;
+    void PostTxEvent() noexcept;
+    void PostOverrunEvent() noexcept;
+    void PostNetIFChangedEvent(bool aIsUp) noexcept;
+    void PostLinkChangedEvent(bool aIsUp) noexcept;
+    void PostPHYInterruptEvent() noexcept;
 
-    unsigned int GetIndex() const {return mMyIndex;}
-    struct netif &GetNetIF() {return mNetIF;}
-    QP::QActive &GetAO() const {return *mAO;}
-    bool IsUsingDHCP() const {return mUseDHCP;}
-    // [MG] IS THIS REQUIRED?
-    void SetAO(QP::QActive * const aAO) {mAO = aAO;}
-    void UseDHCP(bool const aUseDHCP) {mUseDHCP = aUseDHCP;}
+    [[nodiscard]] auto GetNetIF() noexcept -> struct netif & {return mNetIF;}
+    [[nodiscard]] auto GetAO() const noexcept -> QP::QActive & {return *(mAO.lock().get());}
+    [[nodiscard]] bool IsUsingDHCP() const noexcept {return mUseDHCP;}
+    void UseDHCP(bool const aUseDHCP) noexcept {mUseDHCP = aUseDHCP;}
 
 private:
     void DrvInit(
-        //[MG] CONSIDER shared_ptr<QP::QActive>
-        QP::QActive * aAO,
         bool aUseDHCP,
         IPAddress aIPAddress,
         IPAddress aSubnetMask,
         IPAddress aGWAddress
-    );
+    ) noexcept;
 
     // Static functions to hook to 'C' code.
     // Specific to an Ethernet IF.
-    static err_t StaticEtherIFInit(struct netif * aNetIF);
-    static err_t StaticEtherIFOut(struct netif * aNetIF, struct pbuf * aPBuf);
+    static auto StaticEtherIFInit(struct netif * aNetIF) noexcept -> err_t;
+    static auto StaticEtherIFOut(struct netif * aNetIF, struct pbuf * aPBuf) noexcept -> err_t;
 
 #if LWIP_NETIF_STATUS_CALLBACK
-    static void StaticStatusCallback(struct netif * aNetIF);
-    virtual void StatusCallback(struct netif * aNetIF) {static_cast<void>(aNetIF);}
+    static void StaticStatusCallback(struct netif * aNetIF) noexcept;
+    virtual void StatusCallback([[maybe_unused]] struct netif * aNetIF) noexcept {}
 #endif // LWIP_NETIF_STATUS_CALLBACK
 
 #if LWIP_NETIF_LINK_CALLBACK
-    static void StaticLinkCallback(struct netif * aNetIF);
-    virtual void LinkCallback(struct netif * aNetIF) { static_cast<void>(aNetIF);}
+    static void StaticLinkCallback(struct netif * aNetIF) noexcept;
+    virtual void LinkCallback([[maybe_unused]] struct netif * aNetIF) noexcept {}
 #endif // LWIP_NETIF_LINK_CALLBACK
 
 #if LWIP_NETIF_EXT_STATUS_CALLBACK
@@ -147,17 +142,16 @@ private:
         struct netif * aNetIF,
         netif_nsc_reason_t const aReason,
         netif_ext_callback_args_t const *aArgs
-    );
+    ) noexcept;
     virtual void ExtCallback(
         netif_nsc_reason_t const aReason,
         netif_ext_callback_args_t const *aArgs
-    );
+    ) noexcept;
 #endif // LWIP_NETIF_EXT_STATUS_CALLBACK
 
-    virtual err_t EtherIFOut(struct pbuf * aPBuf) = 0;
-
-    virtual err_t EtherIFInit(struct netif * aNetIF) = 0;
-    virtual void ISR() = 0;
+    virtual auto EtherIFOut(struct pbuf * aPBuf) noexcept -> err_t = 0;
+    virtual auto EtherIFInit(struct netif * aNetIF) noexcept -> err_t = 0;
+    virtual void ISR() noexcept = 0;
 
     using Ptr = std::unique_ptr<LwIPDrv>;
     static std::vector<Ptr> sNetDrives;
@@ -167,8 +161,7 @@ private:
     struct netif mNetIF{};
     netif_ext_callback_t mExtCallback{};
     bool mUseDHCP{false};
-    // [MG] CONSIDER shared_ptr OR weak_prt HERE.
-    QP::QActive *mAO{nullptr};
+    std::weak_ptr<QP::QActive> mAO{};
 };
 
 // ******************************************************************************

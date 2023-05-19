@@ -45,30 +45,33 @@
 // *****************************************************************************
 //                            EXPORTED FUNCTIONS
 // *****************************************************************************
-
-RxDescriptor::RxDescriptor(uint8_t * const aBuffer, size_t aSize)
+#if 0
+RxDescriptor::RxDescriptor(uint8_t * const aBuffer, size_t const aSize)
     : tEMACDMADescriptor {
-        .ui32CtrlStatus = 0
-        , .ui32Count = (DES1_RX_CTRL_CHAINED
-            | ((static_cast<uint32_t>(aSize) << DES1_RX_CTRL_BUFF1_SIZE_S) & DES1_RX_CTRL_BUFF1_SIZE_M))
-        , .pvBuffer1 = aBuffer
-        , .DES3 = {0}
-        , .ui32ExtRxStatus = 0
-        , .ui32Reserved = 0
-        , .ui32IEEE1588TimeLo = 0
-        , .ui32IEEE1588TimeHi = 0
-        }
+        .ui32CtrlStatus{0}
+        , .ui32Count{(DES1_RX_CTRL_CHAINED
+            | ((static_cast<uint32_t>(aSize) << DES1_RX_CTRL_BUFF1_SIZE_S) & DES1_RX_CTRL_BUFF1_SIZE_M))}
+        , .pvBuffer1{aBuffer}
+        , .DES3{0}
+        , .ui32ExtRxStatus{0}
+        , .ui32Reserved{0}
+        , .ui32IEEE1588TimeLo{0}
+        , .ui32IEEE1588TimeHi{0}
+    }
     , mCustomPBuf {
-        .mPBuf {.custom_free_function = RxDescriptor::Free}
+        .mPBuf {
+            .pbuf{},
+            .custom_free_function = RxDescriptor::Free
+        }
         , .mDescriptor {this}
-    } {
-
+    }
+{
     // Ctor body.
 }
+#endif
 
-
-struct pbuf *RxDescriptor::GetAllocedPBuf(size_t aCumulatedLen) {
-    struct pbuf *lPBuf = pbuf_alloced_custom(
+struct pbuf *RxDescriptor::GetAllocedPBuf(size_t const aCumulatedLen) noexcept {
+    struct pbuf * const lPBuf = pbuf_alloced_custom(
         PBUF_RAW,
         (GetFrameLen() - aCumulatedLen),
         PBUF_REF,
@@ -98,7 +101,7 @@ RxDescriptorChain::~RxDescriptorChain() {
 }
 
 
-RxDescriptor *RxDescriptorChain::GetNext(void) {
+RxDescriptor *RxDescriptorChain::GetNext() {
     // DOUBLE CHECK THAT THIS CAN'T LOOP FOREVER.
     RxDescriptor * const lDescriptor = mHead;
     if (!lDescriptor->IsHWOwned()) {
@@ -112,7 +115,11 @@ RxDescriptor *RxDescriptorChain::GetNext(void) {
 }
 
 
-tEMACDMADescriptor *RxDescriptorChain::Create(uint32_t aBaseAddr, size_t aChainSize, size_t aBufferSize) {
+tEMACDMADescriptor *RxDescriptorChain::Create(
+    [[maybe_unused]] uint32_t aBaseAddr,
+    size_t aChainSize,
+    size_t aBufferSize
+) {
 
     // Allocate the memory in one chunk. Split it into individual descriptors.
     mBuffer = new uint8_t [aChainSize * aBufferSize];
@@ -176,7 +183,7 @@ void RxDescriptor::Free(struct pbuf *aPBuf) {
 }
 
 
-void RxDescriptor::FreeDescriptors() {
+void RxDescriptor::FreeDescriptors() noexcept {
 
     if (!IsLastFrame()) {
         GetNext()->FreeDescriptors();

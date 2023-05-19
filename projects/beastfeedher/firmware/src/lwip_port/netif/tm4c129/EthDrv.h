@@ -48,34 +48,34 @@ protected:
     friend void LwIPDrv::Create(Args&&... aArgs);
 
 public:
-    explicit EthDrv(
+    [[nodiscard]] explicit EthDrv(
         UseCreateFunc aDummy,
         unsigned int aIndex,
         EthernetAddress const &aEthernetAddress,
+        std::weak_ptr<QP::QActive> aAO,
         unsigned int aRingBufSize,
         uint32_t aSysClk
     ) noexcept;
 
-    void Rd() override;
-    void Wr() override {}
-    void PHYISR() override;
-    void DisableAllInt() override;
-    void EnableAllInt() override;
+    void Rd() noexcept override;
+    void Wr() noexcept override {/*DoNothing();*/}
+    void PHYISR() noexcept override;
+    void DisableAllInt() noexcept override;
+    void EnableAllInt() noexcept override;
 
 private:
     // LwIP Interface.
-    err_t EtherIFOut(struct pbuf * aPBuf) override;
-    err_t EtherIFInit(struct netif * aNetIF) override;
-    void ISR() override;
+    [[nodiscard]] auto EtherIFOut(struct pbuf * aPBuf) noexcept -> err_t override;
+    [[nodiscard]] auto EtherIFInit(struct netif * aNetIF) noexcept -> err_t override;
+    void ISR() noexcept override;
 
     // Local interface.
-    struct pbuf *LowLevelRx(RxDescriptor * aDescriptor, size_t aCumulatedLen = 0);
+    [[nodiscard]] struct pbuf *LowLevelRx(RxDescriptor * aDescriptor, size_t aCumulatedLen = 0);
 
     RxDescriptorChain mRxRingBuf{};
     TxRingBuf mTxRingBuf{};
     unsigned int mRingBufSize{8};
     uint32_t mSysClk{};
-    uint8_t mPHYAddr{};
 };
 
 // ******************************************************************************

@@ -25,12 +25,12 @@
 //                              INCLUDE FILES
 // ******************************************************************************
 
+// Standard Libraries.
 #include <cstdint>
 #include <cstddef>
 
 // LwIP.
-#include "lwip/pbuf.h"
-
+#include <lwip/pbuf.h>
 #include <driverlib/emac.h>
 
 // ******************************************************************************
@@ -44,24 +44,45 @@
 class RxDescriptor final
     : public tEMACDMADescriptor {
 public:
-    RxDescriptor(uint8_t * const aBuffer, size_t aSize);
-    ~RxDescriptor() {}
-
-    void GiveToHW(void) {ui32CtrlStatus |= DES0_RX_CTRL_OWN;}
-    bool IsHWOwned(void) const {return ui32CtrlStatus & DES0_RX_CTRL_OWN;}
-    bool IsFrameValid(void) const {return !(ui32CtrlStatus & DES0_RX_STAT_ERR);}
-    bool IsFirstFrame(void) const {return ui32CtrlStatus & DES0_RX_STAT_FIRST_DESC;}
-    bool IsLastFrame(void) const {return ui32CtrlStatus & DES0_RX_STAT_LAST_DESC;}
-    size_t GetFrameLen(void) const {
-        uint32_t lLen = (ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M);
-        return (lLen >>= DES0_RX_STAT_FRAME_LENGTH_S);
+    [[nodiscard]] explicit constexpr RxDescriptor(uint8_t * const aBuffer, size_t aSize) noexcept
+    //RxDescriptor::RxDescriptor(uint8_t * const aBuffer, size_t const aSize)
+        : tEMACDMADescriptor {
+            .ui32CtrlStatus{0}
+            , .ui32Count{(DES1_RX_CTRL_CHAINED
+                | ((static_cast<uint32_t>(aSize) << DES1_RX_CTRL_BUFF1_SIZE_S) & DES1_RX_CTRL_BUFF1_SIZE_M))}
+            , .pvBuffer1{aBuffer}
+            , .DES3{0}
+            , .ui32ExtRxStatus{0}
+            , .ui32Reserved{0}
+            , .ui32IEEE1588TimeLo{0}
+            , .ui32IEEE1588TimeHi{0}
+        }
+        , mCustomPBuf {
+            .mPBuf {
+                .pbuf{},
+                .custom_free_function = RxDescriptor::Free
+            }
+            , .mDescriptor {this}
+        }
+    {
+        // Ctor body.
     }
 
-    RxDescriptor *GetNext(void) const {return static_cast<RxDescriptor *>(DES3.pLink);}
-    void ChainTo(RxDescriptor * const aDescriptor) {DES3.pLink = aDescriptor;}
+    void GiveToHW() noexcept {ui32CtrlStatus |= DES0_RX_CTRL_OWN;}
+    [[nodiscard]] bool IsHWOwned() const noexcept {return ui32CtrlStatus & DES0_RX_CTRL_OWN;}
+    [[nodiscard]] bool IsFrameValid() const noexcept {return !(ui32CtrlStatus & DES0_RX_STAT_ERR);}
+    [[nodiscard]] bool IsFirstFrame() const noexcept {return ui32CtrlStatus & DES0_RX_STAT_FIRST_DESC;}
+    [[nodiscard]] bool IsLastFrame() const noexcept {return ui32CtrlStatus & DES0_RX_STAT_LAST_DESC;}
+    [[nodiscard]] auto GetFrameLen() const noexcept -> size_t {
+        uint32_t const lLen = (ui32CtrlStatus & DES0_RX_STAT_FRAME_LENGTH_M);
+        return (lLen >> DES0_RX_STAT_FRAME_LENGTH_S);
+    }
 
-    struct pbuf *GetAllocedPBuf(size_t aCumulatedLen);
-    void FreeDescriptors();
+    [[nodiscard]] auto GetNext() const noexcept -> RxDescriptor* {return static_cast<RxDescriptor *>(DES3.pLink);}
+    void ChainTo(RxDescriptor * const aDescriptor) noexcept {DES3.pLink = aDescriptor;}
+
+    [[nodiscard]] auto GetAllocedPBuf(size_t aCumulatedLen) noexcept -> struct pbuf*;
+    void FreeDescriptors() noexcept;
 
     // Operators.
     operator RxDescriptor*() {return this;}
@@ -69,8 +90,10 @@ public:
     RxDescriptor& operator=(const RxDescriptor& d) = delete;
 
 private:
-    void *GetPayload(void) const {return pvBuffer1;}
-    size_t GetPayloadSize(void) const {return ((ui32Count & DES1_RX_CTRL_BUFF1_SIZE_M) >> DES1_RX_CTRL_BUFF1_SIZE_S);}
+    [[nodiscard]] void *GetPayload() const noexcept {return pvBuffer1;}
+    [[nodiscard]] auto GetPayloadSize() const noexcept -> size_t {
+        return ((ui32Count & DES1_RX_CTRL_BUFF1_SIZE_M) >> DES1_RX_CTRL_BUFF1_SIZE_S);
+    }
 
     static void Free(struct pbuf *aPBuf);
 
@@ -78,26 +101,26 @@ private:
     // Needs to reference the owner descriptor, since this struct can't be upcast to RxDescriptor,
     struct MyCustomPBuf {
         struct pbuf_custom mPBuf{};
-        RxDescriptor *mDescriptor;
+        RxDescriptor *mDescriptor{};
     } mCustomPBuf;
 };
 
 
-class RxDescriptorChain {
+class RxDescriptorChain final {
 public:
-    RxDescriptorChain() {}
+    //RxDescriptorChain() {}
     ~RxDescriptorChain();
 
-    RxDescriptor *GetNext(void);
+    RxDescriptor *GetNext();
     tEMACDMADescriptor *Create(uint32_t aBaseAddr, size_t aChainSize, size_t aBufferSize);
 
 private:
     void Add(uint8_t * const aBuffer, size_t aSize);
 
-    size_t mSize = 0;
-    uint8_t *mBuffer = nullptr;
-    RxDescriptor *mHead = nullptr;
-    RxDescriptor *mTail = nullptr;
+    size_t mSize{0};
+    uint8_t *mBuffer{nullptr};
+    RxDescriptor *mHead{nullptr};
+    RxDescriptor *mTail{nullptr};
 };
 
 // ******************************************************************************

@@ -26,10 +26,6 @@
 
 // This module.
 #include "EthDrv.h"
-#include "netif/etharp.h"
-
-// Standard Libraries.
-#include <string.h>
 
 // QP Library.
 #include <qpcpp.h>
@@ -38,6 +34,7 @@
 #include "lwip/opt.h"
 #include "lwip/def.h"
 #include "lwip/stats.h"
+#include "netif/etharp.h"
 
 // TI Library.
 #include <inc/hw_emac.h>
@@ -86,28 +83,26 @@ void lwIPHostGetTime(u32_t *time_s, u32_t *time_ns);
 
 EthDrv::EthDrv(
     UseCreateFunc const aDummy,
-    unsigned int aIndex,
+    unsigned int const aIndex,
     EthernetAddress const &aEthernetAddress,
+    std::weak_ptr<QP::QActive> aAO,
     unsigned int const aRingBufSize,
     uint32_t const aSysClk
 ) noexcept
-    : LwIPDrv{aDummy, aIndex, aEthernetAddress}
-    //, mRxRingBuf{}
-    //, mTxRingBuf{}
+    : LwIPDrv{aDummy, aIndex, aEthernetAddress, aAO}
     , mRingBufSize{aRingBufSize}
     , mSysClk{aSysClk}
-    , mPHYAddr{EMAC_PHY_ADDR}
 {
     // Ctor body.
 }
 
 
-void EthDrv::Rd() {
+void EthDrv::Rd() noexcept {
     // New packet received into the pbuf?
     // Get a free descriptor from the ring buffer.
-    RxDescriptor *lDescriptor = mRxRingBuf.GetNext();
+    RxDescriptor * lDescriptor{mRxRingBuf.GetNext()};
     while (lDescriptor != nullptr) {
-        struct pbuf * const lPBuf = LowLevelRx(lDescriptor);
+        struct pbuf * const lPBuf{LowLevelRx(lDescriptor)};
         if (lPBuf != nullptr) {
             // pbuf handled?
             if (ethernet_input(lPBuf, &GetNetIF()) != ERR_OK) {
@@ -127,14 +122,14 @@ void EthDrv::Rd() {
 }
 
 
-void EthDrv::PHYISR() {
+void EthDrv::PHYISR() noexcept {
     // This PHYISR handler is called in normal "task" context.
     // EthDrv::ISR() makes call to read and clear interrupt status.
 
     // Reading the interrupt status clears the bits.
-    uint16_t lEPHYMISR1 = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_MISR1);
+    uint16_t const lEPHYMISR1{MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_MISR1)};
     if (lEPHYMISR1 & EPHY_MISR1_LINKSTAT) {
-        uint16_t lBMSR = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_BMSR);
+        uint16_t const lBMSR{MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_BMSR)};
         if (lBMSR & EPHY_BMSR_LINKSTAT) {
             PostLinkChangedEvent(true);
         } else {
@@ -144,14 +139,14 @@ void EthDrv::PHYISR() {
 
     if ((lEPHYMISR1 & EPHY_MISR1_SPEED)
         || (lEPHYMISR1 & EPHY_MISR1_DUPLEXM)
-        || (lEPHYMISR1 & EPHY_MISR1_ANC)) {
-
-        uint32_t lCfg = 0;
-        uint32_t lMode = 0;
-        uint32_t lRxMaxFrameSize = 0;
+        || (lEPHYMISR1 & EPHY_MISR1_ANC))
+    {
+        uint32_t lCfg{0};
+        uint32_t lMode{0};
+        uint32_t lRxMaxFrameSize{0};
         MAP_EMACConfigGet(EMAC0_BASE, &lCfg, &lMode, &lRxMaxFrameSize);
 
-        uint16_t lStatus = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_STS);
+        uint16_t const lStatus{MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_STS)};
         if (lStatus & EPHY_STS_SPEED) {
             lCfg &= ~EMAC_CONFIG_100MBPS;
         } else {
@@ -173,12 +168,12 @@ void EthDrv::PHYISR() {
 }
 
 
-void EthDrv::DisableAllInt() {
+void EthDrv::DisableAllInt() noexcept {
     MAP_EMACIntDisable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
 }
 
 
-void EthDrv::EnableAllInt() {
+void EthDrv::EnableAllInt() noexcept {
     // Enable Ethernet TX and RX Packet Interrupts.
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_TRANSMIT | EMAC_INT_RECEIVE);
 
@@ -191,11 +186,11 @@ void EthDrv::EnableAllInt() {
 //                              LOCAL FUNCTIONS
 // *****************************************************************************
 
-err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
+auto EthDrv::EtherIFOut(struct pbuf * const aPBuf) noexcept -> err_t {
 
     // Chain pbufs elements to transmit into as many descriptors:
     // Each pbuf element is attached to a descriptor of the tx chain.
-    bool lResult = mTxRingBuf.PushPBuf(aPBuf);
+    bool const lResult{mTxRingBuf.PushPBuf(aPBuf)};
     if (lResult) {
         // Don't release the pbuf after this call.
         // It will be released once the packet is out.
@@ -212,7 +207,7 @@ err_t EthDrv::EtherIFOut(struct pbuf * const aPBuf) {
 
 // Initialize Ethernet IF as per TivaWare Driver doc under:
 // 10.2.4.26 EMACPHYConfigSet
-err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
+auto EthDrv::EtherIFInit(struct netif * const aNetIF) noexcept -> err_t {
 
     // Initialize the hardware...
     MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_EMAC0);
@@ -239,9 +234,11 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     //    -"Change of link status"
     //    -"Change of Speed Status"
     //    -"Change of Duplex Status"
-    MAP_EMACPHYWrite( EMAC0_BASE, EMAC_PHY_ADDR, EPHY_CFG1, EPHY_CFG1_DONE);
-    uint16_t lSCR = MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_SCR);
-    lSCR |= EPHY_SCR_INTEN | EPHY_SCR_INTOE_EXT;
+    MAP_EMACPHYWrite(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_CFG1, EPHY_CFG1_DONE);
+    uint16_t lSCR{static_cast<uint16_t>(MAP_EMACPHYRead(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_SCR)
+        | EPHY_SCR_INTEN
+        | EPHY_SCR_INTOE_EXT)
+    };
     MAP_EMACPHYWrite(EMAC0_BASE, EMAC_PHY_ADDR, EPHY_SCR, lSCR);
     MAP_EMACPHYWrite(
         EMAC0_BASE,
@@ -262,7 +259,7 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     aNetIF->flags |= (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP);
 
     // Disable all Ethernet interrupts.
-    uint32_t lAllInts = (
+    static constexpr uint32_t lAllInts{
         // PHY interrupts.
         EMAC_INT_PHY
         // Normal interrupts.
@@ -271,19 +268,19 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
         | EMAC_INT_TX_STOPPED | EMAC_INT_TX_JABBER | EMAC_INT_RX_OVERFLOW | EMAC_INT_TX_UNDERFLOW
         | EMAC_INT_RX_NO_BUFFER | EMAC_INT_RX_STOPPED | EMAC_INT_RX_WATCHDOG | EMAC_INT_EARLY_TRANSMIT
         | EMAC_INT_BUS_ERROR
-    );
+    };
     MAP_EMACIntDisable(EMAC0_BASE, lAllInts);
 
     // Acknowledge all interrupts.
     // Clear any pending interrupts.
-    uint32_t lIntStatus = MAP_EMACIntStatus(EMAC0_BASE, false);
+    uint32_t const lIntStatus{MAP_EMACIntStatus(EMAC0_BASE, false)};
     MAP_EMACIntClear(EMAC0_BASE, lIntStatus);
     MAP_EMACIntEnable(EMAC0_BASE, EMAC_INT_PHY);
 
     // Initialize the MAC and set the DMA mode.
-    static uint32_t constexpr sRxBurstSize = 4;
-    static uint32_t constexpr sTxBurstSize = 4;
-    static uint32_t constexpr sDescSkipSize = 0;
+    static constexpr uint32_t sRxBurstSize{4};
+    static constexpr uint32_t sTxBurstSize{4};
+    static constexpr uint32_t sDescSkipSize{0};
     MAP_EMACInit(
         EMAC0_BASE,
         mSysClk, // Can't use SysCtlClockGet() with TM4C129!!!
@@ -294,7 +291,7 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     );
 
     // Set MAC configuration options.
-    static uint32_t constexpr sRxMaxFrameSize = 0;
+    static constexpr uint32_t sRxMaxFrameSize{0};
     MAP_EMACConfigSet(
         EMAC0_BASE,
         (EMAC_CONFIG_FULL_DUPLEX |
@@ -324,10 +321,11 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
     );
 
     // Initialize the Ethernet DMA descriptors.
-    static constexpr size_t sBufferSize = 540;
-    tEMACDMADescriptor * const lRxList = mRxRingBuf.Create(EMAC0_BASE, mRingBufSize, sBufferSize);
+    static constexpr size_t sBufferSize{540};
+    // [MG] NEED THE BASE HERE?
+    tEMACDMADescriptor * const lRxList{mRxRingBuf.Create(EMAC0_BASE, mRingBufSize, sBufferSize)};
     MAP_EMACRxDMADescriptorListSet(EMAC0_BASE, lRxList);
-    tEMACDMADescriptor * const lTxList = mTxRingBuf.Create(mRingBufSize);
+    tEMACDMADescriptor * const lTxList{mTxRingBuf.Create(mRingBufSize)};
     MAP_EMACTxDMADescriptorListSet(EMAC0_BASE, lTxList);
 
     // Enable the Ethernet MAC transmitter and receiver.
@@ -337,10 +335,10 @@ err_t EthDrv::EtherIFInit(struct netif * const aNetIF) {
 }
 
 
-void EthDrv::ISR() {
+void EthDrv::ISR() noexcept {
     // Get and clear the interrupt sources.
-    static constexpr bool sIsMasked = true;
-    uint32_t lStatus = MAP_EMACIntStatus(EMAC0_BASE, sIsMasked);
+    static constexpr bool sIsMasked{true};
+    uint32_t lStatus{MAP_EMACIntStatus(EMAC0_BASE, sIsMasked)};
 
     // Process normal interrupts.
     if (lStatus & EMAC_INT_NORMAL_INT) {
@@ -356,7 +354,7 @@ void EthDrv::ISR() {
             MAP_EMACIntClear(EMAC0_BASE, EMAC_INT_TRANSMIT);
             // Frame transmission is complete.
             // Try to advance the end pointer of the free descriptor list.
-            bool lResult = mTxRingBuf.PopPBuf();
+            bool const lResult{mTxRingBuf.PopPBuf()};
             if (lResult) {
                 LINK_STATS_INC(link.xmit);
             } else {
@@ -395,17 +393,16 @@ struct pbuf *EthDrv::LowLevelRx(RxDescriptor * const aDescriptor, size_t aCumula
     if (!aDescriptor->IsHWOwned() && aDescriptor->IsFrameValid()) {
         // Get the pbuf assigned as payload of the descriptor.
         // It should never be null.
-        struct pbuf * const lPBuf = aDescriptor->GetAllocedPBuf(aCumulatedLen);
 
         // Recurse-call if this is not the last descriptor of the chain:
         // Reference and pbuf-chain all payloads of the chain of descriptors.
-        if (lPBuf != nullptr) {
+        if (struct pbuf * const lPBuf{aDescriptor->GetAllocedPBuf(aCumulatedLen)}; lPBuf != nullptr) {
             // Refer to the payload data of the descriptor.
             // The cumulated length was passed to this function from previous descriptor.
             if (!aDescriptor->IsLastFrame()) {
-                RxDescriptor * const lNextDescriptor = mRxRingBuf.GetNext();
-                size_t lCumulatedLen = aDescriptor->GetFrameLen();
-                struct pbuf * const lTailPBuf = LowLevelRx(lNextDescriptor, lCumulatedLen);
+                RxDescriptor * const lNextDescriptor{mRxRingBuf.GetNext()};
+                size_t lCumulatedLen{aDescriptor->GetFrameLen()};
+                struct pbuf * const lTailPBuf{LowLevelRx(lNextDescriptor, lCumulatedLen)};
                 if ((lNextDescriptor != nullptr) && (lTailPBuf != nullptr)) {
                     // Drop reference to tail buffer, so don't call pbuf_chain().
                     pbuf_cat(lPBuf, lTailPBuf);
